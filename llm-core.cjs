@@ -137,7 +137,7 @@ async function warmup(userDataDir) {
   catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
 }
 
-async function generate({ userDataDir, task, input }) {
+async function generate({ userDataDir, task, input, onToken }) {
   const base = SYSTEM[task];
   if (!base) throw new Error('Tarefa de IA desconhecida: ' + task);
   // /no_think desliga o modo raciocinador do Qwen3 (resposta direta e rápida).
@@ -154,7 +154,10 @@ async function generate({ userDataDir, task, input }) {
     const framed = frame ? frame(String(input || '')) : String(input || '');
     // Qwen3: o soft-switch /no_think precisa estar na mensagem do usuário pra valer.
     const userMsg = (NO_THINK ? '/no_think ' : '') + framed;
+    let toks = 0;
     const out = await session.prompt(userMsg, {
+      // Conta os tokens gerados e reporta ao vivo (feedback "trabalhando… N tokens").
+      onToken: (tokens) => { toks += (tokens && tokens.length) || 0; if (typeof onToken === 'function') onToken(toks); },
       temperature: GEN.temperature,
       maxTokens: GEN.maxTokens,
       signal: ac.signal,

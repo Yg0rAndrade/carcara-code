@@ -1373,8 +1373,13 @@ ipcMain.handle('llm:warmup', async () => {
 });
 
 ipcMain.handle('llm:generate', async (evt, { task, input }) => {
-  try { return { ok: true, text: await llmCore.generate({ userDataDir: llmUserDir(), task, input }) }; }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  try {
+    const text = await llmCore.generate({
+      userDataDir: llmUserDir(), task, input,
+      onToken: (tokens) => safeSend('llm:genProgress', { tokens }),
+    });
+    return { ok: true, text };
+  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
 });
 
 // ---------- Preview (dev server) ----------

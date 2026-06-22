@@ -86,7 +86,14 @@ export function GitPanel({ active, visible }) {
   const [newBranch, setNewBranch] = useState('');
   const [llm, setLlm] = useState({ enabled: false, ready: false, commit: false });
   const [genBusy, setGenBusy] = useState(false);
+  const [genTokens, setGenTokens] = useState(0); // tokens gerados ao vivo (feedback visual)
   const warmedRef = useRef(false); // já disparou o aquecimento do modelo nesta sessão do app?
+
+  // Tokens chegando ao vivo durante a geração: alimenta o "Gerando… N tokens".
+  useEffect(() => {
+    const off = window.api.onLlmGenProgress?.((p) => setGenTokens(p?.tokens || 0));
+    return off;
+  }, []);
 
   const refresh = useCallback(async (silent) => {
     if (!projectPath) { setStatus(null); return; }
@@ -193,6 +200,7 @@ export function GitPanel({ active, visible }) {
   const generateCommit = async () => {
     const list = staged.length > 0 ? staged : changes;
     if (list.length === 0) return;
+    setGenTokens(0);
     setGenBusy(true);
     try {
       // Junta os diffs dos arquivos relevantes (truncado pra caber no contexto do modelo).
@@ -290,7 +298,7 @@ export function GitPanel({ active, visible }) {
               disabled={genBusy || !hasChanges}
               onClick={generateCommit}>
               <Sparkles className={'size-4 ' + (genBusy ? 'animate-pulse' : '')} />
-              {genBusy ? 'Gerando…' : 'Gerar mensagem'}
+              {genBusy ? `Gerando… ${genTokens} ${genTokens === 1 ? 'token' : 'tokens'}` : 'Gerar mensagem'}
             </Button>
             {/* Laser loading: faixa fininha com um feixe de luz varrendo enquanto a IA gera. */}
             {genBusy && (

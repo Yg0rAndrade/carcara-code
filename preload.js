@@ -105,6 +105,12 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('llm:downloadProgress', handler);
     return () => ipcRenderer.removeListener('llm:downloadProgress', handler);
   },
+  // Tokens gerados ao vivo durante a geração (feedback "trabalhando… N tokens").
+  onLlmGenProgress: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('llm:genProgress', handler);
+    return () => ipcRenderer.removeListener('llm:genProgress', handler);
+  },
 
   // Biblioteca de prompts salvos (por projeto, em .carcara/prompts.json)
   promptsList: (projectPath) => ipcRenderer.invoke('prompts:list', { projectPath }),
