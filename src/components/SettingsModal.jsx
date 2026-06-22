@@ -374,16 +374,16 @@ export function SettingsModal({ open, onClose }) {
                 </p>
                 <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                   <li>
-                    <span className="text-foreground">Modelo:</span> Qwen2.5-0.5B-Instruct — equipe Qwen (Alibaba), licença{' '}
+                    <span className="text-foreground">Modelo:</span> Qwen3-0.6B — equipe Qwen (Alibaba), licença{' '}
                     <button type="button" onClick={() => window.api.openExternal('https://www.apache.org/licenses/LICENSE-2.0')}
                       className="text-primary underline-offset-2 hover:underline">Apache 2.0</button>.{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct')}
+                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/Qwen/Qwen3-0.6B')}
                       className="text-primary underline-offset-2 hover:underline">Página do modelo</button>
                   </li>
                   <li>
                     <span className="text-foreground">Quantização GGUF:</span>{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF')}
-                      className="text-primary underline-offset-2 hover:underline">bartowski (Hugging Face)</button>
+                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/unsloth/Qwen3-0.6B-GGUF')}
+                      className="text-primary underline-offset-2 hover:underline">unsloth (Hugging Face)</button>
                   </li>
                   <li>
                     <span className="text-foreground">Inferência local:</span>{' '}
