@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, Loader2, Save, Code2, FileCode, Check, ClipboardPaste } from 'lucide-react';
+import { Plus, Trash2, Loader2, Code2, History, Check, ClipboardPaste, Eraser } from 'lucide-react';
 import { ConnectIcon } from './ui/connect.jsx';
 import { HoverIcon } from './ui/hover-icon.jsx';
 import CodeMirror from '@uiw/react-codemirror';
@@ -17,7 +17,8 @@ import { DragHandle } from './ui/drag-handle.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { cn } from '@/lib/utils';
-import { parseCurl, splitUrlParams } from '@/lib/curl';
+import { parseCurl } from '@/lib/curl';
+import { loadHistory, addEntry, deleteEntry, clearHistory } from '@/lib/apiHistory';
 import { toast } from '@/lib/toast';
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
@@ -62,6 +63,32 @@ function fmtSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
+function methodColor(m) {
+  switch (m) {
+    case 'GET': return 'text-green-600 dark:text-green-400';
+    case 'POST': return 'text-blue-600 dark:text-blue-400';
+    case 'PUT': case 'PATCH': return 'text-amber-600 dark:text-amber-400';
+    case 'DELETE': return 'text-red-600 dark:text-red-400';
+    default: return 'text-muted-foreground';
+  }
+}
+
+// URL enxuta pro histórico: host + caminho, sem protocolo nem query.
+function shortUrl(u) {
+  try { const x = new URL(u); return (x.host + x.pathname).replace(/\/$/, '') || x.host; }
+  catch { return String(u || '').replace(/^[a-z]+:\/\//i, '').split('?')[0]; }
+}
+
+// Quando foi enviado, em linguagem do dia a dia.
+function fmtWhen(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return 'agora';
+  if (diff < 3_600_000) return `há ${Math.floor(diff / 60_000)} min`;
+  if (diff < 86_400_000) return `há ${Math.floor(diff / 3_600_000)} h`;
+  try { return new Date(ts).toLocaleDateString(); } catch { return ''; }
+}
+
 // Completa o esquema quando o usuário digita a URL sem ele (igual ao Postman).
 // Local (localhost/IP) assume http; o resto assume https — que é o caso comum de API.
 function normalizeUrl(u) {
@@ -74,36 +101,6 @@ function normalizeUrl(u) {
 }
 
 const emptyRow = () => ({ on: true, key: '', val: '' });
-
-// Parseia um documento .http de volta para os campos da UI (1 request por arquivo).
-function parseHttp(text) {
-  const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
-  let i = 0;
-  while (i < lines.length && (!lines[i].trim() || lines[i].startsWith('#') || lines[i].startsWith('//'))) i++;
-  const reqLine = lines[i++] || 'GET ';
-  const m = reqLine.match(/^([A-Z]+)\s+(.+)$/i);
-  let method = 'GET';
-  let rawUrl = reqLine.trim();
-  if (m) { method = m[1].toUpperCase(); rawUrl = m[2].trim(); }
-
-  const headers = [];
-  for (; i < lines.length; i++) {
-    const l = lines[i];
-    if (!l.trim()) { i++; break; }
-    const idx = l.indexOf(':');
-    if (idx > 0) headers.push({ on: true, key: l.slice(0, idx).trim(), val: l.slice(idx + 1).trim() });
-  }
-  const body = lines.slice(i).join('\n').trim();
-
-  const { url, params } = splitUrlParams(rawUrl);
-  return {
-    method: METHODS.includes(method) ? method : 'GET',
-    url,
-    params: params.length ? params : [emptyRow()],
-    headers: headers.length ? headers : [emptyRow()],
-    body,
-  };
-}
 
 // Editor de pares chave/valor (Headers e Query Params).
 function KeyValueEditor({ rows, onChange, placeholderKey = 'Chave', placeholderVal = 'Valor' }) {
@@ -139,21 +136,29 @@ export function ApiPanel({ active }) {
   const { theme } = useTheme();
   const projectPath = active?.path || null;
 
-  const [method, setMethod] = useState('GET');
-  const [url, setUrl] = useState('');
-  const [tab, setTab] = useState('params');
-  const [params, setParams] = useState([emptyRow()]);
-  const [headers, setHeaders] = useState([emptyRow()]);
-  const [body, setBody] = useState('');
+  // Rascunho da request persistido por projeto: ao trocar de aba o painel desmonta,
+  // então guardamos o que está em edição pra não perder. (O componente é remontado
+  // com key={projectPath}, então o rascunho carregado é sempre o do projeto atual.)
+  const draftKey = `apiDraft:${projectPath || '_none_'}`;
+  const draft0 = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem(draftKey) || 'null') || {}; }
+    catch { return {}; }
+  }, [draftKey]);
+
+  const [method, setMethod] = useState(draft0.method || 'GET');
+  const [url, setUrl] = useState(draft0.url || '');
+  const [tab, setTab] = useState(draft0.tab || 'params');
+  const [params, setParams] = useState(draft0.params?.length ? draft0.params : [emptyRow()]);
+  const [headers, setHeaders] = useState(draft0.headers?.length ? draft0.headers : [emptyRow()]);
+  const [body, setBody] = useState(draft0.body || '');
   const [loading, setLoading] = useState(false);
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
 
-  // Coleção (.http salvos no projeto)
-  const [saved, setSaved] = useState([]);
-  const [currentName, setCurrentName] = useState(null);
-  const [naming, setNaming] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
+  // Histórico (cada Enviar vira um item com a resposta; persistido por projeto)
+  const [history, setHistory] = useState(() => loadHistory(projectPath));
+  const [selectedId, setSelectedId] = useState(null);
+  const idRef = useRef(0);
 
   // "Copiar como"
   const [snippetOpen, setSnippetOpen] = useState(false);
@@ -219,13 +224,13 @@ export function ApiPanel({ active }) {
     return { method, url: fullUrl, headers: headerObj, body: hasBody ? body : '' };
   }, [method, fullUrl, headers, body, hasBody]);
 
-  const refreshSaved = useCallback(async () => {
-    if (!projectPath) { setSaved([]); return; }
-    const r = await window.api.httpListSaved(projectPath);
-    setSaved(r.ok ? r.items : []);
-  }, [projectPath]);
-
-  useEffect(() => { refreshSaved(); }, [refreshSaved]);
+  // Persiste o rascunho a cada mudança (sobrevive à troca de aba e a reabrir o app).
+  // Não guarda a resposta — só o que monta a request.
+  useEffect(() => {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ method, url, tab, params, headers, body }));
+    } catch {}
+  }, [draftKey, method, url, tab, params, headers, body]);
 
   const send = async () => {
     if (!url.trim() || loading) return;
@@ -233,26 +238,50 @@ export function ApiPanel({ active }) {
     const base = normalizeUrl(url);
     if (base !== url.trim()) setUrl(base);
     setLoading(true); setErr(null); setRes(null);
+    const snapshot = { method, url: base, params, headers, body, fullUrl };
     try {
       const r = await window.api.httpSend(buildRequest(), projectPath || undefined);
-      if (r.ok) setRes(r); else setErr(r.error || 'Falha desconhecida.');
-    } catch (e) { setErr(e?.message || String(e)); }
-    finally { setLoading(false); }
+      if (r.ok) { setRes(r); record(snapshot, r, null); }
+      else { setErr(r.error || 'Falha desconhecida.'); record(snapshot, null, r.error || 'Falha desconhecida.'); }
+    } catch (e) {
+      const msg = e?.message || String(e);
+      setErr(msg); record(snapshot, null, msg);
+    } finally { setLoading(false); }
+  };
+
+  // Guarda no histórico o que foi enviado e o resultado, e seleciona o item.
+  const record = (req, r, error) => {
+    const id = `${Date.now()}-${idRef.current++}`;
+    const entry = {
+      id, sentAt: Date.now(),
+      method: req.method, url: req.url, fullUrl: req.fullUrl,
+      params: req.params, headers: req.headers, body: req.body,
+      ok: !!r,
+      status: r?.status ?? null, statusText: r?.statusText ?? '',
+      timeMs: r?.timeMs ?? null, sizeBytes: r?.sizeBytes ?? null,
+      contentType: r?.contentType ?? '', resBody: r ? (r.body || '') : '',
+      error: error || '',
+    };
+    setHistory(addEntry(projectPath, entry));
+    setSelectedId(id);
   };
 
   const onUrlKey = (e) => { if (e.key === 'Enter') send(); };
 
   const resetForm = () => {
     setMethod('GET'); setUrl(''); setParams([emptyRow()]); setHeaders([emptyRow()]);
-    setBody(''); setRes(null); setErr(null); setCurrentName(null);
+    setBody(''); setRes(null); setErr(null); setSelectedId(null); setTab('params');
   };
+
+  // Limpa tudo e recomeça do zero (o efeito de persistência grava o rascunho vazio).
+  const clearAll = () => { resetForm(); closeImport?.(); };
 
   // Interpreta um comando cURL e preenche os campos. Retorna false se não entendeu.
   const applyCurl = useCallback((text) => {
     const p = parseCurl(text);
     if (!p) return false;
     setMethod(p.method); setUrl(p.url); setParams(p.params); setHeaders(p.headers);
-    setBody(p.body); setTab('params'); setRes(null); setErr(null); setCurrentName(null);
+    setBody(p.body); setTab('params'); setRes(null); setErr(null); setSelectedId(null);
     toast.success('Pronto! Sua chamada foi montada ✨');
     return true;
   }, []);
@@ -275,35 +304,30 @@ export function ApiPanel({ active }) {
     if (!applyCurl(t)) { setImportDraft(t); setImportError(IMPORT_FAIL); setImporting(true); }
   };
 
-  const loadSaved = async (name) => {
-    const r = await window.api.httpReadSaved(projectPath, name);
-    if (!r.ok) { setErr(r.error); return; }
-    const p = parseHttp(r.text);
-    setMethod(p.method); setUrl(p.url); setParams(p.params); setHeaders(p.headers);
-    setBody(p.body); setTab('params'); setRes(null); setErr(null);
-    setCurrentName(name);
-  };
-
-  const doSave = async (name) => {
-    const r = await window.api.httpSaveRequest(projectPath, name, buildRequest());
-    if (!r.ok) { setErr(r.error); return; }
-    setCurrentName(r.name); setNaming(false); setNameDraft('');
-    refreshSaved();
-  };
-
-  const onSaveClick = () => {
-    if (!projectPath) return;
-    if (currentName) doSave(currentName);            // já tem nome → sobrescreve
-    else { setNameDraft(''); setNaming(true); }      // novo → pede nome
-  };
-
-  const deleteSaved = async (name, e) => {
-    e.stopPropagation();
-    const r = await window.api.httpDeleteSaved(projectPath, name);
-    if (r.ok) {
-      if (currentName === name) setCurrentName(null);
-      refreshSaved();
+  // Recarrega no formulário um item do histórico, mostrando também a resposta guardada.
+  const loadEntry = (h) => {
+    setMethod(h.method); setUrl(h.url);
+    setParams(h.params?.length ? h.params : [emptyRow()]);
+    setHeaders(h.headers?.length ? h.headers : [emptyRow()]);
+    setBody(h.body || ''); setTab('params');
+    if (h.ok) {
+      setRes({ status: h.status, statusText: h.statusText, timeMs: h.timeMs, sizeBytes: h.sizeBytes, contentType: h.contentType, body: h.resBody });
+      setErr(null);
+    } else {
+      setRes(null); setErr(h.error || null);
     }
+    setSelectedId(h.id);
+  };
+
+  const removeEntry = (id, e) => {
+    e.stopPropagation();
+    setHistory(deleteEntry(projectPath, id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const clearAllHistory = () => {
+    setHistory(clearHistory(projectPath));
+    setSelectedId(null);
   };
 
   const copyAs = async (s) => {
@@ -344,6 +368,11 @@ export function ApiPanel({ active }) {
           </Select>
           <Input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={onUrlKey} onPaste={onUrlPaste} placeholder="https://api.exemplo.com/recurso" spellCheck={false} className="h-8 flex-1 font-mono text-xs" />
 
+          {/* Limpar tudo (recomeçar) */}
+          <Button variant="ghost" size="sm" className="h-8 shrink-0" onClick={clearAll} disabled={!url.trim() && !body.trim()} title="Limpar tudo e recomeçar">
+            <Eraser className="mr-1" />Limpar
+          </Button>
+
           {/* Importar de cURL */}
           <Button variant="secondary" size="sm" className="h-8 shrink-0" onClick={openImport} title="Importar de um comando cURL (copiado da documentação da API)">
             <ClipboardPaste className="mr-1" />Importar
@@ -366,11 +395,7 @@ export function ApiPanel({ active }) {
             )}
           </div>
 
-          <Button variant="secondary" size="sm" className="h-8" onClick={onSaveClick} disabled={!projectPath || !url.trim()} title={currentName ? `Salvar "${currentName}"` : 'Salvar request'}>
-            <Save className="mr-1" />Salvar
-          </Button>
-
-          <Button size="sm" className="h-8" onClick={send} disabled={loading || !url.trim()}>
+          <Button size="sm" className="h-8" onClick={send} disabled={loading || !url.trim()} title="Enviar (salva no histórico automaticamente)">
             {loading ? <Loader2 className="mr-1 animate-spin" /> : <HoverIcon as={ConnectIcon} className="mr-1" />}Enviar
           </Button>
         </div>
@@ -396,26 +421,6 @@ export function ApiPanel({ active }) {
               <Button variant="ghost" size="sm" className="h-7" onClick={closeImport}>Cancelar</Button>
             </div>
             {importError && <span className="text-[11px] text-red-500">{importError}</span>}
-          </div>
-        )}
-
-        {/* Barra de nome (aparece ao salvar uma request nova) */}
-        {naming && (
-          <div className="flex shrink-0 items-center gap-2 border-b bg-muted/40 px-2.5 py-2">
-            <span className="text-xs text-muted-foreground">Nome:</span>
-            <Input
-              autoFocus
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && nameDraft.trim()) doSave(nameDraft.trim());
-                else if (e.key === 'Escape') { setNaming(false); setNameDraft(''); }
-              }}
-              placeholder="ex: login-usuario"
-              className="h-7 max-w-[260px] text-xs"
-            />
-            <Button size="sm" className="h-7" onClick={() => nameDraft.trim() && doSave(nameDraft.trim())} disabled={!nameDraft.trim()}>Salvar</Button>
-            <Button variant="ghost" size="sm" className="h-7" onClick={() => { setNaming(false); setNameDraft(''); }}>Cancelar</Button>
           </div>
         )}
 
@@ -470,36 +475,48 @@ export function ApiPanel({ active }) {
         </div>
       </div>
 
-      {/* Divisor + Coleção de requests salvas (.http no projeto) — à direita */}
+      {/* Divisor + Histórico de chamadas — à direita */}
       <ResizeBar onMouseDown={startSidebarResize} />
       <div style={{ width: sidebarWidth }} className="flex shrink-0 flex-col bg-card">
         <div className="flex h-12 shrink-0 items-center gap-1.5 border-b px-3">
-          <FileCode className="size-3.5 text-primary" />
-          <span className="eyebrow flex-1 truncate">Requests</span>
-          <button type="button" onClick={resetForm} title="Nova request" className="grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[14px]">
+          <History className="size-3.5 text-primary" />
+          <span className="eyebrow flex-1 truncate">Histórico</span>
+          <button type="button" onClick={clearAll} title="Nova chamada" className="grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[14px]">
             <Plus />
           </button>
+          {history.length > 0 && (
+            <button type="button" onClick={clearAllHistory} title="Limpar todo o histórico" className="grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-red-500 [&_svg]:size-[14px]">
+              <Trash2 />
+            </button>
+          )}
         </div>
-        <div className="min-h-0 flex-1 overflow-auto py-1">
-          {!projectPath ? (
-            <p className="px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">Abra um projeto para salvar requests.</p>
-          ) : saved.length === 0 ? (
-            <p className="px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">Nenhuma request salva ainda.</p>
+        <div className="min-h-0 flex-1 overflow-auto">
+          {history.length === 0 ? (
+            <p className="px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">Cada chamada que você enviar aparece aqui, com o resultado.</p>
           ) : (
-            saved.map((s) => (
+            history.map((h) => (
               <div
-                key={s.name}
-                onClick={() => loadSaved(s.name)}
+                key={h.id}
+                onClick={() => loadEntry(h)}
                 className={cn(
-                  'group flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-[13px] hover:bg-muted',
-                  currentName === s.name && 'bg-accent'
+                  'group cursor-pointer border-b px-2.5 py-2 hover:bg-muted',
+                  selectedId === h.id && 'bg-accent'
                 )}
-                title={s.name}
+                title={h.fullUrl || h.url}
               >
-                <span className="flex-1 truncate">{s.name}</span>
-                <button type="button" onClick={(e) => deleteSaved(s.name, e)} title="Excluir" className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-red-500 group-hover:opacity-100 [&_svg]:size-[13px]">
-                  <Trash2 />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn('shrink-0 font-mono text-[10px] font-bold', methodColor(h.method))}>{h.method}</span>
+                  <span className="flex-1 truncate text-[12px]">{shortUrl(h.fullUrl || h.url)}</span>
+                  <button type="button" onClick={(e) => removeEntry(h.id, e)} title="Excluir" className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-red-500 group-hover:opacity-100 [&_svg]:size-[13px]">
+                    <Trash2 />
+                  </button>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  {h.ok
+                    ? <span className={cn('font-semibold', statusColor(h.status))}>{h.status}</span>
+                    : <span className="font-semibold text-red-500">erro</span>}
+                  <span>{fmtWhen(h.sentAt)}</span>
+                </div>
               </div>
             ))
           )}
