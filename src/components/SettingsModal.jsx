@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal, ZoomIn, ZoomOut, RotateCcw, Bell, Sparkles, Download, Trash2 } from 'lucide-react';
+import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal, ZoomIn, ZoomOut, RotateCcw, Bell, Sparkles, Download, Trash2, Heart } from 'lucide-react';
 import { ClaudeCodeIcon, CodexIcon, OpenCodeIcon, AntigravityIcon } from '@/lib/cliIcons.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
@@ -363,6 +363,37 @@ export function SettingsModal({ open, onClose }) {
                   <p className="mt-3 text-xs text-muted-foreground">Títulos de histórico e de prompt: em breve.</p>
                 </div>
               )}
+
+              {/* Créditos / atribuição open source — respeitando as licenças de quem tornou isso possível */}
+              <div className="mt-3 rounded-lg border border-dashed p-4">
+                <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                  <Heart className="size-3.5 text-primary" /> Créditos e licenças
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Esta IA local roda no seu computador graças a projetos open source. Nossa gratidão a quem os criou e compartilhou:
+                </p>
+                <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                  <li>
+                    <span className="text-foreground">Modelo:</span> Qwen2.5-0.5B-Instruct — equipe Qwen (Alibaba), licença{' '}
+                    <button type="button" onClick={() => window.api.openExternal('https://www.apache.org/licenses/LICENSE-2.0')}
+                      className="text-primary underline-offset-2 hover:underline">Apache 2.0</button>.{' '}
+                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct')}
+                      className="text-primary underline-offset-2 hover:underline">Página do modelo</button>
+                  </li>
+                  <li>
+                    <span className="text-foreground">Quantização GGUF:</span>{' '}
+                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF')}
+                      className="text-primary underline-offset-2 hover:underline">bartowski (Hugging Face)</button>
+                  </li>
+                  <li>
+                    <span className="text-foreground">Inferência local:</span>{' '}
+                    <button type="button" onClick={() => window.api.openExternal('https://github.com/withcatai/node-llama-cpp')}
+                      className="text-primary underline-offset-2 hover:underline">node-llama-cpp</button>{' '}/{' '}
+                    <button type="button" onClick={() => window.api.openExternal('https://github.com/ggml-org/llama.cpp')}
+                      className="text-primary underline-offset-2 hover:underline">llama.cpp</button> (MIT)
+                  </li>
+                </ul>
+              </div>
             </div>
           )}
         </div>
