@@ -9,7 +9,7 @@ function colorFor(name) {
   return `hsl(${h} 55% 45%)`;
 }
 
-export function Rail({ projects, active, onOpen, onAdd, onRemove, onReorder, onOpenSettings, width = 64 }) {
+export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onReorder, onOpenSettings, width = 64 }) {
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
@@ -82,6 +82,17 @@ export function Rail({ projects, active, onOpen, onAdd, onRemove, onReorder, onO
             </span>
             {p.running && (
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+            )}
+            {/* Atividade do Claude (canto superior, separado do verde de "preview rodando"):
+                âmbar pulsando = trabalhando; âmbar fixo = terminou e você ainda não viu. */}
+            {activity[p.path] && (
+              <span
+                title={activity[p.path] === 'working' ? 'Claude trabalhando…' : 'Claude terminou'}
+                className={cn(
+                  'absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500',
+                  activity[p.path] === 'working' && 'animate-pulse'
+                )}
+              />
             )}
           </button>
         ))}

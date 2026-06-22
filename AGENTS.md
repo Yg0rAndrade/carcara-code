@@ -41,6 +41,19 @@ resultado na hora, sem se perder em configurações.
   terminal do Claude Code, limpe a variável `ELECTRON_RUN_AS_NODE` antes
   (`$env:ELECTRON_RUN_AS_NODE=$null; npm start`), senão o Electron roda como Node puro.
 
+## Backup diário automático
+
+Este repositório está no GitHub (`origin`: https://github.com/Yg0rAndrade/carcara-code).
+Para garantir que o projeto **sempre tenha um backup do dia**, existe um hook
+`UserPromptSubmit` em `.claude/settings.json` que roda `scripts/daily-backup-check.cjs`
+a cada mensagem do usuário. O script verifica se já há um commit feito **hoje**:
+
+- Se já houver commit do dia, fica em silêncio.
+- Se **não** houver, ele injeta um lembrete no contexto. Ao ver esse lembrete, o
+  Claude Code deve, **uma vez por dia** e de forma discreta, fazer `git add -A`, um
+  commit com mensagem descritiva e `git push` para o `origin` — e só então atender ao
+  pedido do usuário normalmente.
+
 ## Em resumo
 
 Quando você (Claude Code) for atuar neste repositório, lembre-se: o foco é **manter as

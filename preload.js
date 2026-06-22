@@ -3,17 +3,23 @@ const { contextBridge, ipcRenderer, webUtils, webFrame } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   getConfig: () => ipcRenderer.invoke('config:get'),
 
-  // Zoom da JANELA do app (Ctrl +/-/0). Mexe só no host (rail, chat, abas…); o
-  // webview do preview tem zoom próprio (tratado no main quando o foco está nele).
-  // Clampa entre -3 e +3 níveis (~50%–200%) e devolve o nível aplicado.
+  // Zoom da JANELA do app (Ctrl +/-/0 e o controle nas Configurações). Mexe só no
+  // host (rail, chat, abas…); o webview do preview tem zoom próprio (tratado no main
+  // quando o foco está nele). Passos de 10%, entre 50% e 200%. Devolve o fator
+  // aplicado (1 = 100%) pra a UI mostrar a porcentagem.
   zoom: (dir) => {
-    const cur = webFrame.getZoomLevel();
-    const next = dir === 'reset' ? 0 : dir === 'in' ? cur + 0.5 : cur - 0.5;
-    const clamped = Math.max(-3, Math.min(3, next));
-    webFrame.setZoomLevel(clamped);
+    const cur = webFrame.getZoomFactor();
+    const next = dir === 'reset' ? 1 : dir === 'in' ? cur + 0.1 : cur - 0.1;
+    const clamped = Math.max(0.5, Math.min(2, Math.round(next * 10) / 10));
+    webFrame.setZoomFactor(clamped);
     return clamped;
   },
-  setZoomLevel: (level) => webFrame.setZoomLevel(Math.max(-3, Math.min(3, Number(level) || 0))),
+  setZoom: (factor) => {
+    const clamped = Math.max(0.5, Math.min(2, Number(factor) || 1));
+    webFrame.setZoomFactor(clamped);
+    return clamped;
+  },
+  getZoom: () => webFrame.getZoomFactor(),
 
   // CLI de IA por projeto (qual ferramenta sobe nas sessões daquele projeto)
   getAi: (projectPath) => ipcRenderer.invoke('ai:get', { projectPath }),
@@ -36,6 +42,13 @@ contextBridge.exposeInMainWorld('api', {
 
   // Casa o tema do Claude Code (settings.json) com o tema do terminal
   applyClaudeTheme: (theme) => ipcRenderer.invoke('claude:applyTheme', { theme }),
+
+  // Atividade do Claude: avisa o main qual projeto está em foco (pra não notificar/badgear
+  // o que você já está olhando) e lê/grava o toggle de notificações. Os eventos
+  // 'activity:state' e 'activity:focus' chegam pelo `on(...)` genérico abaixo.
+  setActiveProject: (projectPath) => ipcRenderer.send('activity:setActive', { projectPath }),
+  getNotify: () => ipcRenderer.invoke('notify:get'),
+  setNotify: (enabled) => ipcRenderer.invoke('notify:set', { enabled }),
 
   // Terminal livre (shell comum)
   shellEnsure: (projectPath, cols, rows) => ipcRenderer.invoke('shell:ensure', { projectPath, cols, rows }),

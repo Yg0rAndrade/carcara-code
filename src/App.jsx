@@ -15,6 +15,11 @@ import { Toaster } from './components/ui/toaster.jsx';
 export default function App() {
   const [projects, setProjects] = useState([]);
   const [active, setActive] = useState(null);
+  // Atividade do Claude por projeto: 'working' (pulsa) | 'attention' (terminou, você não viu).
+  const [activity, setActivity] = useState({});
+  // Refs pra ler valor atual dentro de listeners de longa duração (sem stale closure).
+  const activeRef = useRef(null);
+  const projectsRef = useRef([]);
   const [pendingRemove, setPendingRemove] = useState(null); // projeto aguardando confirmação
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [railWidth, setRailWidth] = useState(() => Number(localStorage.getItem('railWidth')) || 64);
@@ -66,9 +71,8 @@ export default function App() {
   // pro site e o atalho ali zooma a página (tratado no main). A borda em volta do
   // preview avisa onde o foco está. Persiste o nível pra sobreviver ao reload.
   useEffect(() => {
-    const KEY = 'appZoomLevel';
-    const saved = Number(localStorage.getItem(KEY));
-    if (saved) window.api.setZoomLevel(saved);
+    const saved = Number(localStorage.getItem('appZoom'));
+    if (saved) window.api.setZoom(saved);
     const onKey = (e) => {
       if ((!e.ctrlKey && !e.metaKey) || e.altKey) return;
       const dir =
@@ -77,8 +81,7 @@ export default function App() {
         e.key === '0' ? 'reset' : null;
       if (!dir) return;
       e.preventDefault();
-      const level = window.api.zoom(dir);
-      localStorage.setItem(KEY, String(level));
+      localStorage.setItem('appZoom', String(window.api.zoom(dir)));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

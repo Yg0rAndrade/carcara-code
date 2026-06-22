@@ -3,5 +3,17 @@
     "allow": [
       "npm i"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/daily-backup-check.cjs\""
+          }
+        ]
+      }
+    ]
   }
 }

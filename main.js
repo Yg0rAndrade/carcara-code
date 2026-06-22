@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, nativeImage, Menu, webContents } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, nativeImage, Menu, webContents, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -73,7 +73,7 @@ function safeSend(channel, payload) {
 function cleanup() {
   for (const s of runningServers.values()) { if (s.probe) clearInterval(s.probe); killProc(s.proc); }
   runningServers.clear();
-  for (const t of terminals.values()) { try { t.pty.kill(); } catch {} }
+  for (const t of terminals.values()) { if (t.idleTimer) clearTimeout(t.idleTimer); try { t.pty.kill(); } catch {} }
   terminals.clear();
   for (const s of shells.values()) { try { s.pty.kill(); } catch {} }
   shells.clear();
@@ -704,6 +704,79 @@ ipcMain.handle('sessions:close', (evt, { projectPath, sessionId }) => {
   return { ok: true };
 });
 
+// ---------- Atividade do Claude (notifica quando termina) ----------
+// Só vale pra sessões cujo CLI é o `claude`. Detecta por ociosidade: depois de você
+// enviar algo (input com Enter = "armado"), o output volta a fluir = "trabalhando";
+// quando o output para por ~3s = "terminou". O estado é por sessão; o rail agrega
+// por projeto no renderer. A notificação do SO só dispara se o projeto não estiver
+// em foco (decisão de produto: silencioso quando você já está olhando).
+let activeProjectPath = null;
+const ACTIVITY_IDLE_MS = 3000;   // silêncio que marca "terminou"
+const ACTIVITY_MIN_BYTES = 40;   // ignora eco/ruído trivial pra não disparar à toa
+const lastNotifyAt = new Map();  // projectPath -> ts (coalescência por projeto)
+
+function notifyEnabled() {
+  return loadConfig().notify !== false; // padrão: ligado
+}
+
+function emitActivity(entry, state) {
+  safeSend('activity:state', { projectPath: entry.projectPath, sessionId: entry.sessionId, state });
+}
+
+// Reinicia o debounce de ociosidade e marca a sessão como "trabalhando".
+function activityWorking(entry) {
+  if (!entry.working) { entry.working = true; emitActivity(entry, 'working'); }
+  if (entry.idleTimer) clearTimeout(entry.idleTimer);
+  entry.idleTimer = setTimeout(() => activityIdle(entry), ACTIVITY_IDLE_MS);
+}
+
+// O output parou: a sessão terminou. Emite 'done' e talvez notifica.
+function activityIdle(entry) {
+  entry.idleTimer = null;
+  if (!entry.working) return;
+  entry.working = false;
+  entry.armed = false;
+  emitActivity(entry, 'done');
+  maybeNotifyDone(entry);
+}
+
+function maybeNotifyDone(entry) {
+  if (!notifyEnabled()) return;
+  const focused = mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused();
+  if (focused && activeProjectPath === entry.projectPath) return; // você já está olhando
+  const now = Date.now();
+  if (now - (lastNotifyAt.get(entry.projectPath) || 0) < 1500) return; // coalesce por projeto
+  lastNotifyAt.set(entry.projectPath, now);
+  try {
+    if (Notification && !Notification.isSupported()) return;
+    const n = new Notification({ title: 'Carcará Code', body: `Claude terminou em ${path.basename(entry.projectPath)}` });
+    n.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+      }
+      safeSend('activity:focus', { projectPath: entry.projectPath, sessionId: entry.sessionId });
+    });
+    n.show();
+  } catch {}
+}
+
+// Alimenta o rastreador com um chunk de output da sessão (só pra claude).
+function activityOnData(entry, data) {
+  if (entry.cli !== 'claude') return;
+  if (entry.working) { activityWorking(entry); return; } // mantém vivo o debounce
+  if (!entry.armed) return;                              // só conta depois de você enviar algo
+  entry.outBytes = (entry.outBytes || 0) + data.length;
+  if (entry.outBytes >= ACTIVITY_MIN_BYTES) activityWorking(entry);
+}
+
+// Qual projeto está aberto no momento (renderer avisa). Usado pra não notificar/badgear
+// o projeto que você está olhando.
+ipcMain.on('activity:setActive', (evt, { projectPath }) => { activeProjectPath = projectPath || null; });
+ipcMain.handle('notify:get', () => ({ enabled: notifyEnabled() }));
+ipcMain.handle('notify:set', (evt, { enabled }) => { const c = loadConfig(); c.notify = !!enabled; saveConfig(c); return { ok: true }; });
+
 ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme }) => {
   if (terminals.has(sessionId)) {
     return { existed: true, buffer: terminals.get(sessionId).buffer };
@@ -730,10 +803,13 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
     entry.buffer += data;
     if (entry.buffer.length > 200000) entry.buffer = entry.buffer.slice(-150000);
     captureResumeId(entry); // OpenCode/Antigravity/Codex: pesca o id da conversa do output
+    activityOnData(entry, data); // detecção "trabalhando/terminou" (só claude)
     safeSend('term:data', { sessionId, data });
   });
   proc.onExit(() => {
+    if (entry.idleTimer) { clearTimeout(entry.idleTimer); entry.idleTimer = null; }
     terminals.delete(sessionId);
+    emitActivity(entry, 'idle'); // limpa o indicador no rail
     safeSend('term:exit', { sessionId });
   });
 
@@ -750,7 +826,11 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
 
 ipcMain.on('term:input', (evt, { sessionId, data }) => {
   const e = terminals.get(sessionId);
-  if (e) e.pty.write(data);
+  if (e) {
+    e.pty.write(data);
+    // Enviar algo (Enter) "arma" a detecção: o output que vier a seguir conta como trabalho.
+    if (e.cli === 'claude' && /[\r\n]/.test(data)) { e.armed = true; e.outBytes = 0; }
+  }
 });
 
 ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {

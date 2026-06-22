@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal } from 'lucide-react';
+import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { ClaudeCodeIcon, CodexIcon, OpenCodeIcon, AntigravityIcon } from '@/lib/cliIcons.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
@@ -36,6 +36,19 @@ export function SettingsModal({ open, onClose }) {
   const [tab, setTab] = useState('ai');
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { cli, custom }
+  const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
+
+  // Lê o zoom atual ao abrir (mesma fonte do atalho Ctrl +/-: webFrame + localStorage).
+  useEffect(() => {
+    if (!open) return;
+    setZoom(Number(localStorage.getItem('appZoom')) || window.api.getZoom() || 1);
+  }, [open]);
+
+  const applyZoom = (dir) => {
+    const f = window.api.zoom(dir);
+    localStorage.setItem('appZoom', String(f));
+    setZoom(f);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -164,6 +177,36 @@ export function SettingsModal({ open, onClose }) {
                 <button type="button" onClick={() => setTheme('dark')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', theme === 'dark' && 'border-primary ring-1 ring-primary')}>
                   <Moon className="h-4 w-4" /> Escuro
+                </button>
+              </div>
+
+              <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
+                <ZoomIn className="h-4 w-4" /> Zoom da interface
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Aumenta ou diminui o tamanho de tudo no app (rail, chat, abas…). Também dá pra
+                usar <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +
+                {' '}<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd> /
+                {' '}<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd> com o foco fora do preview.
+              </p>
+              <div className="mt-3 flex max-w-md items-center gap-2">
+                <button type="button" onClick={() => applyZoom('out')} disabled={zoom <= 0.5}
+                  title="Diminuir"
+                  className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4">
+                  <ZoomOut />
+                </button>
+                <div className="grid h-9 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
+                  {Math.round(zoom * 100)}%
+                </div>
+                <button type="button" onClick={() => applyZoom('in')} disabled={zoom >= 2}
+                  title="Aumentar"
+                  className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4">
+                  <ZoomIn />
+                </button>
+                <button type="button" onClick={() => applyZoom('reset')} disabled={zoom === 1}
+                  title="Resetar para 100%"
+                  className="flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5">
+                  <RotateCcw /> Resetar
                 </button>
               </div>
 
