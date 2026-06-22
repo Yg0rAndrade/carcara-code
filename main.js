@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const http = require('http');
 const detectPort = require('detect-port');
 const mcpCore = require('./mcp-core.cjs');
+const llmCore = require('./llm-core.cjs');
 
 let mainWindow;
 const runningServers = new Map(); // projectPath -> { proc, url, port, log }
@@ -51,6 +52,16 @@ function loadConfig() {
 }
 function saveConfig(cfg) {
   try { fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2)); } catch {}
+}
+
+function llmConfig() {
+  const c = loadConfig();
+  const llm = c.llm || {};
+  return {
+    enabled: !!llm.enabled,
+    model: llm.model || llmCore.MODEL_ID,
+    features: { commit: !!(llm.features && llm.features.commit) },
+  };
 }
 
 function killProc(proc) {
@@ -1319,6 +1330,46 @@ ipcMain.handle('mcp:deleteServer', (e, { projectPath, name }) => {
     fs.writeFileSync(mcpServersFile(projectPath), JSON.stringify(all, null, 2));
     return { ok: true };
   } catch (err) { return { ok: false, error: err.message }; }
+});
+
+// ---------- IA local (llm-core) ----------
+// Modelo/binário nativo carregam lazy dentro do llm-core; nada disso no boot.
+const llmUserDir = () => app.getPath('userData');
+
+ipcMain.handle('llm:getConfig', () => ({ ok: true, ...llmConfig() }));
+ipcMain.handle('llm:setConfig', (evt, { patch }) => {
+  const c = loadConfig();
+  const cur = llmConfig();
+  c.llm = {
+    enabled: patch.enabled ?? cur.enabled,
+    model: cur.model,
+    features: { ...cur.features, ...(patch.features || {}) },
+  };
+  saveConfig(c);
+  return { ok: true, ...c.llm };
+});
+
+ipcMain.handle('llm:status', async () => {
+  try { return { ok: true, ...(await llmCore.status(llmUserDir())) }; }
+  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+});
+
+ipcMain.handle('llm:download', async () => {
+  try {
+    await llmCore.download(llmUserDir(), ({ done, total }) =>
+      safeSend('llm:downloadProgress', { done, total }));
+    return { ok: true, ...(await llmCore.status(llmUserDir())) };
+  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+});
+
+ipcMain.handle('llm:remove', async () => {
+  try { await llmCore.remove(llmUserDir()); return { ok: true }; }
+  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+});
+
+ipcMain.handle('llm:generate', async (evt, { task, input }) => {
+  try { return { ok: true, text: await llmCore.generate({ userDataDir: llmUserDir(), task, input }) }; }
+  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
 });
 
 // ---------- Preview (dev server) ----------
