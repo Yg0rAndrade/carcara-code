@@ -29,6 +29,8 @@ export function CheckpointsPanel({ active, visible }) {
   const [creating, setCreating] = useState(false);
   const [autoOn, setAutoOn] = useState(true);
   const [confirm, setConfirm] = useState(null); // checkpoint aguardando confirmação de restore
+  const [titles, setTitles] = useState({});     // hash -> título gerado pela IA (cacheado)
+  const [llmTitle, setLlmTitle] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!projectPath) { setItems([]); return; }
@@ -50,6 +52,48 @@ export function CheckpointsPanel({ active, visible }) {
       if (p === projectPath && visible) refresh();
     });
   }, [projectPath, visible, refresh]);
+
+  // IA pode titular o histórico? (ligada + recurso ativo + modelo pronto)
+  useEffect(() => {
+    Promise.all([window.api.llmGetConfig(), window.api.llmStatus()])
+      .then(([c, s]) => setLlmTitle(!!c?.enabled && !!c?.features?.checkpointTitle && !!s?.installed))
+      .catch(() => {});
+  }, [visible]);
+
+  // Carrega títulos já cacheados (localStorage) pros checkpoints atuais.
+  useEffect(() => {
+    if (!items.length) return;
+    const cached = {};
+    for (const cp of items) {
+      const v = localStorage.getItem('cpTitle:' + cp.hash);
+      if (v) cached[cp.hash] = v;
+    }
+    if (Object.keys(cached).length) setTitles((t) => ({ ...cached, ...t }));
+  }, [items]);
+
+  // Gera os títulos que faltam (sequencial, só os mais recentes) a partir do diff do
+  // checkpoint. Cacheia por hash. Só toca nos rótulos automáticos (timestamp), não nos
+  // títulos que o usuário/IA já definiu.
+  useEffect(() => {
+    if (!llmTitle || !projectPath || !items.length) return;
+    let cancelled = false;
+    (async () => {
+      for (const cp of items.slice(0, 15)) {
+        if (cancelled) return;
+        if (localStorage.getItem('cpTitle:' + cp.hash) || !isAutoSubject(cp.subject)) continue;
+        const r = await window.api.checkpointDiff(projectPath, cp.hash);
+        if (cancelled) return;
+        if (!r?.ok || !r.diff || !r.diff.trim()) continue;
+        const g = await window.api.llmGenerate('checkpointTitle', r.diff.slice(0, 4000));
+        if (cancelled) return;
+        if (g?.ok && g.text) {
+          localStorage.setItem('cpTitle:' + cp.hash, g.text);
+          setTitles((t) => ({ ...t, [cp.hash]: g.text }));
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [llmTitle, projectPath, items]);
 
   const create = async () => {
     if (!projectPath || creating) return;
@@ -123,7 +167,7 @@ export function CheckpointsPanel({ active, visible }) {
                   <Clock className="size-3.5 text-muted-foreground" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] text-foreground">{labelOf(cp)}</div>
+                  <div className="truncate text-[13px] text-foreground">{labelOf(cp, titles)}</div>
                   <div className="text-[11px] text-muted-foreground">
                     {ago(cp.ts)}
                     {i === 0 && <span className="ml-1.5 text-primary">· mais recente</span>}
@@ -165,7 +209,16 @@ export function CheckpointsPanel({ active, visible }) {
   );
 }
 
-// Limpa o sufixo de timestamp ISO que o main carimba nos rótulos automáticos.
-function labelOf(cp) {
+// Rótulo do checkpoint: usa o título gerado pela IA se houver; senão, limpa o sufixo de
+// timestamp ISO que o main carimba nos rótulos automáticos.
+function labelOf(cp, titles) {
+  const ai = titles && titles[cp.hash];
+  if (ai) return ai;
   return (cp.subject || '').replace(/\s*\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/, '').trim() || 'Checkpoint';
+}
+
+// Subject "automático" = termina com timestamp ISO (ex.: "Após resposta do Claude 2026-…").
+// Só nesses a IA mexe; títulos personalizados ficam intactos.
+function isAutoSubject(s) {
+  return /\d{4}-\d{2}-\d{2}T[\d:.]+Z?\s*$/.test(s || '');
 }

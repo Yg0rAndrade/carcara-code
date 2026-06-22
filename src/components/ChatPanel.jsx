@@ -106,11 +106,17 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState({ title: '', body: '' });
   const [editingId, setEditingId] = useState(null);
+  const [llmTitle, setLlmTitle] = useState(false); // IA pode gerar título do prompt?
+  const [saving, setSaving] = useState(false);
   const btnRef = useRef(null);
 
   const load = async () => {
     const r = await window.api.promptsList(projectPath);
     setItems(r && r.ok ? r.items : []);
+    try {
+      const [c, s] = await Promise.all([window.api.llmGetConfig(), window.api.llmStatus()]);
+      setLlmTitle(!!c?.enabled && !!c?.features?.promptTitle && !!s?.installed);
+    } catch { /* IA desligada/indisponível: segue com o fallback de hoje */ }
   };
   const persist = (list) => { setItems(list); window.api.promptsSave(projectPath, list); };
 
@@ -137,14 +143,22 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     if (sessionId && p.body) onInsert?.(sessionId, p.body);
     setOpen(false);
   };
-  const submit = () => {
-    const title = draft.title.trim();
+  const submit = async () => {
+    const typed = draft.title.trim();
     const body = draft.body.trim();
-    if (!body) return;
+    if (!body || saving) return;
+    // Sem título e IA ligada: gera um título curto do corpo (cai no fallback se falhar).
+    let title = typed;
+    if (!title && llmTitle) {
+      setSaving(true);
+      try { const r = await window.api.llmGenerate('promptTitle', body); if (r?.ok && r.text) title = r.text; } catch { /* fallback */ }
+      setSaving(false);
+    }
+    if (!title) title = body.slice(0, 40);
     if (editingId) {
-      persist(items.map((p) => (p.id === editingId ? { ...p, title: title || body.slice(0, 40), body } : p)));
+      persist(items.map((p) => (p.id === editingId ? { ...p, title, body } : p)));
     } else {
-      persist([...items, { id: crypto.randomUUID(), title: title || body.slice(0, 40), body }]);
+      persist([...items, { id: crypto.randomUUID(), title, body }]);
     }
     setDraft({ title: '', body: '' });
     setEditingId(null);
@@ -227,9 +241,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                   Cancelar
                 </button>
               )}
-              <button type="button" onClick={submit} disabled={!draft.body.trim()}
+              <button type="button" onClick={submit} disabled={!draft.body.trim() || saving}
                 className="h-7 rounded bg-primary px-2.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
-                {editingId ? 'Salvar' : 'Adicionar'}
+                {saving ? 'Gerando título…' : editingId ? 'Salvar' : 'Adicionar'}
               </button>
             </div>
           </div>

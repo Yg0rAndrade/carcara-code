@@ -60,7 +60,11 @@ function llmConfig() {
   return {
     enabled: !!llm.enabled,
     model: llm.model || llmCore.MODEL_ID,
-    features: { commit: !!(llm.features && llm.features.commit) },
+    features: {
+      commit: !!(llm.features && llm.features.commit),
+      promptTitle: !!(llm.features && llm.features.promptTitle),
+      checkpointTitle: !!(llm.features && llm.features.checkpointTitle),
+    },
   };
 }
 
@@ -1033,6 +1037,14 @@ function scheduleAutoCheckpoint(projectPath) {
 ipcMain.handle('checkpoint:list', (evt, { projectPath }) => gitTry(async () => ({ items: await checkpointList(projectPath) })));
 ipcMain.handle('checkpoint:create', (evt, { projectPath, label }) => gitTry(() => checkpointCreate(projectPath, label, { allowEmpty: true })));
 ipcMain.handle('checkpoint:restore', (evt, { projectPath, hash }) => gitTry(() => checkpointRestore(projectPath, hash)));
+// Diff de um checkpoint vs o anterior no shadow repo (pra IA titular o histórico).
+ipcMain.handle('checkpoint:diff', (evt, { projectPath, hash }) => gitTry(async () => {
+  const g = shadowGit(projectPath);
+  let diff;
+  try { diff = await g.raw(['diff', hash + '^', hash]); }
+  catch { diff = await g.raw(['show', '--format=', hash]); } // commit raiz (sem pai)
+  return { diff };
+}));
 ipcMain.handle('checkpoint:getEnabled', () => ({ enabled: checkpointsEnabled() }));
 ipcMain.handle('checkpoint:setEnabled', (evt, { enabled }) => { const c = loadConfig(); c.checkpoints = !!enabled; saveConfig(c); return { ok: true }; });
 

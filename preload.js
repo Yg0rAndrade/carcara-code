@@ -120,6 +120,7 @@ contextBridge.exposeInMainWorld('api', {
   checkpointList: (projectPath) => ipcRenderer.invoke('checkpoint:list', { projectPath }),
   checkpointCreate: (projectPath, label) => ipcRenderer.invoke('checkpoint:create', { projectPath, label }),
   checkpointRestore: (projectPath, hash) => ipcRenderer.invoke('checkpoint:restore', { projectPath, hash }),
+  checkpointDiff: (projectPath, hash) => ipcRenderer.invoke('checkpoint:diff', { projectPath, hash }),
   checkpointGetEnabled: () => ipcRenderer.invoke('checkpoint:getEnabled'),
   checkpointSetEnabled: (enabled) => ipcRenderer.invoke('checkpoint:setEnabled', { enabled }),
 

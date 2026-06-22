@@ -37,11 +37,27 @@ const SYSTEM = {
     'Mensagem: fix: aumenta o tempo limite de conexão para 60 segundos\n' +
     'Diff: +The author has deep expertise in distributed systems and migrations\n' +
     'Mensagem: docs: descreve a experiência do autor em sistemas distribuídos',
+  promptTitle:
+    'Você cria títulos curtos em PORTUGUÊS DO BRASIL para um prompt salvo numa biblioteca. ' +
+    'Máximo 5 palavras, sem aspas e sem pontuação final. Responda APENAS o título.\n\n' +
+    'Exemplo:\nPrompt: rode os testes e corrija o que quebrar\nTítulo: Rodar e corrigir testes',
+  checkpointTitle:
+    'Você resume em PORTUGUÊS DO BRASIL o que mudou num conjunto de arquivos, em uma frase curta ' +
+    'de até 8 palavras (ex.: "ajusta validação do login"). Sem aspas e sem explicação. Responda APENAS a frase.',
 };
 
 // Moldura por tarefa aplicada à mensagem do usuário — reforça o idioma pra modelos pequenos.
 const USER_FRAME = {
   commit: (input) => 'Escreva a mensagem de commit em português do Brasil para este diff:\n\n' + input,
+  promptTitle: (input) => 'Crie um título curto em português para este prompt:\n\n' + input,
+  checkpointTitle: (input) => 'Resuma em português, em uma frase curta, o que mudou:\n\n' + input,
+};
+
+// Limiares de "resposta completa" por tarefa (título é curto; commit precisa ser maior).
+const COMPLETE = {
+  commit: { chars: 16, words: 4 },
+  promptTitle: { chars: 4, words: 1 },
+  checkpointTitle: { chars: 8, words: 2 },
 };
 
 let _libPromise; // cache do import() ESM
@@ -202,7 +218,7 @@ async function generate({ userDataDir, task, input, onToken }) {
           signal: ac.signal,
         });
         const msg = parseOut(out);
-        if (looksComplete(msg)) return msg;      // resposta boa → pronto
+        if (looksComplete(msg, task)) return msg; // resposta boa → pronto
         if (msg.length > best.length) best = msg; // guarda a melhor parcial
       } finally {
         try { await context.dispose(); } catch {}
@@ -214,12 +230,13 @@ async function generate({ userDataDir, task, input, onToken }) {
   }
 }
 
-// Heurística de "mensagem completa": evita aceitar saídas vazias ou cortadas
-// (o 0.6B às vezes para cedo, gerando "feat: adicion").
-function looksComplete(msg) {
+// Heurística de "resposta completa" por tarefa: evita aceitar saídas vazias ou cortadas
+// (o 0.6B às vezes para cedo, gerando "feat: adicion"). Título aceita ser curto.
+function looksComplete(msg, task) {
   if (!msg) return false;
+  const m = COMPLETE[task] || COMPLETE.commit;
   const words = msg.split(/\s+/).filter(Boolean);
-  return msg.length >= 16 && words.length >= 4;
+  return msg.length >= m.chars && words.length >= m.words;
 }
 
 module.exports = { MODEL_ID, MODEL_FILE, MODEL_URI, modelPath, status, download, remove, warmup, generate };

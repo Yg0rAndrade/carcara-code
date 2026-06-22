@@ -58,9 +58,9 @@ export function SettingsModal({ open, onClose }) {
     setLlmCfg((c) => ({ ...c, enabled: v }));
     window.api.llmSetConfig({ enabled: v });
   };
-  const setCommitFeature = (v) => {
-    setLlmCfg((c) => ({ ...c, features: { ...c.features, commit: v } }));
-    window.api.llmSetConfig({ features: { commit: v } });
+  const setFeature = (key, v) => {
+    setLlmCfg((c) => ({ ...c, features: { ...c.features, [key]: v } }));
+    window.api.llmSetConfig({ features: { [key]: v } });
   };
   const doDownload = async () => {
     setDl({ done: 0, total: 0 });
@@ -348,19 +348,22 @@ export function SettingsModal({ open, onClose }) {
 
               {/* Recursos por toggle */}
               {llmCfg.enabled && (
-                <div className="mt-3 rounded-lg border p-4">
-                  <div className="text-[13px] font-medium">Recursos</div>
-                  <div className="mt-3 flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="text-[13px]">Botão de sugestão de mensagem de commit</div>
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                        Mostra um botão "✨ Gerar" na aba Git que escreve a mensagem a partir do que está em stage.
-                      </p>
+                <div className="mt-3 divide-y rounded-lg border">
+                  <div className="px-4 pt-3 text-[13px] font-medium">Recursos</div>
+                  {[
+                    { key: 'commit', title: 'Mensagem de commit', desc: 'Botão "✨ Gerar" na aba Git que escreve a mensagem a partir do que mudou.' },
+                    { key: 'promptTitle', title: 'Título automático de prompt', desc: 'Ao salvar um prompt sem título, gera um título curto a partir do corpo.' },
+                    { key: 'checkpointTitle', title: 'Título automático no histórico', desc: 'No painel Histórico, descreve cada checkpoint a partir do que mudou (em vez do timestamp).' },
+                  ].map((feat) => (
+                    <div key={feat.key} className="flex items-start justify-between gap-4 p-4">
+                      <div className="min-w-0">
+                        <div className="text-[13px]">{feat.title}</div>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{feat.desc}</p>
+                      </div>
+                      <Switch checked={!!llmCfg.features[feat.key]} onCheckedChange={(v) => setFeature(feat.key, v)}
+                        disabled={!llmStat.installed} className="mt-0.5" />
                     </div>
-                    <Switch checked={llmCfg.features.commit} onCheckedChange={setCommitFeature}
-                      disabled={!llmStat.installed} className="mt-0.5" />
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground">Títulos de histórico e de prompt: em breve.</p>
+                  ))}
                 </div>
               )}
 
