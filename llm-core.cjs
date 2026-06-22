@@ -9,9 +9,10 @@ const MODEL_ID = 'qwen3-0.6b-q4_k_m';
 const MODEL_FILE = 'hf_unsloth_Qwen3-0.6B-Q4_K_M.gguf';
 const MODEL_URI = 'hf:unsloth/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q4_K_M.gguf';
 
-// Qwen3 é um modelo "raciocinador": por padrão emite um bloco <think>…</think> antes
-// da resposta. Pra tarefas curtas isso é lento e sujo, então desligamos com /no_think
-// e limpamos qualquer <think> residual da saída.
+// Qwen3 é um modelo "raciocinador": emite um bloco <think>…</think> antes da resposta.
+// Pra esta tarefa curta, raciocinar só deixou mais lento e menos preciso (testado),
+// então desligamos com /no_think e ficamos só com o texto após o </think>. Pra religar
+// o raciocínio, basta NO_THINK = false (e subir maxTokens/timeout, que ele gera mais).
 const NO_THINK = true;
 
 const GEN = { contextSize: 2048, temperature: 0.2, maxTokens: 120, timeoutMs: 30000 };
@@ -158,9 +159,14 @@ async function generate({ userDataDir, task, input }) {
       maxTokens: GEN.maxTokens,
       signal: ac.signal,
     });
-    // Remove bloco de raciocínio do Qwen3 (<think>…</think>) e pega só a 1ª linha útil.
-    const cleaned = String(out || '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim();
-    const firstLine = cleaned.split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
+    // A resposta final vem DEPOIS do </think>. Se o modelo abriu <think> mas não fechou
+    // (estourou os tokens raciocinando), considera incompleto e devolve vazio.
+    const raw = String(out || '');
+    const closeIdx = raw.lastIndexOf('</think>');
+    if (/<think>/i.test(raw) && closeIdx === -1) return '';
+    let text = closeIdx !== -1 ? raw.slice(closeIdx + '</think>'.length) : raw;
+    text = text.replace(/<\/?think>/gi, '').trim();
+    const firstLine = text.split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
     return firstLine.replace(/^["'`]|["'`]$/g, '').trim();
   } finally {
     clearTimeout(timer);

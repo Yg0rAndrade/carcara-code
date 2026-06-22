@@ -285,12 +285,24 @@ export function GitPanel({ active, visible }) {
           className="w-full resize-none rounded-md border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-ring"
         />
         {llm.enabled && llm.commit && llm.ready && (
-          <Button size="sm" variant="ghost" className="mt-1.5 w-full gap-1.5 text-muted-foreground"
-            disabled={genBusy || !hasChanges}
-            onClick={generateCommit}>
-            <Sparkles className={'size-4 ' + (genBusy ? 'animate-pulse' : '')} />
-            {genBusy ? 'Gerando…' : 'Gerar mensagem'}
-          </Button>
+          <>
+            <Button size="sm" variant="ghost" className="mt-1.5 w-full gap-1.5 text-muted-foreground"
+              disabled={genBusy || !hasChanges}
+              onClick={generateCommit}>
+              <Sparkles className={'size-4 ' + (genBusy ? 'animate-pulse' : '')} />
+              {genBusy ? 'Gerando…' : 'Gerar mensagem'}
+            </Button>
+            {/* Laser loading: faixa fininha com um feixe de luz varrendo enquanto a IA gera. */}
+            {genBusy && (
+              <div className="relative mt-1.5 h-[3px] w-full overflow-hidden rounded-full bg-primary/15">
+                <style>{'@keyframes carcaraLaser{0%{left:-45%}100%{left:100%}}'}</style>
+                <span
+                  className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_10px_2px] shadow-primary/50"
+                  style={{ animation: 'carcaraLaser 0.9s ease-in-out infinite' }}
+                />
+              </div>
+            )}
+          </>
         )}
         <Button size="sm" className="mt-1.5 w-full gap-1.5" disabled={!canCommit}
           onClick={() => run('commit', async () => {
