@@ -97,6 +97,38 @@ const ZONE_STYLE = {
   bottom: { left: 0, right: 0, bottom: 0, height: '50%' },
 };
 
+// Negrito **assim** dentro de uma linha → <strong>.
+function renderInline(text) {
+  return String(text).split(/(\*\*[^*]+\*\*)/g).map((seg, i) =>
+    /^\*\*[^*]+\*\*$/.test(seg)
+      ? <strong key={i} className="font-semibold text-foreground">{seg.slice(2, -2)}</strong>
+      : <span key={i}>{seg}</span>
+  );
+}
+
+// Renderizador leve de markdown pros prompts: dá ênfase (títulos coloridos, negrito,
+// listas, divisória) sem depender de lib. Não é parser completo — só o pra ler melhor.
+function PromptMd({ text }) {
+  const lines = String(text || '').split('\n');
+  return (
+    <div className="text-[13px] leading-relaxed text-muted-foreground">
+      {lines.map((ln, i) => {
+        const t = ln.trim();
+        if (!t) return <div key={i} className="h-2" />;
+        if (/^#{1,6}\s/.test(t)) {
+          const level = t.match(/^#+/)[0].length;
+          const txt = t.replace(/^#+\s*/, '');
+          return <div key={i} className={cn('mt-2 font-semibold', level <= 1 ? 'text-[15px] text-foreground' : level === 2 ? 'text-[14px] text-foreground' : 'text-[13px] text-primary')}>{renderInline(txt)}</div>;
+        }
+        if (/^[-*]\s/.test(t)) return <div key={i} className="flex gap-1.5 pl-1"><span className="text-primary">•</span><span>{renderInline(t.replace(/^[-*]\s*/, ''))}</span></div>;
+        if (/^\d+\.\s/.test(t)) { const m = t.match(/^(\d+)\.\s*(.*)/); return <div key={i} className="flex gap-1.5 pl-1"><span className="shrink-0 text-primary tabular-nums">{m[1]}.</span><span>{renderInline(m[2])}</span></div>; }
+        if (/^(---+|\*\*\*+)$/.test(t)) return <hr key={i} className="my-2.5 border-border" />;
+        return <div key={i} className="mt-0.5">{renderInline(t)}</div>;
+      })}
+    </div>
+  );
+}
+
 // Biblioteca de prompts reutilizáveis (por projeto). O botão fica na barra de abas do
 // chat; clicar num prompt INJETA o texto no terminal da sessão ativa (sem Enter), pra
 // você revisar e enviar. Salva/edita/remove na lista persistida em .carcara/prompts.json.
@@ -108,6 +140,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
   const [llmTitle, setLlmTitle] = useState(false); // IA pode gerar título do prompt?
   const [saving, setSaving] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null); // prompt aguardando confirmação de remoção
+  const [viewing, setViewing] = useState(null); // prompt aberto pra leitura (markdown destacado)
   const btnRef = useRef(null);
 
   const load = async () => {
@@ -124,9 +157,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     setDraft({ title: '', body: '' });
     setEditingId(null);
     setConfirmDel(null);
+    setViewing(null);
     setOpen(true);
     load();
   };
+  const newPrompt = () => { setViewing(null); setEditingId(null); setDraft({ title: '', body: '' }); };
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +194,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     setDraft({ title: '', body: '' });
     setEditingId(null);
   };
-  const edit = (p) => { setEditingId(p.id); setDraft({ title: p.title, body: p.body }); };
+  const edit = (p) => { setViewing(null); setEditingId(p.id); setDraft({ title: p.title, body: p.body }); };
   const remove = (p) => {
     persist(items.filter((x) => x.id !== p.id));
     if (editingId === p.id) { setEditingId(null); setDraft({ title: '', body: '' }); }
@@ -188,7 +223,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
             <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
               <Library className="size-4 text-muted-foreground" />
               <span className="text-[14px] font-semibold">Biblioteca de prompts</span>
-              <span className="text-[12px] text-muted-foreground">· clique num prompt para inserir no chat</span>
+              <span className="text-[12px] text-muted-foreground">· clique num prompt para ler; insira pelo botão</span>
               <div className="flex-1" />
               <button type="button" onClick={() => setOpen(false)} title="Fechar (Esc)"
                 className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]">
@@ -198,69 +233,94 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 
             <div className="flex min-h-0 flex-1">
               {/* Lista (esquerda) */}
-              <div className="w-[44%] min-w-0 overflow-y-auto border-r p-3">
-                {items.length === 0 ? (
-                  <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">Nenhum prompt salvo ainda.</p>
-                ) : (
-                  <div className="flex flex-col gap-1.5">
-                    {items.map((p) => (
-                      <div key={p.id}
-                        className={cn('group rounded-lg border p-3 transition-colors hover:border-primary/50',
-                          editingId === p.id && 'border-primary ring-1 ring-primary')}>
-                        <div className="flex items-start gap-2">
-                          <button type="button" onClick={() => insert(p)} disabled={!sessionId} title="Inserir no chat"
-                            className="flex min-w-0 flex-1 items-start gap-2 text-left disabled:opacity-50 [&_svg]:size-4">
-                            <ArrowUpLeft className="mt-0.5 shrink-0 text-muted-foreground" />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[13.5px] font-medium">{p.title}</span>
-                              <span className="mt-0.5 block whitespace-pre-wrap break-words text-[12px] leading-relaxed text-muted-foreground line-clamp-4">{p.body}</span>
-                            </span>
-                          </button>
-                          <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
-                            <button type="button" onClick={() => edit(p)} title="Editar"
-                              className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
-                              <Pencil />
-                            </button>
-                            <button type="button" onClick={() => setConfirmDel(p)} title="Remover"
-                              className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5">
-                              <Trash2 />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Editor (direita) */}
-              <div className="flex min-w-0 flex-1 flex-col p-4">
-                <div className="mb-2 text-[13px] font-medium">{editingId ? 'Editar prompt' : 'Novo prompt'}</div>
-                <input
-                  value={draft.title}
-                  onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                  placeholder="Título (opcional — a IA pode gerar)"
-                  className="mb-2 h-9 w-full rounded-md border bg-card px-3 text-[13px] outline-none focus:border-primary"
-                />
-                <textarea
-                  value={draft.body}
-                  onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
-                  placeholder="Prompt — ex.: rode os testes e corrija o que quebrar"
-                  className="min-h-0 flex-1 w-full resize-none rounded-md border bg-card px-3 py-2 text-[13px] leading-relaxed outline-none focus:border-primary"
-                />
-                <div className="mt-3 flex justify-end gap-2">
-                  {editingId && (
-                    <button type="button" onClick={() => { setEditingId(null); setDraft({ title: '', body: '' }); }}
-                      className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">
-                      Cancelar edição
-                    </button>
-                  )}
-                  <button type="button" onClick={submit} disabled={!draft.body.trim() || saving}
-                    className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
-                    {saving ? 'Gerando título…' : editingId ? 'Salvar' : 'Adicionar'}
+              <div className="flex w-[42%] min-w-0 flex-col border-r">
+                <div className="flex shrink-0 items-center justify-between px-3 pt-3">
+                  <span className="text-[12px] font-medium text-muted-foreground">{items.length} prompt{items.length === 1 ? '' : 's'}</span>
+                  <button type="button" onClick={newPrompt}
+                    className={cn('flex h-7 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium transition-colors',
+                      !viewing && editingId === null ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')}>
+                    <Plus className="size-3.5" /> Novo
                   </button>
                 </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  {items.length === 0 ? (
+                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">Nenhum prompt salvo ainda.</p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {items.map((p) => (
+                        <button key={p.id} type="button" onClick={() => setViewing(p)}
+                          className={cn('group w-full rounded-lg border p-3 text-left transition-colors hover:border-primary/50',
+                            (viewing?.id === p.id || editingId === p.id) && 'border-primary ring-1 ring-primary')}>
+                          <div className="flex items-start gap-2">
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13.5px] font-medium">{p.title}</span>
+                              <span className="mt-0.5 break-words text-[12px] leading-relaxed text-muted-foreground line-clamp-3">{p.body}</span>
+                            </span>
+                            <span className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
+                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); edit(p); }} title="Editar"
+                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
+                                <Pencil />
+                              </span>
+                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setConfirmDel(p); }} title="Remover"
+                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5">
+                                <Trash2 />
+                              </span>
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Painel direito: leitura (markdown destacado) OU editor */}
+              {viewing && editingId === null ? (
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{viewing.title}</span>
+                    <button type="button" onClick={() => insert(viewing)} disabled={!sessionId}
+                      className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 [&_svg]:size-3.5">
+                      <ArrowUpLeft /> Inserir no chat
+                    </button>
+                    <button type="button" onClick={() => edit(viewing)} title="Editar"
+                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted [&_svg]:size-4"><Pencil /></button>
+                    <button type="button" onClick={() => setConfirmDel(viewing)} title="Remover"
+                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"><Trash2 /></button>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                    <PromptMd text={viewing.body} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex min-w-0 flex-1 flex-col p-4">
+                  <div className="mb-2 text-[13px] font-medium">{editingId ? 'Editar prompt' : 'Novo prompt'}</div>
+                  <input
+                    value={draft.title}
+                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                    placeholder="Título (opcional — a IA pode gerar)"
+                    className="mb-2 h-9 w-full rounded-md border bg-card px-3 text-[13px] outline-none focus:border-primary"
+                  />
+                  <textarea
+                    value={draft.body}
+                    onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
+                    placeholder="Prompt — ex.: rode os testes e corrija o que quebrar"
+                    className="min-h-0 w-full flex-1 resize-none rounded-md border bg-card px-3 py-2 text-[13px] leading-relaxed outline-none focus:border-primary"
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    {editingId && (
+                      <button type="button" onClick={() => { setEditingId(null); setDraft({ title: '', body: '' }); }}
+                        className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">
+                        Cancelar edição
+                      </button>
+                    )}
+                    <button type="button" onClick={submit} disabled={!draft.body.trim() || saving}
+                      className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
+                      {saving ? 'Gerando título…' : editingId ? 'Salvar' : 'Adicionar'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirmação de remoção */}
