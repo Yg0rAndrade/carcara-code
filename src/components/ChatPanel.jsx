@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { Plus, X, Library, Pencil, Trash2, ArrowUpLeft, Search, Star } from 'lucide-react';
+import { Plus, X, Library, Pencil, Trash2, ArrowUpLeft, Search, Star, CornerDownLeft } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 import { useTheme } from '@/lib/theme.jsx';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
@@ -142,6 +142,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
   const [confirmDel, setConfirmDel] = useState(null); // prompt aguardando confirmação de remoção
   const [viewing, setViewing] = useState(null); // prompt aberto pra leitura (markdown destacado)
   const [query, setQuery] = useState(''); // busca na lista
+  const [mode, setMode] = useState('picker'); // 'picker' (seleção rápida Ctrl+K) | 'manage' (edição)
+  const [sel, setSel] = useState(0); // item ativo no seletor rápido
+  const pickerInputRef = useRef(null);
   const btnRef = useRef(null);
 
   const load = async () => {
@@ -163,6 +166,8 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     setConfirmDel(null);
     setViewing(null);
     setQuery('');
+    setMode('picker');
+    setSel(0);
     setOpen(true);
     load();
   };
@@ -179,6 +184,14 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, confirmDel]);
+
+  // Foca o campo do seletor rápido ao abrir/voltar pra ele.
+  useEffect(() => {
+    if (!open || mode !== 'picker') return;
+    setSel(0);
+    const id = requestAnimationFrame(() => pickerInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [open, mode]);
 
   const insert = (p) => {
     if (sessionId && p.body) onInsert?.(sessionId, p.body);
@@ -228,7 +241,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
       >
         <Library />
       </button>
-      {open && (
+      {open && mode === 'manage' && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-6"
           onMouseDown={() => setOpen(false)}>
           <div
@@ -237,9 +250,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
           >
             {/* Cabeçalho */}
             <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <Library className="size-4 text-muted-foreground" />
-              <span className="text-[14px] font-semibold">Biblioteca de prompts</span>
-              <span className="text-[12px] text-muted-foreground">· clique num prompt para ler; insira pelo botão</span>
+              <button type="button" onClick={() => setMode('picker')} title="Voltar à seleção rápida"
+                className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4">
+                <ArrowUpLeft /> Voltar
+              </button>
+              <span className="text-[14px] font-semibold">Gerenciar prompts</span>
               <div className="flex-1" />
               <button type="button" onClick={() => setOpen(false)} title="Fechar (Esc)"
                 className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]">
@@ -384,6 +399,67 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Seletor rápido (estilo Ctrl+K): digita e Enter pra inserir; botão pra gerenciar */}
+      {open && mode === 'picker' && (
+        <div className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-[1px]"
+          onMouseDown={() => setOpen(false)}>
+          <div className="flex max-h-[70vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover text-foreground shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 border-b px-3.5">
+              <Search className="size-4 shrink-0 text-muted-foreground" />
+              <input
+                ref={pickerInputRef}
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setSel(0); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => (visibleItems.length ? (s + 1) % visibleItems.length : 0)); }
+                  else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => (visibleItems.length ? (s - 1 + visibleItems.length) % visibleItems.length : 0)); }
+                  else if (e.key === 'Enter') { e.preventDefault(); const p = visibleItems[Math.min(sel, visibleItems.length - 1)]; if (p) insert(p); }
+                }}
+                placeholder="Buscar prompt… (Enter insere)"
+                className="h-12 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
+              />
+              <button type="button" onClick={() => setMode('manage')} title="Gerenciar / editar prompts"
+                className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
+                <Pencil /> Gerenciar
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto py-1.5">
+              {visibleItems.length === 0 ? (
+                <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+                  {items.length === 0 ? 'Nenhum prompt salvo ainda.' : 'Nenhum resultado.'}
+                  <div className="mt-2">
+                    <button type="button" onClick={() => setMode('manage')} className="text-primary hover:underline">
+                      {items.length === 0 ? 'Criar um prompt' : 'Abrir gerenciador'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                visibleItems.map((p, i) => {
+                  const selected = i === Math.min(sel, visibleItems.length - 1);
+                  return (
+                    <button key={p.id} type="button" onMouseMove={() => setSel(i)} onClick={() => insert(p)} disabled={!sessionId}
+                      className={cn('flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13.5px] disabled:opacity-50',
+                        selected ? 'bg-primary/12 text-foreground' : 'text-foreground/90')}>
+                      <Star className={cn('size-3.5 shrink-0', p.fav ? 'fill-amber-500 text-amber-500' : 'text-transparent')} />
+                      <span className="min-w-0 flex-1 truncate font-medium">{p.title}</span>
+                      <span className="min-w-0 max-w-[45%] shrink truncate text-[12px] text-muted-foreground">{p.body}</span>
+                      {selected && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t px-3.5 py-1.5 text-[11px] text-muted-foreground">
+              <span>↑↓ navegar · Enter inserir · Esc fechar</span>
+              <span>{items.length} prompt{items.length === 1 ? '' : 's'}</span>
+            </div>
           </div>
         </div>
       )}
