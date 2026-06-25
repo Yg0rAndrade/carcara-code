@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Square } from 'lucide-react';
 import { SettingsIcon } from './ui/settings.jsx';
 import { SearchIcon } from './ui/search.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { cn } from '@/lib/utils';
 
-export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onReorder, onOpenSettings, onSearch, width = 64 }) {
+export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onOpenSettings, onSearch, width = 64 }) {
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
@@ -13,7 +13,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
   const openMenu = (e, p) => {
     e.preventDefault();
     const x = Math.min(e.clientX, window.innerWidth - 180);
-    const y = Math.min(e.clientY, window.innerHeight - 80);
+    const y = Math.min(e.clientY, window.innerHeight - 140);
     setMenu({ x, y, project: p });
   };
 
@@ -138,6 +138,8 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
       <RailMenu
         menu={menu}
         onClose={() => setMenu(null)}
+        onRestart={(p) => { setMenu(null); onRestart?.(p); }}
+        onStop={(p) => { setMenu(null); onStop?.(p); }}
         onRemove={(p) => { setMenu(null); onRemove(p); }}
       />
     </nav>
@@ -145,7 +147,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
 }
 
 // Menu de contexto do rail (botão direito) — no mesmo padrão da árvore de arquivos.
-function RailMenu({ menu, onClose, onRemove }) {
+function RailMenu({ menu, onClose, onRestart, onStop, onRemove }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
@@ -167,6 +169,27 @@ function RailMenu({ menu, onClose, onRemove }) {
       className="fixed z-50 min-w-[160px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
       style={{ left: menu.x, top: menu.y }}
     >
+      {/* Servidor de preview: reiniciar (sobe se estiver parado) e parar — sem precisar
+          abrir o projeto. "Parar" só aparece quando há servidor rodando. */}
+      <button
+        type="button"
+        onClick={() => onRestart(menu.project)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+      >
+        <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{menu.project.running ? 'Reiniciar servidor' : 'Iniciar servidor'}</span>
+      </button>
+      {menu.project.running && (
+        <button
+          type="button"
+          onClick={() => onStop(menu.project)}
+          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+        >
+          <Square className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Parar servidor</span>
+        </button>
+      )}
+      <div className="my-1 border-t" />
       <button
         type="button"
         onClick={() => onRemove(menu.project)}

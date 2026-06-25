@@ -176,3 +176,47 @@
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
 }
+
+/* Linhas da planilha (XlsxViewer): o navegador pula o layout/pintura das linhas fora
+   da tela. Isso mantém o reflow barato ao redimensionar o painel e o scroll fluido
+   mesmo com milhares de linhas. `auto 28px` é a altura estimada (corrigida ao rolar). */
+.ygc-xlsx-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 28px;
+}
+
+/* Cores dos tokens do highlight.js (rehype-highlight) no preview de markdown.
+   Escopado em .md-body e ancorado nas variáveis do tema, então acompanha
+   claro/escuro e a paleta carvão+brasa em vez de um tema fixo do hljs. */
+.md-body .hljs { color: hsl(var(--foreground)); background: transparent; }
+.md-body .hljs-comment,
+.md-body .hljs-quote { color: hsl(var(--muted-foreground)); font-style: italic; }
+.md-body .hljs-keyword,
+.md-body .hljs-selector-tag,
+.md-body .hljs-literal,
+.md-body .hljs-doctag,
+.md-body .hljs-formula { color: hsl(var(--primary)); }
+.md-body .hljs-string,
+.md-body .hljs-meta .hljs-string,
+.md-body .hljs-regexp,
+.md-body .hljs-addition { color: hsl(142 60% 45%); }
+.md-body .hljs-number,
+.md-body .hljs-variable,
+.md-body .hljs-template-variable,
+.md-body .hljs-attr,
+.md-body .hljs-attribute,
+.md-body .hljs-symbol,
+.md-body .hljs-bullet { color: hsl(var(--accent-foreground)); }
+.md-body .hljs-title,
+.md-body .hljs-section,
+.md-body .hljs-name,
+.md-body .hljs-selector-id,
+.md-body .hljs-selector-class { color: hsl(210 90% 60%); font-weight: 600; }
+.md-body .hljs-type,
+.md-body .hljs-class .hljs-title,
+.md-body .hljs-built_in,
+.md-body .hljs-builtin-name { color: hsl(280 60% 65%); }
+.md-body .hljs-meta,
+.md-body .hljs-deletion { color: hsl(var(--muted-foreground)); }
+.md-body .hljs-emphasis { font-style: italic; }
+.md-body .hljs-strong { font-weight: 700; }

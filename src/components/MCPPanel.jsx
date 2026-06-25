@@ -47,6 +47,7 @@ export function MCPPanel({ active }) {
   const [serverInfo, setServerInfo] = useState(null);
   const [caps, setCaps] = useState({});
   const [status, setStatus] = useState('idle'); // idle | connecting | connected | error
+  const [oauthPhase, setOauthPhase] = useState(null); // null | 'awaiting' (login no navegador)
   const [err, setErr] = useState(null);
   const [log, setLog] = useState('');
   const [logOpen, setLogOpen] = useState(false);
@@ -124,12 +125,13 @@ export function MCPPanel({ active }) {
       const entry = { ...e, seq: seqRef.current++ };
       setTraffic((t) => (t.length >= 500 ? [...t.slice(t.length - 499), entry] : [...t, entry]));
     });
+    const offOauth = window.api.on('mcp:oauth', ({ phase }) => setOauthPhase(phase));
     const offClosed = window.api.on('mcp:closed', () => {
       setConnId(null); setStatus('idle'); setServerInfo(null);
       setTools([]); setResources(null); setTemplates(null); setPrompts(null); setSubscribed(new Set()); setSelected(null); setResult(null);
       setTraffic([]); seqRef.current = 0;
     });
-    return () => { offLog?.(); offTraffic?.(); offClosed?.(); };
+    return () => { offLog?.(); offTraffic?.(); offOauth?.(); offClosed?.(); };
   }, []);
 
   const refreshServers = useCallback(async () => {
@@ -139,11 +141,14 @@ export function MCPPanel({ active }) {
   }, [projectPath]);
   useEffect(() => { refreshServers(); }, [refreshServers]);
 
-  const buildConfig = () => (
-    transport === 'stdio'
-      ? { transport: 'stdio', command: command.trim(), args: argsStr.trim() ? argsStr.trim().split(/\s+/) : [] }
-      : { transport: 'http', url: normalizeUrl(url), ...(bearer.trim() ? { headers: { Authorization: 'Bearer ' + bearer.trim() } } : {}) }
-  );
+  const buildConfig = () => {
+    if (transport === 'stdio') {
+      return { transport: 'stdio', command: command.trim(), args: argsStr.trim() ? argsStr.trim().split(/\s+/) : [] };
+    }
+    const base = { transport: 'http', url: normalizeUrl(url) };
+    // Com token → header Bearer. Sem token → OAuth (login no navegador).
+    return bearer.trim() ? { ...base, headers: { Authorization: 'Bearer ' + bearer.trim() } } : { ...base, oauth: true };
+  };
   // Config sem segredos, p/ persistir em .carcara/mcp-servers.json (o token nunca vai pro disco).
   const buildSavedConfig = () => {
     const c = buildConfig();
@@ -153,9 +158,10 @@ export function MCPPanel({ active }) {
 
   const connect = async () => {
     if (status === 'connecting') return;
-    setStatus('connecting'); setErr(null); setLog(''); setResult(null); setSelected(null);
+    setStatus('connecting'); setErr(null); setLog(''); setResult(null); setSelected(null); setOauthPhase(null);
     setResources(null); setTemplates(null); setPrompts(null); setSubscribed(new Set()); setTraffic([]); seqRef.current = 0;
     const r = await window.api.mcpConnect(buildConfig());
+    setOauthPhase(null);
     if (!r.ok) { setStatus('error'); setErr(r.error); setLogOpen(true); return; }
     setConnId(r.connId); setServerInfo(r.serverInfo); setCaps(r.capabilities || {}); setStatus('connected');
     setTab('tools');
@@ -292,6 +298,20 @@ export function MCPPanel({ active }) {
           )}
         </div>
 
+        {/* Dica OAuth: HTTP sem token conecta via login no navegador */}
+        {transport === 'http' && !connected && !bearer.trim() && (
+          <div className="flex shrink-0 items-center gap-2 border-b bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <span>Sem token → <span className="text-foreground">Conectar</span> abre o login no navegador (OAuth).</span>
+            <div className="flex-1" />
+            <button type="button"
+              onClick={async () => { const r = await window.api.mcpOauthLogout(normalizeUrl(url)); setErr(r.ok ? null : (r.error || null)); }}
+              disabled={!url.trim()}
+              className="rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-40">
+              Esquecer login
+            </button>
+          </div>
+        )}
+
         {/* Nome (ao salvar) */}
         {naming && (
           <div className="flex shrink-0 items-center gap-2 border-b bg-muted/40 px-2.5 py-2">
@@ -315,7 +335,7 @@ export function MCPPanel({ active }) {
           ) : status === 'error' ? (
             <span className="truncate text-red-500">{err || 'Falha ao conectar.'}</span>
           ) : (
-            <span className="text-muted-foreground">{status === 'connecting' ? 'Conectando…' : 'Desconectado'}</span>
+            <span className="text-muted-foreground">{status === 'connecting' ? (oauthPhase === 'awaiting' ? 'Aguardando autorização no navegador…' : 'Conectando…') : 'Desconectado'}</span>
           )}
           <div className="flex-1" />
           {/* Quando conectado, o stderr vive na aba Logging do Inspector. Aqui só p/ falha de conexão. */}

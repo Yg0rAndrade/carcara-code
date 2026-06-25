@@ -5,6 +5,7 @@ const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
 const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/client/streamableHttp.js');
 const { SSEClientTransport } = require('@modelcontextprotocol/sdk/client/sse.js');
+const { auth } = require('@modelcontextprotocol/sdk/client/auth.js');
 
 const mcpConns = new Map(); // connId -> { client, transport, info }
 
@@ -46,13 +47,29 @@ async function mcpConnect({ transport, command, args, env, url, headers } = {}, 
   } else {
     if (!url) throw new Error('URL obrigatória para HTTP.');
     const reqInit = headers && Object.keys(headers).length ? { requestInit: { headers } } : undefined;
-    try {
-      tp = new StreamableHTTPClientTransport(new URL(url), reqInit);
+    if (hooks.oauth) {
+      // OAuth 2.0 (Bloco D): obtém tokens proativamente (login no navegador na 1ª vez),
+      // depois conecta. Reconexões usam o token/refresh já guardado (sem navegador).
+      const { authProvider, waitForCode } = hooks.oauth;
+      if (!(await authProvider.tokens())) {
+        const r = await auth(authProvider, { serverUrl: url });
+        if (r === 'REDIRECT') {
+          const code = await waitForCode();
+          const r2 = await auth(authProvider, { serverUrl: url, authorizationCode: code });
+          if (r2 !== 'AUTHORIZED') throw new Error('Autorização OAuth não concluída.');
+        }
+      }
+      tp = new StreamableHTTPClientTransport(new URL(url), { authProvider, ...(reqInit || {}) });
       await client.connect(tp);
-    } catch (e) {
-      // Servidor legado: cai pra SSE.
-      tp = new SSEClientTransport(new URL(url), reqInit);
-      await client.connect(tp);
+    } else {
+      try {
+        tp = new StreamableHTTPClientTransport(new URL(url), reqInit);
+        await client.connect(tp);
+      } catch (e) {
+        // Servidor legado: cai pra SSE.
+        tp = new SSEClientTransport(new URL(url), reqInit);
+        await client.connect(tp);
+      }
     }
   }
 

@@ -207,6 +207,24 @@ export default function App() {
     await window.api.reorderProjects(orderedPaths);
   };
 
+  // Parar/Reiniciar o preview de um projeto direto pelo menu do rail (botão direito),
+  // sem precisar abri-lo. Se for o projeto ATIVO, usa os controles do PreviewPanel
+  // (mantém o log/empty state casados); senão, fala direto com o main e atualiza a
+  // bolinha verde via reload().
+  const restartProject = async (p) => {
+    if (!p) return;
+    if (active?.path === p.path && previewControls.current?.restart) { previewControls.current.restart(); return; }
+    await window.api.stopPreview(p.path);
+    await window.api.startPreview(p.path);
+    reload();
+  };
+  const stopProject = async (p) => {
+    if (!p) return;
+    if (active?.path === p.path && previewControls.current?.stop) { previewControls.current.stop(); return; }
+    await window.api.stopPreview(p.path);
+    reload();
+  };
+
   const confirmRemove = async () => {
     const p = pendingRemove;
     setPendingRemove(null);
@@ -225,6 +243,8 @@ export default function App() {
         onOpen={setActive}
         onAdd={addProjects}
         onRemove={setPendingRemove}
+        onRestart={restartProject}
+        onStop={stopProject}
         onReorder={reorderProjects}
         onOpenSettings={() => setSettingsOpen(true)}
         onSearch={() => setPaletteOpen(true)}

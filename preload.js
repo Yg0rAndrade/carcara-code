@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('api', {
   sessionsCreate: (projectPath, name) => ipcRenderer.invoke('sessions:create', { projectPath, name }),
   sessionsRename: (projectPath, sessionId, name) => ipcRenderer.invoke('sessions:rename', { projectPath, sessionId, name }),
   sessionsClose: (projectPath, sessionId) => ipcRenderer.invoke('sessions:close', { projectPath, sessionId }),
+  sessionRefreshTitle: (projectPath, sessionId) => ipcRenderer.invoke('session:refreshTitle', { projectPath, sessionId }),
 
   // Terminal (Claude Code real) — por sessão
   termEnsure: (sessionId, projectPath, cols, rows, theme) => ipcRenderer.invoke('term:ensure', { sessionId, projectPath, cols, rows, theme }),
@@ -97,26 +98,7 @@ contextBridge.exposeInMainWorld('api', {
   mcpReadServer: (projectPath, name) => ipcRenderer.invoke('mcp:readServer', { projectPath, name }),
   mcpSaveServer: (projectPath, name, config) => ipcRenderer.invoke('mcp:saveServer', { projectPath, name, config }),
   mcpDeleteServer: (projectPath, name) => ipcRenderer.invoke('mcp:deleteServer', { projectPath, name }),
-
-  // IA local (llm-core): config, modelo e geração de texto curto
-  llmGetConfig: () => ipcRenderer.invoke('llm:getConfig'),
-  llmSetConfig: (patch) => ipcRenderer.invoke('llm:setConfig', { patch }),
-  llmStatus: () => ipcRenderer.invoke('llm:status'),
-  llmDownload: () => ipcRenderer.invoke('llm:download'),
-  llmRemove: () => ipcRenderer.invoke('llm:remove'),
-  llmWarmup: () => ipcRenderer.invoke('llm:warmup'),
-  llmGenerate: (task, input) => ipcRenderer.invoke('llm:generate', { task, input }),
-  onLlmDownloadProgress: (cb) => {
-    const handler = (_e, data) => cb(data);
-    ipcRenderer.on('llm:downloadProgress', handler);
-    return () => ipcRenderer.removeListener('llm:downloadProgress', handler);
-  },
-  // Tokens gerados ao vivo durante a geração (feedback "trabalhando… N tokens").
-  onLlmGenProgress: (cb) => {
-    const handler = (_e, data) => cb(data);
-    ipcRenderer.on('llm:genProgress', handler);
-    return () => ipcRenderer.removeListener('llm:genProgress', handler);
-  },
+  mcpOauthLogout: (url) => ipcRenderer.invoke('mcp:oauthLogout', { url }),
 
   // Biblioteca de prompts salvos (por projeto, em .carcara/prompts.json)
   promptsList: (projectPath) => ipcRenderer.invoke('prompts:list', { projectPath }),

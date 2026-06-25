@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal, ZoomIn, ZoomOut, RotateCcw, Bell, Sparkles, Download, Trash2, Heart } from 'lucide-react';
+import { Sun, Moon, X, Check, Paintbrush, Bot, Wrench, Monitor, Terminal, ZoomIn, ZoomOut, RotateCcw, Bell, Sparkles, Heart, Globe, Mail, ExternalLink } from 'lucide-react';
 import { ClaudeCodeIcon, CodexIcon, OpenCodeIcon, AntigravityIcon } from '@/lib/cliIcons.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
@@ -17,6 +17,61 @@ const AI_OPTIONS = [
   { key: 'custom', label: 'Personalizado', cmd: '', color: '#6b7280', Icon: Wrench, desc: 'Defina o comando manualmente.' },
 ];
 const OPT = Object.fromEntries(AI_OPTIONS.map((o) => [o.key, o]));
+
+// Ícones de marca em SVG inline — o lucide removeu os logos de marca (questão de trademark),
+// então desenhamos aqui. Herdam currentColor e tamanho via className do <span> que os envolve.
+function GithubIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.44 9.62 8.21 11.18.6.11.82-.25.82-.56v-2.1c-3.34.71-4.04-1.58-4.04-1.58-.55-1.36-1.33-1.72-1.33-1.72-1.09-.73.08-.72.08-.72 1.2.08 1.84 1.21 1.84 1.21 1.07 1.79 2.81 1.27 3.49.97.11-.76.42-1.27.76-1.56-2.67-.3-5.47-1.3-5.47-5.79 0-1.28.47-2.33 1.24-3.15-.13-.3-.54-1.5.11-3.13 0 0 1.01-.32 3.3 1.2a11.6 11.6 0 0 1 6 0c2.29-1.52 3.3-1.2 3.3-1.2.65 1.63.24 2.83.12 3.13.77.82 1.23 1.87 1.23 3.15 0 4.5-2.81 5.49-5.49 5.78.43.37.81 1.1.81 2.22v3.29c0 .31.22.68.83.56C20.57 21.9 24 17.5 24 12.29 24 5.78 18.63.5 12 .5Z" />
+    </svg>
+  );
+}
+function LinkedinIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29ZM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
+    </svg>
+  );
+}
+function InstagramIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function YoutubeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M23.5 6.5a3 3 0 0 0-2.12-2.13C19.5 3.86 12 3.86 12 3.86s-7.5 0-9.38.51A3 3 0 0 0 .5 6.5C0 8.38 0 12 0 12s0 3.62.5 5.5a3 3 0 0 0 2.12 2.13c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3 3 0 0 0 2.12-2.13C24 15.62 24 12 24 12s0-3.62-.5-5.5ZM9.6 15.6V8.4l6.25 3.6L9.6 15.6Z" />
+    </svg>
+  );
+}
+
+// Quem fez o Carcará Code. Adicione/remova redes aqui — a tela "Sobre" se monta sozinha.
+// 'href' pode ser https://… (abre no navegador) ou mailto:… (abre o e-mail).
+const AUTHOR = {
+  name: 'Ygor Andrade',
+  role: 'Professor de IA e Automações',
+  blurb: 'Carcará Code é um projeto independente, feito com carinho por mim. Se te ajudou de alguma forma, vem trocar uma ideia — adoro saber quem está usando.',
+  links: [
+    { key: 'site', label: 'ygorandrade.work', sub: 'Site pessoal', href: 'https://www.ygorandrade.work/', Icon: Globe },
+    { key: 'email', label: 'ygormartinsandrade@gmail.com', sub: 'E-mail', href: 'mailto:ygormartinsandrade@gmail.com', Icon: Mail },
+    { key: 'github', label: '@Yg0rAndrade', sub: 'GitHub', href: 'https://github.com/Yg0rAndrade', Icon: GithubIcon },
+    { key: 'linkedin', label: 'Ygor Andrade', sub: 'LinkedIn', href: 'https://www.linkedin.com/in/ygor-andrade-8979a026a/', Icon: LinkedinIcon },
+    { key: 'instagram', label: '@ygor_andr4de', sub: 'Instagram', href: 'https://www.instagram.com/ygor_andr4de/', Icon: InstagramIcon },
+    { key: 'youtube', label: '@ygor_andrade', sub: 'YouTube', href: 'https://www.youtube.com/@ygor_andrade', Icon: YoutubeIcon },
+  ],
+};
+
+// Abre links externos pela ponte do Electron; mailto: cai no openExternal também (shell resolve o handler).
+function openLink(href) {
+  if (window.api?.openExternal) window.api.openExternal(href);
+  else window.open(href, '_blank');
+}
 
 function CliBadge({ optKey, small }) {
   const o = OPT[optKey] || OPT.custom;
@@ -39,9 +94,6 @@ export function SettingsModal({ open, onClose }) {
   const [sel, setSel] = useState({}); // path -> { cli, custom }
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
-  const [llmCfg, setLlmCfg] = useState({ enabled: false, features: { commit: false } });
-  const [llmStat, setLlmStat] = useState({ installed: false, sizeBytes: 0 });
-  const [dl, setDl] = useState(null); // { done, total } enquanto baixa; null fora disso
 
   // Lê o zoom atual ao abrir (mesma fonte do atalho Ctrl +/-: webFrame + localStorage).
   useEffect(() => {
@@ -52,26 +104,6 @@ export function SettingsModal({ open, onClose }) {
 
   const toggleNotify = () => {
     setNotify((v) => { const next = !v; window.api.setNotify(next); return next; });
-  };
-
-  const setLlmEnabled = (v) => {
-    setLlmCfg((c) => ({ ...c, enabled: v }));
-    window.api.llmSetConfig({ enabled: v });
-  };
-  const setFeature = (key, v) => {
-    setLlmCfg((c) => ({ ...c, features: { ...c.features, [key]: v } }));
-    window.api.llmSetConfig({ features: { [key]: v } });
-  };
-  const doDownload = async () => {
-    setDl({ done: 0, total: 0 });
-    const r = await window.api.llmDownload();
-    setDl(null);
-    if (r?.ok) setLlmStat(r);
-  };
-  const doRemove = async () => {
-    await window.api.llmRemove();
-    const r = await window.api.llmStatus();
-    if (r?.ok) setLlmStat(r);
   };
 
   const applyZoom = (dir) => {
@@ -88,14 +120,6 @@ export function SettingsModal({ open, onClose }) {
       const entries = await Promise.all(list.map(async (p) => [p.path, await window.api.getAi(p.path)]));
       setSel(Object.fromEntries(entries));
     })();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    window.api.llmGetConfig().then((r) => { if (r?.ok) setLlmCfg(r); }).catch(() => {});
-    window.api.llmStatus().then((r) => { if (r?.ok) setLlmStat(r); }).catch(() => {});
-    const off = window.api.onLlmDownloadProgress((p) => setDl(p));
-    return off;
   }, [open]);
 
   useEffect(() => {
@@ -131,14 +155,15 @@ export function SettingsModal({ open, onClose }) {
         <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<Bot />}>IA por projeto</TabButton>
         <TabButton active={tab === 'appearance'} onClick={() => setTab('appearance')} icon={<Paintbrush />}>Aparência</TabButton>
         <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<Bell />}>Notificações</TabButton>
-        <TabButton active={tab === 'llm'} onClick={() => setTab('llm')} icon={<Sparkles />}>Recursos de IA</TabButton>
+        <div className="my-1.5 border-t" />
+        <TabButton active={tab === 'about'} onClick={() => setTab('about')} icon={<Heart />}>Sobre & créditos</TabButton>
       </div>
 
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-14 shrink-0 items-center border-b px-6">
           <h1 className="text-[15px] font-semibold">
-            {tab === 'ai' ? 'IA por projeto' : tab === 'notify' ? 'Notificações' : tab === 'llm' ? 'Recursos de IA' : 'Aparência'}
+            {tab === 'ai' ? 'IA por projeto' : tab === 'notify' ? 'Notificações' : tab === 'about' ? 'Sobre & créditos' : 'Aparência'}
           </h1>
           <div className="flex-1" />
           <button type="button" onClick={onClose} title="Fechar (Esc)"
@@ -293,109 +318,47 @@ export function SettingsModal({ open, onClose }) {
             </div>
           )}
 
-          {tab === 'llm' && (
+          {tab === 'about' && (
             <div className="mx-auto max-w-3xl">
-              <p className="text-sm text-muted-foreground">
-                Uma IA local minúscula, offline, pra tarefas curtas (ex.: sugerir mensagem de commit).
-                É opcional: ative, baixe o modelo uma vez (~640&nbsp;MB) e ligue só o que quiser.
-                Desligada, o app funciona normalmente.
-              </p>
-
-              {/* Master */}
-              <div className="mt-5 flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium">Ativar IA local</div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Roda direto no seu computador, sem internet e sem usar sua sessão do Claude.
-                  </p>
+              {/* Cartão do autor */}
+              <div className="flex items-start gap-4 rounded-xl border bg-card p-5">
+                <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Heart className="size-7" />
                 </div>
-                <Switch checked={llmCfg.enabled} onCheckedChange={setLlmEnabled} className="mt-0.5" />
+                <div className="min-w-0">
+                  <div className="text-[15px] font-semibold text-foreground">{AUTHOR.name}</div>
+                  <div className="text-xs text-primary">{AUTHOR.role}</div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{AUTHOR.blurb}</p>
+                </div>
               </div>
 
-              {/* Modelo */}
-              {llmCfg.enabled && (
-                <div className="mt-3 rounded-lg border p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="text-[13px] font-medium">
-                      Modelo local
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        {dl ? 'baixando…' : llmStat.installed ? 'pronto' : 'não baixado'}
-                      </span>
-                    </div>
-                    {!dl && (llmStat.installed
-                      ? <button type="button" onClick={doRemove}
-                          className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted [&_svg]:size-3.5">
-                          <Trash2 /> Remover
-                        </button>
-                      : <button type="button" onClick={doDownload}
-                          className="flex items-center gap-1.5 rounded-md border border-primary px-2.5 py-1.5 text-[13px] text-primary transition-colors hover:bg-muted [&_svg]:size-3.5">
-                          <Download /> Baixar (~640 MB)
-                        </button>)}
-                  </div>
-                  {dl && (
-                    <div className="mt-3">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div className="h-full bg-primary transition-all"
-                          style={{ width: (dl.total ? Math.round((100 * dl.done) / dl.total) : 0) + '%' }} />
-                      </div>
-                      <div className="mt-1 text-xs tabular-nums text-muted-foreground">
-                        {dl.total ? Math.round((100 * dl.done) / dl.total) : 0}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Links / redes */}
+              <div className="mt-5 text-[13px] font-medium">Onde me encontrar</div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {AUTHOR.links.map((l) => (
+                  <button key={l.key} type="button" onClick={() => openLink(l.href)}
+                    className="group flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-muted">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4">
+                      <l.Icon />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">{l.sub}</span>
+                      <span className="block truncate text-[13px] font-medium text-foreground">{l.label}</span>
+                    </span>
+                    <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
 
-              {/* Recursos por toggle */}
-              {llmCfg.enabled && (
-                <div className="mt-3 divide-y rounded-lg border">
-                  <div className="px-4 pt-3 text-[13px] font-medium">Recursos</div>
-                  {[
-                    { key: 'commit', title: 'Mensagem de commit', desc: 'Botão "✨ Gerar" na aba Git que escreve a mensagem a partir do que mudou.' },
-                    { key: 'promptTitle', title: 'Título automático de prompt', desc: 'Ao salvar um prompt sem título, gera um título curto a partir do corpo.' },
-                    { key: 'checkpointTitle', title: 'Título automático no histórico', desc: 'No painel Histórico, descreve cada checkpoint a partir do que mudou (em vez do timestamp).' },
-                  ].map((feat) => (
-                    <div key={feat.key} className="flex items-start justify-between gap-4 p-4">
-                      <div className="min-w-0">
-                        <div className="text-[13px]">{feat.title}</div>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{feat.desc}</p>
-                      </div>
-                      <Switch checked={!!llmCfg.features[feat.key]} onCheckedChange={(v) => setFeature(feat.key, v)}
-                        disabled={!llmStat.installed} className="mt-0.5" />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Créditos / atribuição open source — respeitando as licenças de quem tornou isso possível */}
-              <div className="mt-3 rounded-lg border border-dashed p-4">
+              {/* Agradecimento */}
+              <div className="mt-5 rounded-lg border border-dashed p-4">
                 <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                  <Heart className="size-3.5 text-primary" /> Créditos e licenças
+                  <Sparkles className="size-3.5 text-primary" /> Obrigado por usar o Carcará Code
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  Esta IA local roda no seu computador graças a projetos open source. Nossa gratidão a quem os criou e compartilhou:
+                  Feito de forma independente por {AUTHOR.name}. Sugestões, ideias e feedback são muito bem-vindos —
+                  é o que faz o projeto melhorar.
                 </p>
-                <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-                  <li>
-                    <span className="text-foreground">Modelo:</span> Qwen3-0.6B — equipe Qwen (Alibaba), licença{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://www.apache.org/licenses/LICENSE-2.0')}
-                      className="text-primary underline-offset-2 hover:underline">Apache 2.0</button>.{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/Qwen/Qwen3-0.6B')}
-                      className="text-primary underline-offset-2 hover:underline">Página do modelo</button>
-                  </li>
-                  <li>
-                    <span className="text-foreground">Quantização GGUF:</span>{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://huggingface.co/unsloth/Qwen3-0.6B-GGUF')}
-                      className="text-primary underline-offset-2 hover:underline">unsloth (Hugging Face)</button>
-                  </li>
-                  <li>
-                    <span className="text-foreground">Inferência local:</span>{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://github.com/withcatai/node-llama-cpp')}
-                      className="text-primary underline-offset-2 hover:underline">node-llama-cpp</button>{' '}/{' '}
-                    <button type="button" onClick={() => window.api.openExternal('https://github.com/ggml-org/llama.cpp')}
-                      className="text-primary underline-offset-2 hover:underline">llama.cpp</button> (MIT)
-                  </li>
-                </ul>
               </div>
             </div>
           )}

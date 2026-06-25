@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
@@ -11,6 +11,10 @@ import {
   applyDrop, addSessionToPane, setActiveInPane, closeSessionInTree, reconcile,
 } from '@/lib/paneLayout.js';
 import { cn } from '@/lib/utils';
+
+// Preview de markdown completo (react-markdown + GFM + highlight.js), carregado
+// sob demanda pra ficar fora do bundle de boot. Enquanto baixa, cai no PromptMd leve.
+const Markdown = lazy(() => import('./Markdown.jsx'));
 
 // Cola texto na sessão via "bracketed paste" emitindo os marcadores nós mesmos
 // (\e[200~ … \e[201~) direto pro pty. NÃO usamos term.paste() do xterm: ele só
@@ -137,8 +141,6 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState({ title: '', body: '' });
   const [editingId, setEditingId] = useState(null);
-  const [llmTitle, setLlmTitle] = useState(false); // IA pode gerar título do prompt?
-  const [saving, setSaving] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null); // prompt aguardando confirmação de remoção
   const [viewing, setViewing] = useState(null); // prompt aberto pra leitura (markdown destacado)
   const [query, setQuery] = useState(''); // busca na lista
@@ -153,10 +155,6 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     // (último = mais novo), pra a ordenação "mais novo em cima" funcionar pra todos.
     const list = (r && r.ok ? r.items : []).map((p, i) => ({ ...p, createdAt: p.createdAt ?? i + 1 }));
     setItems(list);
-    try {
-      const [c, s] = await Promise.all([window.api.llmGetConfig(), window.api.llmStatus()]);
-      setLlmTitle(!!c?.enabled && !!c?.features?.promptTitle && !!s?.installed);
-    } catch { /* IA desligada/indisponível: segue com o fallback de hoje */ }
   };
   const persist = (list) => { setItems(list); window.api.promptsSave(projectPath, list); };
 
@@ -200,15 +198,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
   const submit = async () => {
     const typed = draft.title.trim();
     const body = draft.body.trim();
-    if (!body || saving) return;
-    // Sem título e IA ligada: gera um título curto do corpo (cai no fallback se falhar).
-    let title = typed;
-    if (!title && llmTitle) {
-      setSaving(true);
-      try { const r = await window.api.llmGenerate('promptTitle', body); if (r?.ok && r.text) title = r.text; } catch { /* fallback */ }
-      setSaving(false);
-    }
-    if (!title) title = body.slice(0, 40);
+    if (!body) return;
+    // Sem título? Usa o começo do corpo como título.
+    let title = typed || body.slice(0, 40);
     if (editingId) {
       persist(items.map((p) => (p.id === editingId ? { ...p, title, body } : p)));
     } else {
@@ -348,7 +340,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                       className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"><Trash2 /></button>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto p-5">
-                    <PromptMd text={viewing.body} />
+                    <Suspense fallback={<PromptMd text={viewing.body} />}>
+                      <Markdown text={viewing.body} />
+                    </Suspense>
                   </div>
                 </div>
               ) : (
@@ -357,7 +351,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                   <input
                     value={draft.title}
                     onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                    placeholder="Título (opcional — a IA pode gerar)"
+                    placeholder="Título (opcional)"
                     className="mb-2 h-9 w-full rounded-md border bg-card px-3 text-[13px] outline-none focus:border-primary"
                   />
                   <textarea
@@ -373,9 +367,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                         Cancelar edição
                       </button>
                     )}
-                    <button type="button" onClick={submit} disabled={!draft.body.trim() || saving}
+                    <button type="button" onClick={submit} disabled={!draft.body.trim()}
                       className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
-                      {saving ? 'Gerando título…' : editingId ? 'Salvar' : 'Adicionar'}
+                      {editingId ? 'Salvar' : 'Adicionar'}
                     </button>
                   </div>
                 </div>
@@ -569,6 +563,13 @@ export function ChatPanel({ activeProject, controlsRef }) {
         return next;
       });
     });
+    // Título da aba: o main lê o aiTitle que o próprio Claude gera no transcript e
+    // renomeia a sessão (igual ao Claude Code). Casa por id; eventos de outro projeto
+    // simplesmente não batem com nenhuma sessão da lista atual.
+    window.api.on('session:meta', ({ sessionId, name }) => {
+      if (!name) return;
+      setSessions((cur) => cur.map((s) => (s.id === sessionId ? { ...s, name } : s)));
+    });
   }, []);
 
   // Ao trocar de projeto: carrega sessões + restaura/reconcilia o layout salvo.
@@ -593,12 +594,27 @@ export function ChatPanel({ activeProject, controlsRef }) {
     return () => { cancelled = true; };
   }, [activeProject]);
 
+  // "Assumir" a sessão: dispensa SÓ a bolinha de "terminou" (attention). É o
+  // clear-on-view — ao clicar na aba, clicar dentro ou digitar, você viu o
+  // resultado e a bolinha some. 'working' (pulsa enquanto roda) e 'asking' (halo,
+  // pediu confirmação) ficam intactos: 'asking' se resolve sozinho quando você
+  // responde e o Claude volta a 'working'.
+  const assumeSession = (sid) => setSessionActivity((cur) => {
+    if (cur[sid] !== 'attention') return cur;
+    const next = { ...cur };
+    delete next[sid];
+    return next;
+  });
+
   // Cria o terminal (xterm) de uma sessão dentro de um container de pane.
   const createTerm = (sessionId, container) => {
     const el = document.createElement('div');
     el.style.position = 'absolute';
     el.style.inset = '0';
     el.style.padding = '8px 4px 8px 10px';
+    // Clicar dentro do terminal dispensa a bolinha de "terminou" desta sessão
+    // (caso da aba já ativa, em que não há clique de aba pra disparar).
+    el.addEventListener('mousedown', () => assumeSession(sessionId));
     container.appendChild(el);
 
     const term = new Terminal({
@@ -656,7 +672,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
       webgl.onContextLoss(() => { try { webgl.dispose(); } catch {} });
       term.loadAddon(webgl);
     } catch {}
-    term.onData((d) => window.api.termInput(sessionId, d));
+    term.onData((d) => { assumeSession(sessionId); window.api.termInput(sessionId, d); });
 
     const t = { term, fit, el, lastCols: 0, lastRows: 0 };
     termsRef.current.set(sessionId, t);
@@ -741,6 +757,14 @@ export function ChatPanel({ activeProject, controlsRef }) {
     commitLayout(setActiveInPane(layoutRef.current, paneId, sid));
     setFocusedPane(paneId);
     focusSession(sid);
+    assumeSession(sid);
+    // Aba ainda "Untitled"? O Claude pode ter gerado o aiTitle tarde (ou a sessão já
+    // encerrou e o watcher parou). Re-verifica o transcript ao clicar; se houver
+    // título, o main responde via 'session:meta' e a aba se renomeia sozinha.
+    const cur = sessions.find((s) => s.id === sid);
+    if (activeProject && (!cur || !cur.name || cur.name === 'Untitled')) {
+      window.api.sessionRefreshTitle(activeProject, sid);
+    }
   };
 
   const closeSession = async (e, sessionId) => {
@@ -802,10 +826,15 @@ export function ChatPanel({ activeProject, controlsRef }) {
         className={'flex h-full flex-col overflow-hidden ' + (isFocused ? 'ring-1 ring-inset ring-primary/40' : '')}
       >
         <div
-          className="flex h-9 shrink-0 items-center gap-1 overflow-x-auto border-b bg-card px-1.5"
+          className="flex h-9 shrink-0 items-center border-b bg-card px-1.5"
           onDragOver={dragSid ? (e) => { e.preventDefault(); setDropTarget({ paneId: p.id, zone: 'center' }); } : undefined}
           onDrop={dragSid ? (e) => onDrop(p.id, 'center', e) : undefined}
         >
+          {/* Só as abas rolam, e só na horizontal. min-w-0 deixa a faixa encolher
+              (e portanto rolar); overflow-y-hidden mata o scroll vertical que o
+              scrollbar horizontal provocaria ao roubar altura da barra. O '+' e a
+              biblioteca de prompts ficam FORA desta faixa, fixos à direita. */}
+          <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden">
           {p.tabs.map((sid) => {
             const isActive = sid === p.active;
             return (
@@ -820,7 +849,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
                   (isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60')
                 }
               >
-                <span>{sessionNames.get(sid) || 'Sessão'}</span>
+                <span>{sessionNames.get(sid) || 'Untitled'}</span>
                 <SessionActivityDot state={sessionActivity[sid]} />
                 {canClose && (
                   <button
@@ -835,15 +864,16 @@ export function ChatPanel({ activeProject, controlsRef }) {
               </div>
             );
           })}
+          </div>
           <button
             type="button"
             onClick={() => addSession(p.id)}
             title="Nova sessão do Claude Code"
-            className="grid size-7 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
+            className="ml-1 grid size-7 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
           >
             <Plus />
           </button>
-          <div className="ml-auto shrink-0">
+          <div className="shrink-0">
             <PromptMenu projectPath={activeProject} sessionId={p.active} onInsert={insertText} />
           </div>
         </div>

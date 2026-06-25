@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   GitBranch, ArrowUp, ArrowDown, Plus, Minus, Check,
-  AlertTriangle, Copy, X, Sparkles,
+  AlertTriangle, Copy, X,
 } from 'lucide-react';
 // Ícones animados (lucide-animated) usados nos botões da barra do Git.
 import { GitBranchIcon } from './ui/git-branch.jsx';
@@ -44,38 +44,6 @@ function isChanged(f) {
   return (f.working !== ' ' && f.working !== '?') || (f.index === '?' && f.working === '?');
 }
 
-// --- Montagem do diff pra IA gerar o commit ---
-// Modelo pequeno funciona melhor com POUCO e RELEVANTE: filtramos ruído (lock/gerado/
-// binário), limitamos o tamanho por arquivo e no total, e caímos num resumo de arquivos
-// quando não sobra conteúdo útil. O motor ainda re-orça por token como garantia final.
-const NOISE_RE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb)$|\.min\.(js|css)$|(^|\/)(dist|build|node_modules)\//i;
-const BINARY_RE = /\.(png|jpe?g|gif|webp|ico|svg|pdf|zip|gz|woff2?|ttf|eot|mp4|mov|mp3|wav)$/i;
-
-function isNoise(p) { return NOISE_RE.test(p) || BINARY_RE.test(p); }
-
-function statusLabel(f) {
-  if (f.index === '?' && f.working === '?') return 'novo';
-  const c = isStaged(f) ? f.index : f.working;
-  return ({ A: 'novo', M: 'modificado', D: 'removido', R: 'renomeado', C: 'copiado' })[c] || 'alterado';
-}
-
-// Texto "adicionado" de um arquivo, limpo pro modelo entender: para diff, só as linhas
-// "+"; para não rastreado, o conteúdo. Tira frontmatter YAML e metadados ruidosos.
-function addedText(raw, untracked) {
-  const lines = untracked
-    ? raw.split('\n')
-    : raw.split('\n').filter((l) => l[0] === '+' && !l.startsWith('+++')).map((l) => l.slice(1));
-  let inFM = false;
-  const out = [];
-  for (const l of lines) {
-    if (l.trim() === '---') { inFM = !inFM; continue; }
-    if (inFM) continue;
-    if (/^(slug|category|date|tags|author|draft|image):/i.test(l.trim())) continue;
-    if (l.trim()) out.push(l.trim());
-  }
-  return out.join('\n');
-}
-
 function FileRow({ f, area, onClick, onAct, selected }) {
   const code = area === 'staged' ? f.index : (f.index === '?' ? '?' : f.working);
   const [letter, color, label] = statusBadge(code);
@@ -116,16 +84,6 @@ export function GitPanel({ active, visible }) {
   const [remoteUrl, setRemoteUrl] = useState('');
   const [branchMenu, setBranchMenu] = useState(null); // { all } quando aberto
   const [newBranch, setNewBranch] = useState('');
-  const [llm, setLlm] = useState({ enabled: false, ready: false, commit: false });
-  const [genBusy, setGenBusy] = useState(false);
-  const [genTokens, setGenTokens] = useState(0); // tokens gerados ao vivo (feedback visual)
-  const warmedRef = useRef(false); // já disparou o aquecimento do modelo nesta sessão do app?
-
-  // Tokens chegando ao vivo durante a geração: alimenta o "Gerando… N tokens".
-  useEffect(() => {
-    const off = window.api.onLlmGenProgress?.((p) => setGenTokens(p?.tokens || 0));
-    return off;
-  }, []);
 
   const refresh = useCallback(async (silent) => {
     if (!projectPath) { setStatus(null); return; }
@@ -137,25 +95,6 @@ export function GitPanel({ active, visible }) {
 
   // Recarrega ao abrir a aba / trocar de projeto.
   useEffect(() => { if (visible) refresh(); }, [visible, refresh]);
-
-  // Config da IA local: o botão "✨ Gerar" só aparece se ligada + modelo pronto + recurso ativo.
-  useEffect(() => {
-    if (!visible) return;
-    let cancelled = false;
-    (async () => {
-      const [cfg, st] = await Promise.all([window.api.llmGetConfig(), window.api.llmStatus()]);
-      if (cancelled) return;
-      const on = !!cfg?.enabled && !!cfg?.features?.commit && !!st?.installed;
-      setLlm({ enabled: !!cfg?.enabled, commit: !!cfg?.features?.commit, ready: !!st?.installed });
-      // Aquece o modelo em segundo plano (uma vez) pra o 1º clique já sair rápido —
-      // sem isso, a primeira geração paga o custo de carregar o modelo na RAM.
-      if (on && !warmedRef.current) {
-        warmedRef.current = true;
-        window.api.llmWarmup?.().catch(() => { warmedRef.current = false; });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [visible]);
 
   // Auto-refresh enquanto a aba está aberta: poll leve + ao voltar o foco da janela.
   // Assim as alterações feitas pelo Claude (no chat) aparecem sem clicar em atualizar.
@@ -229,36 +168,6 @@ export function GitPanel({ active, visible }) {
   const commitAll = staged.length === 0 && changes.length > 0; // nada em stage → commita tudo
   const canCommit = hasChanges && message.trim().length > 0 && !busy;
 
-  const generateCommit = async () => {
-    const list = staged.length > 0 ? staged : changes;
-    if (list.length === 0) return;
-    setGenTokens(0);
-    setGenBusy(true);
-    try {
-      // Modelo pequeno funciona melhor com um RESUMO curto e limpo (não o diff cru):
-      // a lista de arquivos + um trecho do conteúdo da mudança principal.
-      const fileList = list.map((f) => `- ${statusLabel(f)}: ${f.path}`).join('\n');
-      const pool = list.filter((f) => !isNoise(f.path));
-      let primary = null; // { path, text } — arquivo com mais conteúdo adicionado
-      for (const f of (pool.length ? pool : list).slice(0, 30)) {
-        const untracked = f.index === '?' && f.working === '?';
-        const r = await window.api.gitDiff(projectPath, f.path, isStaged(f), untracked);
-        if (!(r?.ok && r.diff)) continue;
-        const text = addedText(r.diff, untracked);
-        if (text && (!primary || text.length > primary.text.length)) primary = { path: f.path, text };
-      }
-      let input = 'Mudanças neste commit:\n' + fileList;
-      if (primary) input += `\n\nConteúdo principal (${primary.path}):\n` + primary.text.slice(0, 700);
-      const res = await window.api.llmGenerate('commit', input);
-      if (res?.ok && res.text) setMessage(res.text);
-      else toast.error('Não consegui gerar agora.');
-    } catch {
-      toast.error('Não consegui gerar agora.');
-    } finally {
-      setGenBusy(false);
-    }
-  };
-
   const openBranchMenu = async () => {
     if (branchMenu) { setBranchMenu(null); return; }
     const res = await window.api.gitBranches(projectPath);
@@ -331,26 +240,6 @@ export function GitPanel({ active, visible }) {
           rows={2}
           className="w-full resize-none rounded-md border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-ring"
         />
-        {llm.enabled && llm.commit && llm.ready && (
-          <>
-            <Button size="sm" variant="ghost" className="mt-1.5 w-full gap-1.5 text-muted-foreground"
-              disabled={genBusy || !hasChanges}
-              onClick={generateCommit}>
-              <Sparkles className={'size-4 ' + (genBusy ? 'animate-pulse' : '')} />
-              {genBusy ? `Gerando… ${genTokens} ${genTokens === 1 ? 'token' : 'tokens'}` : 'Gerar mensagem'}
-            </Button>
-            {/* Laser loading: faixa fininha com um feixe de luz varrendo enquanto a IA gera. */}
-            {genBusy && (
-              <div className="relative mt-1.5 h-[3px] w-full overflow-hidden rounded-full bg-primary/15">
-                <style>{'@keyframes carcaraLaser{0%{left:-45%}100%{left:100%}}'}</style>
-                <span
-                  className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_10px_2px] shadow-primary/50"
-                  style={{ animation: 'carcaraLaser 0.9s ease-in-out infinite' }}
-                />
-              </div>
-            )}
-          </>
-        )}
         <Button size="sm" className="mt-1.5 w-full gap-1.5" disabled={!canCommit}
           onClick={() => run('commit', async () => {
             // Nada em stage? Adiciona tudo antes (igual ao "Commit All" do VS Code).

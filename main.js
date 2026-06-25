@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const http = require('http');
 const detectPort = require('detect-port');
 const mcpCore = require('./mcp-core.cjs');
-const llmCore = require('./llm-core.cjs');
+const mcpOauth = require('./mcp-oauth.cjs');
 const claudeSessions = require('./claude-sessions.cjs');
 
 let mainWindow;
@@ -53,20 +53,6 @@ function loadConfig() {
 }
 function saveConfig(cfg) {
   try { fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2)); } catch {}
-}
-
-function llmConfig() {
-  const c = loadConfig();
-  const llm = c.llm || {};
-  return {
-    enabled: !!llm.enabled,
-    model: llm.model || llmCore.MODEL_ID,
-    features: {
-      commit: !!(llm.features && llm.features.commit),
-      promptTitle: !!(llm.features && llm.features.promptTitle),
-      checkpointTitle: !!(llm.features && llm.features.checkpointTitle),
-    },
-  };
 }
 
 function killProc(proc) {
@@ -329,6 +315,14 @@ function applySessionTitle(projectPath, sessionId, title) {
   }
 }
 
+// Lê o aiTitle mais recente que o próprio Claude gravou no transcript desta
+// conversa (linhas {"type":"ai-title"}), ou null se ainda não houver nenhum.
+function readAiTitle(projectPath, claudeId) {
+  if (!claudeId) return null;
+  const fp = claudeSessions.transcriptPath(projectPath, claudeId);
+  return fp ? claudeSessions.latestAiTitle(fp) : null;
+}
+
 // Vigia o transcript de uma sessão claude: (1) se ainda não sabemos o id real,
 // acha o transcript novo que apareceu depois do launch; (2) lê o último aiTitle e
 // renomeia a aba. Roda a cada ~1.5s enquanto o pty viver.
@@ -343,13 +337,10 @@ function startClaudeWatcher(entry, capture) {
         if (found) { e.claudeId = found; saveClaudeId(e.projectPath, e.sessionId, found); }
       }
       if (e.claudeId) {
-        const fp = claudeSessions.transcriptPath(e.projectPath, e.claudeId);
-        if (fp) {
-          const title = claudeSessions.latestAiTitle(fp);
-          if (title && title !== e.lastTitle) {
-            e.lastTitle = title;
-            applySessionTitle(e.projectPath, e.sessionId, title);
-          }
+        const title = readAiTitle(e.projectPath, e.claudeId);
+        if (title && title !== e.lastTitle) {
+          e.lastTitle = title;
+          applySessionTitle(e.projectPath, e.sessionId, title);
         }
       }
     } catch {}
@@ -1002,7 +993,29 @@ function getSessions(cfg, projectPath) {
 
 ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   const cfg = loadConfig();
-  return getSessions(cfg, projectPath);
+  const list = getSessions(cfg, projectPath);
+  // Ao reabrir o app, re-verifica as abas ainda sem título: o Claude pode ter
+  // gravado o aiTitle depois que o watcher anterior morreu. Nunca inventa nome —
+  // só promove se o transcript já tiver um.
+  let changed = false;
+  for (const s of list) {
+    if ((!s.name || s.name === 'Untitled') && s.claudeId) {
+      const t = readAiTitle(projectPath, s.claudeId);
+      if (t && t !== s.name) { s.name = t; changed = true; }
+    }
+  }
+  if (changed) saveConfig(cfg);
+  return list;
+});
+
+// Re-verifica o título de UMA aba sob demanda (ex.: ao clicar nela). Útil quando o
+// Claude emitiu o aiTitle tarde ou a sessão já encerrou (watcher parado). Aplica e
+// avisa o renderer via 'session:meta'; se ainda não houver aiTitle, não faz nada.
+ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
+  const s = getSessionMeta(loadConfig(), projectPath, sessionId);
+  const title = s && readAiTitle(projectPath, s.claudeId);
+  if (title) applySessionTitle(projectPath, sessionId, title);
+  return { ok: !!title, name: title || null };
 });
 
 ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
@@ -1089,7 +1102,7 @@ function activityIdle(entry) {
   const asking = looksLikeAsking(entry); // pediu confirmação vs. terminou de fato
   emitActivity(entry, 'done', { asking });
   maybeNotifyDone(entry, asking);
-  scheduleAutoCheckpoint(entry.projectPath); // snapshot do resultado do turno
+  scheduleAutoCheckpoint(entry); // snapshot do resultado do turno
 }
 
 function maybeNotifyDone(entry, asking) {
@@ -1357,9 +1370,15 @@ async function checkpointRestore(projectPath, hash) {
 // Auto-checkpoint quando um turno do Claude termina (engatado em activityIdle). Só
 // claude, gateado por config e silencioso quando nada mudou.
 function checkpointsEnabled() { return loadConfig().checkpoints !== false; }
-function scheduleAutoCheckpoint(projectPath) {
+function scheduleAutoCheckpoint(entry) {
+  const projectPath = entry && entry.projectPath;
   if (!projectPath || !checkpointsEnabled()) return;
-  checkpointCreate(projectPath, 'Após resposta do Claude ' + new Date().toISOString())
+  // Reaproveita o título que o próprio Claude gera pra aba (aiTitle): assim o
+  // Histórico mostra o MESMO nome da aba. Cai pro rótulo genérico só quando o
+  // Claude ainda não titulou esta conversa.
+  const title = readAiTitle(projectPath, entry.claudeId) || entry.lastTitle || null;
+  const label = title || ('Após resposta do Claude ' + new Date().toISOString());
+  checkpointCreate(projectPath, label)
     .then((r) => { if (r && r.hash) safeSend('checkpoint:added', { projectPath, hash: r.hash }); })
     .catch(() => {});
 }
@@ -1602,15 +1621,28 @@ ipcMain.handle('http:deleteSaved', (evt, { projectPath, name }) => {
 // ---------- MCP connector ----------
 // Cliente MCP roda aqui (Node) via mcp-core.cjs; conexões stateful, 1 ativa por vez.
 ipcMain.handle('mcp:connect', async (evt, { config }) => {
+  let oauth;
   try {
     mcpCore.mcpDisconnectAll(); // uma conexão ativa por vez
+    // OAuth (Bloco D): HTTP sem Bearer e com oauth=true → login no navegador.
+    if (config && config.transport === 'http' && config.oauth) {
+      oauth = await mcpOauth.prepare(config.url, {
+        onStatus: (phase) => mainWindow?.webContents.send('mcp:oauth', { phase }),
+      });
+    }
     const res = await mcpCore.mcpConnect(config, {
       onLog: (text) => mainWindow?.webContents.send('mcp:log', { text }),
       onClose: (connId) => mainWindow?.webContents.send('mcp:closed', { connId }),
       onTraffic: ({ dir, message }) => mainWindow?.webContents.send('mcp:traffic', { dir, message, ts: Date.now() }),
+      oauth,
     });
     return { ok: true, ...res };
   } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  finally { try { oauth && oauth.cleanup(); } catch {} }
+});
+ipcMain.handle('mcp:oauthLogout', async (e, { url }) => {
+  try { return { ok: mcpOauth.clearTokens(url) }; }
+  catch (err) { return { ok: false, error: err.message }; }
 });
 
 ipcMain.handle('mcp:disconnect', async (evt, { connId }) => {
@@ -1698,56 +1730,6 @@ ipcMain.handle('mcp:deleteServer', (e, { projectPath, name }) => {
     fs.writeFileSync(mcpServersFile(projectPath), JSON.stringify(all, null, 2));
     return { ok: true };
   } catch (err) { return { ok: false, error: err.message }; }
-});
-
-// ---------- IA local (llm-core) ----------
-// Modelo/binário nativo carregam lazy dentro do llm-core; nada disso no boot.
-const llmUserDir = () => app.getPath('userData');
-
-ipcMain.handle('llm:getConfig', () => ({ ok: true, ...llmConfig() }));
-ipcMain.handle('llm:setConfig', (evt, { patch }) => {
-  const c = loadConfig();
-  const cur = llmConfig();
-  c.llm = {
-    enabled: patch.enabled ?? cur.enabled,
-    model: cur.model,
-    features: { ...cur.features, ...(patch.features || {}) },
-  };
-  saveConfig(c);
-  return { ok: true, ...c.llm };
-});
-
-ipcMain.handle('llm:status', async () => {
-  try { return { ok: true, ...(await llmCore.status(llmUserDir())) }; }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
-});
-
-ipcMain.handle('llm:download', async () => {
-  try {
-    await llmCore.download(llmUserDir(), ({ done, total }) =>
-      safeSend('llm:downloadProgress', { done, total }));
-    return { ok: true, ...(await llmCore.status(llmUserDir())) };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
-});
-
-ipcMain.handle('llm:remove', async () => {
-  try { await llmCore.remove(llmUserDir()); return { ok: true }; }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
-});
-
-ipcMain.handle('llm:warmup', async () => {
-  try { return await llmCore.warmup(llmUserDir()); }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
-});
-
-ipcMain.handle('llm:generate', async (evt, { task, input }) => {
-  try {
-    const text = await llmCore.generate({
-      userDataDir: llmUserDir(), task, input,
-      onToken: (tokens) => safeSend('llm:genProgress', { tokens }),
-    });
-    return { ok: true, text };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
 });
 
 // ---------- Preview (dev server) ----------

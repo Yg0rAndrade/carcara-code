@@ -2,11 +2,11 @@
 // demanda (React.lazy). Concentra TODO o peso do CodeMirror (16 linguagens),
 // dos modos legados e do react-zoom-pan-pinch: nada disso entra no bundle inicial;
 // só carrega quando o usuário abre a aba "Código".
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   Save, Copy, X, Search, ChevronRight, ChevronDown,
   Scissors, ClipboardPaste, Link2, Pencil, Trash2, ExternalLink,
-  ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Plus, KeyRound,
+  ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Plus, KeyRound, Code2,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -40,6 +40,16 @@ import { ResizeBar } from './ui/resize-bar.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { cn } from '@/lib/utils';
+
+// Preview de markdown renderizado (react-markdown + GFM + highlight), sob demanda.
+const Markdown = lazy(() => import('./Markdown.jsx'));
+// Visualizador read-only de planilhas (.xlsx/.xlsm), sob demanda.
+const XlsxViewer = lazy(() => import('./XlsxViewer.jsx'));
+
+function isMarkdown(name) {
+  const e = String(name || '').toLowerCase().split('.').pop();
+  return ['md', 'markdown', 'mdx'].includes(e);
+}
 
 // Visual do editor: fonte maior, mais espaçada.
 // Só fonte/espaçamento; as cores e o fundo vêm do tema (vscodeLight/vscodeDark).
@@ -139,6 +149,15 @@ export function CodeView({ active, openRequest }) {
     n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
     return n;
   });
+  // .md abertos no editor cru (CodeMirror) em vez do preview renderizado. Por path:
+  // markdown abre renderizado por padrão; este set marca os que estão em modo edição.
+  const [mdEdit, setMdEdit] = useState(() => new Set());
+  const mdPreview = activeTab && isMarkdown(activeTab.name) && !mdEdit.has(activeTab.path);
+  const toggleMdEdit = () => setMdEdit((s) => {
+    const n = new Set(s);
+    n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
+    return n;
+  });
 
   // Menu de contexto da árvore
   const [menu, setMenu] = useState(null);     // { x, y, item }
@@ -215,6 +234,14 @@ export function CodeView({ active, openRequest }) {
   };
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
+  // Observa o projeto ativo no disco: quando algo muda lá fora (ex.: o Claude cria
+  // um arquivo), o main avisa por 'fs:changed' e a árvore se recarrega sozinha.
+  useEffect(() => {
+    if (!active) return;
+    window.api.watchDir(active.path);
+    const off = window.api.on('fs:changed', () => bump());
+    return () => { off?.(); };
+  }, [active]);
   // Busca de arquivos no topo da árvore. Com texto, mostra uma lista achatada de
   // resultados (varredura recursiva no main); vazia, mostra a árvore normal.
   const [query, setQuery] = useState('');
@@ -355,8 +382,10 @@ export function CodeView({ active, openRequest }) {
     // Já aberto? só ativa a aba existente.
     if (tabs.some((t) => t.path === item.path)) { setActivePath(item.path); return; }
     const r = await window.api.readFile(item.path);
-    const tab = { path: item.path, name: item.name, content: '', image: null, notice: null, dirty: false };
+    const tab = { path: item.path, name: item.name, content: '', image: null, pdf: null, xlsx: null, notice: null, dirty: false };
     if (r.image) tab.image = r.image;
+    else if (r.pdf) tab.pdf = r.pdf;
+    else if (r.xlsx) tab.xlsx = r.xlsx;
     else if (r.binary) tab.notice = 'Arquivo binario - nao editavel.';
     else if (r.error) tab.notice = 'Erro: ' + r.error;
     else tab.content = r.content;
@@ -574,13 +603,19 @@ export function CodeView({ active, openRequest }) {
                   );
                 })}
               </div>
-              {activeTab && !activeTab.notice && !activeTab.image && isEnvFile(activeTab.name) && (
+              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isEnvFile(activeTab.name) && (
                 <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleEnvRaw}
                   title={envRaw ? 'Voltar ao editor seguro (mascarado)' : 'Ver como texto puro'}>
                   {envRaw ? <><KeyRound className="size-3.5" />Modo seguro</> : <><Eye className="size-3.5" />Ver como texto</>}
                 </Button>
               )}
-              {activeTab && !activeTab.notice && !activeTab.image && (
+              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isMarkdown(activeTab.name) && (
+                <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleMdEdit}
+                  title={mdPreview ? 'Editar o markdown' : 'Visualizar renderizado'}>
+                  {mdPreview ? <><Code2 className="size-3.5" />Editar</> : <><Eye className="size-3.5" />Visualizar</>}
+                </Button>
+              )}
+              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && (
                 <Button variant="secondary" size="sm" className="mr-2 h-7 shrink-0" onClick={save} disabled={!activeTab.dirty} title="Salvar (Ctrl+S)">
                   <Save className="mr-1" />Salvar
                 </Button>
@@ -593,8 +628,22 @@ export function CodeView({ active, openRequest }) {
         <div className="relative min-h-0 flex-1 overflow-hidden">
           {activeTab?.image ? (
             <ImageViewer src={activeTab.image} name={activeTab.name} />
+          ) : activeTab?.pdf ? (
+            <PdfViewer src={activeTab.pdf} name={activeTab.name} />
+          ) : activeTab?.xlsx ? (
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">Carregando planilha…</div>}>
+              <XlsxViewer data={activeTab.xlsx} name={activeTab.name} />
+            </Suspense>
           ) : activeTab?.notice ? (
             <div className="flex h-full items-center justify-center text-muted-foreground">{activeTab.notice}</div>
+          ) : mdPreview ? (
+            <div className="absolute inset-0 overflow-y-auto px-8 py-6">
+              <div className="mx-auto max-w-3xl">
+                <Suspense fallback={<div className="text-sm text-muted-foreground">Carregando preview…</div>}>
+                  <Markdown text={activeTab.content} />
+                </Suspense>
+              </div>
+            </div>
           ) : activeTab && isEnvFile(activeTab.name) && !envRaw ? (
             <EnvEditor
               value={activeTab.content}
@@ -791,6 +840,18 @@ function ImageViewer({ src, name }) {
         )}
       </TransformWrapper>
     </div>
+  );
+}
+
+// Visualizador de PDF: usa o leitor nativo embutido no Chromium (zoom, busca,
+// paginação, impressão) apontando um <iframe> pra data URL. Zero dependências.
+function PdfViewer({ src, name }) {
+  return (
+    <iframe
+      src={src}
+      title={name}
+      className="absolute inset-0 h-full w-full border-0 bg-card"
+    />
   );
 }
 
