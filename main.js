@@ -126,7 +126,16 @@ function createWindow() {
   mainWindow.on('closed', () => { cleanup(); mainWindow = null; });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Remove o menu de aplicação padrão do Electron. A barra já fica escondida, mas os
+  // ACELERADORES do menu padrão seguem ativos — e o Ctrl+V do "Edit → Paste" (role:
+  // paste) dispara webContents.paste() ALÉM da colagem nativa do navegador, gerando
+  // DOIS eventos 'paste' no terminal = texto colado em dobro (visível no .exe). Sem o
+  // menu, sobra um único caminho de colagem. O copiar/colar normal dos inputs continua
+  // pelo navegador, e o menu de contexto do preview é montado à parte (não depende deste).
+  Menu.setApplicationMenu(null);
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   cleanup();
