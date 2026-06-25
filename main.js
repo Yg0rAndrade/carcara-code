@@ -324,12 +324,13 @@ function applySessionTitle(projectPath, sessionId, title) {
   }
 }
 
-// Lê o aiTitle mais recente que o próprio Claude gravou no transcript desta
-// conversa (linhas {"type":"ai-title"}), ou null se ainda não houver nenhum.
-function readAiTitle(projectPath, claudeId) {
+// Nome da aba a partir do transcript: o ai-title que o Claude gera (preferido) ou,
+// na falta dele, o primeiro prompt do usuário (igual ao que aparece no `claude
+// --resume`). Devolve null se ainda não houver nem id nem prompt.
+function readSessionTitle(projectPath, claudeId) {
   if (!claudeId) return null;
   const fp = claudeSessions.transcriptPath(projectPath, claudeId);
-  return fp ? claudeSessions.latestAiTitle(fp) : null;
+  return fp ? claudeSessions.sessionTitle(fp) : null;
 }
 
 // Vigia o transcript de uma sessão claude: (1) se ainda não sabemos o id real,
@@ -346,7 +347,7 @@ function startClaudeWatcher(entry, capture) {
         if (found) { e.claudeId = found; saveClaudeId(e.projectPath, e.sessionId, found); }
       }
       if (e.claudeId) {
-        const title = readAiTitle(e.projectPath, e.claudeId);
+        const title = readSessionTitle(e.projectPath, e.claudeId);
         if (title && title !== e.lastTitle) {
           e.lastTitle = title;
           applySessionTitle(e.projectPath, e.sessionId, title);
@@ -1009,7 +1010,7 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   let changed = false;
   for (const s of list) {
     if ((!s.name || s.name === 'Untitled') && s.claudeId) {
-      const t = readAiTitle(projectPath, s.claudeId);
+      const t = readSessionTitle(projectPath, s.claudeId);
       if (t && t !== s.name) { s.name = t; changed = true; }
     }
   }
@@ -1022,7 +1023,7 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
 // avisa o renderer via 'session:meta'; se ainda não houver aiTitle, não faz nada.
 ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
   const s = getSessionMeta(loadConfig(), projectPath, sessionId);
-  const title = s && readAiTitle(projectPath, s.claudeId);
+  const title = s && readSessionTitle(projectPath, s.claudeId);
   if (title) applySessionTitle(projectPath, sessionId, title);
   return { ok: !!title, name: title || null };
 });
@@ -1393,7 +1394,7 @@ function scheduleAutoCheckpoint(entry) {
   // Reaproveita o título que o próprio Claude gera pra aba (aiTitle): assim o
   // Histórico mostra o MESMO nome da aba. Cai pro rótulo genérico só quando o
   // Claude ainda não titulou esta conversa.
-  const title = readAiTitle(projectPath, entry.claudeId) || entry.lastTitle || null;
+  const title = readSessionTitle(projectPath, entry.claudeId) || entry.lastTitle || null;
   const label = title || ('Após resposta do Claude ' + new Date().toISOString());
   checkpointCreate(projectPath, label)
     .then((r) => { if (r && r.hash) safeSend('checkpoint:added', { projectPath, hash: r.hash }); })
@@ -1698,11 +1699,11 @@ ipcMain.handle('mcp:complete', async (e, { connId, ref, argName, argValue }) => 
 });
 
 ipcMain.handle('mcp:callTool', async (e, { connId, name, args }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).callTool({ name, arguments: args || {} })) }; }
+  try { return { ok: true, ...(await mcpCore.mcpClient(connId).callTool({ name, arguments: args || {} }, undefined, mcpCore.mcpReqOpts(connId))) }; }
   catch (err) { return { ok: false, error: err.message }; }
 });
 ipcMain.handle('mcp:readResource', async (e, { connId, uri }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).readResource({ uri })) }; }
+  try { return { ok: true, ...(await mcpCore.mcpClient(connId).readResource({ uri }, mcpCore.mcpReqOpts(connId))) }; }
   catch (err) { return { ok: false, error: err.message }; }
 });
 ipcMain.handle('mcp:ping', async (e, { connId }) => {
@@ -1714,7 +1715,7 @@ ipcMain.handle('mcp:setLogLevel', async (e, { connId, level }) => {
   catch (err) { return { ok: false, error: err.message }; }
 });
 ipcMain.handle('mcp:getPrompt', async (e, { connId, name, args }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).getPrompt({ name, arguments: args || {} })) }; }
+  try { return { ok: true, ...(await mcpCore.mcpClient(connId).getPrompt({ name, arguments: args || {} }, mcpCore.mcpReqOpts(connId))) }; }
   catch (err) { return { ok: false, error: err.message }; }
 });
 

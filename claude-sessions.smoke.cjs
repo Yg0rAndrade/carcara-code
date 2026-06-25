@@ -69,6 +69,30 @@ t('newTranscript ignora transcript novo SEM mensagem de usuário', () => {
   assert.strictEqual(cs.newTranscript(projectPath, snap, projBase), null);
 });
 
+// --- Título por fallback (sessão sem ai-title) ---
+const idSlash = '44444444-dddd';
+fs.writeFileSync(path.join(encDir, idSlash + '.jsonl'), [
+  JSON.stringify({ type: 'user', message: { role: 'user', content: '<command-message>opensquad</command-message>\n<command-name>/opensquad</command-name>\n<command-args>blog-seo-laroye</command-args>' } }),
+  JSON.stringify({ type: 'assistant' }),
+  JSON.stringify({ type: 'last-prompt', lastPrompt: '/opensquad blog-seo-laroye' }),
+].join('\n') + '\n');
+const idMsg = '55555555-eeee';
+fs.writeFileSync(path.join(encDir, idMsg + '.jsonl'),
+  JSON.stringify({ type: 'user', message: { role: 'user', content: 'corrige o bug do login' } }) + '\n');
+
+t('firstPromptTitle pega o last-prompt já limpo', () => {
+  assert.strictEqual(cs.firstPromptTitle(path.join(encDir, idSlash + '.jsonl')), '/opensquad blog-seo-laroye');
+});
+t('firstPromptTitle cai na 1a mensagem do usuário sem last-prompt', () => {
+  assert.strictEqual(cs.firstPromptTitle(path.join(encDir, idMsg + '.jsonl')), 'corrige o bug do login');
+});
+t('sessionTitle usa o prompt quando NÃO há ai-title', () => {
+  assert.strictEqual(cs.sessionTitle(path.join(encDir, idSlash + '.jsonl')), '/opensquad blog-seo-laroye');
+});
+t('sessionTitle PREFERE o ai-title quando existe', () => {
+  assert.strictEqual(cs.sessionTitle(path.join(encDir, idA + '.jsonl')), 'Titulo novo');
+});
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail ? 1 : 0);

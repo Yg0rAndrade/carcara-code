@@ -129,7 +129,62 @@ function latestAiTitle(file) {
   return null;
 }
 
+// Limpa um texto de prompt pra virar nome de aba: desembrulha slash-commands
+// (<command-name>/x</command-name><command-args>…</command-args> -> "/x …"), tira
+// quaisquer outras tags, normaliza espaços e corta no tamanho de um título.
+function cleanTitle(s) {
+  const t = String(s)
+    .replace(/<command-message>[\s\S]*?<\/command-message>/gi, ' ')
+    .replace(/<command-name>([\s\S]*?)<\/command-name>/gi, ' $1 ')
+    .replace(/<command-args>([\s\S]*?)<\/command-args>/gi, ' $1 ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t ? t.slice(0, 80) : null;
+}
+
+// Texto de uma mensagem (content pode ser string ou array de partes {type,text}).
+function msgText(o) {
+  const c = o && o.message && o.message.content;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.map((p) => (typeof p === 'string' ? p : (p && p.text) || '')).join(' ');
+  return '';
+}
+
+// Fallback de título quando NÃO há ai-title: o primeiro prompt do usuário — estável e
+// reconhecível, igual ao que o Claude mostra no `claude --resume`. Lê o COMEÇO do
+// arquivo: prefere a linha {"type":"last-prompt"} (texto já limpo) e, na falta dela,
+// extrai da primeira mensagem de usuário.
+function firstPromptTitle(file) {
+  try {
+    const st = fs.statSync(file);
+    const len = Math.min(st.size, 262144);
+    const fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(len);
+    fs.readSync(fd, buf, 0, len, 0);
+    fs.closeSync(fd);
+    const lines = buf.toString('utf8').split('\n');
+    for (const ln of lines) {
+      if (ln.indexOf('"last-prompt"') === -1) continue;
+      try { const o = JSON.parse(ln); if (o && o.type === 'last-prompt' && o.lastPrompt) { const t = cleanTitle(o.lastPrompt); if (t) return t; } } catch {}
+    }
+    for (const ln of lines) {
+      if (ln.indexOf('"type":"user"') === -1 && ln.indexOf('"role":"user"') === -1) continue;
+      try { const t = cleanTitle(msgText(JSON.parse(ln))); if (t) return t; } catch {}
+    }
+  } catch {}
+  return null;
+}
+
+// Título da aba: o ai-title que o Claude gera (preferido), ou o primeiro prompt como
+// fallback. Assim a aba ganha nome mesmo em sessões curtas (ex.: um slash-command que
+// roda e termina) que o Claude não chega a titular; quando o ai-title surge, ele vence.
+function sessionTitle(file) {
+  return latestAiTitle(file) || firstPromptTitle(file);
+}
+
 module.exports = {
   projectsBase, encodeProjectDir, projectDirCandidates, transcriptHasUser,
   historyExists, transcriptPath, snapshot, newTranscript, latestAiTitle,
+  firstPromptTitle, sessionTitle,
 };
