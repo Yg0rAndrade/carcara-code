@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "start": "electron .",
-    "pack:exe": "vite build && electron-builder --win nsis"
+    "pack:exe": "vite build && electron-builder --win nsis --publish never"
   },
   "build": {
     "appId": "com.carcara.code",
