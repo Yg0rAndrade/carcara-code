@@ -905,6 +905,20 @@ ipcMain.handle('fs:rename', (evt, { targetPath, newName }) => {
   } catch (err) { return { error: String(err) }; }
 });
 
+// Cria um arquivo vazio ou uma pasta dentro de `destDir`. Usado pelo "Novo arquivo /
+// Nova pasta" do menu de contexto da árvore.
+ipcMain.handle('fs:create', (evt, { destDir, name, isDir }) => {
+  try {
+    const clean = String(name || '').trim();
+    if (!clean || clean.includes('/') || clean.includes('\\')) return { error: 'nome inválido' };
+    const dest = path.join(destDir, clean);
+    if (fs.existsSync(dest)) return { error: 'já existe um item com esse nome' };
+    if (isDir) fs.mkdirSync(dest, { recursive: true });
+    else fs.writeFileSync(dest, '', 'utf8');
+    return { ok: true, path: dest };
+  } catch (err) { return { error: String(err) }; }
+});
+
 ipcMain.handle('clip:write', (evt, { text }) => {
   try { clipboard.writeText(String(text)); return { ok: true }; }
   catch (err) { return { error: String(err) }; }

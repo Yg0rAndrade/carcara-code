@@ -136,6 +136,7 @@ contextBridge.exposeInMainWorld('api', {
   trashItem: (targetPath) => ipcRenderer.invoke('fs:trash', { targetPath }),
   renameItem: (targetPath, newName) => ipcRenderer.invoke('fs:rename', { targetPath, newName }),
   pasteItem: (srcPath, destDir, move) => ipcRenderer.invoke('fs:paste', { srcPath, destDir, move }),
+  createItem: (destDir, name, isDir) => ipcRenderer.invoke('fs:create', { destDir, name, isDir }),
   copyText: (text) => ipcRenderer.invoke('clip:write', { text }),
   readText: () => ipcRenderer.invoke('clip:read'),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),

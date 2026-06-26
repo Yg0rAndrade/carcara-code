@@ -7,6 +7,7 @@ import {
   Save, Copy, X, Search, ChevronRight, ChevronDown,
   Scissors, ClipboardPaste, Link2, Pencil, Trash2, ExternalLink,
   ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Plus, KeyRound, Code2,
+  FilePlus, FolderPlus,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -126,9 +127,51 @@ function ConfirmDialog({ open, title, message, confirmLabel = 'OK', cancelLabel 
   );
 }
 
+// Diálogo de texto no estilo do app (pede um nome). Usado pelo "Novo arquivo/pasta".
+function PromptDialog({ open, title, placeholder, confirmLabel = 'Criar', onConfirm, onCancel }) {
+  const [val, setVal] = useState('');
+  useEffect(() => { if (open) setVal(''); }, [open]);
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-[1px]"
+      onMouseDown={onCancel}
+    >
+      <div
+        className="w-[400px] max-w-[90vw] rounded-xl border bg-background p-5 shadow-2xl"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
+        <input
+          autoFocus
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); onConfirm(val); }
+            else if (e.key === 'Escape') onCancel();
+          }}
+          placeholder={placeholder}
+          spellCheck={false}
+          className="mt-4 h-9 w-full rounded-md border bg-background px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring"
+        />
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={onCancel}>Cancelar</Button>
+          <Button variant="default" size="sm" onClick={() => onConfirm(val)}>{confirmLabel}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function parentDir(p) {
   const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
   return i > 0 ? p.slice(0, i) : p;
+}
+
+// Normaliza pra comparar caminhos no arrastar-soltar: barras unificadas, sem barra
+// final, minúsculas (Windows é case-insensitive). Só pra comparação, não pra I/O.
+function normPath(p) {
+  return String(p || '').replace(/[\\/]+$/, '').replace(/\\/g, '/').toLowerCase();
 }
 
 export function CodeView({ active, openRequest }) {
@@ -163,6 +206,7 @@ export function CodeView({ active, openRequest }) {
   const [menu, setMenu] = useState(null);     // { x, y, item }
   const [clip, setClip] = useState(null);     // { path, name, isDir, mode: 'cut' | 'copy' }
   const [delItems, setDelItems] = useState(null); // array de itens aguardando confirmação de exclusão
+  const [creating, setCreating] = useState(null); // { destDir, isDir } aguardando o nome do novo item
   const [renaming, setRenaming] = useState(null); // path em edição de nome
   // Item selecionado na árvore (arquivo OU pasta). Serve de alvo pro F2 (renomear),
   // separado da aba ativa pra que pastas também possam ser selecionadas/renomeadas.
@@ -256,6 +300,10 @@ export function CodeView({ active, openRequest }) {
     return () => { alive = false; clearTimeout(t); };
   }, [query, active, refresh]);
   const [treeDragOver, setTreeDragOver] = useState(false);
+  // Arrastar-soltar INTERNO (mover dentro da árvore). dragItemsRef guarda os itens
+  // sendo arrastados (1 ou vários, da seleção); dragActive liga o realce de alvo.
+  const dragItemsRef = useRef(null);
+  const [dragActive, setDragActive] = useState(false);
   const [treeWidth, setTreeWidth] = useState(() => Number(localStorage.getItem('codeTreeWidth')) || 256);
   const [treeResizing, setTreeResizing] = useState(false);
   const codeRowRef = useRef(null);
@@ -290,6 +338,69 @@ export function CodeView({ active, openRequest }) {
     bump();
   };
 
+  // Move itens (arrastar-soltar interno) para uma pasta de destino, reaproveitando o
+  // mesmo backend do "recortar/colar" (fs:paste com move=true). Pula no-ops: soltar na
+  // própria pasta, soltar nele mesmo, ou jogar uma pasta dentro de si mesma.
+  const moveItems = async (items, destDir) => {
+    let changed = false;
+    for (const it of items || []) {
+      if (normPath(it.path) === normPath(destDir)) continue;
+      if (normPath(parentDir(it.path)) === normPath(destDir)) continue;
+      if (normPath(destDir).startsWith(normPath(it.path) + '/')) continue;
+      const r = await window.api.pasteItem(it.path, destDir, true);
+      if (!r.error) changed = true;
+    }
+    if (changed) {
+      setSelItems(new Map());
+      setSelected(null);
+      setAnchorPath(null);
+      bump();
+    }
+  };
+
+  // Há pelo menos um item arrastado que PODE cair nessa pasta? (controla o realce do alvo.)
+  const canDropItems = (destDir) => {
+    const items = dragItemsRef.current;
+    if (!items?.length) return false;
+    return items.some((it) => (
+      normPath(it.path) !== normPath(destDir) &&
+      normPath(parentDir(it.path)) !== normPath(destDir) &&
+      !normPath(destDir).startsWith(normPath(it.path) + '/')
+    ));
+  };
+
+  // Início do arrasto de um nó: se o nó faz parte de uma seleção múltipla, arrasta
+  // todos os selecionados; senão, arrasta só ele (e vira a seleção atual).
+  const onTreeDragStart = (e, item) => {
+    const sel = selItemsRef.current;
+    let items;
+    if (sel.has(item.path) && sel.size > 1) {
+      items = Array.from(sel.values());
+    } else {
+      const one = { path: item.path, name: item.name, isDir: item.isDir };
+      items = [one];
+      setSelItems(new Map([[item.path, one]]));
+      setSelected(one);
+      setAnchorPath(item.path);
+    }
+    dragItemsRef.current = items;
+    setDragActive(true);
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-ygor-move', items.map((i) => i.path).join('\n'));
+    } catch {}
+  };
+
+  const onTreeDragEnd = () => { dragItemsRef.current = null; setDragActive(false); };
+
+  // Soltou sobre uma pasta (alvo interno): move o que estava sendo arrastado e limpa.
+  const dropMove = async (destDir) => {
+    const items = dragItemsRef.current || [];
+    await moveItems(items, destDir);
+    dragItemsRef.current = null;
+    setDragActive(false);
+  };
+
   const openMenu = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
@@ -310,6 +421,9 @@ export function CodeView({ active, openRequest }) {
       if (!r.error) { if (clip.mode === 'cut') setClip(null); bump(); }
     },
     rename: (it) => setRenaming(it.path),
+    // Novo arquivo/pasta: cria dentro da pasta clicada (ou na pasta do arquivo clicado).
+    newFile: (it) => setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: false }),
+    newFolder: (it) => setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: true }),
     del: (it) => {
       // Se o item clicado faz parte de uma seleção múltipla, apaga todos os selecionados.
       const sel = selItemsRef.current;
@@ -353,6 +467,19 @@ export function CodeView({ active, openRequest }) {
     setSelected(null);
     setAnchorPath(null);
     bump();
+  };
+
+  const performCreate = async (name) => {
+    const c = creating;
+    setCreating(null);
+    if (!c) return;
+    const clean = (name || '').trim();
+    if (!clean) return;
+    const r = await window.api.createItem(c.destDir, clean, c.isDir);
+    if (r.error) return;
+    bump();
+    // Abre o arquivo recém-criado pra já cair na edição; pasta só recarrega a árvore.
+    if (!c.isDir) openFile({ path: r.path, name: clean });
   };
 
   const commitRename = async (it, newName) => {
@@ -403,6 +530,28 @@ export function CodeView({ active, openRequest }) {
     lastOpenSeq.current = openRequest.seq;
     openFileRef.current({ path: openRequest.path, name: openRequest.name });
   }, [openRequest]);
+
+  // Autosave: preferência ligada nas Configurações (aba "Códigos"). Mora no localStorage;
+  // o SettingsModal avisa por evento 'ygc:autosave' pra ligar/desligar na hora.
+  const [autoSave, setAutoSave] = useState(() => localStorage.getItem('codeAutoSave') === '1');
+  useEffect(() => {
+    const onChange = (e) => setAutoSave(!!e.detail);
+    window.addEventListener('ygc:autosave', onChange);
+    return () => window.removeEventListener('ygc:autosave', onChange);
+  }, []);
+  // Com autosave ligado, salva os arquivos sujos pouco depois da última digitação (debounce).
+  useEffect(() => {
+    if (!autoSave) return;
+    const dirty = tabs.filter((t) => t.dirty && !t.notice);
+    if (!dirty.length) return;
+    const id = setTimeout(async () => {
+      for (const t of dirty) {
+        const res = await window.api.writeFile(t.path, t.content);
+        if (!res.error) setTabs((cur) => cur.map((x) => (x.path === t.path ? { ...x, dirty: false } : x)));
+      }
+    }, 800);
+    return () => clearTimeout(id);
+  }, [tabs, autoSave]);
 
   const save = useCallback(async () => {
     const t = tabs.find((x) => x.path === activePath);
@@ -471,12 +620,27 @@ export function CodeView({ active, openRequest }) {
           'flex shrink-0 flex-col border-r transition-colors',
           treeDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/40'
         )}
-        onDragOver={(e) => { if (active && e.dataTransfer.types.includes('Files')) { e.preventDefault(); setTreeDragOver(true); } }}
+        onDragOver={(e) => {
+          if (!active) return;
+          const isFiles = e.dataTransfer.types.includes('Files');
+          if (isFiles || dragActive) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = isFiles ? 'copy' : 'move';
+            setTreeDragOver(true);
+          }
+        }}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setTreeDragOver(false); }}
         onDrop={(e) => {
-          if (!active || !e.dataTransfer.files?.length) return;
-          e.preventDefault(); setTreeDragOver(false);
-          importFiles(e.dataTransfer.files, active.path);
+          if (!active) return;
+          if (e.dataTransfer.files?.length) {
+            e.preventDefault(); setTreeDragOver(false);
+            importFiles(e.dataTransfer.files, active.path);
+            return;
+          }
+          if (dragActive) {
+            e.preventDefault(); setTreeDragOver(false);
+            dropMove(active.path);
+          }
         }}
       >
         {active ? (
@@ -551,6 +715,11 @@ export function CodeView({ active, openRequest }) {
                     cutPath: clip?.mode === 'cut' ? clip.path : null,
                     refresh,
                     onDropFiles: importFiles,
+                    dragActive,
+                    onTreeDragStart,
+                    onTreeDragEnd,
+                    canDropItems,
+                    onDropMove: dropMove,
                   }}
                 >
                   <Tree dirPath={active.path} depth={0} />
@@ -680,6 +849,14 @@ export function CodeView({ active, openRequest }) {
         danger
         onConfirm={() => performDelete(delItems)}
         onCancel={() => setDelItems(null)}
+      />
+      <PromptDialog
+        open={!!creating}
+        title={creating?.isDir ? 'Nova pasta' : 'Novo arquivo'}
+        placeholder={creating?.isDir ? 'nome-da-pasta' : 'nome-do-arquivo.txt'}
+        confirmLabel="Criar"
+        onConfirm={performCreate}
+        onCancel={() => setCreating(null)}
       />
     </div>
   );
@@ -878,13 +1055,29 @@ function TreeNode({ item, depth }) {
         data-name={item.name}
         data-dir={item.isDir ? '1' : ''}
         draggable={!isRenaming}
-        onDragStart={(e) => { e.preventDefault(); window.api.startDrag(item.path); }}
-        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setOver(true); } }}
+        onDragStart={(e) => ctx.onTreeDragStart(e, item)}
+        onDragEnd={ctx.onTreeDragEnd}
+        onDragOver={(e) => {
+          const dest = item.isDir ? item.path : parentDir(item.path);
+          const isFiles = e.dataTransfer.types.includes('Files');
+          const internal = ctx.dragActive && ctx.canDropItems(dest);
+          if (!isFiles && !internal) return;
+          e.preventDefault(); e.stopPropagation();
+          e.dataTransfer.dropEffect = isFiles ? 'copy' : 'move';
+          setOver(true);
+        }}
         onDragLeave={() => setOver(false)}
         onDrop={(e) => {
-          if (!e.dataTransfer.files?.length) return;
-          e.preventDefault(); e.stopPropagation(); setOver(false);
-          ctx.onDropFiles?.(e.dataTransfer.files, item.isDir ? item.path : parentDir(item.path));
+          const dest = item.isDir ? item.path : parentDir(item.path);
+          if (e.dataTransfer.files?.length) {
+            e.preventDefault(); e.stopPropagation(); setOver(false);
+            ctx.onDropFiles?.(e.dataTransfer.files, dest);
+            return;
+          }
+          if (ctx.dragActive) {
+            e.preventDefault(); e.stopPropagation(); setOver(false);
+            ctx.onDropMove?.(dest);
+          }
         }}
         className={cn(
           'flex cursor-pointer select-none items-center gap-1.5 py-[3px] pr-2 text-[13px] hover:bg-muted',
@@ -979,10 +1172,18 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
       style={{ left: x, top: y }}
     >
       {item.root ? (
-        // Área em branco: só faz sentido colar (na raiz do projeto).
-        <MenuItem icon={ClipboardPaste} label="Paste" disabled={!clip} onClick={run(actions.paste)} />
+        // Área em branco: criar na raiz do projeto, ou colar.
+        <>
+          <MenuItem icon={FilePlus} label="New File" onClick={run(actions.newFile)} />
+          <MenuItem icon={FolderPlus} label="New Folder" onClick={run(actions.newFolder)} />
+          <div className="my-1 border-t" />
+          <MenuItem icon={ClipboardPaste} label="Paste" disabled={!clip} onClick={run(actions.paste)} />
+        </>
       ) : (
         <>
+          <MenuItem icon={FilePlus} label="New File" onClick={run(actions.newFile)} />
+          <MenuItem icon={FolderPlus} label="New Folder" onClick={run(actions.newFolder)} />
+          <div className="my-1 border-t" />
           <MenuItem icon={ExternalLink} label="Reveal in File Explorer" onClick={run(actions.reveal)} />
           <div className="my-1 border-t" />
           <MenuItem icon={Scissors} label="Cut" onClick={run(actions.cut)} />
