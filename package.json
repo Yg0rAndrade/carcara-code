@@ -8,7 +8,8 @@
     "build": "vite build",
     "start": "electron .",
     "test": "vitest run",
-    "pack:exe": "vite build && electron-builder --win nsis --publish never"
+    "pack:exe": "vite build && electron-builder --win nsis --publish never",
+    "test:i18n": "node scripts/i18n-parity.smoke.cjs"
   },
   "build": {
     "appId": "com.carcara.code",
