@@ -7,16 +7,16 @@ import { toast } from '@/lib/toast.js';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 
-// Tempo relativo curto em pt-BR ("agora", "há 4 min", "há 2 h", "há 3 d").
-function ago(ts) {
+// Tempo relativo curto i18n ("just now", "4 min ago", "2h ago", "3d ago").
+function ago(ts, t) {
   const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (s < 45) return 'agora';
+  if (s < 45) return t('checkpoint.time_now');
   const m = Math.floor(s / 60);
-  if (m < 60) return `há ${m} min`;
+  if (m < 60) return t('checkpoint.time_min_ago', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `há ${h} h`;
+  if (h < 24) return t('checkpoint.time_hour_ago', { n: h });
   const d = Math.floor(h / 24);
-  return `há ${d} d`;
+  return t('checkpoint.time_day_ago', { n: d });
 }
 
 // Painel "Histórico": lista os checkpoints (snapshots no shadow git) e deixa voltar a
@@ -140,7 +140,7 @@ export function CheckpointsPanel({ active, visible }) {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] text-foreground">{labelOf(cp, titles)}</div>
                   <div className="text-[11px] text-muted-foreground">
-                    {ago(cp.ts)}
+                    {ago(cp.ts, t)}
                     {i === 0 && <span className="ml-1.5 text-primary">{t('checkpoint.newest')}</span>}
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export function CheckpointsPanel({ active, visible }) {
           <div className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
             <h2 className="text-[15px] font-semibold">{t('checkpoint.confirm_title')}</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              {t('checkpoint.confirm_message', { ago: ago(confirm.ts) })}
+              {t('checkpoint.confirm_message', { ago: ago(confirm.ts, t) })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="secondary" size="sm" onClick={() => setConfirm(null)}>{t('checkpoint.cancel')}</Button>

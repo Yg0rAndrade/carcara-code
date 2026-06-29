@@ -114,7 +114,8 @@
     "activity_asking": "Claude is requesting confirmation",
     "activity_waiting": "Claude is waiting for you",
     "tabs_close": "Close session",
-    "new": "New Claude Code session"
+    "new": "New Claude Code session",
+    "untitled": "Untitled"
   },
   "chat": {
     "empty": "Click a project to open Claude Code here."
@@ -261,7 +262,11 @@
     "created": "Checkpoint created",
     "create_error": "Failed to create checkpoint: {error}",
     "restored": "Project restored to checkpoint",
-    "restore_error": "Failed to restore: {error}"
+    "restore_error": "Failed to restore: {error}",
+    "time_now": "just now",
+    "time_min_ago": "{n} min ago",
+    "time_hour_ago": "{n}h ago",
+    "time_day_ago": "{n}d ago"
   },
   "preview": {
     "tab": "Preview",

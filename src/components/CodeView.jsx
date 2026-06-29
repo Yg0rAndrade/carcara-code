@@ -741,28 +741,28 @@ export function CodeView({ active, openRequest }) {
           {tabs.length ? (
             <>
               <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
-                {tabs.map((t) => {
-                  const isActive = t.path === activePath;
+                {tabs.map((tab) => {
+                  const isActive = tab.path === activePath;
                   return (
                     <div
-                      key={t.path}
-                      onClick={() => { setActivePath(t.path); setSelected({ path: t.path, name: t.name, isDir: false }); }}
-                      onMouseDown={(e) => { if (e.button === 1) closeFile(e, t.path); }}
-                      title={t.path}
+                      key={tab.path}
+                      onClick={() => { setActivePath(tab.path); setSelected({ path: tab.path, name: tab.name, isDir: false }); }}
+                      onMouseDown={(e) => { if (e.button === 1) closeFile(e, tab.path); }}
+                      title={tab.path}
                       className={cn(
                         'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors',
                         isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'
                       )}
                     >
-                      <img src={fileIconUrl(t.name)} alt="" draggable={false} className="h-3.5 w-3.5 shrink-0" />
-                      <span className="max-w-[160px] truncate">{t.name}</span>
+                      <img src={fileIconUrl(tab.name)} alt="" draggable={false} className="h-3.5 w-3.5 shrink-0" />
+                      <span className="max-w-[160px] truncate">{tab.name}</span>
                       <button
                         type="button"
-                        onClick={(e) => closeFile(e, t.path)}
+                        onClick={(e) => closeFile(e, tab.path)}
                         title={t('code.tabs_close')}
                         className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3"
                       >
-                        {t.dirty ? (
+                        {tab.dirty ? (
                           <>
                             <span className="size-1.5 rounded-full bg-current group-hover:hidden" />
                             <X className="hidden group-hover:block" />

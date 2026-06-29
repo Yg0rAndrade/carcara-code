@@ -853,7 +853,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
                   (isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60')
                 }
               >
-                <span>{sessionNames.get(sid) || 'Untitled'}</span>
+                <span>{sessionNames.get(sid) || t('session.untitled')}</span>
                 <SessionActivityDot state={sessionActivity[sid]} />
                 {canClose && (
                   <button
