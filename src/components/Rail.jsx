@@ -4,8 +4,10 @@ import { SettingsIcon } from './ui/settings.jsx';
 import { SearchIcon } from './ui/search.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onOpenSettings, onSearch, width = 64 }) {
+  const t = useT();
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
@@ -45,7 +47,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
       <div className="flex shrink-0 flex-col items-center px-2">
         <button
           onClick={onSearch}
-          title="Buscar projetos, arquivos e ações (Ctrl+K)"
+          title={t('rail.search_tooltip')}
           className="flex h-[42px] w-[42px] items-center justify-center rounded-full border bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[18px]"
         >
           <SearchIcon size={18} />
@@ -102,9 +104,9 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
                 )}
                 <span
                   title={
-                    activity[p.path] === 'working' ? 'Claude trabalhando…'
-                    : activity[p.path] === 'asking' ? 'Claude pediu uma confirmação'
-                    : 'Claude terminou'
+                    activity[p.path] === 'working' ? t('rail.claude_working')
+                    : activity[p.path] === 'asking' ? t('rail.claude_asking')
+                    : t('rail.claude_done')
                   }
                   className={cn(
                     'relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500',
@@ -117,7 +119,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
         ))}
         <button
           onClick={onAdd}
-          title="Adicionar projeto(s) — pode escolher várias pastas"
+          title={t('rail.add_project_tooltip')}
           className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
         >
           <Plus className="h-5 w-5" />
@@ -128,7 +130,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
       <div className="flex justify-center pt-2">
         <button
           onClick={onOpenSettings}
-          title="Configurações"
+          title={t('rail.settings_tooltip')}
           className="flex h-[42px] w-[42px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <SettingsIcon size={20} />
@@ -148,6 +150,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
 
 // Menu de contexto do rail (botão direito) — no mesmo padrão da árvore de arquivos.
 function RailMenu({ menu, onClose, onRestart, onStop, onRemove }) {
+  const t = useT();
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
@@ -177,7 +180,7 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove }) {
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{menu.project.running ? 'Reiniciar servidor' : 'Iniciar servidor'}</span>
+        <span className="truncate">{menu.project.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}</span>
       </button>
       {menu.project.running && (
         <button
@@ -186,7 +189,7 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove }) {
           className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
         >
           <Square className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Parar servidor</span>
+          <span className="truncate">{t('rail.menu_stop_server')}</span>
         </button>
       )}
       <div className="my-1 border-t" />
@@ -196,7 +199,7 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove }) {
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-muted"
       >
         <Trash2 className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">Remover da lista</span>
+        <span className="truncate">{t('rail.menu_remove_project')}</span>
       </button>
     </div>
   );

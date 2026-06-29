@@ -19,8 +19,10 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
 import { useTheme } from './lib/theme.jsx';
 import { colorFor, initials } from './lib/projectColor';
+import { useT } from './lib/i18n';
 
 export default function App() {
+  const t = useT();
   const { toggle: toggleTheme } = useTheme();
   const [projects, setProjects] = useState([]);
   const [active, setActive] = useState(null);
@@ -205,9 +207,9 @@ export default function App() {
     const list = [
       ...projects.map((p) => ({
         id: 'proj:' + p.path,
-        group: 'Projetos',
+        group: t('app.cmd_group_projects'),
         label: p.name,
-        hint: active?.path === p.path ? 'atual' : 'abrir projeto',
+        hint: active?.path === p.path ? t('app.cmd_hint_current') : t('app.cmd_hint_open_project'),
         // Ícone real do projeto (favicon/logo), igual ao rail; sem ícone, o MESMO
         // avatar de iniciais e cor do rail (a pessoa associa pelo ícone, não pelo texto).
         icon: p.icon
@@ -215,26 +217,28 @@ export default function App() {
           : <span className="grid size-4 place-items-center rounded-sm text-[7px] font-bold leading-none text-white" style={{ background: colorFor(p.name) }}>{initials(p.name)}</span>,
         run: () => setActive(p),
       })),
-      { id: 'view:preview', group: 'Painel', label: 'Preview', hint: 'aba', icon: <Eye />, run: view('preview') },
-      { id: 'view:code', group: 'Painel', label: 'Código', hint: 'aba', icon: <Code2 />, run: view('code') },
-      { id: 'view:git', group: 'Painel', label: 'Git', hint: 'aba', icon: <GitBranch />, run: view('git') },
-      { id: 'view:history', group: 'Painel', label: 'Histórico (checkpoints)', hint: 'aba', icon: <History />, run: view('history') },
-      { id: 'view:api', group: 'Painel', label: 'API', hint: 'aba', icon: <Zap />, run: view('api') },
-      { id: 'view:mcp', group: 'Painel', label: 'MCP', hint: 'aba', icon: <Plug />, run: view('mcp') },
-      { id: 'view:board', group: 'Painel', label: 'Quadro', hint: 'aba', icon: <PenTool />, run: view('board') },
-      { id: 'srv:restart', group: 'Servidor', label: 'Reiniciar servidor', hint: 'preview', icon: <RefreshCw />, run: () => previewControls.current?.restart?.() },
-      { id: 'srv:stop', group: 'Servidor', label: 'Parar servidor', hint: 'preview', icon: <Square />, run: () => previewControls.current?.stop?.() },
-      { id: 'chat:new', group: 'Chat', label: 'Nova sessão de chat', hint: 'aba', icon: <MessageSquarePlus />, run: () => chatControls.current?.newSession?.() },
-      { id: 'chat:toggle', group: 'Chat', label: 'Recolher/expandir chat', icon: <PanelLeftClose />, run: toggleChat },
-      { id: 'app:add', group: 'App', label: 'Adicionar projeto…', icon: <FolderPlus />, run: addProjects },
-      { id: 'app:theme', group: 'App', label: 'Alternar tema claro/escuro', icon: <SunMoon />, run: toggleTheme },
-      { id: 'app:settings', group: 'App', label: 'Configurações', icon: <Settings />, run: () => setSettingsOpen(true) },
-      { id: 'app:setup', group: 'App', label: 'Preparar meu PC (ferramentas)', icon: <Wrench />, run: () => setSetupOpen(true) },
-      { id: 'app:reload', group: 'App', label: 'Recarregar o app', hint: 'Ctrl/Cmd+R', icon: <RotateCw />, run: () => window.location.reload() },
+      { id: 'view:preview', group: 'Painel', label: t('app.cmd_view_preview'), hint: t('app.cmd_hint_tab'), icon: <Eye />, run: view('preview') },
+      { id: 'view:code', group: 'Painel', label: t('app.cmd_view_code'), hint: t('app.cmd_hint_tab'), icon: <Code2 />, run: view('code') },
+      { id: 'view:git', group: 'Painel', label: t('app.cmd_view_git'), hint: t('app.cmd_hint_tab'), icon: <GitBranch />, run: view('git') },
+      { id: 'view:history', group: 'Painel', label: t('app.cmd_view_history'), hint: t('app.cmd_hint_tab'), icon: <History />, run: view('history') },
+      { id: 'view:api', group: 'Painel', label: t('app.cmd_view_api'), hint: t('app.cmd_hint_tab'), icon: <Zap />, run: view('api') },
+      { id: 'view:mcp', group: 'Painel', label: t('app.cmd_view_mcp'), hint: t('app.cmd_hint_tab'), icon: <Plug />, run: view('mcp') },
+      { id: 'view:board', group: 'Painel', label: t('app.cmd_view_board'), hint: t('app.cmd_hint_tab'), icon: <PenTool />, run: view('board') },
+      { id: 'srv:restart', group: t('app.cmd_group_server'), label: t('app.cmd_restart_server'), hint: t('app.cmd_hint_preview'), icon: <RefreshCw />, run: () => previewControls.current?.restart?.() },
+      { id: 'srv:stop', group: t('app.cmd_group_server'), label: t('app.cmd_stop_server'), hint: t('app.cmd_hint_preview'), icon: <Square />, run: () => previewControls.current?.stop?.() },
+      { id: 'chat:new', group: t('app.cmd_group_chat'), label: t('app.cmd_new_chat_session'), hint: t('app.cmd_hint_tab'), icon: <MessageSquarePlus />, run: () => chatControls.current?.newSession?.() },
+      { id: 'chat:toggle', group: t('app.cmd_group_chat'), label: t('app.cmd_toggle_chat'), icon: <PanelLeftClose />, run: toggleChat },
+      { id: 'app:add', group: t('app.cmd_group_app'), label: t('app.cmd_add_project'), icon: <FolderPlus />, run: addProjects },
+      { id: 'app:theme', group: t('app.cmd_group_app'), label: t('app.cmd_toggle_theme'), icon: <SunMoon />, run: toggleTheme },
+      { id: 'app:settings', group: t('app.cmd_group_app'), label: t('app.cmd_settings'), icon: <Settings />, run: () => setSettingsOpen(true) },
+      { id: 'app:setup', group: t('app.cmd_group_app'), label: t('app.cmd_setup_tools'), icon: <Wrench />, run: () => setSetupOpen(true) },
+      { id: 'app:reload', group: t('app.cmd_group_app'), label: t('app.cmd_reload_app'), hint: 'Ctrl/Cmd+R', icon: <RotateCw />, run: () => window.location.reload() },
     ];
     // Sem projeto ativo, ações de painel/servidor/chat ficam inertes — filtra-as.
-    return active ? list : list.filter((c) => c.group === 'Projetos' || c.group === 'App');
-  }, [projects, active, toggleTheme]);
+    const projectsGroup = t('app.cmd_group_projects');
+    const appGroup = t('app.cmd_group_app');
+    return active ? list : list.filter((c) => c.group === projectsGroup || c.group === appGroup);
+  }, [projects, active, toggleTheme, t]);
 
   // Reordena (drag-and-drop): atualiza na hora e salva a ordem no config.json.
   const reorderProjects = async (orderedPaths) => {
@@ -304,7 +308,7 @@ export default function App() {
         >
           <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
             <span className="truncate text-[15px] font-semibold">
-              {active ? active.name : 'Selecione um projeto'}
+              {active ? active.name : t('app.no_project_selected')}
             </span>
             {active?.hasPkg && (
               <div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -313,10 +317,10 @@ export default function App() {
                   onClick={() => previewControls.current?.restart?.()}
                   onMouseEnter={() => restartIcon.current?.startAnimation?.()}
                   onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
-                  title="Reiniciar servidor"
+                  title={t('app.restart_server_tooltip')}
                   className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
                 >
-                  <RefreshCCWIcon ref={restartIcon} />Reiniciar
+                  <RefreshCCWIcon ref={restartIcon} />{t('app.restart_server_btn')}
                 </button>
                 <button
                   type="button"
@@ -324,10 +328,10 @@ export default function App() {
                   onMouseEnter={() => stopIcon.current?.startAnimation?.()}
                   onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
                   disabled={serverMode !== 'web'}
-                  title="Parar servidor"
+                  title={t('app.stop_server_tooltip')}
                   className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
                 >
-                  <XIcon ref={stopIcon} />Parar
+                  <XIcon ref={stopIcon} />{t('app.stop_server_btn')}
                 </button>
               </div>
             )}
@@ -344,7 +348,7 @@ export default function App() {
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={toggleChat}
-              title="Recolher chat"
+              title={t('app.collapse_chat_tooltip')}
               className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -367,14 +371,13 @@ export default function App() {
             className="w-[340px] rounded-lg border bg-background p-5 shadow-xl"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <h2 className="text-sm font-semibold">Remover projeto</h2>
+            <h2 className="text-sm font-semibold">{t('app.remove_project_title')}</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              Remover <span className="font-medium text-foreground">{pendingRemove.name}</span> da lista?
-              <br />O projeto no disco NÃO é apagado.
+              {t('app.remove_project_message', { name: pendingRemove.name })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>Cancelar</Button>
-              <Button variant="destructive" size="sm" onClick={confirmRemove}>Remover</Button>
+              <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>{t('app.cancel_button')}</Button>
+              <Button variant="destructive" size="sm" onClick={confirmRemove}>{t('app.remove_button')}</Button>
             </div>
           </div>
         </div>
@@ -387,7 +390,7 @@ export default function App() {
           type="button"
           onClick={() => chatPanelRef.current?.expand()}
           style={{ left: railWidth - 14 }}
-          title="Expandir chat"
+          title={t('app.expand_chat_tooltip')}
           className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
         >
           <ChevronRight className="h-4 w-4" />

@@ -46,3 +46,11 @@ export function LanguageProvider({ children }) {
 
 export function useT() { return useContext(I18nCtx).t; }
 export function useLang() { const { lang, setLang } = useContext(I18nCtx); return { lang, setLang }; }
+
+// Helper para componentes de classe (ex.: ErrorBoundary) onde hooks não funcionam.
+// Lê localStorage diretamente; o idioma do componente muda na próxima renderização.
+export function tStatic(key, vars) {
+  const lang = localStorage.getItem('lang') === 'en' ? 'en' : 'pt';
+  const hit = resolve(DICTS[lang], key) ?? resolve(DICTS.pt, key);
+  return typeof hit === 'string' ? interpolate(hit, vars) : key;
+}

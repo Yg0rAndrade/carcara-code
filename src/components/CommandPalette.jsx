@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
 import { fileIconUrl } from '@/lib/fileIcons';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 // Casamento fuzzy por subsequência: os caracteres da query precisam aparecer EM
 // ordem no alvo. Bônus pra letras consecutivas (streak) e início de palavra, pra
@@ -27,6 +28,7 @@ function fuzzyScore(query, text) {
 // { id, label, hint, group, run }. Com texto digitado, também busca ARQUIVOS no
 // projeto ativo (fs:search) e os mostra num grupo próprio — abrir vai pro onOpenFile.
 export function CommandPalette({ open, onClose, commands, activePath, onOpenFile }) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [files, setFiles] = useState([]);
   const [sel, setSel] = useState(0);
@@ -117,7 +119,7 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Buscar comandos e arquivos…"
+            placeholder={t('palette.search_placeholder')}
             className="h-12 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -125,11 +127,11 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto py-1.5">
           {items.length === 0 && (
             <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-              Nenhum resultado.
+              {t('palette.no_results')}
             </div>
           )}
           {items.map((item, i) => {
-            const group = item.type === 'file' ? 'Arquivos' : (item.data.group || 'Ações');
+            const group = item.type === 'file' ? t('palette.group_files') : (item.data.group || t('palette.group_actions'));
             const showGroup = group !== lastGroup;
             lastGroup = group;
             const selected = i === sel;

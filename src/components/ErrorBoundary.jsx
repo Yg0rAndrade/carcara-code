@@ -1,6 +1,7 @@
 import { Component, useState } from 'react';
 import { Bug, RotateCw, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button.jsx';
+import { tStatic } from '@/lib/i18n';
 
 // Gera um código curto e estável a partir do erro, pra pessoa reportar ("deu o ERR-1A2B3C4D").
 // Mesmo erro → mesmo código, então dá pra comparar/agrupar sem precisar do stack inteiro.
@@ -18,11 +19,11 @@ function PanelError({ label, error, onRetry }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const code = errCode(error);
-  const message = String((error && error.message) || error || 'Erro desconhecido');
+  const message = String((error && error.message) || error || tStatic('error.unknown_error'));
   const stack = (error && error.stack) || '';
 
   const copy = async () => {
-    const payload = `[${code}] ${label || 'Painel'}\n${message}\n\n${stack}`;
+    const payload = `[${code}] ${label || tStatic('error.panel_label')}\n${message}\n\n${stack}`;
     try {
       if (window.api?.copyText) await window.api.copyText(payload);
       else await navigator.clipboard.writeText(payload);
@@ -39,20 +40,19 @@ function PanelError({ label, error, onRetry }) {
             <Bug />
           </span>
           <div className="min-w-0">
-            <p className="eyebrow text-primary">Algo quebrou neste painel</p>
-            <p className="truncate text-sm font-semibold text-foreground">{label || 'Painel'}</p>
+            <p className="eyebrow text-primary">{tStatic('error.something_broke')}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{label || tStatic('error.panel_label')}</p>
           </div>
         </div>
 
         <div className="px-5 py-4">
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            O resto do app continua funcionando — você pode trocar de aba e seguir trabalhando.
-            Tente novamente ou copie o erro pra investigar.
+            {tStatic('error.rest_of_app_works')}
           </p>
 
           <div className="mt-3.5 rounded-md border bg-background p-3">
             <div className="flex items-center gap-2 text-[11px]">
-              <span className="eyebrow text-muted-foreground">Código</span>
+              <span className="eyebrow text-muted-foreground">{tStatic('error.code_label')}</span>
               <code className="select-all font-mono font-semibold text-primary">{code}</code>
             </div>
             <p className="mt-1.5 break-words font-mono text-xs leading-relaxed text-red-500">{message}</p>
@@ -65,7 +65,7 @@ function PanelError({ label, error, onRetry }) {
                 onClick={() => setOpen((o) => !o)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground [&_svg]:size-3.5"
               >
-                {open ? <ChevronDown /> : <ChevronRight />}Detalhes técnicos
+                {open ? <ChevronDown /> : <ChevronRight />}{tStatic('error.technical_details')}
               </button>
               {open && (
                 <pre className="mt-1.5 max-h-48 overflow-auto rounded-md border bg-background px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
@@ -78,17 +78,17 @@ function PanelError({ label, error, onRetry }) {
 
         <div className="flex items-center gap-2 border-t px-5 py-3">
           <Button variant="ghost" size="sm" onClick={copy}>
-            {copied ? <Check className="mr-1" /> : <Copy className="mr-1" />}{copied ? 'Copiado!' : 'Copiar erro'}
+            {copied ? <Check className="mr-1" /> : <Copy className="mr-1" />}{copied ? tStatic('error.copied_button') : tStatic('error.copy_error_button')}
           </Button>
           <div className="flex-1" />
           {/* Recarrega só o renderer (index.html novo, hashes de chunk certos). As sessões
               do Claude e os terminais vivem no processo principal e NÃO são afetados — é a
               saída garantida quando "Tentar novamente" não resolve (ex: chunk velho). */}
           <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
-            Recarregar
+            {tStatic('error.reload_button')}
           </Button>
           <Button size="sm" onClick={onRetry}>
-            <RotateCw className="mr-1" />Tentar novamente
+            <RotateCw className="mr-1" />{tStatic('error.retry_button')}
           </Button>
         </div>
       </div>
