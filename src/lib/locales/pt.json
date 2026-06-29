@@ -47,7 +47,8 @@
     "remove_project_title": "Remover projeto",
     "remove_project_message": "Remover \"{name}\" da lista? O projeto no disco NÃO é apagado.",
     "cancel_button": "Cancelar",
-    "remove_button": "Remover"
+    "remove_button": "Remover",
+    "move_claude_tooltip": "Arraste para mover o Claude de lado"
   },
   "palette": {
     "search_placeholder": "Buscar comandos e arquivos…",

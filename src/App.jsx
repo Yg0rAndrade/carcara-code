@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, FolderPlus, Settings, SunMoon,
   RefreshCw, Square, MessageSquarePlus, PanelLeftClose, Eye, Code2,
-  GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw,
+  GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw, GripVertical,
 } from 'lucide-react';
 import { RefreshCCWIcon } from './components/ui/refresh-ccw.jsx';
 import { XIcon } from './components/ui/x.jsx';
@@ -22,11 +22,12 @@ import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
 import { useLayout } from './lib/layoutContext.jsx';
 import { resolveLayout } from './lib/layout.js';
+import { ZONE_STYLE } from './lib/dropZones.js';
 
 export default function App() {
   const t = useT();
   const { toggle: toggleTheme } = useTheme();
-  const { railSide, claudeSide } = useLayout();
+  const { railSide, claudeSide, setRailSide } = useLayout();
   // Override de layout do projeto ATIVO (só o lado do Claude). Cache local primeiro
   // (sem piscar), depois confirma com o main. Chave por caminho.
   const PKEY = (p) => `projectLayout:v1:${p}`;
@@ -144,6 +145,16 @@ export default function App() {
   const expandStyle = claudeLeft
     ? { left: Math.max(0, (railFirst ? railWidth : 0) - 14) }
     : { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) };
+
+  // Arraste do painel inteiro (Claude) ou do rail. dragMode diz o quê; dragZone, o lado.
+  const [dragMode, setDragMode] = useState(null);   // null | 'panel' | 'rail'
+  const [dragZone, setDragZone] = useState(null);    // 'left' | 'right' | null
+  const endLayoutDrag = () => { setDragMode(null); setDragZone(null); };
+  const onLayoutDrop = (zone) => {
+    if (dragMode === 'panel') setClaudeSideForProject(zone);
+    else if (dragMode === 'rail') setRailSide(zone);
+    endLayoutDrag();
+  };
 
   // Atividade do Claude (vinda do main): atualiza o indicador no rail e atende o clique
   // da notificação do SO (que pede pra abrir o projeto que terminou).
@@ -349,6 +360,17 @@ export default function App() {
       className={'flex flex-col ' + (claudeLeft ? 'border-r' : 'border-l')}
     >
       <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+        {active && (
+          <span
+            draggable
+            onDragStart={(e) => { try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'panel'); } catch {} setDragMode('panel'); setDragZone(null); }}
+            onDragEnd={endLayoutDrag}
+            title={t('app.move_claude_tooltip')}
+            className="grid size-7 shrink-0 cursor-grab place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing [&_svg]:size-[15px]"
+          >
+            <GripVertical />
+          </span>
+        )}
         <span className="truncate text-[15px] font-semibold">
           {active ? active.name : t('app.no_project_selected')}
         </span>
@@ -459,6 +481,21 @@ export default function App() {
         activePath={active?.path || null}
         onOpenFile={openFileFromPalette}
       />
+      {dragMode && (
+        <div
+          className="fixed inset-0 z-50"
+          onDragOver={(e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch {} const z = e.clientX < window.innerWidth / 2 ? 'left' : 'right'; setDragZone((p) => (p === z ? p : z)); }}
+          onDrop={(e) => { e.preventDefault(); onLayoutDrop(e.clientX < window.innerWidth / 2 ? 'left' : 'right'); }}
+          onDragEnd={endLayoutDrag}
+        >
+          {dragZone && (
+            <div
+              className="pointer-events-none absolute rounded-sm border-2 border-primary bg-primary/20 transition-all duration-100"
+              style={ZONE_STYLE[dragZone]}
+            />
+          )}
+        </div>
+      )}
       {railResizing && <div className="fixed inset-0 z-50 cursor-col-resize" />}
       <Toaster />
     </div>
