@@ -17,6 +17,11 @@ mouse-debug.log
 # Carcará: config local de projeto (servidores MCP salvos, checkpoints etc.)
 .carcara/
 
+# Ferramentas locais do Claude Code (skills, settings) — não fazem parte do app
+.claude/
+.superpowers/
+docs/superpowers/
+
 # OS / editor
 .DS_Store
 Thumbs.db
