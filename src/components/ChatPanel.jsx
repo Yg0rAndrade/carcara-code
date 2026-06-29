@@ -5,6 +5,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import { Plus, X, Library, Pencil, Trash2, ArrowUpLeft, Search, Star, CornerDownLeft } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 import { useTheme } from '@/lib/theme.jsx';
+import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
 import {
   isPane, firstPane, allPanes, paneCount,
@@ -137,6 +138,7 @@ function PromptMd({ text }) {
 // chat; clicar num prompt INJETA o texto no terminal da sessão ativa (sem Enter), pra
 // você revisar e enviar. Salva/edita/remove na lista persistida em .carcara/prompts.json.
 function PromptMenu({ projectPath, sessionId, onInsert }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState({ title: '', body: '' });
@@ -228,7 +230,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
         ref={btnRef}
         type="button"
         onClick={() => (open ? setOpen(false) : openMenu())}
-        title="Biblioteca de prompts"
+        title={t('prompts.library_title')}
         className="grid size-7 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
       >
         <Library />
@@ -242,13 +244,13 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
           >
             {/* Cabeçalho */}
             <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <button type="button" onClick={() => setMode('picker')} title="Voltar à seleção rápida"
+              <button type="button" onClick={() => setMode('picker')} title={t('prompts.back_to_selection')}
                 className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4">
-                <ArrowUpLeft /> Voltar
+                <ArrowUpLeft /> {t('prompts.back_to_selection')}
               </button>
-              <span className="text-[14px] font-semibold">Gerenciar prompts</span>
+              <span className="text-[14px] font-semibold">{t('prompts.manage_title')}</span>
               <div className="flex-1" />
-              <button type="button" onClick={() => setOpen(false)} title="Fechar (Esc)"
+              <button type="button" onClick={() => setOpen(false)} title={t('prompts.close')}
                 className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]">
                 <X />
               </button>
@@ -264,26 +266,26 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Buscar prompts…"
+                      placeholder={t('prompts.search_placeholder')}
                       className="h-8 w-full rounded-md border bg-card pl-8 pr-2 text-[12.5px] outline-none focus:border-primary"
                     />
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center justify-between px-3 pt-2">
                   <span className="text-[12px] font-medium text-muted-foreground">
-                    {q ? `${visibleItems.length} de ${items.length}` : `${items.length} prompt${items.length === 1 ? '' : 's'}`}
+                    {q ? `${visibleItems.length} de ${items.length}` : `${items.length} ${items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}`}
                   </span>
                   <button type="button" onClick={newPrompt}
                     className={cn('flex h-7 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium transition-colors',
                       !viewing && editingId === null ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')}>
-                    <Plus className="size-3.5" /> Novo
+                    <Plus className="size-3.5" /> {t('prompts.new')}
                   </button>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-3">
                   {items.length === 0 ? (
-                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">Nenhum prompt salvo ainda.</p>
+                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">{t('prompts.empty')}</p>
                   ) : visibleItems.length === 0 ? (
-                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">Nada encontrado para “{query}”.</p>
+                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">{t('prompts.no_results', { query })}</p>
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       {visibleItems.map((p) => (
@@ -293,7 +295,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                           <div className="flex items-start gap-2">
                             <span
                               role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); toggleFav(p); }}
-                              title={p.fav ? 'Desafixar' : 'Fixar no topo'}
+                              title={p.fav ? t('prompts.unpin') : t('prompts.pin')}
                               className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded [&_svg]:size-4',
                                 p.fav ? 'text-amber-500' : 'text-muted-foreground opacity-0 hover:text-amber-500 group-hover:opacity-100')}>
                               <Star className={p.fav ? 'fill-amber-500' : ''} />
@@ -303,11 +305,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                               <span className="mt-0.5 break-words text-[12px] leading-relaxed text-muted-foreground line-clamp-3">{p.body}</span>
                             </span>
                             <span className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
-                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); edit(p); }} title="Editar"
+                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); edit(p); }} title={t('prompts.edit')}
                                 className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
                                 <Pencil />
                               </span>
-                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setConfirmDel(p); }} title="Remover"
+                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setConfirmDel(p); }} title={t('prompts.remove')}
                                 className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5">
                                 <Trash2 />
                               </span>
@@ -324,7 +326,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
               {viewing && editingId === null ? (
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-                    <button type="button" onClick={() => toggleFav(viewing)} title={viewing.fav ? 'Desafixar' : 'Fixar no topo'}
+                    <button type="button" onClick={() => toggleFav(viewing)} title={viewing.fav ? t('prompts.unpin') : t('prompts.pin')}
                       className={cn('grid size-8 shrink-0 place-items-center rounded-md border [&_svg]:size-4',
                         viewing.fav ? 'text-amber-500' : 'text-muted-foreground hover:bg-muted')}>
                       <Star className={viewing.fav ? 'fill-amber-500' : ''} />
@@ -332,11 +334,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{viewing.title}</span>
                     <button type="button" onClick={() => insert(viewing)} disabled={!sessionId}
                       className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 [&_svg]:size-3.5">
-                      <ArrowUpLeft /> Inserir no chat
+                      <ArrowUpLeft /> {t('prompts.insert')}
                     </button>
-                    <button type="button" onClick={() => edit(viewing)} title="Editar"
+                    <button type="button" onClick={() => edit(viewing)} title={t('prompts.edit')}
                       className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted [&_svg]:size-4"><Pencil /></button>
-                    <button type="button" onClick={() => setConfirmDel(viewing)} title="Remover"
+                    <button type="button" onClick={() => setConfirmDel(viewing)} title={t('prompts.remove')}
                       className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"><Trash2 /></button>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto p-5">
@@ -347,29 +349,29 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 </div>
               ) : (
                 <div className="flex min-w-0 flex-1 flex-col p-4">
-                  <div className="mb-2 text-[13px] font-medium">{editingId ? 'Editar prompt' : 'Novo prompt'}</div>
+                  <div className="mb-2 text-[13px] font-medium">{editingId ? t('prompts.editor_title_edit') : t('prompts.editor_title_new')}</div>
                   <input
                     value={draft.title}
                     onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                    placeholder="Título (opcional)"
+                    placeholder={t('prompts.editor_title_placeholder')}
                     className="mb-2 h-9 w-full rounded-md border bg-card px-3 text-[13px] outline-none focus:border-primary"
                   />
                   <textarea
                     value={draft.body}
                     onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
-                    placeholder="Prompt — ex.: rode os testes e corrija o que quebrar"
+                    placeholder={t('prompts.editor_body_placeholder')}
                     className="min-h-0 w-full flex-1 resize-none rounded-md border bg-card px-3 py-2 text-[13px] leading-relaxed outline-none focus:border-primary"
                   />
                   <div className="mt-3 flex justify-end gap-2">
                     {editingId && (
                       <button type="button" onClick={() => { setEditingId(null); setDraft({ title: '', body: '' }); }}
                         className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">
-                        Cancelar edição
+                        {t('prompts.editor_cancel')}
                       </button>
                     )}
                     <button type="button" onClick={submit} disabled={!draft.body.trim()}
                       className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
-                      {editingId ? 'Salvar' : 'Adicionar'}
+                      {editingId ? t('prompts.editor_save') : t('prompts.editor_add')}
                     </button>
                   </div>
                 </div>
@@ -380,15 +382,15 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
             {confirmDel && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40" onMouseDown={() => setConfirmDel(null)}>
                 <div className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
-                  <h2 className="text-[15px] font-semibold">Remover prompt</h2>
+                  <h2 className="text-[15px] font-semibold">{t('prompts.confirm_title')}</h2>
                   <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                    Remover <span className="font-medium text-foreground">“{confirmDel.title}”</span>? Esta ação não pode ser desfeita.
+                    {t('prompts.confirm_message', { title: confirmDel.title })}
                   </p>
                   <div className="mt-5 flex justify-end gap-2">
                     <button type="button" onClick={() => setConfirmDel(null)}
-                      className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">Cancelar</button>
+                      className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">{t('prompts.confirm_cancel')}</button>
                     <button type="button" onClick={() => remove(confirmDel)}
-                      className="h-9 rounded-md bg-destructive px-4 text-[13px] font-medium text-destructive-foreground hover:opacity-90">Remover</button>
+                      className="h-9 rounded-md bg-destructive px-4 text-[13px] font-medium text-destructive-foreground hover:opacity-90">{t('prompts.confirm_delete')}</button>
                   </div>
                 </div>
               </div>
@@ -414,22 +416,22 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                   else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => (visibleItems.length ? (s - 1 + visibleItems.length) % visibleItems.length : 0)); }
                   else if (e.key === 'Enter') { e.preventDefault(); const p = visibleItems[Math.min(sel, visibleItems.length - 1)]; if (p) insert(p); }
                 }}
-                placeholder="Buscar prompt… (Enter insere)"
+                placeholder={t('prompts.picker_search_placeholder')}
                 className="h-12 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
               />
-              <button type="button" onClick={() => setMode('manage')} title="Gerenciar / editar prompts"
+              <button type="button" onClick={() => setMode('manage')} title={t('prompts.picker_manage_tooltip')}
                 className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
-                <Pencil /> Gerenciar
+                <Pencil /> {t('prompts.picker_manage_button')}
               </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto py-1.5">
               {visibleItems.length === 0 ? (
                 <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-                  {items.length === 0 ? 'Nenhum prompt salvo ainda.' : 'Nenhum resultado.'}
+                  {items.length === 0 ? t('prompts.picker_empty') : t('prompts.picker_no_results')}
                   <div className="mt-2">
                     <button type="button" onClick={() => setMode('manage')} className="text-primary hover:underline">
-                      {items.length === 0 ? 'Criar um prompt' : 'Abrir gerenciador'}
+                      {items.length === 0 ? t('prompts.picker_create') : t('prompts.picker_open')}
                     </button>
                   </div>
                 </div>
@@ -451,8 +453,8 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
             </div>
 
             <div className="flex items-center justify-between border-t px-3.5 py-1.5 text-[11px] text-muted-foreground">
-              <span>↑↓ navegar · Enter inserir · Esc fechar</span>
-              <span>{items.length} prompt{items.length === 1 ? '' : 's'}</span>
+              <span>{t('prompts.picker_help')}</span>
+              <span>{items.length} {items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}</span>
             </div>
           </div>
         </div>
@@ -464,10 +466,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 // Bolinha de atividade do Claude DENTRO da aba da sessão. Âmbar pulsando = trabalhando;
 // âmbar com halo = pediu uma confirmação (sua vez); âmbar fixo = terminou o turno.
 function SessionActivityDot({ state }) {
+  const t = useT();
   if (!state) return null;
-  const title = state === 'working' ? 'Claude trabalhando…'
-    : state === 'asking' ? 'Claude pediu uma confirmação'
-    : 'Claude aguardando você';
+  const title = state === 'working' ? t('session.activity_working')
+    : state === 'asking' ? t('session.activity_asking')
+    : t('session.activity_waiting');
   return (
     <span className="relative flex h-2 w-2 shrink-0" title={title}>
       {state === 'asking' && (
@@ -482,6 +485,7 @@ function SessionActivityDot({ state }) {
 }
 
 export function ChatPanel({ activeProject, controlsRef }) {
+  const t = useT();
   const { terminalTheme } = useTheme();
   const themeRef = useRef(terminalTheme);
   const hostRef = useRef(null);
@@ -855,7 +859,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
                   <button
                     type="button"
                     onClick={(e) => closeSession(e, sid)}
-                    title="Fechar sessão"
+                    title={t('session.tabs_close')}
                     className="grid size-4 place-items-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/10 hover:text-foreground group-hover:opacity-100 [&_svg]:size-3"
                   >
                     <X />
@@ -868,7 +872,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
           <button
             type="button"
             onClick={() => addSession(p.id)}
-            title="Nova sessão do Claude Code"
+            title={t('session.new')}
             className="ml-1 grid size-7 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
           >
             <Plus />
@@ -922,7 +926,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
       <div ref={hostRef} className="relative flex-1 overflow-hidden">
         {!activeProject && (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-muted-foreground">
-            Clique num projeto pra abrir o Claude Code aqui.
+            {t('chat.empty')}
           </div>
         )}
         {activeProject && layout && renderNode(layout)}
