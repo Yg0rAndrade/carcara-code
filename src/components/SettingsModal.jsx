@@ -8,16 +8,18 @@ import { Button } from './ui/button.jsx';
 import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
 import { cn } from '@/lib/utils';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
+import { useT, useLang } from '@/lib/i18n';
 
 // CLIs de IA suportados. O 'cmd' é o que é digitado no terminal ao abrir a sessão.
 // 'Icon' = logo da marca (Claude Code/OpenCode reais; Antigravity usa o "G" do Google;
 // Codex/OpenAI não tem logo no conjunto CC0, então usa ícone genérico). 'color' = cor da marca.
+// 'desc' é uma CHAVE de tradução (resolvida com t(opt.desc) no render).
 const AI_OPTIONS = [
-  { key: 'claude', label: 'Claude Code', cmd: 'claude', color: '#d97757', Icon: ClaudeCodeIcon, fullColor: true, desc: 'Sua assinatura Claude (não a API).' },
-  { key: 'codex', label: 'Codex (OpenAI)', cmd: 'codex', color: '#5b6bff', Icon: CodexIcon, fullColor: true, desc: 'ChatGPT/OpenAI no terminal · npm i -g @openai/codex.' },
-  { key: 'opencode', label: 'OpenCode', cmd: 'opencode', color: '#7c5cff', Icon: OpenCodeIcon, fullColor: true, desc: 'Open-source · npm i -g opencode-ai.' },
-  { key: 'agy', label: 'Antigravity', cmd: 'agy', color: '#4285f4', Icon: AntigravityIcon, fullColor: true, desc: 'Google · substituiu o Gemini CLI.' },
-  { key: 'custom', label: 'Personalizado', cmd: '', color: '#6b7280', Icon: Wrench, desc: 'Defina o comando manualmente.' },
+  { key: 'claude', label: 'Claude Code', cmd: 'claude', color: '#d97757', Icon: ClaudeCodeIcon, fullColor: true, desc: 'settings.aiClaudeDesc' },
+  { key: 'codex', label: 'Codex (OpenAI)', cmd: 'codex', color: '#5b6bff', Icon: CodexIcon, fullColor: true, desc: 'settings.aiCodexDesc' },
+  { key: 'opencode', label: 'OpenCode', cmd: 'opencode', color: '#7c5cff', Icon: OpenCodeIcon, fullColor: true, desc: 'settings.aiOpencodeDesc' },
+  { key: 'agy', label: 'Antigravity', cmd: 'agy', color: '#4285f4', Icon: AntigravityIcon, fullColor: true, desc: 'settings.aiAgyDesc' },
+  { key: 'custom', label: null, cmd: '', color: '#6b7280', Icon: Wrench, desc: 'settings.aiCustomDesc' },
 ];
 const OPT = Object.fromEntries(AI_OPTIONS.map((o) => [o.key, o]));
 
@@ -56,17 +58,18 @@ function YoutubeIcon(props) {
 
 // Quem fez o Carcará Code. Adicione/remova redes aqui — a tela "Sobre" se monta sozinha.
 // 'href' pode ser https://… (abre no navegador) ou mailto:… (abre o e-mail).
+// 'sub' é uma CHAVE de tradução (resolvida com t(link.sub) no render).
 const AUTHOR = {
   name: 'Ygor Andrade',
-  role: 'Professor de IA e Automações',
-  blurb: 'Carcará Code é um projeto independente, feito com carinho por mim. Se te ajudou de alguma forma, vem trocar uma ideia — adoro saber quem está usando.',
+  role: 'settings.aboutRole',
+  blurb: 'settings.aboutBlurb',
   links: [
-    { key: 'site', label: 'ygorandrade.work', sub: 'Site pessoal', href: 'https://www.ygorandrade.work/', Icon: Globe },
-    { key: 'email', label: 'ygormartinsandrade@gmail.com', sub: 'E-mail', href: 'mailto:ygormartinsandrade@gmail.com', Icon: Mail },
-    { key: 'github', label: '@Yg0rAndrade', sub: 'GitHub', href: 'https://github.com/Yg0rAndrade', Icon: GithubIcon },
-    { key: 'linkedin', label: 'Ygor Andrade', sub: 'LinkedIn', href: 'https://www.linkedin.com/in/ygor-andrade-8979a026a/', Icon: LinkedinIcon },
-    { key: 'instagram', label: '@ygor_andr4de', sub: 'Instagram', href: 'https://www.instagram.com/ygor_andr4de/', Icon: InstagramIcon },
-    { key: 'youtube', label: '@ygor_andrade', sub: 'YouTube', href: 'https://www.youtube.com/@ygor_andrade', Icon: YoutubeIcon },
+    { key: 'site', label: 'ygorandrade.work', sub: 'settings.linkSite', href: 'https://www.ygorandrade.work/', Icon: Globe },
+    { key: 'email', label: 'ygormartinsandrade@gmail.com', sub: 'settings.linkEmail', href: 'mailto:ygormartinsandrade@gmail.com', Icon: Mail },
+    { key: 'github', label: '@Yg0rAndrade', sub: 'settings.linkGithub', href: 'https://github.com/Yg0rAndrade', Icon: GithubIcon },
+    { key: 'linkedin', label: 'Ygor Andrade', sub: 'settings.linkLinkedin', href: 'https://www.linkedin.com/in/ygor-andrade-8979a026a/', Icon: LinkedinIcon },
+    { key: 'instagram', label: '@ygor_andr4de', sub: 'settings.linkInstagram', href: 'https://www.instagram.com/ygor_andr4de/', Icon: InstagramIcon },
+    { key: 'youtube', label: '@ygor_andrade', sub: 'settings.linkYoutube', href: 'https://www.youtube.com/@ygor_andrade', Icon: YoutubeIcon },
   ],
 };
 
@@ -92,6 +95,8 @@ function CliBadge({ optKey, small }) {
 
 export function SettingsModal({ open, onClose }) {
   const { theme, setTheme, terminalAppearance, setTerminalAppearance } = useTheme();
+  const t = useT();
+  const { lang, setLang } = useLang();
   const [tab, setTab] = useState('ai');
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { cli, custom }
@@ -169,24 +174,31 @@ export function SettingsModal({ open, onClose }) {
     <div className="fixed inset-0 z-50 flex bg-background">
       {/* Navegação lateral */}
       <div className="flex w-52 shrink-0 flex-col gap-0.5 border-r bg-card p-3">
-        <div className="px-2 py-2 text-base font-semibold">Configurações</div>
-        <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<Bot />}>IA por projeto</TabButton>
-        <TabButton active={tab === 'appearance'} onClick={() => setTab('appearance')} icon={<Paintbrush />}>Aparência</TabButton>
-        <TabButton active={tab === 'code'} onClick={() => setTab('code')} icon={<Code2 />}>Códigos</TabButton>
-        <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<Bell />}>Notificações</TabButton>
-        <TabButton active={tab === 'deps'} onClick={() => setTab('deps')} icon={<HardDrive />}>Dependências</TabButton>
+        <div className="px-2 py-2 text-base font-semibold">{t('settings.title')}</div>
+        <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<Bot />}>{t('settings.tabAi')}</TabButton>
+        <TabButton active={tab === 'appearance'} onClick={() => setTab('appearance')} icon={<Paintbrush />}>{t('settings.tabAppearance')}</TabButton>
+        <TabButton active={tab === 'code'} onClick={() => setTab('code')} icon={<Code2 />}>{t('settings.tabCode')}</TabButton>
+        <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<Bell />}>{t('settings.tabNotify')}</TabButton>
+        <TabButton active={tab === 'deps'} onClick={() => setTab('deps')} icon={<HardDrive />}>{t('settings.tabDeps')}</TabButton>
+        <TabButton active={tab === 'language'} onClick={() => setTab('language')} icon={<Globe />}>{t('settings.tabLanguage')}</TabButton>
         <div className="my-1.5 border-t" />
-        <TabButton active={tab === 'about'} onClick={() => setTab('about')} icon={<Heart />}>Sobre & créditos</TabButton>
+        <TabButton active={tab === 'about'} onClick={() => setTab('about')} icon={<Heart />}>{t('settings.tabAbout')}</TabButton>
       </div>
 
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-14 shrink-0 items-center border-b px-6">
           <h1 className="text-[15px] font-semibold">
-            {tab === 'ai' ? 'IA por projeto' : tab === 'code' ? 'Códigos' : tab === 'notify' ? 'Notificações' : tab === 'deps' ? 'Dependências' : tab === 'about' ? 'Sobre & créditos' : 'Aparência'}
+            {tab === 'ai' ? t('settings.tabAi')
+              : tab === 'code' ? t('settings.tabCode')
+              : tab === 'notify' ? t('settings.tabNotify')
+              : tab === 'deps' ? t('settings.tabDeps')
+              : tab === 'language' ? t('settings.tabLanguage')
+              : tab === 'about' ? t('settings.tabAbout')
+              : t('settings.tabAppearance')}
           </h1>
           <div className="flex-1" />
-          <button type="button" onClick={onClose} title="Fechar (Esc)"
+          <button type="button" onClick={onClose} title={t('settings.close')}
             className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]">
             <X />
           </button>
@@ -196,13 +208,15 @@ export function SettingsModal({ open, onClose }) {
           {tab === 'ai' && (
             <div className="mx-auto max-w-3xl">
               <p className="text-sm text-muted-foreground">
-                Escolha qual CLI de IA cada projeto usa. Vale para as <span className="font-medium text-foreground">novas sessões</span> abertas naquele projeto.
+                {t('settings.aiIntro').split(t('settings.aiNewSessions'))[0]}
+                <span className="font-medium text-foreground">{t('settings.aiNewSessions')}</span>
+                {t('settings.aiIntro').split(t('settings.aiNewSessions'))[1]}
               </p>
 
               <div className="mt-5 flex flex-col gap-3">
                 {projects.length === 0 && (
                   <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                    Nenhum projeto ainda. Adicione um projeto na barra lateral.
+                    {t('settings.aiEmpty')}
                   </div>
                 )}
                 {projects.map((p) => {
@@ -216,7 +230,7 @@ export function SettingsModal({ open, onClose }) {
                         <span className="truncate text-sm font-medium">{p.name}</span>
                         <span className="ml-1 flex items-center gap-1 text-xs text-muted-foreground">
                           <CliBadge optKey={cur.cli} small />
-                          {OPT[cur.cli]?.label}
+                          {cur.cli === 'custom' ? t('settings.aiCustomLabel') : OPT[cur.cli]?.label}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -224,13 +238,13 @@ export function SettingsModal({ open, onClose }) {
                           const active = cur.cli === opt.key;
                           return (
                             <button key={opt.key} type="button" onClick={() => choose(p.path, opt.key)}
-                              title={opt.desc}
+                              title={t(opt.desc)}
                               className={cn(
                                 'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
                                 active && 'border-primary bg-muted ring-1 ring-primary'
                               )}>
                               <CliBadge optKey={opt.key} />
-                              {opt.label}
+                              {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
                               {active && <Check className="size-3.5 text-primary" />}
                             </button>
                           );
@@ -240,7 +254,7 @@ export function SettingsModal({ open, onClose }) {
                         <Input
                           value={cur.custom || ''}
                           onChange={(e) => onCustom(p.path, e.target.value)}
-                          placeholder="comando do CLI (ex.: meu-cli --flag)"
+                          placeholder={t('settings.aiCustomPlaceholder')}
                           className="mt-2.5 h-8 font-mono text-xs"
                         />
                       )}
@@ -253,30 +267,30 @@ export function SettingsModal({ open, onClose }) {
 
           {tab === 'appearance' && (
             <div className="mx-auto max-w-3xl">
-              <div className="text-[13px] font-medium">Tema da interface</div>
+              <div className="text-[13px] font-medium">{t('settings.appTheme')}</div>
               <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
                 <button type="button" onClick={() => setTheme('light')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', theme === 'light' && 'border-primary ring-1 ring-primary')}>
-                  <Sun className="h-4 w-4" /> Claro
+                  <Sun className="h-4 w-4" /> {t('settings.themeLight')}
                 </button>
                 <button type="button" onClick={() => setTheme('dark')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', theme === 'dark' && 'border-primary ring-1 ring-primary')}>
-                  <Moon className="h-4 w-4" /> Escuro
+                  <Moon className="h-4 w-4" /> {t('settings.themeDark')}
                 </button>
               </div>
 
               <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                <ZoomIn className="h-4 w-4" /> Zoom da interface
+                <ZoomIn className="h-4 w-4" /> {t('settings.zoomTitle')}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Aumenta ou diminui o tamanho de tudo no app (rail, chat, abas…). Também dá pra
-                usar <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +
+                {t('settings.zoomHelp')}{' '}
+                <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +
                 {' '}<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd> /
-                {' '}<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd> com o foco fora do preview.
+                {' '}<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd> {t('settings.zoomFocusHint')}
               </p>
               <div className="mt-3 flex max-w-md items-center gap-2">
                 <button type="button" onClick={() => applyZoom('out')} disabled={zoom <= 0.5}
-                  title="Diminuir"
+                  title={t('settings.zoomOut')}
                   className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4">
                   <ZoomOut />
                 </button>
@@ -284,36 +298,35 @@ export function SettingsModal({ open, onClose }) {
                   {Math.round(zoom * 100)}%
                 </div>
                 <button type="button" onClick={() => applyZoom('in')} disabled={zoom >= 2}
-                  title="Aumentar"
+                  title={t('settings.zoomIn')}
                   className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4">
                   <ZoomIn />
                 </button>
                 <button type="button" onClick={() => applyZoom('reset')} disabled={zoom === 1}
-                  title="Resetar para 100%"
+                  title={t('settings.zoomReset')}
                   className="flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5">
-                  <RotateCcw /> Resetar
+                  <RotateCcw /> {t('settings.zoomResetLabel')}
                 </button>
               </div>
 
               <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                <Terminal className="h-4 w-4" /> Aparência do terminal
+                <Terminal className="h-4 w-4" /> {t('settings.termTitle')}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Cor de fundo do terminal e do Claude Code. Mantemos o tema da CLI casado com o fundo
-                pra o texto não ficar ilegível no claro.
+                {t('settings.termHelp')}
               </p>
               <div className="mt-3 grid max-w-md grid-cols-3 gap-2">
                 <button type="button" onClick={() => setTerminalAppearance('auto')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', terminalAppearance === 'auto' && 'border-primary ring-1 ring-primary')}>
-                  <Monitor className="h-4 w-4" /> Acompanhar app
+                  <Monitor className="h-4 w-4" /> {t('settings.termAuto')}
                 </button>
                 <button type="button" onClick={() => setTerminalAppearance('light')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', terminalAppearance === 'light' && 'border-primary ring-1 ring-primary')}>
-                  <Sun className="h-4 w-4" /> Claro
+                  <Sun className="h-4 w-4" /> {t('settings.themeLight')}
                 </button>
                 <button type="button" onClick={() => setTerminalAppearance('dark')}
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', terminalAppearance === 'dark' && 'border-primary ring-1 ring-primary')}>
-                  <Moon className="h-4 w-4" /> Escuro
+                  <Moon className="h-4 w-4" /> {t('settings.themeDark')}
                 </button>
               </div>
             </div>
@@ -324,17 +337,15 @@ export function SettingsModal({ open, onClose }) {
               <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                    <Save className="size-3.5 text-primary" /> Salvar automaticamente
+                    <Save className="size-3.5 text-primary" /> {t('settings.codeAutosaveTitle')}
                   </div>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Salva os arquivos abertos no editor sozinho, pouco depois de você parar de digitar.
-                    Com isso ligado você não precisa apertar <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd>
-                    {' '}+<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">S</kbd> — e o
-                    Preview já recarrega com a última versão.
+                    {t('settings.codeAutosaveHelp')} <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd>
+                    {' '}+<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">S</kbd> {t('settings.codeAutosaveHelp2')}
                   </p>
                 </div>
                 <Switch checked={autoSave} onCheckedChange={toggleAutoSave}
-                  title={autoSave ? 'Autosave ligado' : 'Autosave desligado'}
+                  title={autoSave ? t('settings.autosaveOn') : t('settings.autosaveOff')}
                   className="mt-0.5" />
               </div>
             </div>
@@ -344,16 +355,13 @@ export function SettingsModal({ open, onClose }) {
             <div className="mx-auto max-w-3xl">
               <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                 <div className="min-w-0">
-                  <div className="text-[13px] font-medium">Avisar quando o Claude terminar</div>
+                  <div className="text-[13px] font-medium">{t('settings.notifyTitle')}</div>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Mostra uma notificação do sistema quando o Claude Code conclui uma tarefa
-                    num projeto que você <span className="font-medium text-foreground">não está olhando</span>.
-                    Útil pra deixar rodando num projeto e ir mexer em outro. Vale só pra projetos
-                    em Claude Code — Codex/OpenCode/Antigravity/personalizado não disparam aviso.
+                    {t('settings.notifyHelp')} <span className="font-medium text-foreground">{t('settings.notifyHelpNotLooking')}</span>{t('settings.notifyHelp2')}
                   </p>
                 </div>
                 <Switch checked={notify} onCheckedChange={toggleNotify}
-                  title={notify ? 'Notificações ligadas' : 'Notificações desligadas'}
+                  title={notify ? t('settings.notifyOn') : t('settings.notifyOff')}
                   className="mt-0.5" />
               </div>
             </div>
@@ -362,10 +370,7 @@ export function SettingsModal({ open, onClose }) {
           {tab === 'deps' && (
             <div className="mx-auto max-w-3xl">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Ferramentas que o Carcará usa no seu computador. A gente checa uma vez no primeiro uso —
-                use isto pra verificar de novo caso tenha reinstalado o sistema, formatado uma partição
-                ou removido alguma delas. O CLI de IA (Claude, Codex, OpenCode…) não entra aqui: ele é
-                escolhido por projeto na aba <span className="font-medium text-foreground">IA por projeto</span>.
+                {t('settings.depsIntro')} <span className="font-medium text-foreground">{t('settings.depsTabRef')}</span>.
               </p>
 
               <div className="mt-5">
@@ -374,8 +379,25 @@ export function SettingsModal({ open, onClose }) {
 
               <div className="mt-4">
                 <Button variant="outline" size="sm" className="gap-1.5" disabled={deps.loading} onClick={deps.check}>
-                  <RefreshCw className={'size-3.5 ' + (deps.loading ? 'animate-spin' : '')} /> Verificar de novo
+                  <RefreshCw className={'size-3.5 ' + (deps.loading ? 'animate-spin' : '')} /> {t('settings.depsRecheck')}
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {tab === 'language' && (
+            <div className="mx-auto max-w-3xl">
+              <div className="text-[13px] font-medium">{t('language.title')}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{t('language.subtitle')}</p>
+              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                <button type="button" onClick={() => setLang('pt')}
+                  className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', lang === 'pt' && 'border-primary ring-1 ring-primary')}>
+                  🇧🇷 {t('language.pt')}
+                </button>
+                <button type="button" onClick={() => setLang('en')}
+                  className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', lang === 'en' && 'border-primary ring-1 ring-primary')}>
+                  🇺🇸 {t('language.en')}
+                </button>
               </div>
             </div>
           )}
@@ -391,13 +413,13 @@ export function SettingsModal({ open, onClose }) {
                 />
                 <div className="min-w-0">
                   <div className="text-[15px] font-semibold text-foreground">{AUTHOR.name}</div>
-                  <div className="text-xs text-primary">{AUTHOR.role}</div>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{AUTHOR.blurb}</p>
+                  <div className="text-xs text-primary">{t(AUTHOR.role)}</div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t(AUTHOR.blurb)}</p>
                 </div>
               </div>
 
               {/* Links / redes */}
-              <div className="mt-5 text-[13px] font-medium">Onde me encontrar</div>
+              <div className="mt-5 text-[13px] font-medium">{t('settings.aboutWhereToFind')}</div>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {AUTHOR.links.map((l) => (
                   <button key={l.key} type="button" onClick={() => openLink(l.href)}
@@ -406,7 +428,7 @@ export function SettingsModal({ open, onClose }) {
                       <l.Icon />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">{l.sub}</span>
+                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">{t(l.sub)}</span>
                       <span className="block truncate text-[13px] font-medium text-foreground">{l.label}</span>
                     </span>
                     <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -417,11 +439,10 @@ export function SettingsModal({ open, onClose }) {
               {/* Agradecimento */}
               <div className="mt-5 rounded-lg border border-dashed p-4">
                 <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                  <Sparkles className="size-3.5 text-primary" /> Obrigado por usar o Carcará Code
+                  <Sparkles className="size-3.5 text-primary" /> {t('settings.aboutThanksTitle')}
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  Feito de forma independente por {AUTHOR.name}. Sugestões, ideias e feedback são muito bem-vindos —
-                  é o que faz o projeto melhorar.
+                  {t('settings.aboutThanksBody', { name: AUTHOR.name })}
                 </p>
               </div>
             </div>
