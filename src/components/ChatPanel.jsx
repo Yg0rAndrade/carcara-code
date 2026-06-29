@@ -12,6 +12,7 @@ import {
   applyDrop, addSessionToPane, setActiveInPane, closeSessionInTree, reconcile,
 } from '@/lib/paneLayout.js';
 import { cn } from '@/lib/utils';
+import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
 
 // Preview de markdown completo (react-markdown + GFM + highlight.js), carregado
 // sob demanda pra ficar fora do bundle de boot. Enquanto baixa, cai no PromptMd leve.
@@ -82,25 +83,6 @@ function saveLayout(projectPath, tree) {
   try { localStorage.setItem(LKEY(projectPath), JSON.stringify(tree)); } catch {}
 }
 
-// Em que metade/canto o cursor está, a partir de coords relativas (0..1).
-function computeZone(x, y) {
-  const margin = 0.28;
-  const d = { left: x, right: 1 - x, top: y, bottom: 1 - y };
-  const min = Math.min(d.left, d.right, d.top, d.bottom);
-  if (min > margin) return 'center';
-  if (min === d.left) return 'left';
-  if (min === d.right) return 'right';
-  if (min === d.top) return 'top';
-  return 'bottom';
-}
-
-const ZONE_STYLE = {
-  center: { inset: 0 },
-  left: { left: 0, top: 0, bottom: 0, width: '50%' },
-  right: { right: 0, top: 0, bottom: 0, width: '50%' },
-  top: { left: 0, right: 0, top: 0, height: '50%' },
-  bottom: { left: 0, right: 0, bottom: 0, height: '50%' },
-};
 
 // Negrito **assim** dentro de uma linha → <strong>.
 function renderInline(text) {
