@@ -17,6 +17,12 @@
     "directories": {
       "output": "release"
     },
+    "files": [
+      "**/*",
+      "!.claude/**",
+      "!.superpowers/**",
+      "!docs/**"
+    ],
     "npmRebuild": false,
     "asarUnpack": [
       "**/node_modules/node-pty/**"
