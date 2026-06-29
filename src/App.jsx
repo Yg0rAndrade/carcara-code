@@ -20,10 +20,17 @@ import { Toaster } from './components/ui/toaster.jsx';
 import { useTheme } from './lib/theme.jsx';
 import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
+import { useLayout } from './lib/layoutContext.jsx';
+import { resolveLayout } from './lib/layout.js';
 
 export default function App() {
   const t = useT();
   const { toggle: toggleTheme } = useTheme();
+  const { railSide, claudeSide } = useLayout();
+  // Override de layout do projeto ATIVO (só o lado do Claude). Cache local primeiro
+  // (sem piscar), depois confirma com o main. Chave por caminho.
+  const PKEY = (p) => `projectLayout:v1:${p}`;
+  const [projectOverride, setProjectOverride] = useState(null);
   const [projects, setProjects] = useState([]);
   const [active, setActive] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -103,6 +110,40 @@ export default function App() {
   // Mantém refs em dia pros listeners de atividade lerem o estado atual.
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => { projectsRef.current = projects; }, [projects]);
+
+  // Carrega o override de layout do projeto ativo ao trocar de projeto.
+  useEffect(() => {
+    if (!active) { setProjectOverride(null); return; }
+    try { const s = localStorage.getItem(PKEY(active.path)); setProjectOverride(s ? JSON.parse(s) : null); }
+    catch { setProjectOverride(null); }
+    let alive = true;
+    window.api.getProjectLayout?.(active.path).then((o) => {
+      if (!alive) return;
+      setProjectOverride(o || null);
+      try {
+        if (o) localStorage.setItem(PKEY(active.path), JSON.stringify(o));
+        else localStorage.removeItem(PKEY(active.path));
+      } catch {}
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [active]);
+
+  // Grava o lado do Claude SÓ pro projeto ativo (usado pelo drag do painel na Task 6).
+  const setClaudeSideForProject = (side) => {
+    if (!active) return;
+    const o = { claudeSide: side === 'right' ? 'right' : 'left' };
+    setProjectOverride(o);
+    try { localStorage.setItem(PKEY(active.path), JSON.stringify(o)); } catch {}
+    window.api.setProjectLayout?.(active.path, o.claudeSide);
+  };
+
+  const eff = resolveLayout({ railSide, claudeSide }, projectOverride);
+  const claudeLeft = eff.claudeSide === 'left';
+  const railFirst = eff.railSide === 'left';
+  // Posição da "bolinha" de reabrir o chat: colada na borda EXTERNA do chat.
+  const expandStyle = claudeLeft
+    ? { left: Math.max(0, (railFirst ? railWidth : 0) - 14) }
+    : { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) };
 
   // Atividade do Claude (vinda do main): atualiza o indicador no rail e atende o clique
   // da notificação do SO (que pede pra abrir o projeto que terminou).
@@ -276,91 +317,104 @@ export default function App() {
     reload();
   };
 
-  return (
-    <div className="relative flex h-screen bg-background text-foreground">
-      <Rail
-        projects={projects}
-        active={active}
-        activity={activity}
-        onOpen={setActive}
-        onAdd={addProjects}
-        onRemove={setPendingRemove}
-        onRestart={restartProject}
-        onStop={stopProject}
-        onReorder={reorderProjects}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onSearch={() => setPaletteOpen(true)}
-        width={railWidth}
-      />
-      <ResizeBar onMouseDown={startRailResize} />
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        <ResizablePanel
-          ref={chatPanelRef}
-          id="chat"
-          order={1}
-          defaultSize={34}
-          minSize={22}
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setChatCollapsed(true)}
-          onExpand={() => setChatCollapsed(false)}
-          className="flex flex-col border-r"
-        >
-          <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
-            <span className="truncate text-[15px] font-semibold">
-              {active ? active.name : t('app.no_project_selected')}
-            </span>
-            {active?.hasPkg && (
-              <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => previewControls.current?.restart?.()}
-                  onMouseEnter={() => restartIcon.current?.startAnimation?.()}
-                  onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
-                  title={t('app.restart_server_tooltip')}
-                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
-                >
-                  <RefreshCCWIcon ref={restartIcon} />{t('app.restart_server_btn')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => previewControls.current?.stop?.()}
-                  onMouseEnter={() => stopIcon.current?.startAnimation?.()}
-                  onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
-                  disabled={serverMode !== 'web'}
-                  title={t('app.stop_server_tooltip')}
-                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
-                >
-                  <XIcon ref={stopIcon} />{t('app.stop_server_btn')}
-                </button>
-              </div>
-            )}
-          </div>
-          <ErrorBoundary label="Chat">
-            <ChatPanel activeProject={active?.path || null} controlsRef={chatControls} />
-          </ErrorBoundary>
-        </ResizablePanel>
-        <ResizableHandle withHandle>
-          {/* Botão de recolher: fica no topo da "slide" (divisor). Some quando já
-              está recolhido — aí quem reabre é a bolinha colada no rail. */}
-          {!chatCollapsed && (
+  const railEl = (
+    <Rail
+      projects={projects}
+      active={active}
+      activity={activity}
+      onOpen={setActive}
+      onAdd={addProjects}
+      onRemove={setPendingRemove}
+      onRestart={restartProject}
+      onStop={stopProject}
+      onReorder={reorderProjects}
+      onOpenSettings={() => setSettingsOpen(true)}
+      onSearch={() => setPaletteOpen(true)}
+      width={railWidth}
+    />
+  );
+  const barEl = <ResizeBar onMouseDown={startRailResize} />;
+
+  const chatPanel = (
+    <ResizablePanel
+      ref={chatPanelRef}
+      id="chat"
+      order={claudeLeft ? 1 : 2}
+      defaultSize={34}
+      minSize={22}
+      collapsible
+      collapsedSize={0}
+      onCollapse={() => setChatCollapsed(true)}
+      onExpand={() => setChatCollapsed(false)}
+      className={'flex flex-col ' + (claudeLeft ? 'border-r' : 'border-l')}
+    >
+      <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+        <span className="truncate text-[15px] font-semibold">
+          {active ? active.name : t('app.no_project_selected')}
+        </span>
+        {active?.hasPkg && (
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={toggleChat}
-              title={t('app.collapse_chat_tooltip')}
-              className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => previewControls.current?.restart?.()}
+              onMouseEnter={() => restartIcon.current?.startAnimation?.()}
+              onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
+              title={t('app.restart_server_tooltip')}
+              className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <RefreshCCWIcon ref={restartIcon} />{t('app.restart_server_btn')}
             </button>
-          )}
-        </ResizableHandle>
-        <ResizablePanel id="preview" order={2} minSize={28} className="flex flex-col">
-          <ErrorBoundary label="Preview">
-            <PreviewPanel active={active} onProjectsChanged={reload} controlsRef={previewControls} onModeChange={setServerMode} />
-          </ErrorBoundary>
-        </ResizablePanel>
+            <button
+              type="button"
+              onClick={() => previewControls.current?.stop?.()}
+              onMouseEnter={() => stopIcon.current?.startAnimation?.()}
+              onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
+              disabled={serverMode !== 'web'}
+              title={t('app.stop_server_tooltip')}
+              className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
+            >
+              <XIcon ref={stopIcon} />{t('app.stop_server_btn')}
+            </button>
+          </div>
+        )}
+      </div>
+      <ErrorBoundary label="Chat">
+        <ChatPanel activeProject={active?.path || null} controlsRef={chatControls} />
+      </ErrorBoundary>
+    </ResizablePanel>
+  );
+
+  const handleEl = (
+    <ResizableHandle withHandle>
+      {!chatCollapsed && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={toggleChat}
+          title={t('app.collapse_chat_tooltip')}
+          className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {claudeLeft ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+      )}
+    </ResizableHandle>
+  );
+
+  const previewPanel = (
+    <ResizablePanel id="preview" order={claudeLeft ? 2 : 1} minSize={28} className="flex flex-col">
+      <ErrorBoundary label="Preview">
+        <PreviewPanel active={active} onProjectsChanged={reload} controlsRef={previewControls} onModeChange={setServerMode} />
+      </ErrorBoundary>
+    </ResizablePanel>
+  );
+
+  return (
+    <div className="relative flex h-screen bg-background text-foreground">
+      {railFirst && <>{railEl}{barEl}</>}
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {claudeLeft ? <>{chatPanel}{handleEl}{previewPanel}</> : <>{previewPanel}{handleEl}{chatPanel}</>}
       </ResizablePanelGroup>
+      {!railFirst && <>{barEl}{railEl}</>}
 
       {pendingRemove && (
         <div
@@ -383,17 +437,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Bolinha de reabrir: cola na borda direita do rail (seletor de projetos).
-          Só aparece com o chat recolhido; expand() volta à largura anterior. */}
+      {/* Bolinha de reabrir o chat: colada na borda externa do chat (segue o lado). */}
       {chatCollapsed && (
         <button
           type="button"
           onClick={() => chatPanelRef.current?.expand()}
-          style={{ left: railWidth - 14 }}
+          style={expandStyle}
           title={t('app.expand_chat_tooltip')}
           className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
         >
-          <ChevronRight className="h-4 w-4" />
+          {claudeLeft ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       )}
 
