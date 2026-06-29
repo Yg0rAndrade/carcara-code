@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld('api', {
   // CLI de IA por projeto (qual ferramenta sobe nas sessões daquele projeto)
   getAi: (projectPath) => ipcRenderer.invoke('ai:get', { projectPath }),
   setAi: (projectPath, cli, custom) => ipcRenderer.invoke('ai:set', { projectPath, cli, custom }),
+  getLayout: () => ipcRenderer.invoke('layout:get'),
+  setLayout: (layout) => ipcRenderer.invoke('layout:set', layout),
+  getProjectLayout: (projectPath) => ipcRenderer.invoke('layout:getProject', { projectPath }),
+  setProjectLayout: (projectPath, claudeSide) => ipcRenderer.invoke('layout:setProject', { projectPath, claudeSide }),
   addProjects: () => ipcRenderer.invoke('projects:add'),
   removeProject: (projectPath) => ipcRenderer.invoke('projects:remove', { projectPath }),
   reorderProjects: (paths) => ipcRenderer.invoke('projects:reorder', { paths }),

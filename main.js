@@ -395,6 +395,34 @@ ipcMain.handle('ai:set', (evt, { projectPath, cli, custom }) => {
   return { ok: true };
 });
 
+// ---- Layout (lado do rail/Claude) ----
+// Global: lado do rail (global) + lado padrão do Claude. Por projeto: só o lado
+// do Claude (override). Espelha o padrão de projectCli — string 'left'/'right',
+// qualquer outra coisa cai em 'left'.
+const sideOf = (v) => (v === 'right' ? 'right' : 'left');
+ipcMain.handle('layout:get', () => {
+  const l = loadConfig().layout || {};
+  return { railSide: sideOf(l.railSide), claudeSide: sideOf(l.claudeSide) };
+});
+ipcMain.handle('layout:set', (evt, { railSide, claudeSide }) => {
+  const c = loadConfig();
+  c.layout = { railSide: sideOf(railSide), claudeSide: sideOf(claudeSide) };
+  saveConfig(c);
+  return { ok: true };
+});
+ipcMain.handle('layout:getProject', (evt, { projectPath }) => {
+  const p = loadConfig().projectLayout?.[projectPath];
+  return (p && (p.claudeSide === 'left' || p.claudeSide === 'right')) ? { claudeSide: p.claudeSide } : null;
+});
+ipcMain.handle('layout:setProject', (evt, { projectPath, claudeSide }) => {
+  const c = loadConfig();
+  c.projectLayout = c.projectLayout || {};
+  if (claudeSide === 'left' || claudeSide === 'right') c.projectLayout[projectPath] = { claudeSide };
+  else delete c.projectLayout[projectPath];
+  saveConfig(c);
+  return { ok: true };
+});
+
 // Adiciona uma ou mais pastas de projeto (de qualquer lugar do disco).
 ipcMain.handle('projects:add', async () => {
   const res = await dialog.showOpenDialog(mainWindow, {
