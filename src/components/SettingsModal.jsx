@@ -9,6 +9,7 @@ import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
 import { cn } from '@/lib/utils';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
 import { useT, useLang } from '@/lib/i18n';
+import { useLayout } from '@/lib/layoutContext.jsx';
 
 // CLIs de IA suportados. O 'cmd' é o que é digitado no terminal ao abrir a sessão.
 // 'Icon' = logo da marca (Claude Code/OpenCode reais; Antigravity usa o "G" do Google;
@@ -93,10 +94,29 @@ function CliBadge({ optKey, small }) {
   );
 }
 
+// Os 4 layouts possíveis (lado do rail x lado do Claude). labelKey = chave i18n.
+const LAYOUT_PRESETS = [
+  { rail: 'left', claude: 'left', labelKey: 'settings.layoutPresetLL' },
+  { rail: 'left', claude: 'right', labelKey: 'settings.layoutPresetLR' },
+  { rail: 'right', claude: 'left', labelKey: 'settings.layoutPresetRL' },
+  { rail: 'right', claude: 'right', labelKey: 'settings.layoutPresetRR' },
+];
+
+// Miniatura do layout: barra fina = rail; bloco com borda = Claude; bloco claro = preview.
+function LayoutThumb({ rail, claude }) {
+  const railBar = <span key="r" className="h-full w-1.5 rounded-sm bg-primary/70" />;
+  const claudeBox = <span key="c" className="h-full flex-1 rounded-sm border border-primary bg-primary/20" />;
+  const previewBox = <span key="p" className="h-full flex-1 rounded-sm bg-muted-foreground/20" />;
+  const panels = claude === 'left' ? [claudeBox, previewBox] : [previewBox, claudeBox];
+  const all = rail === 'left' ? [railBar, ...panels] : [...panels, railBar];
+  return <span className="flex h-10 w-full items-stretch gap-1">{all}</span>;
+}
+
 export function SettingsModal({ open, onClose }) {
   const { theme, setTheme, terminalAppearance, setTerminalAppearance } = useTheme();
   const t = useT();
   const { lang, setLang } = useLang();
+  const { railSide, claudeSide, setPreset } = useLayout();
   const [tab, setTab] = useState('ai');
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { cli, custom }
@@ -328,6 +348,33 @@ export function SettingsModal({ open, onClose }) {
                   className={cn('flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted', terminalAppearance === 'dark' && 'border-primary ring-1 ring-primary')}>
                   <Moon className="h-4 w-4" /> {t('settings.themeDark')}
                 </button>
+              </div>
+
+              <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
+                <Monitor className="h-4 w-4" /> {t('settings.layoutTitle')}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('settings.layoutHelp')}
+              </p>
+              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                {LAYOUT_PRESETS.map((preset) => {
+                  const active = railSide === preset.rail && claudeSide === preset.claude;
+                  return (
+                    <button
+                      key={preset.rail + preset.claude}
+                      type="button"
+                      onClick={() => setPreset(preset.rail, preset.claude)}
+                      title={t(preset.labelKey)}
+                      className={cn(
+                        'flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted',
+                        active && 'border-primary ring-1 ring-primary'
+                      )}
+                    >
+                      <LayoutThumb rail={preset.rail} claude={preset.claude} />
+                      <span className="text-[11px] text-muted-foreground">{t(preset.labelKey)}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -517,6 +517,12 @@
     "linkGithub": "GitHub",
     "linkLinkedin": "LinkedIn",
     "linkInstagram": "Instagram",
-    "linkYoutube": "YouTube"
+    "linkYoutube": "YouTube",
+    "layoutTitle": "Layout (panel and sidebar position)",
+    "layoutHelp": "Sets the default for ALL projects. You can still drag the Claude panel in a specific project to flip just that one.",
+    "layoutPresetLL": "Sidebar and Claude on the left",
+    "layoutPresetLR": "Sidebar left, Claude right",
+    "layoutPresetRL": "Sidebar right, Claude left",
+    "layoutPresetRR": "Sidebar and Claude on the right"
   }
 }
