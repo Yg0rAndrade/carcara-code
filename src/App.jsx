@@ -146,14 +146,36 @@ export default function App() {
     ? { left: Math.max(0, (railFirst ? railWidth : 0) - 14) }
     : { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) };
 
-  // Arraste do painel inteiro (Claude) ou do rail. dragMode diz o quê; dragZone, o lado.
+  // Arrastar o painel do Claude (por projeto) ou o rail (global) de lado. NÃO usamos
+  // HTML5 drag-and-drop: no Electron ele não inicia de forma confiável num "punho" só
+  // com ícone e não entrega dragover/drop por cima do webview do Preview. Em vez disso,
+  // usamos eventos de mouse (mousedown → mousemove/mouseup) + overlay full-screen — o
+  // MESMO padrão do startRailResize, que já arrasta a janela inteira sem problema. O
+  // overlay cobre o webview pra o mousemove continuar caindo na janela host.
   const [dragMode, setDragMode] = useState(null);   // null | 'panel' | 'rail'
-  const [dragZone, setDragZone] = useState(null);    // 'left' | 'right' | null
-  const endLayoutDrag = () => { setDragMode(null); setDragZone(null); };
-  const onLayoutDrop = (zone) => {
-    if (dragMode === 'panel') setClaudeSideForProject(zone);
-    else if (dragMode === 'rail') setRailSide(zone);
-    endLayoutDrag();
+  const [dragZone, setDragZone] = useState(null);    // 'left' | 'right'
+  const startLayoutDrag = (mode, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragMode(mode);
+    let zone = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
+    setDragZone(zone);
+    document.body.style.cursor = 'grabbing';
+    const onMove = (ev) => {
+      const z = ev.clientX < window.innerWidth / 2 ? 'left' : 'right';
+      if (z !== zone) { zone = z; setDragZone(z); }
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      if (mode === 'panel') setClaudeSideForProject(zone);
+      else if (mode === 'rail') setRailSide(zone);
+      setDragMode(null);
+      setDragZone(null);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
   // Atividade do Claude (vinda do main): atualiza o indicador no rail e atende o clique
@@ -341,8 +363,7 @@ export default function App() {
       onReorder={reorderProjects}
       onOpenSettings={() => setSettingsOpen(true)}
       onSearch={() => setPaletteOpen(true)}
-      onRailDragStart={() => { setDragMode('rail'); setDragZone(null); }}
-      onRailDragEnd={endLayoutDrag}
+      onRailGrab={(e) => startLayoutDrag('rail', e)}
       width={railWidth}
     />
   );
@@ -364,9 +385,7 @@ export default function App() {
       <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
         {active && (
           <span
-            draggable
-            onDragStart={(e) => { try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'panel'); } catch {} setDragMode('panel'); setDragZone(null); }}
-            onDragEnd={endLayoutDrag}
+            onMouseDown={(e) => startLayoutDrag('panel', e)}
             title={t('app.move_claude_tooltip')}
             className="grid size-7 shrink-0 cursor-grab place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing [&_svg]:size-[15px]"
           >
@@ -483,13 +502,10 @@ export default function App() {
         activePath={active?.path || null}
         onOpenFile={openFileFromPalette}
       />
+      {/* Overlay durante o arraste: cobre a janela (inclusive o webview do Preview) pra o
+          mousemove continuar caindo na host, e mostra o realce da metade onde vai cair. */}
       {dragMode && (
-        <div
-          className="fixed inset-0 z-50"
-          onDragOver={(e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch {} const z = e.clientX < window.innerWidth / 2 ? 'left' : 'right'; setDragZone((p) => (p === z ? p : z)); }}
-          onDrop={(e) => { e.preventDefault(); onLayoutDrop(e.clientX < window.innerWidth / 2 ? 'left' : 'right'); }}
-          onDragEnd={endLayoutDrag}
-        >
+        <div className="fixed inset-0 z-50 cursor-grabbing">
           {dragZone && (
             <div
               className="pointer-events-none absolute rounded-sm border-2 border-primary bg-primary/20 transition-all duration-100"
