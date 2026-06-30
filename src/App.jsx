@@ -15,6 +15,7 @@ import { Button } from './components/ui/button.jsx';
 import { ResizeBar } from './components/ui/resize-bar.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { SetupScreen } from './components/SetupScreen.jsx';
+import { UpdatePill } from './components/UpdatePill.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
 import { useTheme } from './lib/theme.jsx';
@@ -39,6 +40,10 @@ export default function App() {
   const projectsRef = useRef([]);
   const [pendingRemove, setPendingRemove] = useState(null); // projeto aguardando confirmação
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
+  const [update, setUpdate] = useState({ state: 'idle' });
+  const [pillDismissed, setPillDismissed] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('appearance');
   // Tela de preparo do 1º uso: aparece só até concluir uma vez. A flag mora no config.json
   // (via main), não no localStorage — começa fechada e abre só se o main disser que falta.
   const [setupOpen, setSetupOpen] = useState(false);
@@ -86,6 +91,12 @@ export default function App() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // Versão do app (uma vez), pra exibir no rail e em Configurações > Sobre.
+  useEffect(() => { window.api.getAppVersion().then(setAppVersion).catch(() => {}); }, []);
+
+  // Status da auto-atualização (canal único). Reabre a pílula a cada estado novo.
+  useEffect(() => window.api.on('update:status', (s) => { setUpdate(s || { state: 'idle' }); setPillDismissed(false); }), []);
 
   // No 1º uso (flag ausente no config.json), abre a tela de preparo. Migra quem já
   // tinha dispensado pelo localStorage antigo, pra não ver a tela de novo.
@@ -369,6 +380,9 @@ export default function App() {
       onSearch={() => setPaletteOpen(true)}
       onRailGrab={(e) => startLayoutDrag('rail', e)}
       width={railWidth}
+      version={appVersion}
+      update={update}
+      onOpenAbout={() => { setSettingsTab('about'); setSettingsOpen(true); }}
     />
   );
   const barEl = <ResizeBar onMouseDown={startRailResize} />;
@@ -498,7 +512,25 @@ export default function App() {
         </button>
       )}
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {!pillDismissed && (
+        <UpdatePill
+          update={update}
+          onDownload={() => window.api.updateDownload()}
+          onInstall={() => window.api.updateInstall()}
+          onRetry={() => window.api.updateCheck()}
+          onDismiss={() => setPillDismissed(true)}
+        />
+      )}
+      <SettingsModal
+        open={settingsOpen}
+        initialTab={settingsTab}
+        appVersion={appVersion}
+        update={update}
+        onUpdateCheck={() => window.api.updateCheck()}
+        onUpdateDownload={() => window.api.updateDownload()}
+        onUpdateInstall={() => window.api.updateInstall()}
+        onClose={() => setSettingsOpen(false)}
+      />
       <SetupScreen open={setupOpen} onClose={closeSetup} />
       <CommandPalette
         open={paletteOpen}

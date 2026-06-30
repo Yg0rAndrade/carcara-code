@@ -10,7 +10,8 @@
     "menu_start_running": "Iniciar servidor",
     "menu_stop_server": "Parar servidor",
     "menu_remove_project": "Remover da lista",
-    "move_tooltip": "Arraste para mover a barra de lado"
+    "move_tooltip": "Arraste para mover a barra de lado",
+    "version_tooltip": "Versão do app — abrir Sobre"
   },
   "app": {
     "no_project_selected": "Selecione um projeto",
@@ -467,6 +468,20 @@
     "rows": "linhas",
     "truncated": "mostrando {shownRows}×{shownCols} de {totalRows}×{totalCols}"
   },
+  "update": {
+    "checking": "Procurando atualizações…",
+    "available": "Versão {version} disponível",
+    "downloading": "Baixando… {percent}%",
+    "ready": "Pronto para instalar",
+    "error": "Falha ao atualizar",
+    "upToDate": "Você está na última versão",
+    "dev": "Atualização indisponível em dev",
+    "downloadBtn": "Baixar",
+    "installBtn": "Reiniciar agora",
+    "retryBtn": "Tentar de novo",
+    "dismiss": "Dispensar"
+  },
+  "update_notify_body": "Versão {version} disponível — abra para atualizar",
   "settings": {
     "title": "Configurações",
     "tabAi": "IA por projeto",
@@ -531,6 +546,8 @@
     "layoutPresetLL": "Rail e Claude à esquerda",
     "layoutPresetLR": "Rail à esquerda, Claude à direita",
     "layoutPresetRL": "Rail à direita, Claude à esquerda",
-    "layoutPresetRR": "Rail e Claude à direita"
+    "layoutPresetRR": "Rail e Claude à direita",
+    "aboutVersionLabel": "Versão instalada",
+    "checkUpdates": "Verificar atualizações"
   }
 }

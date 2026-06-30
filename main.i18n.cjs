@@ -16,6 +16,7 @@ module.exports = {
     notify_title: 'Carcará Code',
     notify_asking: 'Claude precisa de você em {name}',
     notify_done: 'Claude terminou em {name}',
+    update_notify_body: 'Versão {version} disponível — abra para atualizar',
   },
   en: {
     ctx_back: 'Go back',
@@ -31,5 +32,6 @@ module.exports = {
     notify_title: 'Carcará Code',
     notify_asking: 'Claude needs you in {name}',
     notify_done: 'Claude finished in {name}',
+    update_notify_body: 'Version {version} available — open to update',
   },
 };

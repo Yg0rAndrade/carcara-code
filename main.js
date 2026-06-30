@@ -9,8 +9,10 @@ const detectPort = require('detect-port');
 const mcpCore = require('./mcp-core.cjs');
 const mcpOauth = require('./mcp-oauth.cjs');
 const claudeSessions = require('./claude-sessions.cjs');
+const { initUpdater } = require('./updater.cjs');
 
 let mainWindow;
+let updater = null;
 const runningServers = new Map(); // projectPath -> { proc, url, port, log }
 const terminals = new Map();      // sessionId -> { pty, buffer, projectPath } (sessões do Claude Code)
 const shells = new Map();         // projectPath -> { pty, buffer } (terminal livre por projeto)
@@ -141,6 +143,21 @@ function createWindow() {
 
   // Ao fechar a janela: mata os processos na hora e zera a referência.
   mainWindow.on('closed', () => { cleanup(); mainWindow = null; });
+
+  // Auto-atualização (só no app empacotado). Envia status pro renderer por um canal só.
+  updater = initUpdater({
+    isPackaged: app.isPackaged,
+    send: (payload) => safeSend('update:status', payload),
+    notify: (version) => {
+      const n = new Notification({ title: APP_NAME, body: tn('update_notify_body', { version }) });
+      n.on('click', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); }
+      });
+      n.show();
+    },
+  });
+  // Espera o boot assentar antes de checar (não competir com o startup).
+  setTimeout(() => { try { updater && updater.checkOnBoot(); } catch {} }, 4000);
 }
 
 app.whenReady().then(() => {
@@ -227,6 +244,14 @@ ipcMain.on('devtools:dock', (_e, { previewId, devtoolsId }) => {
 ipcMain.on('devtools:undock', (_e, { previewId }) => {
   try { const t = webContents.fromId(previewId); if (t && t.isDevToolsOpened()) t.closeDevTools(); } catch {}
 });
+
+// Versão do app (lida do package.json). Funciona empacotado e rodando do fonte.
+ipcMain.handle('app:getVersion', () => app.getVersion());
+
+// Auto-atualização
+ipcMain.handle('update:check', () => { updater && updater.check(); });
+ipcMain.handle('update:download', () => { updater && updater.download(); });
+ipcMain.handle('update:install', () => { updater && updater.install(); });
 
 // ---------- Config / projetos ----------
 ipcMain.handle('config:get', () => loadConfig());

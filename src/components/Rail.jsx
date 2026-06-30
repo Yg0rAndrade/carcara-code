@@ -5,8 +5,9 @@ import { SearchIcon } from './ui/search.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
+import { hasPendingUpdate } from '@/lib/updateView';
 
-export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onOpenSettings, onSearch, onRailGrab, width = 64 }) {
+export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onOpenSettings, onSearch, onRailGrab, width = 64, version = '', update, onOpenAbout }) {
   const t = useT();
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
@@ -143,6 +144,20 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
           <SettingsIcon size={20} />
         </button>
       </div>
+
+      {/* Versão do app: spot pequeno e sempre visível. Clica → abre Configurações > Sobre. */}
+      {version && (
+        <div className="mt-1 flex justify-center">
+          <button
+            onClick={onOpenAbout}
+            title={t('rail.version_tooltip')}
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}
+            v{version}
+          </button>
+        </div>
+      )}
 
       <RailMenu
         menu={menu}

@@ -11,4 +11,8 @@ export default defineConfig({
   // Num app local de desktop o tamanho do bundle não importa.
   build: { outDir: 'dist', emptyOutDir: true, minify: false },
   server: { port: 5234, strictPort: true },
+  test: {
+    environment: 'node',
+    exclude: ['node_modules/**', 'release/**', 'dist/**'],
+  },
 });
