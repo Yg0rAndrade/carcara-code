@@ -42,7 +42,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
   };
 
   return (
-    <nav style={{ width }} className="no-scrollbar flex shrink-0 flex-col overflow-y-auto border-r bg-card py-3">
+    <nav style={{ width }} className="flex shrink-0 flex-col overflow-hidden border-r bg-card py-3">
       {/* Busca no topo: a "bolinha" que abre a paleta de comandos (Ctrl+K) — projetos,
           arquivos e ações. Fica acima dos projetos pra a pessoa saber que existe. */}
       <div className="flex shrink-0 flex-col items-center px-2">
@@ -62,8 +62,10 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
         </button>
         <div className="my-2.5 h-px w-7 rounded-full bg-border" />
       </div>
+      {/* Única área rolável do rail: a lista de projetos. O topo (busca/grip) e o
+          rodapé (adicionar/configurações) ficam fixos, sempre acessíveis. */}
       <div
-        className="flex flex-1 flex-wrap content-start justify-center gap-2.5 px-2"
+        className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); commitDrop(); }}
       >
@@ -125,39 +127,43 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
             )}
           </button>
         ))}
-        <button
-          onClick={onAdd}
-          title={t('rail.add_project_tooltip')}
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Plus className="h-5 w-5" />
-        </button>
       </div>
 
-      {/* Engrenagem fixa no fim do rail: abre as configurações. */}
-      <div className="flex justify-center pt-2">
-        <button
-          onClick={onOpenSettings}
-          title={t('rail.settings_tooltip')}
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <SettingsIcon size={20} />
-        </button>
-      </div>
-
-      {/* Versão do app: spot pequeno e sempre visível. Clica → abre Configurações > Sobre. */}
-      {version && (
-        <div className="mt-1 flex justify-center">
+      {/* Rodapé fixo (card): adicionar projeto + configurações sempre acessíveis,
+          mesmo com a lista rolada pro fim. */}
+      <div className="shrink-0 px-2 pt-2">
+        <div className="flex flex-col items-center gap-1.5 py-2">
           <button
-            onClick={onOpenAbout}
-            title={t('rail.version_tooltip')}
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+            onClick={onAdd}
+            title={t('rail.add_project_tooltip')}
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
           >
-            {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}
-            v{version}
+            <Plus className="h-5 w-5" />
+          </button>
+          <div className="h-px w-7 rounded-full bg-border" />
+          <button
+            onClick={onOpenSettings}
+            title={t('rail.settings_tooltip')}
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <SettingsIcon size={20} />
           </button>
         </div>
-      )}
+
+        {/* Versão do app: spot pequeno e sempre visível. Clica → abre Configurações > Sobre. */}
+        {version && (
+          <div className="mt-1 flex justify-center">
+            <button
+              onClick={onOpenAbout}
+              title={t('rail.version_tooltip')}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}
+              v{version}
+            </button>
+          </div>
+        )}
+      </div>
 
       <RailMenu
         menu={menu}
