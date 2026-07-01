@@ -264,12 +264,43 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   const viewportRef = useRef(viewport); // leitura síncrona dentro do getWebview (deps [])
   viewportRef.current = viewport;
   const bodyRowRef = useRef(null);
-  const webviewsRef = useRef(new Map()); // path -> webview element (um por projeto)
+  // Abas por projeto. Cada projeto tem uma lista de abas (cada uma com o seu
+  // <webview>) e a id da aba ativa. A aba "raiz" é o servidor de preview; as demais
+  // nascem de links que abririam nova janela (target=_blank, window.open, Ctrl+clique).
+  // projTabsRef: path -> { activeId, tabs: [{ id, webview, src, url, title, canBack, canFwd }] }
+  //   src = URL que navegamos de propósito (recuperação/dedup); url = URL viva (barra).
+  const projTabsRef = useRef(new Map());
+  const tabIdRef = useRef(0);
+  const [tabBar, setTabBar] = useState({ activeId: null, tabs: [] }); // snapshot do projeto ativo (render da tira)
   const containerRef = useRef(null);
   const logRef = useRef(null);
-  const urlsRef = useRef(new Map()); // path -> url
+  const urlsRef = useRef(new Map()); // path -> url do servidor de preview (marca "tem server no ar")
   const activePathRef = useRef(null);
   const manualStopRef = useRef(new Set()); // paths parados pelo usuário (botão Parar)
+
+  // --- Helpers do modelo de abas ---
+  const getProjTabs = (path) => {
+    let p = projTabsRef.current.get(path);
+    if (!p) { p = { activeId: null, tabs: [] }; projTabsRef.current.set(path, p); }
+    return p;
+  };
+  const activeTabOf = (path) => {
+    const p = projTabsRef.current.get(path);
+    if (!p) return null;
+    return p.tabs.find((t) => t.id === p.activeId) || null;
+  };
+  const activeWebviewOf = (path) => activeTabOf(path)?.webview || null;
+  const allWebviews = () => {
+    const out = [];
+    for (const p of projTabsRef.current.values()) for (const t of p.tabs) out.push(t.webview);
+    return out;
+  };
+  // Reprojeta o estado das abas do projeto ATIVO pra tira (é o único que ela mostra).
+  const refreshTabBar = useCallback(() => {
+    const p = activePathRef.current && projTabsRef.current.get(activePathRef.current);
+    if (!p) { setTabBar({ activeId: null, tabs: [] }); return; }
+    setTabBar({ activeId: p.activeId, tabs: p.tabs.map((t) => ({ id: t.id, url: t.url, src: t.src, title: t.title })) });
+  }, []);
   const devtoolsHostRef = useRef(null);  // div que segura o webview do DevTools
   const devtoolsRef = useRef(null);      // o <webview> que hospeda o DevTools
   const toggleDevtoolsRef = useRef(() => {});
@@ -283,11 +314,13 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     el.scrollTop = el.scrollHeight;
   }, []);
 
-  // Cria (ou pega) o webview DESTE projeto. Cada projeto tem o seu.
-  const getWebview = useCallback((projectPath) => {
-    let w = webviewsRef.current.get(projectPath);
-    if (w) return w;
-    w = document.createElement('webview');
+  // Cria uma aba (um <webview>) no projeto e devolve o objeto-aba. Se `activate`,
+  // ela vira a aba visível do projeto. As listeners atualizam a barra/nav só quando
+  // ESTA aba é a ativa do projeto ativo — abas de fundo carregam sem mexer na UI.
+  const createTab = useCallback((projectPath, url, { activate = true } = {}) => {
+    const proj = getProjTabs(projectPath);
+    const id = ++tabIdRef.current;
+    const w = document.createElement('webview');
     // Isola a sessão deste projeto (precisa ser definido ANTES de anexar/navegar).
     w.setAttribute('partition', partitionFor(projectPath));
     w.style.position = 'absolute';
@@ -299,9 +332,18 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     w._retry = 0;
     applyViewport(w, viewportRef.current); // respeita o modo escolhido já na criação
     containerRef.current.appendChild(w);
-    const syncNav = () => { if (activePathRef.current === projectPath) { try { setCanBack(w.canGoBack()); setCanFwd(w.canGoForward()); } catch {} } };
-    w.addEventListener('did-navigate', (e) => { if (e.url && activePathRef.current === projectPath) setUrl(e.url); syncNav(); });
-    w.addEventListener('did-navigate-in-page', (e) => { if (e.isMainFrame && e.url && activePathRef.current === projectPath) setUrl(e.url); syncNav(); });
+    const tab = { id, webview: w, src: url || '', url: url || '', title: '', canBack: false, canFwd: false };
+    proj.tabs.push(tab);
+    if (activate) proj.activeId = id;
+
+    const isActiveTab = () => activePathRef.current === projectPath && proj.activeId === id;
+    const syncNav = () => {
+      try { tab.canBack = w.canGoBack(); tab.canFwd = w.canGoForward(); } catch {}
+      if (isActiveTab()) { setCanBack(tab.canBack); setCanFwd(tab.canFwd); }
+    };
+    w.addEventListener('did-navigate', (e) => { if (e.url) { tab.url = e.url; if (isActiveTab()) setUrl(e.url); refreshTabBar(); } syncNav(); });
+    w.addEventListener('did-navigate-in-page', (e) => { if (e.isMainFrame && e.url) { tab.url = e.url; if (isActiveTab()) setUrl(e.url); refreshTabBar(); } syncNav(); });
+    w.addEventListener('page-title-updated', (e) => { tab.title = e.title || ''; refreshTabBar(); });
     w.addEventListener('did-fail-load', (e) => {
       if (e.errorCode === -3 || w.style.display === 'none') return;
       if (w._retry++ < 8) setTimeout(() => { try { w.reload(); } catch {} }, 1000);
@@ -324,14 +366,23 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
         setGrabbing(false);
       }
     });
-    webviewsRef.current.set(projectPath, w);
-    return w;
-  }, []);
+    if (url) { try { if (w.getAttribute('src') !== url) w.src = url; } catch {} }
+    refreshTabBar();
+    return tab;
+  }, [refreshTabBar]);
+
+  // Remove TODAS as abas de um projeto (servidor caiu/parado). Zera o webview de cada.
+  const removeAllTabs = useCallback((projectPath) => {
+    const proj = projTabsRef.current.get(projectPath);
+    if (proj) { for (const t of proj.tabs) { try { t.webview.remove(); } catch {} } }
+    projTabsRef.current.delete(projectPath);
+    refreshTabBar();
+  }, [refreshTabBar]);
 
   // Foco do webview (vem do main): liga a borda só quando o id é o do projeto ativo.
   useEffect(() => {
     return window.api.on('webview:focus', ({ id, focused }) => {
-      const w = activePathRef.current && webviewsRef.current.get(activePathRef.current);
+      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
       let activeId = null;
       try { activeId = w && w.getWebContentsId(); } catch {}
       if (activeId != null && id === activeId) setWebFocused(focused);
@@ -345,11 +396,11 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
 
   // Navegação do preview (voltar/avançar), estilo navegador.
   const goBack = useCallback(() => {
-    const w = active && webviewsRef.current.get(active.path);
+    const w = active && activeWebviewOf(active.path);
     if (w && w.canGoBack()) w.goBack();
   }, [active]);
   const goFwd = useCallback(() => {
-    const w = active && webviewsRef.current.get(active.path);
+    const w = active && activeWebviewOf(active.path);
     if (w && w.canGoForward()) w.goForward();
   }, [active]);
 
@@ -357,7 +408,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   useEffect(() => {
     const nav = (dir) => {
       const p = activePathRef.current;
-      const w = p && webviewsRef.current.get(p);
+      const w = p && activeWebviewOf(p);
       if (!w) return;
       if (dir === 'back' && w.canGoBack()) w.goBack();
       if (dir === 'fwd' && w.canGoForward()) w.goForward();
@@ -369,7 +420,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   // Liga/desliga o modo "selecionar elemento" no webview do projeto ativo.
   const toggleGrab = useCallback(() => {
     if (!active) return;
-    const w = webviewsRef.current.get(active.path);
+    const w = activeWebviewOf(active.path);
     if (!w) return;
     if (grabbing) {
       try { w.executeJavaScript(CLEANUP); } catch {}
@@ -382,23 +433,23 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   // Sai do modo "selecionar" se deixar o preview/site (troca de aba, para o servidor, etc.).
   useEffect(() => {
     if (grabbing && !(view === 'preview' && mode === 'web')) {
-      for (const w of webviewsRef.current.values()) { try { w.executeJavaScript(CLEANUP); } catch {} }
+      for (const w of allWebviews()) { try { w.executeJavaScript(CLEANUP); } catch {} }
       setGrabbing(false);
     }
   }, [view, mode, grabbing]);
 
   // Atualiza o estado dos botões voltar/avançar ao trocar de projeto.
   useEffect(() => {
-    const w = active && webviewsRef.current.get(active.path);
+    const w = active && activeWebviewOf(active.path);
     try { setCanBack(!!w && w.canGoBack()); setCanFwd(!!w && w.canGoForward()); } catch { setCanBack(false); setCanFwd(false); }
-  }, [active, mode]);
+  }, [active, mode, tabBar]);
 
   // Esc cancela o modo mesmo quando o foco está na janela do app (não no webview).
   useEffect(() => {
     if (!grabbing) return;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      for (const w of webviewsRef.current.values()) { try { w.executeJavaScript(CLEANUP); } catch {} }
+      for (const w of allWebviews()) { try { w.executeJavaScript(CLEANUP); } catch {} }
       setGrabbing(false);
     };
     window.addEventListener('keydown', onKey, true);
@@ -413,15 +464,23 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     // que a ErrorBoundary não captura. Antes, uma exceção aqui abortava o callback
     // e setUrl/setMode nunca rodavam: o preview ficava preso no log com o NOME do
     // projeto na barra. Atualizando o estado antes, a virada acontece de qualquer jeito.
-    if (activePathRef.current === projectPath) { setUrl(u); setMode('web'); }
-    const point = () => { const w = getWebview(projectPath); if (w.getAttribute('src') !== u) w.src = u; };
-    try { point(); }
-    catch { requestAnimationFrame(() => { try { point(); } catch {} }); }
-  }, [getWebview]);
+    const proj = getProjTabs(projectPath);
+    if (activePathRef.current === projectPath) {
+      setMode('web');
+      // Já tem abas abertas (voltando pro projeto): reflete a aba ativa, não força a raiz.
+      setUrl(proj.tabs.length ? (activeTabOf(projectPath)?.url || u) : u);
+    }
+    // Sem nenhuma aba ainda → cria a aba "raiz" (servidor de preview).
+    if (proj.tabs.length === 0) {
+      const create = () => createTab(projectPath, u, { activate: true });
+      try { create(); }
+      catch { requestAnimationFrame(() => { try { create(); } catch {} }); }
+    }
+  }, [createTab]);
 
   // DevTools encaixado (definido antes dos effects que o usam, pra não dar TDZ).
   const dockDevtools = useCallback(() => {
-    const pv = active && webviewsRef.current.get(active.path);
+    const pv = active && activeWebviewOf(active.path);
     if (pv && devtoolsRef.current) {
       try { window.api.dockDevTools(pv.getWebContentsId(), devtoolsRef.current.getWebContentsId()); } catch {}
     }
@@ -467,7 +526,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   // listeners — e um evento ('preview:ready'/'preview:log') chegando nesse intervalo
   // síncrono se perdia. Com [] não há mais essa janela.
   const ipcRef = useRef(null);
-  ipcRef.current = { appendLog, showWebFor, onProjectsChanged, t };
+  ipcRef.current = { appendLog, showWebFor, onProjectsChanged, t, removeAllTabs };
   useEffect(() => {
     const offs = [];
     offs.push(window.api.on('preview:phase', ({ projectPath, text }) => ipcRef.current.appendLog(projectPath, '\n> ' + text + '\n')));
@@ -480,8 +539,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
       const hadUrl = urlsRef.current.has(projectPath);
       const wasManual = manualStopRef.current.delete(projectPath); // Set.delete devolve true se existia
       urlsRef.current.delete(projectPath);
-      const w = webviewsRef.current.get(projectPath);
-      if (w) { w.remove(); webviewsRef.current.delete(projectPath); }
+      ipcRef.current.removeAllTabs(projectPath);
       if (activePathRef.current === projectPath) {
         if (wasManual || hadUrl) {
           setMode('empty'); // parado pelo usuário, ou já tinha aberto e o servidor caiu
@@ -545,21 +603,23 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   // webview em branco que nunca carrega. É a rede de recuperação do ponto fraco do fix.
   useEffect(() => {
     const ap = active?.path || null;
-    for (const [p, w] of webviewsRef.current) {
-      const show = p === ap && view === 'preview' && mode === 'web';
-      w.style.display = show ? 'flex' : 'none';
-      if (show) {
-        const u = urlsRef.current.get(p);
-        if (u && w.getAttribute('src') !== u) { try { w.src = u; } catch {} }
+    for (const [p, proj] of projTabsRef.current) {
+      for (const tab of proj.tabs) {
+        const show = p === ap && proj.activeId === tab.id && view === 'preview' && mode === 'web';
+        tab.webview.style.display = show ? 'flex' : 'none';
+        // Recuperação: se a navegação inicial falhou (timing de attach no build
+        // empacotado), re-aponta pro alvo que quisemos (src), não pra URL viva —
+        // senão uma navegação client-side viraria reload em loop.
+        if (show && tab.src && tab.webview.getAttribute('src') !== tab.src) { try { tab.webview.src = tab.src; } catch {} }
       }
     }
-  }, [view, mode, active]);
+  }, [view, mode, active, tabBar]);
 
   // Troca o modo de visualização (desktop/tablet/celular): re-aplica em todos os
   // webviews (os escondidos não atrapalham) e guarda a preferência.
   useEffect(() => {
     localStorage.setItem('previewViewport', viewport);
-    for (const w of webviewsRef.current.values()) applyViewport(w, viewport);
+    for (const w of allWebviews()) applyViewport(w, viewport);
   }, [viewport]);
 
   const pollingRef = useRef(new Set()); // paths com um waitAndShow em curso (evita loops duplicados)
@@ -631,8 +691,15 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     if (!v) return;
     if (!/^https?:\/\//i.test(v)) v = 'http://' + v;
     setView('preview');
-    showWebFor(active.path, v);
-  }, [active, showWebFor]);
+    setMode('web');
+    setUrl(v);
+    // Navega a ABA ATIVA (barra de URL / link do terminal). Sem aba ainda → cria a raiz.
+    const tab = activeTabOf(active.path);
+    if (!tab) { createTab(active.path, v, { activate: true }); return; }
+    tab.src = v; tab.url = v;
+    try { tab.webview.src = v; } catch {}
+    refreshTabBar();
+  }, [active, createTab, refreshTabBar]);
 
   const onUrlKey = (e) => {
     if (e.key !== 'Enter') return;
@@ -640,7 +707,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     e.target.blur();
   };
 
-  const reload = () => { if (active) { try { webviewsRef.current.get(active.path)?.reload(); } catch {} } };
+  const reload = () => { if (active) { try { activeWebviewOf(active.path)?.reload(); } catch {} } };
   // Abre o preview atual no navegador padrão do sistema. Sem lock-in: se a pessoa
   // preferir o navegador dela (DevTools próprio, extensões, etc.), é só um clique.
   const openInBrowser = () => { if (mode === 'web' && url) window.api.openExternal(url); };

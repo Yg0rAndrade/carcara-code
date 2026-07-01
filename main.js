@@ -258,7 +258,11 @@ app.on('web-contents-created', (_event, contents) => {
       { label: tn('ctx_copy'), role: 'copy', enabled: can.canCopy },
       { label: tn('ctx_paste'), role: 'paste', enabled: can.canPaste },
       { label: tn('ctx_select_all'), role: 'selectAll' },
-      ...(params.linkURL ? [{ type: 'separator' }, { label: tn('ctx_copy_link'), click: () => clipboard.writeText(params.linkURL) }] : []),
+      ...(params.linkURL ? [
+        { type: 'separator' },
+        { label: tn('ctx_open_new_tab'), click: () => safeSend('preview:new-tab', { sourceId: contents.id, url: params.linkURL, disposition: 'foreground-tab' }) },
+        { label: tn('ctx_copy_link'), click: () => clipboard.writeText(params.linkURL) },
+      ] : []),
       { type: 'separator' },
       { label: tn('ctx_inspect'), click: () => { lastInspect = { x: params.x, y: params.y }; safeSend('devtools:toggle'); } },
     ]).popup();
@@ -289,6 +293,19 @@ app.on('web-contents-created', (_event, contents) => {
   // são a fonte autoritativa; o renderer casa pelo id do webview do projeto ativo.
   contents.on('focus', () => safeSend('webview:focus', { id: contents.id, focused: true }));
   contents.on('blur', () => safeSend('webview:focus', { id: contents.id, focused: false }));
+
+  // Links que abririam "nova janela" (target=_blank, window.open, Ctrl+clique) NÃO
+  // viram mais aquela janela flutuante nativa do Chromium: viram uma ABA interna do
+  // preview. Negamos o popup e avisamos o renderer, que cria a aba no projeto dono
+  // deste webview (casado pelo sourceId). mailto:/tel: e afins vão pro sistema.
+  contents.setWindowOpenHandler(({ url, disposition }) => {
+    if (url && /^https?:/i.test(url)) {
+      safeSend('preview:new-tab', { sourceId: contents.id, url, disposition });
+    } else if (url) {
+      shell.openExternal(url).catch(() => {});
+    }
+    return { action: 'deny' };
+  });
 
 });
 
