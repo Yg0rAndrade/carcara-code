@@ -489,6 +489,14 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const [dropTarget, setDropTarget] = useState(null); // { paneId, zone }
   const dragRef = useRef(null);
 
+  // Renomear aba à mão: sessionId em edição + valor do campo. O item "Renomear" do
+  // menu de contexto (botão direito) abre; Enter salva, Esc cancela. O nome fixado
+  // vence o aiTitle automático (main.js).
+  const [renamingSid, setRenamingSid] = useState(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  // Menu de contexto da aba (botão direito): { sid, x, y } em coordenadas de tela.
+  const [tabMenu, setTabMenu] = useState(null);
+
   const projectRef = useRef(activeProject);
   projectRef.current = activeProject;
 
@@ -740,6 +748,9 @@ export function ChatPanel({ activeProject, controlsRef }) {
   }
 
   const onTabClick = (paneId, sid) => {
+    // Editando esta aba? Não ativa/foca o terminal — isso roubaria o foco do campo
+    // de renomear e fecharia a edição pelo onBlur.
+    if (renamingSid === sid) return;
     commitLayout(setActiveInPane(layoutRef.current, paneId, sid));
     setFocusedPane(paneId);
     focusSession(sid);
@@ -761,6 +772,34 @@ export function ChatPanel({ activeProject, controlsRef }) {
     if (t) { try { t.term.dispose(); } catch {} t.el.remove(); termsRef.current.delete(sessionId); }
     setSessions((cur) => cur.filter((s) => s.id !== sessionId));
     commitLayout(closeSessionInTree(layoutRef.current, sessionId));
+  };
+
+  // --- Menu de contexto da aba (botão direito) ---
+  const openTabMenu = (sid, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setTabMenu({ sid, x: e.clientX, y: e.clientY });
+  };
+  const closeTabMenu = () => setTabMenu(null);
+
+  // --- Renomear aba à mão ---
+  const startRename = (sid) => {
+    const cur = sessionNames.get(sid);
+    setRenameDraft(cur && cur !== t('session.untitled') ? cur : '');
+    setRenamingSid(sid);
+  };
+  const cancelRename = () => { setRenamingSid(null); setRenameDraft(''); };
+  const commitRename = async (sid) => {
+    if (renamingSid !== sid) return;
+    const name = renameDraft.trim();
+    setRenamingSid(null);
+    setRenameDraft('');
+    if (!activeProject) return;
+    const res = await window.api.sessionsRename(activeProject, sid, name);
+    // Nome vazio volta ao título automático: o main devolve o nome efetivo (aiTitle
+    // ou "Untitled"), então usa a resposta em vez do rascunho.
+    const applied = (res && res.name) || name;
+    setSessions((cur) => cur.map((s) => (s.id === sid ? { ...s, name: applied } : s)));
   };
 
   // --- Arrastar e soltar abas ---
@@ -826,16 +865,35 @@ export function ChatPanel({ activeProject, controlsRef }) {
             return (
               <div
                 key={sid}
-                draggable
+                draggable={renamingSid !== sid}
                 onDragStart={(e) => onTabDragStart(p.id, sid, e)}
                 onDragEnd={endDrag}
                 onClick={() => onTabClick(p.id, sid)}
+                onContextMenu={(e) => openTabMenu(sid, e)}
+                title={t('session.tabs_rename_hint')}
                 className={
                   'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
                   (isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60')
                 }
               >
-                <span>{sessionNames.get(sid) || t('session.untitled')}</span>
+                {renamingSid === sid ? (
+                  <input
+                    autoFocus
+                    value={renameDraft}
+                    onChange={(e) => setRenameDraft(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.target.select()}
+                    onBlur={() => commitRename(sid)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); commitRename(sid); }
+                      else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+                    }}
+                    placeholder={t('session.untitled')}
+                    className="h-5 w-28 min-w-0 rounded border border-border bg-background px-1 text-[13px] text-foreground outline-none focus:border-foreground/40"
+                  />
+                ) : (
+                  <span>{sessionNames.get(sid) || t('session.untitled')}</span>
+                )}
                 <SessionActivityDot state={sessionActivity[sid]} />
                 {canClose && (
                   <button
@@ -913,6 +971,33 @@ export function ChatPanel({ activeProject, controlsRef }) {
         )}
         {activeProject && layout && renderNode(layout)}
       </div>
+      {tabMenu && (
+        <>
+          {/* Camada invisível que fecha o menu ao clicar fora ou ao abrir outro. */}
+          <div className="fixed inset-0 z-40" onClick={closeTabMenu} onContextMenu={(e) => { e.preventDefault(); closeTabMenu(); }} />
+          <div
+            className="fixed z-50 min-w-[140px] overflow-hidden rounded-md border border-border bg-popover py-1 text-[13px] text-popover-foreground shadow-lg"
+            style={{ left: tabMenu.x, top: tabMenu.y }}
+          >
+            <button
+              type="button"
+              className="flex w-full items-center px-3 py-1.5 text-left hover:bg-muted"
+              onClick={() => { const sid = tabMenu.sid; closeTabMenu(); startRename(sid); }}
+            >
+              {t('session.tabs_rename')}
+            </button>
+            {canClose && (
+              <button
+                type="button"
+                className="flex w-full items-center px-3 py-1.5 text-left text-red-500 hover:bg-muted"
+                onClick={() => { const sid = tabMenu.sid; closeTabMenu(); closeSession({ stopPropagation() {} }, sid); }}
+              >
+                {t('session.tabs_close')}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

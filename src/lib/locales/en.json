@@ -117,6 +117,8 @@
     "activity_asking": "Claude is requesting confirmation",
     "activity_waiting": "Claude is waiting for you",
     "tabs_close": "Close session",
+    "tabs_rename": "Rename",
+    "tabs_rename_hint": "Right-click to rename",
     "new": "New Claude Code session",
     "untitled": "Untitled"
   },
