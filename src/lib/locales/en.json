@@ -10,6 +10,13 @@
     "menu_start_running": "Start server",
     "menu_stop_server": "Stop server",
     "menu_remove_project": "Remove from list",
+    "menu_rename": "Rename",
+    "menu_color": "Color",
+    "menu_color_custom": "Custom color",
+    "menu_image": "Upload image",
+    "menu_image_remove": "Remove image",
+    "menu_reset": "Reset to default",
+    "image_too_large": "Image too large (max 2 MB)",
     "move_tooltip": "Drag to move the sidebar to the other side",
     "version_tooltip": "App version — open About"
   },

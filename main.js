@@ -559,6 +559,7 @@ ipcMain.handle('projects:remove', (evt, { projectPath }) => {
     if (e.projectPath === projectPath) { try { e.pty.kill(); } catch {} terminals.delete(id); }
   }
   if (cfg.sessions) delete cfg.sessions[projectPath];
+  if (cfg.projectMeta) delete cfg.projectMeta[projectPath];
   saveConfig(cfg);
   return { ok: true };
 });
@@ -613,16 +614,75 @@ function findFavicon(p) {
   return icon;
 }
 
+// ---- Customização do projeto no rail (nome, cor e ícone escolhidos à mão) ----
+// Guardado em config.projectMeta[path] = { name?, color?, icon? }. São overrides:
+// vazio/ausente cai no padrão (basename, colorFor, favicon auto-detectado).
+function setProjectMeta(cfg, projectPath, patch) {
+  cfg.projectMeta = cfg.projectMeta || {};
+  const next = { ...(cfg.projectMeta[projectPath] || {}), ...patch };
+  for (const k of Object.keys(next)) if (next[k] == null || next[k] === '') delete next[k];
+  if (Object.keys(next).length) cfg.projectMeta[projectPath] = next;
+  else delete cfg.projectMeta[projectPath];
+}
+
 ipcMain.handle('projects:list', () => {
   const cfg = loadConfig();
+  const meta = cfg.projectMeta || {};
   // Preserva a ordem salva no config.json (definida pelo drag-and-drop do rail).
   return cfg.projects
     .filter((p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } })
     .map((p) => {
       let hasPkg = false;
       try { fs.accessSync(path.join(p, 'package.json')); hasPkg = true; } catch {}
-      return { name: path.basename(p), path: p, hasPkg, running: runningServers.has(p), icon: findFavicon(p) };
+      const m = meta[p] || {};
+      return {
+        name: m.name || path.basename(p),
+        path: p,
+        hasPkg,
+        running: runningServers.has(p),
+        icon: m.icon || findFavicon(p),   // imagem escolhida à mão vence o favicon
+        color: m.color || null,           // null → o rail usa colorFor(name)
+      };
     });
+});
+
+// Renomeia o rótulo do projeto no rail (não mexe na pasta). Nome vazio volta ao basename.
+ipcMain.handle('projects:rename', (evt, { projectPath, name }) => {
+  const cfg = loadConfig();
+  setProjectMeta(cfg, projectPath, { name: String(name || '').trim() || null });
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+// Cor do avatar do projeto (string CSS, ex.: "#3b82f6"). Vazio volta à cor automática.
+ipcMain.handle('projects:setColor', (evt, { projectPath, color }) => {
+  const cfg = loadConfig();
+  setProjectMeta(cfg, projectPath, { color: color ? String(color) : null });
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+// Ícone do projeto a partir de uma imagem enviada pelo usuário (data URL). O picker
+// e o FileReader vivem no renderer; aqui só validamos o tamanho e persistimos. Vazio
+// remove a imagem (volta ao favicon auto-detectado).
+ipcMain.handle('projects:setIcon', (evt, { projectPath, dataUrl }) => {
+  const cfg = loadConfig();
+  if (dataUrl) {
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return { ok: false };
+    if (dataUrl.length > 3 * 1024 * 1024) return { ok: false, error: 'too_large' }; // ~2MB de imagem
+    setProjectMeta(cfg, projectPath, { icon: dataUrl });
+  } else {
+    setProjectMeta(cfg, projectPath, { icon: null });
+  }
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+// Restaura o padrão: apaga todos os overrides (nome, cor e ícone) do projeto.
+ipcMain.handle('projects:resetCustom', (evt, { projectPath }) => {
+  const cfg = loadConfig();
+  if (cfg.projectMeta) { delete cfg.projectMeta[projectPath]; saveConfig(cfg); }
+  return { ok: true };
 });
 
 // ---------- Código: árvore de arquivos e leitura ----------

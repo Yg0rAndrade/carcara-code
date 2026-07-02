@@ -18,6 +18,7 @@ import { SetupScreen } from './components/SetupScreen.jsx';
 import { UpdatePill } from './components/UpdatePill.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
+import { toast } from './lib/toast';
 import { useTheme } from './lib/theme.jsx';
 import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
@@ -342,6 +343,31 @@ export default function App() {
     reload();
   };
 
+  // Customização do projeto no rail (nome, cor, ícone). Persiste no main e recarrega a
+  // lista pra refletir na hora — inclusive no projeto ativo (o header lê o mesmo `name`).
+  const renameProject = async (p, name) => {
+    if (!p) return;
+    await window.api.renameProject(p.path, name);
+    setActive((cur) => (cur?.path === p.path ? { ...cur, name: (name || '').trim() || cur.name } : cur));
+    reload();
+  };
+  const setProjectColor = async (p, color) => {
+    if (!p) return;
+    await window.api.setProjectColor(p.path, color);
+    reload();
+  };
+  const setProjectIcon = async (p, dataUrl) => {
+    if (!p) return;
+    const res = await window.api.setProjectIcon(p.path, dataUrl);
+    if (res && res.error === 'too_large') { toast.error(t('rail.image_too_large')); return; }
+    reload();
+  };
+  const resetProjectCustom = async (p) => {
+    if (!p) return;
+    await window.api.resetProjectCustom(p.path);
+    reload();
+  };
+
   // Realce de onde vai encostar: uma FAIXA do tamanho real do que está sendo movido
   // (largura do rail pro rail; ~largura do painel do Claude pro painel), no lado-alvo —
   // não a metade inteira da tela. O painel encosta depois do rail, se o rail estiver
@@ -376,6 +402,10 @@ export default function App() {
       onRestart={restartProject}
       onStop={stopProject}
       onReorder={reorderProjects}
+      onRename={renameProject}
+      onSetColor={setProjectColor}
+      onSetIcon={setProjectIcon}
+      onResetCustom={resetProjectCustom}
       onOpenSettings={() => setSettingsOpen(true)}
       onSearch={() => setPaletteOpen(true)}
       onRailGrab={(e) => startLayoutDrag('rail', e)}
