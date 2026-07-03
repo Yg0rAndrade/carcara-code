@@ -27,6 +27,13 @@ const APP_ICON = path.join(__dirname, 'build', 'icon.png');
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId('com.carcara.code');
 
+// Scrollbar igual ao Chrome atual. Sem isto, o Chromium do Electron renderiza o
+// scrollbar "clássico" (cinza grosso, estilo antigo) e o overlay/fluent fino que o
+// Chrome traz por padrão fica desligado — então sites que estilizam o scroll
+// (::-webkit-scrollbar) ou esperam o visual moderno apareciam "errados" no preview.
+// Precisa ser setado ANTES do app ficar pronto (switch de linha de comando).
+app.commandLine.appendSwitch('enable-features', 'OverlayScrollbar,FluentOverlayScrollbar,FluentScrollbar');
+
 // Remove os tokens próprios do User-Agent ("Carcará Code/x" e "Electron/x") pra o
 // WebView se apresentar como Chrome puro. O nome com acento gerava um byte inválido
 // no header e gateways (Supabase/Cloudflare) rejeitavam com 500. A versão do Chrome
@@ -274,6 +281,14 @@ app.on('web-contents-created', (_event, contents) => {
     const isF12 = input.key === 'F12';
     const isInspect = input.control && input.shift && input.key.toLowerCase() === 'i';
     if (isF12 || isInspect) { lastInspect = null; safeSend('devtools:toggle'); return; }
+    // Ctrl/Cmd+F com o foco DENTRO do preview: o webview engoliria o atalho (e o
+    // site abriria o SEU próprio "buscar"). Barramos e avisamos o renderer, que
+    // abre a barra de busca da app (mesmo esquema do F12/botões do mouse).
+    if ((input.control || input.meta) && !input.alt && !input.shift && input.key.toLowerCase() === 'f') {
+      safeSend('preview:find', { id: contents.id });
+      _e.preventDefault();
+      return;
+    }
     // Ctrl +/-/0 com o foco DENTRO do preview zoomam o SITE (estilo navegador),
     // não a janela do app. preventDefault impede o site de também reagir ao atalho.
     if ((input.control || input.meta) && !input.alt) {
