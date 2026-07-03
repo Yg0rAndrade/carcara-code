@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, RotateCcw, Square, GripHorizontal, Pencil, Image as ImageIcon, Undo2 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Plus, Trash2, RotateCcw, Square, GripHorizontal, Settings2 } from 'lucide-react';
 import { SettingsIcon } from './ui/settings.jsx';
 import { SearchIcon } from './ui/search.jsx';
+import { ProjectSettingsModal } from './ProjectSettingsModal.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
@@ -12,38 +13,17 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
-  const [renamingPath, setRenamingPath] = useState(null); // projeto em edição de nome
-  const [renameDraft, setRenameDraft] = useState('');
-  const fileInputRef = useRef(null);              // input file oculto p/ enviar imagem
-  const iconTargetRef = useRef(null);             // projeto alvo do upload de imagem
-
-  // Abre o seletor nativo de imagem p/ um projeto; o resultado vira data URL no onChange.
-  const pickImage = (p) => { iconTargetRef.current = p; fileInputRef.current?.click(); };
-  const onImageChosen = (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = ''; // permite reescolher o mesmo arquivo depois
-    const p = iconTargetRef.current;
-    if (!file || !p) return;
-    const reader = new FileReader();
-    reader.onload = () => onSetIcon?.(p, String(reader.result || ''));
-    reader.readAsDataURL(file);
-  };
-
-  const startRename = (p) => { setRenameDraft(p.name || ''); setRenamingPath(p.path); };
-  const cancelRename = () => { setRenamingPath(null); setRenameDraft(''); };
-  const commitRename = (p) => {
-    if (renamingPath !== p.path) return;
-    const name = renameDraft.trim();
-    setRenamingPath(null);
-    setRenameDraft('');
-    if (name !== p.name) onRename?.(p, name);
-  };
+  // Personalização (nome/cor/imagem) vive num modal central. Guardamos só o PATH do
+  // projeto aberto e derivamos o objeto vivo da lista, pra o preview refletir na hora
+  // as mudanças de cor/imagem que já persistiram.
+  const [settingsPath, setSettingsPath] = useState(null);
+  const settingsProject = settingsPath ? projects.find((p) => p.path === settingsPath) || null : null;
+  const openProjectSettings = (p) => setSettingsPath(p.path);
 
   const openMenu = (e, p) => {
     e.preventDefault();
-    const x = Math.min(e.clientX, window.innerWidth - 180);
-    const y = Math.min(e.clientY, window.innerHeight - 140);
-    setMenu({ x, y, project: p });
+    // Posição bruta do cursor; o RailMenu mede o próprio tamanho e ajusta pra caber 100%.
+    setMenu({ x: e.clientX, y: e.clientY, project: p });
   };
 
   const resetDrag = () => { setDragPath(null); setOverPath(null); };
@@ -96,27 +76,6 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
         onDrop={(e) => { e.preventDefault(); commitDrop(); }}
       >
         {display.map((p) => (
-          renamingPath === p.path ? (
-            // Modo de edição de nome: input ocupando o lugar do avatar. Enter salva,
-            // Esc cancela, blur salva. Não é <button> (input dentro de button é inválido).
-            <div
-              key={p.path}
-              className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border bg-card"
-            >
-              <input
-                autoFocus
-                value={renameDraft}
-                onChange={(e) => setRenameDraft(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                onBlur={() => commitRename(p)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); commitRename(p); }
-                  else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
-                }}
-                className="h-full w-full rounded-xl bg-transparent px-1 text-center text-[11px] font-bold text-foreground outline-none"
-              />
-            </div>
-          ) : (
           <button
             key={p.path}
             draggable
@@ -129,7 +88,7 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
             onDragEnd={resetDrag}
             onDrop={(e) => { e.preventDefault(); commitDrop(); }}
             onClick={() => onOpen(p)}
-            onDoubleClick={() => startRename(p)}
+            onDoubleClick={() => openProjectSettings(p)}
             onContextMenu={(e) => openMenu(e, p)}
             title={p.name}
             className={cn(
@@ -174,7 +133,6 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
               </span>
             )}
           </button>
-          )
         ))}
       </div>
 
@@ -214,39 +172,35 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
         )}
       </div>
 
-      {/* Input oculto do upload de imagem: acionado por pickImage a partir do menu. */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onImageChosen}
-      />
-
       <RailMenu
         menu={menu}
         onClose={() => setMenu(null)}
+        onOpenSettings={(p) => { setMenu(null); openProjectSettings(p); }}
         onRestart={(p) => { setMenu(null); onRestart?.(p); }}
         onStop={(p) => { setMenu(null); onStop?.(p); }}
         onRemove={(p) => { setMenu(null); onRemove(p); }}
-        onRename={(p) => { setMenu(null); startRename(p); }}
-        onSetColor={(p, c) => onSetColor?.(p, c)}
-        onPickImage={(p) => { setMenu(null); pickImage(p); }}
-        onRemoveImage={(p) => { setMenu(null); onSetIcon?.(p, ''); }}
-        onReset={(p) => { setMenu(null); onResetCustom?.(p); }}
+      />
+
+      <ProjectSettingsModal
+        project={settingsProject}
+        onClose={() => setSettingsPath(null)}
+        onRename={onRename}
+        onSetColor={onSetColor}
+        onSetIcon={onSetIcon}
+        onResetCustom={onResetCustom}
       />
     </nav>
   );
 }
 
-// Cores prontas p/ o avatar do projeto. A última "casa" do seletor é um input de cor
-// livre, então estas são só atalhos comuns — não uma paleta fechada.
-const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#64748b'];
-
-// Menu de contexto do rail (botão direito) — no mesmo padrão da árvore de arquivos.
-function RailMenu({ menu, onClose, onRestart, onStop, onRemove, onRename, onSetColor, onPickImage, onRemoveImage, onReset }) {
+// Menu de contexto do rail (botão direito) — enxuto: abre o modal de configurações do
+// projeto, controla o servidor de preview e remove o projeto da lista. Toda a
+// personalização (nome, cor, imagem) mora no ProjectSettingsModal.
+function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }) {
   const t = useT();
   const ref = useRef(null);
+  // Posição ajustada pra o menu caber 100% na tela mesmo aberto perto da borda.
+  const [pos, setPos] = useState({ left: 0, top: 0, ready: false });
   useEffect(() => {
     if (!menu) return;
     const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -260,83 +214,31 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove, onRename, onSetC
       window.removeEventListener('resize', onClose);
     };
   }, [menu, onClose]);
+  // Mede o menu já montado e recua das bordas direita/inferior se estourar. Roda antes
+  // do paint (useLayoutEffect) pra nunca piscar na posição errada; fica invisível até medir.
+  useLayoutEffect(() => {
+    if (!menu || !ref.current) return;
+    const pad = 8;
+    const { width, height } = ref.current.getBoundingClientRect();
+    const left = Math.max(pad, Math.min(menu.x, window.innerWidth - width - pad));
+    const top = Math.max(pad, Math.min(menu.y, window.innerHeight - height - pad));
+    setPos({ left, top, ready: true });
+  }, [menu]);
   if (!menu) return null;
   const p = menu.project;
   return (
     <div
       ref={ref}
-      className="fixed z-50 min-w-[190px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
-      style={{ left: menu.x, top: menu.y }}
+      className="fixed z-50 min-w-[180px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
+      style={{ left: pos.ready ? pos.left : menu.x, top: pos.ready ? pos.top : menu.y, visibility: pos.ready ? 'visible' : 'hidden' }}
     >
-      {/* --- Customização (nome, cor, imagem) --- */}
       <button
         type="button"
-        onClick={() => onRename(p)}
+        onClick={() => onOpenSettings(p)}
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
       >
-        <Pencil className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{t('rail.menu_rename')}</span>
-      </button>
-
-      {/* Cor do avatar: atalhos + seletor livre. Sem imagem própria só; com imagem, a
-          cor fica de fundo do recorte. */}
-      <div className="px-3 py-1.5">
-        <div className="mb-1 text-[11px] text-muted-foreground">{t('rail.menu_color')}</div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {PRESET_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => onSetColor(p, c)}
-              title={c}
-              className={cn(
-                'h-4 w-4 rounded-full border border-black/10 transition-transform hover:scale-110',
-                p.color === c && 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-              )}
-              style={{ background: c }}
-            />
-          ))}
-          {/* Cor livre: a casa vira um input nativo de cor. */}
-          <label
-            title={t('rail.menu_color_custom')}
-            className="grid h-4 w-4 cursor-pointer place-items-center overflow-hidden rounded-full border border-dashed"
-            style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
-          >
-            <input
-              type="color"
-              value={p.color || '#3b82f6'}
-              onChange={(e) => onSetColor(p, e.target.value)}
-              className="h-6 w-6 cursor-pointer opacity-0"
-            />
-          </label>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onPickImage(p)}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
-      >
-        <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{t('rail.menu_image')}</span>
-      </button>
-      {p.icon && (
-        <button
-          type="button"
-          onClick={() => onRemoveImage(p)}
-          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
-        >
-          <Trash2 className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{t('rail.menu_image_remove')}</span>
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => onReset(p)}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
-      >
-        <Undo2 className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{t('rail.menu_reset')}</span>
+        <Settings2 className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{t('rail.menu_settings')}</span>
       </button>
 
       <div className="my-1 border-t" />

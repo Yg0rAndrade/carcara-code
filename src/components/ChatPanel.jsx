@@ -893,7 +893,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
         className={'flex h-full flex-col overflow-hidden ' + (isFocused ? 'ring-1 ring-inset ring-primary/40' : '')}
       >
         <div
-          className="flex h-9 shrink-0 items-center border-b bg-card px-1.5"
+          className="flex h-11 shrink-0 items-center border-b bg-card px-1.5"
           onDragOver={dragSid ? (e) => { e.preventDefault(); setDropTarget({ paneId: p.id, zone: 'center' }); } : undefined}
           onDrop={dragSid ? (e) => onDrop(p.id, 'center', e) : undefined}
         >
@@ -914,7 +914,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
                 onContextMenu={(e) => openTabMenu(sid, e)}
                 title={t('session.tabs_rename_hint')}
                 className={
-                  'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
+                  'group flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
                   (isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60')
                 }
               >
@@ -931,7 +931,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
                       else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
                     }}
                     placeholder={t('session.untitled')}
-                    className="h-5 w-28 min-w-0 rounded border border-border bg-background px-1 text-[13px] text-foreground outline-none focus:border-foreground/40"
+                    className="h-6 w-28 min-w-0 rounded border border-border bg-background px-1 text-[13px] text-foreground outline-none focus:border-foreground/40"
                   />
                 ) : (
                   <span>{sessionNames.get(sid) || t('session.untitled')}</span>

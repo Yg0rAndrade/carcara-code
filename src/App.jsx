@@ -348,7 +348,11 @@ export default function App() {
   const renameProject = async (p, name) => {
     if (!p) return;
     await window.api.renameProject(p.path, name);
-    setActive((cur) => (cur?.path === p.path ? { ...cur, name: (name || '').trim() || cur.name } : cur));
+    // Nome vazio volta ao basename da pasta — precisa refletir no header do projeto
+    // ativo na hora (não cair no cur.name antigo, senão o rótulo customizado "gruda").
+    const clean = (name || '').trim();
+    const basename = p.path.split(/[\\/]/).filter(Boolean).pop() || p.path;
+    setActive((cur) => (cur?.path === p.path ? { ...cur, name: clean || basename } : cur));
     reload();
   };
   const setProjectColor = async (p, color) => {
@@ -360,11 +364,16 @@ export default function App() {
     if (!p) return;
     const res = await window.api.setProjectIcon(p.path, dataUrl);
     if (res && res.error === 'too_large') { toast.error(t('rail.image_too_large')); return; }
+    if (res && res.ok === false) { toast.error(t('rail.image_invalid')); return; }
+    if (dataUrl) toast.success(t('rail.image_updated')); // sucesso só ao definir (não ao remover)
     reload();
   };
   const resetProjectCustom = async (p) => {
     if (!p) return;
     await window.api.resetProjectCustom(p.path);
+    // Restaurar padrão volta ao basename — atualiza o header do projeto ativo na hora.
+    const basename = p.path.split(/[\\/]/).filter(Boolean).pop() || p.path;
+    setActive((cur) => (cur?.path === p.path ? { ...cur, name: basename } : cur));
     reload();
   };
 

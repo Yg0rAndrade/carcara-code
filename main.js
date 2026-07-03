@@ -663,9 +663,10 @@ ipcMain.handle('projects:list', () => {
 });
 
 // Renomeia o rótulo do projeto no rail (não mexe na pasta). Nome vazio volta ao basename.
+// Teto de 256 caracteres (o input do modal já segura; aqui é a rede de segurança).
 ipcMain.handle('projects:rename', (evt, { projectPath, name }) => {
   const cfg = loadConfig();
-  setProjectMeta(cfg, projectPath, { name: String(name || '').trim() || null });
+  setProjectMeta(cfg, projectPath, { name: String(name || '').trim().slice(0, 256) || null });
   saveConfig(cfg);
   return { ok: true };
 });
