@@ -388,7 +388,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       {/* Tooltip do nome da pasta (o nome não cabe no ícone). Fixed → escapa o overflow. */}
       {tip && (
         <div
-          className="pointer-events-none fixed z-[60] -translate-y-1/2 rounded-md border bg-popover px-2 py-1 text-[12px] font-medium text-popover-foreground shadow-md"
+          className="pointer-events-none fixed z-[60] max-w-[240px] -translate-y-1/2 truncate rounded-md border bg-popover px-2 py-1 text-[12px] font-medium text-popover-foreground shadow-md"
           style={{ left: tip.x, top: tip.y }}
         >
           {tip.name}
