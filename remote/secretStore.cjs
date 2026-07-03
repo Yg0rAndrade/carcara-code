@@ -8,7 +8,8 @@ function makeSecretStore({ crypto, filePath }) {
     try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return {}; }
   }
   function writeAll(obj) {
-    try { fs.writeFileSync(filePath, JSON.stringify(obj)); } catch {}
+    try { fs.writeFileSync(filePath, JSON.stringify(obj)); return true; }
+    catch { return false; }
   }
   const available = () => {
     try { return !!crypto.isEncryptionAvailable(); } catch { return false; }
@@ -19,8 +20,7 @@ function makeSecretStore({ crypto, filePath }) {
       if (!available()) return false;
       const all = readAll();
       all[hostKey] = crypto.encryptString(secret).toString('base64');
-      writeAll(all);
-      return true;
+      return writeAll(all);
     },
     load(hostKey) {
       if (!available()) return null;

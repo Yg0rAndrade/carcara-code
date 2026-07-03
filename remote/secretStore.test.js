@@ -36,4 +36,10 @@ describe('makeSecretStore', () => {
     expect(s.save('a@h:22', 'x')).toBe(false);
     expect(fs.existsSync(filePath)).toBe(false);
   });
+  it('save retorna false quando a escrita falha', () => {
+    const dirAsFile = path.join(os.tmpdir(), `carcara-secrets-dir-${process.pid}-${Math.round(performance.now())}`);
+    fs.mkdirSync(dirAsFile, { recursive: true }); // filePath = diretório → writeFileSync lança
+    const s = makeSecretStore({ crypto: fakeCrypto, filePath: dirAsFile });
+    expect(s.save('a@h:22', 'x')).toBe(false);
+  });
 });

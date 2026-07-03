@@ -26,4 +26,14 @@ describe('makeKnownHosts', () => {
     expect(fp).toMatch(/^SHA256:/);
     expect(kh.fingerprint(Buffer.from('x'))).toBe(fp);
   });
+  it('trust retorna false quando a escrita falha', () => {
+    const dirAsFile = path.join(os.tmpdir(), `carcara-kh-dir-${process.pid}-${Math.round(performance.now())}`);
+    fs.mkdirSync(dirAsFile, { recursive: true });
+    const kh = makeKnownHosts({ filePath: dirAsFile });
+    expect(kh.trust('h:22', Buffer.from('x'))).toBe(false);
+  });
+  it('fingerprint não tem padding base64', () => {
+    const kh = makeKnownHosts({ filePath });
+    expect(kh.fingerprint(Buffer.from('x'))).not.toMatch(/=/);
+  });
 });

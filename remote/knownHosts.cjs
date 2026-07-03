@@ -7,10 +7,11 @@ function makeKnownHosts({ filePath }) {
     try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return {}; }
   }
   function writeAll(obj) {
-    try { fs.writeFileSync(filePath, JSON.stringify(obj)); } catch {}
+    try { fs.writeFileSync(filePath, JSON.stringify(obj)); return true; }
+    catch { return false; }
   }
   const fingerprint = (keyBuf) =>
-    'SHA256:' + crypto.createHash('sha256').update(keyBuf).digest('base64');
+    'SHA256:' + crypto.createHash('sha256').update(keyBuf).digest('base64').replace(/=+$/, '');
   return {
     fingerprint,
     check(hostKey, keyBuf) {
@@ -21,7 +22,7 @@ function makeKnownHosts({ filePath }) {
     trust(hostKey, keyBuf) {
       const all = readAll();
       all[hostKey] = fingerprint(keyBuf);
-      writeAll(all);
+      return writeAll(all);
     },
   };
 }
