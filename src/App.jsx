@@ -444,7 +444,7 @@ export default function App() {
         <span className="truncate text-[15px] font-semibold">
           {active ? active.name : t('app.no_project_selected')}
         </span>
-        {active?.hasPkg && (
+        {active?.previewType != null && (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <button
               type="button"

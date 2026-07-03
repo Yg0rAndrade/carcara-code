@@ -766,7 +766,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
       const status = await window.api.previewStatus(active.path);
       if (cancelled || activePathRef.current !== active.path) return; // já trocou/desmontou
       if (status.running && status.url) { showWebFor(active.path, status.url); return; }
-      if (!active.hasPkg) { setMode('empty'); return; }
+      if (active.previewType == null) { setMode('empty'); return; }
 
       setMode('log');
       setTimeout(async () => {
@@ -1113,7 +1113,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
             active ? (
               <div className="absolute inset-0">
                 <EmptyState>
-                  {active.hasPkg
+                  {active.previewType != null
                     ? t('preview.no_preview')
                     : t('preview.no_preview_server')}
                   <Button variant="secondary" size="sm" onClick={copyClaudePrompt} className="mt-1">
