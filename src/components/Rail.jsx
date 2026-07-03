@@ -31,11 +31,12 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   const mergeRef = useRef(null);      // timer do merge (criar/entrar pasta) no centro
   const reorderRef = useRef(null);    // timer do slide de reordenar (atraso curto estilo iOS)
   const dwellKeyRef = useRef(null);
+  const hoverRef = useRef(null);      // alvo IMEDIATO { row, zone } pro drop (o `over` é só o visual, atrasado)
   const clearTimers = () => {
     if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
     if (reorderRef.current) { clearTimeout(reorderRef.current); reorderRef.current = null; }
   };
-  const resetDrag = () => { clearTimers(); dwellKeyRef.current = null; setDrag(null); setOver(null); };
+  const resetDrag = () => { clearTimers(); dwellKeyRef.current = null; hoverRef.current = null; setDrag(null); setOver(null); };
 
   const dragKeyOf = () => (drag?.path ? drag.path : (drag?.folderId ? 'folder:' + drag.folderId : null));
 
@@ -49,14 +50,20 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
     const inCenter = cx > r.width * 0.28 && cx < r.width * 0.72 && cy > r.height * 0.28 && cy < r.height * 0.72;
     const canMerge = !drag?.folderId && (row.kind === 'project' || row.kind === 'folder' || row.kind === 'child');
 
+    // Alvo imediato pro drop (não espera o atraso do visual): centro+mergeável = merge,
+    // senão reorder. Assim um drop rápido sempre funciona.
+    hoverRef.current = { row, zone: inCenter && canMerge ? 'merge' : 'reorder' };
+
     // Entrou numa linha nova: NÃO desliza na hora (feel iOS). Agenda o slide (reorder) com
-    // um atraso curto; assim dá tempo de pousar no centro pra criar/entrar pasta.
+    // um atraso curto; assim dá tempo de pousar no centro pra criar/entrar pasta. Guardamos
+    // o próprio `row` no `over` pra o drop usar o alvo rastreado (não o elemento sob o
+    // cursor, que o preview ao vivo pode ter trocado pelo item arrastado).
     if (dwellKeyRef.current !== row.key) {
       clearTimers();
       dwellKeyRef.current = row.key;
       reorderRef.current = setTimeout(() => {
         reorderRef.current = null;
-        setOver({ key: row.key, zone: 'reorder' });
+        setOver({ key: row.key, zone: 'reorder', row });
       }, 150);
     }
 
@@ -64,27 +71,30 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       if (!mergeRef.current) {
         mergeRef.current = setTimeout(() => {
           mergeRef.current = null;
-          setOver({ key: row.key, zone: 'merge' });
+          setOver({ key: row.key, zone: 'merge', row });
         }, 420);
       }
     } else {
       if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
-      setOver((prev) => (prev && prev.key === row.key && prev.zone === 'merge' ? { key: row.key, zone: 'reorder' } : prev));
+      setOver((prev) => (prev && prev.key === row.key && prev.zone === 'merge' ? { key: row.key, zone: 'reorder', row } : prev));
     }
   };
 
-  const onRowDrop = (e, row) => {
-    e.preventDefault();
+  // Aplica o drop pelo alvo RASTREADO (over.row), não pelo elemento que recebeu o evento:
+  // com o preview ao vivo, o item arrastado pode estar sob o cursor (drop nele = no-op),
+  // o que travava o arraste pra primeira posição.
+  const commitDrop = () => {
     const dragKey = dragKeyOf();
-    if (dragKey && row.key !== dragKey) {
-      const zone = over?.key === row.key && over?.zone === 'merge' ? 'merge' : 'reorder';
+    const hover = hoverRef.current;
+    const row = hover?.row;
+    if (dragKey && row && row.key !== dragKey) {
       if (drag?.path) {
         onApplyDrop?.({
           dragPath: drag.path,
           targetKind: row.kind,
           targetPath: (row.kind === 'project' || row.kind === 'child') ? row.project.path : undefined,
           targetFolderId: row.kind === 'folder' ? row.folder.id : (row.kind === 'child' ? row.folderId : undefined),
-          zone,
+          zone: hover.zone,
         });
       } else if (drag?.folderId) {
         onApplyDrop?.({
@@ -123,7 +133,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         draggable
         onDragStart={() => setDrag({ path: p.path })}
         onDragOver={(e) => onRowDragOver(e, { key: p.path, kind: indented ? 'child' : 'project', project: p, folderId: p.__folderId })}
-        onDrop={(e) => onRowDrop(e, { key: p.path, kind: indented ? 'child' : 'project', project: p, folderId: p.__folderId })}
+        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
         onDragEnd={resetDrag}
         onClick={() => onOpen(p)}
         onDoubleClick={() => openProjectSettings(p)}
@@ -187,7 +197,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         draggable
         onDragStart={() => setDrag({ folderId: f.id })}
         onDragOver={(e) => onRowDragOver(e, row)}
-        onDrop={(e) => onRowDrop(e, row)}
+        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
         onDragEnd={resetDrag}
         onClick={() => onToggleFolder?.(f.id)}
         onContextMenu={(e) => openFolderMenu(e, f)}
@@ -267,7 +277,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       <div
         className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => { e.preventDefault(); resetDrag(); }}
+        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
       >
         <AnimatePresence initial={false}>
           {displayRows.map((row) => {
