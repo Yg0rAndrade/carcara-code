@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { isHtml } from '@/lib/htmlPreview';
 import { toast } from '@/lib/toast';
+import { MOVE_MIME } from '@/lib/dragPaths.js';
 
 // Preview de markdown renderizado (react-markdown + GFM + highlight), sob demanda.
 const Markdown = lazy(() => import('./Markdown.jsx'));
@@ -446,7 +447,7 @@ export function CodeView({ active, openRequest }) {
     setDragActive(true);
     try {
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('application/x-ygor-move', items.map((i) => i.path).join('\n'));
+      e.dataTransfer.setData(MOVE_MIME, items.map((i) => i.path).join('\n'));
     } catch {}
   };
 
