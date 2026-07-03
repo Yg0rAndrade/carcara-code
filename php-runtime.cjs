@@ -81,6 +81,7 @@ function downloadTo(url, destPath, redirectsLeft = 5) {
       if (statusCode !== 200) { res.resume(); return reject(new Error(`HTTP ${statusCode} ao baixar ${url}`)); }
       const out = fs.createWriteStream(destPath);
       res.pipe(out);
+      res.on('error', () => out.destroy());
       out.on('finish', () => out.close(() => resolve()));
       out.on('error', reject);
     });
@@ -100,9 +101,12 @@ async function downloadFirstAvailable(urls, destPath) {
 
 function extractZip(zipPath, destDir) {
   // Windows: usa o Expand-Archive do PowerShell (sem dependência npm).
+  // Aspas simples dobradas = escape literal do PowerShell, evita quebra de
+  // string se o caminho tiver aspas (ex.: userData com username "O'Connor").
+  const psQuote = (p) => String(p).replace(/'/g, "''");
   const r = spawnSync('powershell', [
     '-NoProfile', '-NonInteractive', '-Command',
-    `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${destDir}' -Force`,
+    `Expand-Archive -LiteralPath '${psQuote(zipPath)}' -DestinationPath '${psQuote(destDir)}' -Force`,
   ], { encoding: 'utf8' });
   if (r.status !== 0) {
     throw new Error('falha ao extrair o PHP: ' + (r.stderr || r.error?.message || 'erro desconhecido'));
@@ -134,7 +138,12 @@ async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
   }
 
   phase('Extraindo o PHP…');
-  extractZip(zipPath, versionDir);
+  try {
+    extractZip(zipPath, versionDir);
+  } catch (e) {
+    try { fs.rmSync(zipPath, { force: true }); } catch {}
+    throw new Error('Falha ao extrair o PHP: ' + e.message);
+  }
   try { fs.rmSync(zipPath, { force: true }); } catch {}
 
   if (!fs.existsSync(phpExe)) {
