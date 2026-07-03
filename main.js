@@ -1411,6 +1411,19 @@ function cleanEnv() {
   return env;
 }
 
+// Escolhe o transporte da sessão: node-pty local ou canal ssh2 remoto.
+async function makeTransport(projectPath, cols, rows) {
+  if (!isRemote(projectPath)) {
+    let pty;
+    try { pty = ptyLib || (ptyLib = require('node-pty')); }
+    catch (e) { throw new Error('node-pty não carregou: ' + e.message); }
+    return new LocalPty({ ptyLib: pty, shell: shellForOS(), env: cleanEnv(), cwd: projectPath, cols, rows });
+  }
+  const client = await connections.connFor(hostKey(projectPath)); // pode lançar (auth/conexão)
+  const { remoteDir } = parseSshUri(projectPath);
+  return new SshShell(client, { cols, rows, remoteDir });
+}
+
 // Onde o Claude Code guarda as configs globais (respeita CLAUDE_CONFIG_DIR).
 function claudeSettingsPath() {
   const base = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
@@ -1617,27 +1630,25 @@ ipcMain.handle('lang:set', (evt, { lang }) => {
   return { ok: true };
 });
 
-ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme }) => {
+ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, theme }) => {
   if (terminals.has(sessionId)) {
     return { existed: true, buffer: terminals.get(sessionId).buffer };
   }
-  let pty;
+  const remote = isRemote(projectPath);
+  let proc;
   try {
-    pty = ptyLib || (ptyLib = require('node-pty'));
+    proc = await makeTransport(projectPath, cols, rows);
   } catch (e) {
-    return { error: 'node-pty não carregou: ' + e.message };
+    return { error: e.message };
   }
-
-  const proc = new LocalPty({ ptyLib: pty, shell: shellForOS(), env: cleanEnv(), cwd: projectPath, cols, rows });
-  const { cli } = resolveProjectCli(projectPath);
-  const entry = { pty: proc, buffer: '', projectPath, sessionId, cli };
+  const { cli } = remote ? { cli: 'claude' } : resolveProjectCli(projectPath);
+  const entry = { pty: proc, buffer: '', projectPath, sessionId, cli, remote };
   terminals.set(sessionId, entry);
 
   proc.onData((data) => {
     entry.buffer += data;
     if (entry.buffer.length > 200000) entry.buffer = entry.buffer.slice(-150000);
-    captureResumeId(entry); // OpenCode/Antigravity/Codex: pesca o id da conversa do output
-    activityOnData(entry, data); // detecção "trabalhando/terminou" (só claude)
+    if (!remote) { captureResumeId(entry); activityOnData(entry, data); }
     safeSend('term:data', { sessionId, data });
   });
   proc.onExit(() => {
@@ -1648,18 +1659,19 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
     safeSend('term:exit', { sessionId });
   });
 
-  // Casa o tema do Claude Code com o do terminal ANTES de subir o CLI, pra ele já
-  // nascer com as cores certas pro fundo (claro/escuro). Só faz sentido pro claude.
-  if (cli === 'claude' && theme) applyClaudeTheme(theme);
-
-  // Sobe o CLI de IA escolhido (Claude Code por padrão) automaticamente nessa sessão.
-  // Aba nova = `claude` puro; retoma a conversa só ao reabrir o app (id com histórico).
-  const launch = buildLaunchCommand(sessionId, projectPath);
-  if (cli === 'claude') {
-    entry.claudeId = launch.claudeId || null;
-    startClaudeWatcher(entry, launch.capture); // captura id (se nova) + título da aba
+  if (remote) {
+    // Camada 1: sobe o claude puro no VPS; título/resume remoto ficam pra Camada 4.
+    proc.write('claude\r');
+  } else {
+    // Casa o tema do Claude Code com o do terminal ANTES de subir o CLI.
+    if (cli === 'claude' && theme) applyClaudeTheme(theme);
+    const launch = buildLaunchCommand(sessionId, projectPath);
+    if (cli === 'claude') {
+      entry.claudeId = launch.claudeId || null;
+      startClaudeWatcher(entry, launch.capture);
+    }
+    proc.write(launch.cmd + '\r');
   }
-  proc.write(launch.cmd + '\r');
   return { existed: false, buffer: '' };
 });
 
@@ -1679,18 +1691,16 @@ ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {
 
 // ---------- Terminal livre (shell comum p/ npm, instalar skills, etc.) ----------
 // Igual ao do Claude Code, mas NÃO sobe o `claude` — abre só o shell no projeto.
-ipcMain.handle('shell:ensure', (evt, { projectPath, cols, rows }) => {
+ipcMain.handle('shell:ensure', async (evt, { projectPath, cols, rows }) => {
   if (shells.has(projectPath)) {
     return { existed: true, buffer: shells.get(projectPath).buffer };
   }
-  let pty;
+  let proc;
   try {
-    pty = ptyLib || (ptyLib = require('node-pty'));
+    proc = await makeTransport(projectPath, cols, rows);
   } catch (e) {
-    return { error: 'node-pty não carregou: ' + e.message };
+    return { error: e.message };
   }
-
-  const proc = new LocalPty({ ptyLib: pty, shell: shellForOS(), env: cleanEnv(), cwd: projectPath, cols, rows });
   const entry = { pty: proc, buffer: '' };
   shells.set(projectPath, entry);
 
