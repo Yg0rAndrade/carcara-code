@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, FolderPlus, Settings, SunMoon,
+  ChevronLeft, ChevronRight, FolderPlus, Folder, Settings, SunMoon,
   RefreshCw, Square, MessageSquarePlus, PanelLeftClose, Eye, Code2,
   GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw, GripVertical,
 } from 'lucide-react';
@@ -310,6 +310,7 @@ export default function App() {
       { id: 'chat:new', group: t('app.cmd_group_chat'), label: t('app.cmd_new_chat_session'), hint: t('app.cmd_hint_tab'), icon: <MessageSquarePlus />, run: () => chatControls.current?.newSession?.() },
       { id: 'chat:toggle', group: t('app.cmd_group_chat'), label: t('app.cmd_toggle_chat'), icon: <PanelLeftClose />, run: toggleChat },
       { id: 'app:add', group: t('app.cmd_group_app'), label: t('app.cmd_add_project'), icon: <FolderPlus />, run: addProjects },
+      { id: 'app:add_folder', group: t('app.cmd_group_app'), label: t('app.cmd_add_folder'), icon: <Folder />, run: () => persistRail(addFolder(rail)) },
       { id: 'app:theme', group: t('app.cmd_group_app'), label: t('app.cmd_toggle_theme'), icon: <SunMoon />, run: toggleTheme },
       { id: 'app:settings', group: t('app.cmd_group_app'), label: t('app.cmd_settings'), icon: <Settings />, run: () => setSettingsOpen(true) },
       { id: 'app:setup', group: t('app.cmd_group_app'), label: t('app.cmd_setup_tools'), icon: <Wrench />, run: () => setSetupOpen(true) },
@@ -319,7 +320,7 @@ export default function App() {
     const projectsGroup = t('app.cmd_group_projects');
     const appGroup = t('app.cmd_group_app');
     return active ? list : list.filter((c) => c.group === projectsGroup || c.group === appGroup);
-  }, [projects, active, toggleTheme, t]);
+  }, [projects, active, rail, persistRail, toggleTheme, t]);
 
   // Reordena (drag-and-drop): atualiza na hora e salva a ordem no config.json.
   const reorderProjects = async (orderedPaths) => {

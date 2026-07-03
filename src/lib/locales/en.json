@@ -69,6 +69,7 @@
     "cmd_toggle_chat": "Collapse/expand chat",
     "cmd_group_app": "App",
     "cmd_add_project": "Add project…",
+    "cmd_add_folder": "New folder",
     "cmd_toggle_theme": "Toggle light/dark theme",
     "cmd_settings": "Settings",
     "cmd_setup_tools": "Set up my PC (tools)",

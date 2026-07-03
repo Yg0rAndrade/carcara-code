@@ -69,6 +69,7 @@
     "cmd_toggle_chat": "Recolher/expandir chat",
     "cmd_group_app": "App",
     "cmd_add_project": "Adicionar projeto…",
+    "cmd_add_folder": "Nova pasta",
     "cmd_toggle_theme": "Alternar tema claro/escuro",
     "cmd_settings": "Configurações",
     "cmd_setup_tools": "Preparar meu PC (ferramentas)",
