@@ -13,6 +13,7 @@ import {
 } from '@/lib/paneLayout.js';
 import { cn } from '@/lib/utils';
 import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
+import { AiPicker } from './AiPicker.jsx';
 
 // Preview de markdown completo (react-markdown + GFM + highlight.js), carregado
 // sob demanda pra ficar fora do bundle de boot. Enquanto baixa, cai no PromptMd leve.
@@ -475,6 +476,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const paneRefs = useRef(new Map());      // paneId -> elemento de conteúdo do pane
 
   const [sessions, setSessions] = useState([]); // todas as sessões do projeto: [{ id, name }]
+  const [projectAis, setProjectAis] = useState(null); // { ais, custom } do projeto ativo
   // Atividade do Claude POR SESSÃO: sessionId -> 'working' | 'asking' | 'attention'.
   // É o detalhe fino (qual aba) que o rail (agregado por projeto) não mostra.
   const [sessionActivity, setSessionActivity] = useState({});
@@ -568,7 +570,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
 
   // Ao trocar de projeto: carrega sessões + restaura/reconcilia o layout salvo.
   useEffect(() => {
-    if (!activeProject) { setSessions([]); setLayout(null); layoutRef.current = null; setFocusedPane(null); return; }
+    if (!activeProject) { setSessions([]); setLayout(null); layoutRef.current = null; setFocusedPane(null); setProjectAis(null); return; }
     let cancelled = false;
     (async () => {
       let list = await window.api.sessionsList(activeProject);
@@ -577,6 +579,9 @@ export function ChatPanel({ activeProject, controlsRef }) {
         list = [s];
       }
       if (cancelled) return;
+      const ai = await window.api.getAi(activeProject);
+      if (cancelled) return;
+      setProjectAis(ai || { ais: ['claude'], custom: '' });
       setSessions(list);
       const ids = list.map((s) => s.id);
       const tree = reconcile(loadLayout(activeProject), ids, ids[0]);
@@ -686,23 +691,32 @@ export function ChatPanel({ activeProject, controlsRef }) {
   };
 
   // Posiciona cada terminal no container do seu pane e mostra só a aba ativa.
-  // Reparentear (appendChild) move o nó sem destruir o xterm — a sessão segue viva.
+  // Só cria o xterm quando a aba já escolheu a CLI (session.cli). Sem CLI: 1 IA =
+  // auto-escolhe; 2+ IAs = deixa o AiPicker (renderizado abaixo) aparecer.
   useEffect(() => {
-    if (!activeProject || !layout) return;
+    if (!activeProject || !layout || !projectAis) return;
+    const ais = projectAis.ais || [];
     for (const p of allPanes(layout)) {
       const container = paneRefs.current.get(p.id);
       if (!container) continue;
       for (const sid of p.tabs) {
         const isActive = sid === p.active;
         let te = termsRef.current.get(sid);
-        if (!te && isActive) te = createTerm(sid, container);
+        if (!te && isActive) {
+          const meta = sessions.find((s) => s.id === sid);
+          if (!meta || !meta.cli) {
+            if (ais.length === 1) pickCli(sid, ais[0]); // 1 IA → sobe sem tela
+            continue;                                   // sem CLI: nada de terminal ainda
+          }
+          te = createTerm(sid, container);
+        }
         if (!te) continue;
         if (te.el.parentNode !== container) container.appendChild(te.el);
         te.el.style.display = isActive ? 'block' : 'none';
       }
     }
     scheduleRefit();
-  }, [layout, activeProject]);
+  }, [layout, activeProject, sessions, projectAis]);
 
   // Reajusta os terminais visíveis quando o painel inteiro muda de tamanho.
   useEffect(() => {
@@ -726,6 +740,15 @@ export function ChatPanel({ activeProject, controlsRef }) {
     pasteIntoSession(sid, text);
     const te = termsRef.current.get(sid);
     if (te) requestAnimationFrame(() => { try { te.term.focus(); } catch {} });
+  };
+
+  // Escolha da IA de uma aba (via AiPicker ou auto-escolha com 1 IA): grava no main e
+  // atualiza local; a mudança de `sessions` re-dispara o efeito que cria o xterm.
+  const pickCli = async (sid, key) => {
+    if (!activeProject) return;
+    await window.api.sessionSetCli(activeProject, sid, key);
+    setSessions((cur) => cur.map((s) => (s.id === sid ? { ...s, cli: key } : s)));
+    focusSession(sid);
   };
 
   const addSession = async (paneId) => {
@@ -923,6 +946,14 @@ export function ChatPanel({ activeProject, controlsRef }) {
         </div>
 
         <div ref={setPaneRef(p.id)} className="relative flex-1 overflow-hidden">
+          {(() => {
+            const meta = sessions.find((s) => s.id === p.active);
+            const ais = projectAis?.ais || [];
+            if (meta && !meta.cli && ais.length >= 2) {
+              return <AiPicker ais={ais} onPick={(key) => pickCli(p.active, key)} />;
+            }
+            return null;
+          })()}
           {dragSid && (
             <div
               className="absolute inset-0 z-20"
