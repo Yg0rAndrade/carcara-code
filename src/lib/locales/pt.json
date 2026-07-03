@@ -24,6 +24,7 @@
     "add_open_tooltip": "Adicionar projeto ou pasta",
     "add_menu_project": "Adicionar projeto",
     "add_menu_folder": "Nova pasta",
+    "add_folder_hint": "Para criar uma pasta, arraste um projeto para cima de outro e segure no centro.",
     "folder_open_tooltip": "Abrir/recolher pasta",
     "menu_folder_rename": "Renomear pasta",
     "menu_folder_dissolve": "Desfazer pasta"

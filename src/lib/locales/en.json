@@ -24,6 +24,7 @@
     "add_open_tooltip": "Add project or folder",
     "add_menu_project": "Add project",
     "add_menu_folder": "New folder",
+    "add_folder_hint": "To create a folder, drag a project onto another and hold on its center.",
     "folder_open_tooltip": "Open/collapse folder",
     "menu_folder_rename": "Rename folder",
     "menu_folder_dissolve": "Ungroup folder"
