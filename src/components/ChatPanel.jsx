@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
 import { AiPicker } from './AiPicker.jsx';
+import { MOVE_MIME, formatDroppedPaths } from '@/lib/dragPaths.js';
 
 // Preview de markdown completo (react-markdown + GFM + highlight.js), carregado
 // sob demanda pra ficar fora do bundle de boot. Enquanto baixa, cai no PromptMd leve.
@@ -489,6 +490,7 @@ export function ChatPanel({ activeProject, controlsRef }) {
   // Estado do arrastar de abas.
   const [dragSid, setDragSid] = useState(null);
   const [dropTarget, setDropTarget] = useState(null); // { paneId, zone }
+  const [fileDropPane, setFileDropPane] = useState(null); // paneId destacado ao arrastar arquivo da árvore
   const dragRef = useRef(null);
 
   // Renomear aba à mão: sessionId em edição + valor do campo. O item "Renomear" do
@@ -851,6 +853,46 @@ export function ChatPanel({ activeProject, controlsRef }) {
     focusSession(d.sid);
   };
 
+  // --- Arrastar arquivo(s) da árvore pra dentro do terminal ---
+  // Só reage ao tipo customizado da árvore (MOVE_MIME); arrasto de aba usa
+  // 'text/plain' e é ignorado aqui, então os dois convivem sem conflito.
+
+  // Rede de segurança: se o arrasto for cancelado (Esc) ou solto fora da janela,
+  // nem onFilePathDrop nem onFilePathDragLeave disparam pra limpar o anel — o
+  // 'drop' não acontece e o 'dragleave' pode não bater (o ponteiro pode estar
+  // sobre o xterm filho quando o arrasto termina). 'dragend' fecha arrasto
+  // cancelado/abortado que não dispara drop nem dragleave no pane — mesmo
+  // motivo do onTreeDragEnd da árvore (CodeView.jsx) — e sempre borbulha até a
+  // window ao fim de qualquer arrasto, então serve pra limpar o realce preso.
+  useEffect(() => {
+    const onDragEnd = () => setFileDropPane(null);
+    window.addEventListener('dragend', onDragEnd);
+    return () => window.removeEventListener('dragend', onDragEnd);
+  }, []);
+
+  const onFilePathDragOver = (paneId, e) => {
+    if (!e.dataTransfer.types.includes(MOVE_MIME)) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'copy'; } catch {}
+    setFileDropPane((prev) => (prev === paneId ? prev : paneId));
+  };
+
+  // Mesmo truque de dragleave usado na árvore (CodeView): só limpa quando o
+  // ponteiro sai de fato do container, não ao passar sobre um filho (o xterm).
+  const onFilePathDragLeave = (e) => {
+    if (e.currentTarget === e.target) setFileDropPane(null);
+  };
+
+  const onFilePathDrop = (pane, e) => {
+    const raw = e.dataTransfer.getData(MOVE_MIME);
+    if (!raw) return; // não é arrasto de arquivo da árvore
+    e.preventDefault();
+    e.stopPropagation();
+    setFileDropPane(null);
+    const text = formatDroppedPaths(raw);
+    if (text && pane.active) insertText(pane.active, text);
+  };
+
   const onSplitLayout = (node, sizes) => {
     node.sizes = sizes; // mutação direta: tamanho é "não controlado", não precisa re-render
     scheduleSave();
@@ -945,7 +987,16 @@ export function ChatPanel({ activeProject, controlsRef }) {
           </div>
         </div>
 
-        <div ref={setPaneRef(p.id)} className="relative flex-1 overflow-hidden">
+        <div
+          ref={setPaneRef(p.id)}
+          className={
+            'relative flex-1 overflow-hidden' +
+            (fileDropPane === p.id ? ' ring-2 ring-inset ring-primary/50' : '')
+          }
+          onDragOver={(e) => onFilePathDragOver(p.id, e)}
+          onDragLeave={onFilePathDragLeave}
+          onDrop={(e) => onFilePathDrop(p, e)}
+        >
           {(() => {
             const meta = sessions.find((s) => s.id === p.active);
             const ais = projectAis?.ais || [];

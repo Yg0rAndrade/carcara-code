@@ -23,6 +23,7 @@ import { DragHandle } from './ui/drag-handle.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
+import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { useT } from '@/lib/i18n';
 
@@ -302,12 +303,18 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   const [termDragging, setTermDragging] = useState(false);
   const [grabbing, setGrabbing] = useState(false);   // modo "selecionar elemento" ativo
   const [grabbed, setGrabbed] = useState(false);      // toast "Elemento copiado!"
+  const [findOpen, setFindOpen] = useState(false);    // barra "buscar na página" (Ctrl+F)
+  const [findNonce, setFindNonce] = useState(0);      // bump a cada Ctrl+F: re-foca o input da busca
   const [canBack, setCanBack] = useState(false);      // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
   const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
   const [viewport, setViewport] = useState(() => localStorage.getItem('previewViewport') || 'desktop'); // desktop | tablet | mobile
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
+  // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
+  // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
+  const inWebRef = useRef(false);
+  inWebRef.current = view === 'preview' && mode === 'web';
   const bodyRowRef = useRef(null);
   // Abas por projeto. Cada projeto tem uma lista de abas (cada uma com o seu
   // <webview>) e a id da aba ativa. A aba "raiz" é o servidor de preview; as demais
@@ -511,6 +518,45 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [grabbing]);
+
+  // --- Buscar na página (Ctrl+F) ---
+  // Abre a barra de busca. Só vale "olhando um site"; cada chamada bumpa o nonce pra
+  // a barra re-focar/selecionar o input (reabrir com Ctrl+F = pronto pra digitar).
+  const openFind = useCallback(() => {
+    if (!inWebRef.current) return;
+    setFindOpen(true);
+    setFindNonce((n) => n + 1);
+  }, []);
+
+  // Caminho 1 — foco na app (fora do webview): pega o Ctrl+F no window.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) {
+        if (!inWebRef.current) return;
+        e.preventDefault();
+        openFind();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openFind]);
+
+  // Caminho 2 — foco DENTRO do webview: o main intercepta o Ctrl+F e manda 'preview:find'
+  // com o id do webContents. Só abre se for o webview do projeto ativo.
+  useEffect(() => {
+    return window.api.on('preview:find', ({ id }) => {
+      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
+      let cid = null; try { cid = w && w.getWebContentsId(); } catch {}
+      if (cid != null && id === cid) openFind();
+    });
+  }, [openFind]);
+
+  // Fecha a busca ao sair do preview/site (a FindBar limpa o realce ao desmontar).
+  useEffect(() => {
+    if (findOpen && !(view === 'preview' && mode === 'web')) setFindOpen(false);
+  }, [view, mode, findOpen]);
+  // Fecha ao trocar de aba ou de projeto (o webview alvo mudaria).
+  useEffect(() => { setFindOpen(false); }, [tabBar.activeId, active?.path]);
 
   const showWebFor = useCallback((projectPath, u) => {
     urlsRef.current.set(projectPath, u);
@@ -1048,6 +1094,14 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
                 {grabbed ? t('preview.grab_done') : t('preview.grab_active')}
               </div>
             </div>
+          )}
+          {inPreview && mode === 'web' && findOpen && (
+            <FindBar
+              webview={active ? activeWebviewOf(active.path) : null}
+              nonce={findNonce}
+              onClose={() => setFindOpen(false)}
+              t={t}
+            />
           )}
           {inPreview && mode === 'log' && (
             <pre
