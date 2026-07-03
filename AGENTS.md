@@ -140,6 +140,32 @@ Antes do release, gere a base a partir do git e edite à mão para ficar legíve
 `git log <ultima-tag>..HEAD --oneline`. Classifique cada commit em Feature ou Bug Fix
 (commits de `chore`/`build`/`docs` normalmente ficam de fora das notas ao usuário).
 
+## Antes de construir qualquer recurso novo — pesquise primeiro (OBRIGATÓRIO)
+
+Quando o usuário soltar uma ideia de recurso (mesmo de passagem, mesmo curta), **não
+comece a codar antes de pesquisar**. Ele pode jogar a ideia solta, mas a etapa de
+pesquisa é sua responsabilidade, sempre. São dois questionamentos que você tem que
+fazer **toda vez**:
+
+1. **Existe uma biblioteca pronta pra isso?** Se sim, **pesquise na web** (não responda
+   de memória) e **liste pelo menos 3 opções**, comparando de forma honesta:
+   manutenção/atividade, encaixe no stack (Electron + Node, JS puro vs. addon nativo),
+   dor de distribuição pro `.exe`/cross-platform, tamanho e licença. Recomende uma e
+   explique o porquê. **Não reinvente a roda** — SSH, parsing, cripto, protocolos etc.
+   são complicados demais pra reescrever à mão; use lib consagrada, bem utilizada.
+2. **Como o mercado faz isso?** Pesquise como **VS Code, Cursor, Zed, Antigravity** e
+   outras IDEs resolvem o mesmo problema, e traga o que dá pra aprender com elas.
+
+Só depois desses dois passos você propõe o design. Motivo: por melhor que a IA seja,
+**sempre escapa algum erro bobo** — a pesquisa prévia e o "como os outros fazem"
+cortam a maior parte deles antes de virarem código. Esse ciclo (pesquisar libs →
+listar 3 → ver o mercado → só então desenhar) vale pra **todo** recurso novo, não só
+os grandes.
+
+> Exemplo real: no recurso de SSH remoto, essa pesquisa confirmou usar a lib **`ssh2`**
+> (JS puro, sem addon nativo) em vez de bindings de libssh2 (mortos/arquivados no Node)
+> ou parallel-ssh (Python, fora do stack).
+
 ## Em resumo
 
 Quando você (Claude Code) for atuar neste repositório, lembre-se: o foco é **manter as
