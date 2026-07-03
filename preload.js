@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('api', {
   removeProject: (projectPath) => ipcRenderer.invoke('projects:remove', { projectPath }),
   reorderProjects: (paths) => ipcRenderer.invoke('projects:reorder', { paths }),
   listProjects: () => ipcRenderer.invoke('projects:list'),
+  setRail: (rail) => ipcRenderer.invoke('rail:set', { rail }),
   renameProject: (projectPath, name) => ipcRenderer.invoke('projects:rename', { projectPath, name }),
   setProjectColor: (projectPath, color) => ipcRenderer.invoke('projects:setColor', { projectPath, color }),
   setProjectIcon: (projectPath, dataUrl) => ipcRenderer.invoke('projects:setIcon', { projectPath, dataUrl }),

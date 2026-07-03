@@ -12,7 +12,8 @@
     "pack:appimage": "vite build && electron-builder --linux AppImage --publish never",
     "test:i18n": "node scripts/i18n-parity.smoke.cjs",
     "test:csv": "node scripts/csv-smoke.cjs",
-    "test:php": "node scripts/php-smoke.cjs"
+    "test:php": "node scripts/php-smoke.cjs",
+    "test:rail": "node scripts/rail-smoke.cjs"
   },
   "build": {
     "appId": "com.carcara.code",

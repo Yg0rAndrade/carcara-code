@@ -27,7 +27,16 @@
     "image_invalid": "That file isn't an image",
     "image_too_large": "Image too large (max 2 MB)",
     "move_tooltip": "Drag to move the sidebar to the other side",
-    "version_tooltip": "App version — open About"
+    "version_tooltip": "App version — open About",
+    "folder_default": "New folder",
+    "folder_more": "+{n}",
+    "add_open_tooltip": "Add project or folder",
+    "add_menu_project": "Add project",
+    "add_menu_folder": "New folder",
+    "add_folder_hint": "To create a folder, drag a project onto another and hold on its center.",
+    "folder_open_tooltip": "Open/collapse folder",
+    "menu_folder_rename": "Rename folder",
+    "menu_folder_dissolve": "Ungroup folder"
   },
   "app": {
     "no_project_selected": "Select a project",

@@ -27,7 +27,16 @@
     "image_invalid": "Esse arquivo não é uma imagem",
     "image_too_large": "Imagem muito grande (máx. 2 MB)",
     "move_tooltip": "Arraste para mover a barra de lado",
-    "version_tooltip": "Versão do app — abrir Sobre"
+    "version_tooltip": "Versão do app — abrir Sobre",
+    "folder_default": "Nova pasta",
+    "folder_more": "+{n}",
+    "add_open_tooltip": "Adicionar projeto ou pasta",
+    "add_menu_project": "Adicionar projeto",
+    "add_menu_folder": "Nova pasta",
+    "add_folder_hint": "Para criar uma pasta, arraste um projeto para cima de outro e segure no centro.",
+    "folder_open_tooltip": "Abrir/recolher pasta",
+    "menu_folder_rename": "Renomear pasta",
+    "menu_folder_dissolve": "Desfazer pasta"
   },
   "app": {
     "no_project_selected": "Selecione um projeto",

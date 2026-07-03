@@ -41,6 +41,19 @@ resultado na hora, sem se perder em configurações.
   terminal do Claude Code, limpe a variável `ELECTRON_RUN_AS_NODE` antes
   (`$env:ELECTRON_RUN_AS_NODE=$null; npm start`), senão o Electron roda como Node puro.
 
+## Sessões paralelas (isolamento)
+
+O autor roda **várias sessões do Claude Code ao mesmo tempo** neste repositório
+(inclusive em `git worktree` sob `.claude/worktrees/`). Ao implementar qualquer
+mudança, assuma que **outras sessões podem estar editando o mesmo código em paralelo**:
+
+- Trabalhe num **branch/worktree dedicado** à sua tarefa (ex.: `feat/<tarefa>`), nunca
+  direto na branch que o working copy principal estiver usando.
+- Não force `git checkout`/troca de branch no working copy principal — outra sessão
+  pode estar no meio de algo.
+- Prefira mudanças **focadas e pequenas**, com commits frequentes, para reduzir
+  conflito de merge.
+
 ## Idiomas (i18n) — PT-BR e Inglês
 
 O Carcará Code é **bilíngue**: o usuário escolhe o idioma na aba **Configurações →

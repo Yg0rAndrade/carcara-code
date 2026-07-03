@@ -24,12 +24,14 @@ import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
 import { useLayout } from './lib/layoutContext.jsx';
 import { resolveLayout } from './lib/layout.js';
+import { toggleCollapse, renameFolder, dissolveFolder, applyDrop } from './lib/railTree';
 
 export default function App() {
   const t = useT();
   const { toggle: toggleTheme } = useTheme();
   const { railSide, claudeSide, setRailSide, setClaudeSideGlobal } = useLayout();
   const [projects, setProjects] = useState([]);
+  const [rail, setRail] = useState([]); // layout do Rail: projetos soltos + pastas (ver railTree)
   const [active, setActive] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // Ref pra disparar ações que vivem no ChatPanel (ex.: nova sessão) a partir da paleta.
@@ -88,7 +90,19 @@ export default function App() {
   };
 
   const reload = useCallback(async () => {
-    setProjects(await window.api.listProjects());
+    const res = await window.api.listProjects();
+    setProjects(res.projects);
+    setRail(res.rail);
+  }, []);
+
+  // Mapa path -> projeto vivo, pro Rail resolver ícones/cores dos itens do layout.
+  const projectByPath = useMemo(() => new Map(projects.map((p) => [p.path, p])), [projects]);
+
+  // Aplica um novo layout de rail (otimista) e persiste; adota o rail reconciliado do main.
+  const persistRail = useCallback(async (nextRail) => {
+    setRail(nextRail);
+    const res = await window.api.setRail(nextRail);
+    if (res?.rail) setRail(res.rail);
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
@@ -403,6 +417,8 @@ export default function App() {
   const railEl = (
     <Rail
       projects={projects}
+      rail={rail}
+      projectByPath={projectByPath}
       active={active}
       activity={activity}
       onOpen={setActive}
@@ -411,6 +427,10 @@ export default function App() {
       onRestart={restartProject}
       onStop={stopProject}
       onReorder={reorderProjects}
+      onToggleFolder={(id) => persistRail(toggleCollapse(rail, id))}
+      onApplyDrop={(ctx) => persistRail(applyDrop(rail, { ...ctx, newFolderName: t('rail.folder_default') }))}
+      onRenameFolder={(id, name) => persistRail(renameFolder(rail, id, name))}
+      onDissolveFolder={(id) => persistRail(dissolveFolder(rail, id))}
       onRename={renameProject}
       onSetColor={setProjectColor}
       onSetIcon={setProjectIcon}

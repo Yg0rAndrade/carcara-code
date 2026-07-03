@@ -14,6 +14,7 @@ const claudeSessions = require('./claude-sessions.cjs');
 const aiCli = require('./ai-cli.cjs');
 const { initUpdater } = require('./updater.cjs');
 const phpRuntime = require('./php-runtime.cjs');
+const { reconcile: reconcileRail } = require('./rail-core.cjs');
 
 let mainWindow;
 let updater = null;
@@ -585,6 +586,15 @@ ipcMain.handle('projects:reorder', (evt, { paths }) => {
   return { ok: true };
 });
 
+// Persiste o layout do Rail (ordem + pastas) vindo do renderer. Reconcilia contra a
+// lista canônica de projetos antes de salvar (rede de segurança contra estado sujo).
+ipcMain.handle('rail:set', (evt, { rail }) => {
+  const cfg = loadConfig();
+  cfg.rail = reconcileRail(rail, cfg.projects);
+  saveConfig(cfg);
+  return { ok: true, rail: cfg.rail };
+});
+
 // ---- Favicon do projeto como ícone ----
 const iconCache = new Map(); // projectPath -> dataUrl | null
 function toDataUrl(fp, buf) {
@@ -637,22 +647,26 @@ ipcMain.handle('projects:list', () => {
   const cfg = loadConfig();
   const meta = cfg.projectMeta || {};
   // Preserva a ordem salva no config.json (definida pelo drag-and-drop do rail).
-  return cfg.projects
-    .filter((p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } })
-    .map((p) => {
-      let hasPkg = false;
-      try { fs.accessSync(path.join(p, 'package.json')); hasPkg = true; } catch {}
-      const m = meta[p] || {};
-      return {
-        name: m.name || path.basename(p),
-        path: p,
-        hasPkg,
-        running: runningServers.has(p),
-        previewType: phpRuntime.detectProjectType(p),
-        icon: m.icon || findFavicon(p),   // imagem escolhida à mão vence o favicon
-        color: m.color || null,           // null → o rail usa colorFor(name)
-      };
-    });
+  const existing = cfg.projects.filter((p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } });
+  const views = existing.map((p) => {
+    let hasPkg = false;
+    try { fs.accessSync(path.join(p, 'package.json')); hasPkg = true; } catch {}
+    const m = meta[p] || {};
+    return {
+      name: m.name || path.basename(p),
+      path: p,
+      hasPkg,
+      running: runningServers.has(p),
+      previewType: phpRuntime.detectProjectType(p),  // node|php|null (preview PHP puro)
+      icon: m.icon || findFavicon(p),   // imagem escolhida à mão vence o favicon
+      color: m.color || null,           // null → o rail usa colorFor(name)
+    };
+  });
+  // Reconcilia o layout (ordem + pastas) contra os projetos que realmente existem no
+  // disco. Auto-heal: se mudou, persiste — projeto cuja pasta sumiu cai fora do rail.
+  const rail = reconcileRail(cfg.rail, views.map((v) => v.path));
+  if (JSON.stringify(rail) !== JSON.stringify(cfg.rail || [])) { cfg.rail = rail; saveConfig(cfg); }
+  return { projects: views, rail };
 });
 
 // Renomeia o rótulo do projeto no rail (não mexe na pasta). Nome vazio volta ao basename.
