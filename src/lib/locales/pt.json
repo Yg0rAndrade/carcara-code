@@ -117,6 +117,8 @@
     "activity_asking": "Claude pediu uma confirmação",
     "activity_waiting": "Claude aguardando você",
     "tabs_close": "Fechar sessão",
+    "tabs_rename": "Renomear",
+    "tabs_rename_hint": "Botão direito para renomear",
     "new": "Nova sessão do Claude Code",
     "untitled": "Sem título"
   },

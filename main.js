@@ -446,11 +446,12 @@ function saveClaudeId(projectPath, sessionId, claudeId) {
 }
 
 // Renomeia a aba com o título que o próprio Claude gera (aiTitle), persistindo e
-// avisando o renderer. Não toca se o nome já é esse.
+// avisando o renderer. Não toca se o nome já é esse, nem se o usuário renomeou a aba
+// manualmente (s.manual): o nome escolhido à mão sempre vence o aiTitle automático.
 function applySessionTitle(projectPath, sessionId, title) {
   const cfg = loadConfig();
   const s = getSessionMeta(cfg, projectPath, sessionId);
-  if (s && s.name !== title) {
+  if (s && !s.manual && s.name !== title) {
     s.name = title;
     saveConfig(cfg);
     safeSend('session:meta', { projectPath, sessionId, name: title });
@@ -1243,7 +1244,7 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   // só promove se o transcript já tiver um.
   let changed = false;
   for (const s of list) {
-    if ((!s.name || s.name === 'Untitled') && s.claudeId) {
+    if (!s.manual && (!s.name || s.name === 'Untitled') && s.claudeId) {
       const t = readSessionTitle(projectPath, s.claudeId);
       if (t && t !== s.name) { s.name = t; changed = true; }
     }
@@ -1274,11 +1275,22 @@ ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
   return session;
 });
 
+// Renomeia a aba à mão. Um nome não-vazio fixa `manual`, que blinda a aba contra o
+// aiTitle automático (ver applySessionTitle). Nome vazio limpa `manual` e volta ao
+// título automático do transcript (ou "Untitled" se ainda não houver). Avisa o
+// renderer via 'session:meta' pra manter todos os panes em sincronia.
 ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
   const cfg = loadConfig();
   const s = getSessions(cfg, projectPath).find((x) => x.id === sessionId);
-  if (s) { s.name = name; saveConfig(cfg); }
-  return { ok: true };
+  if (s) {
+    const clean = String(name || '').trim();
+    if (clean) { s.name = clean; s.manual = true; }
+    else { s.manual = false; s.name = readSessionTitle(projectPath, s.claudeId) || 'Untitled'; }
+    saveConfig(cfg);
+    safeSend('session:meta', { projectPath, sessionId, name: s.name });
+    return { ok: true, name: s.name };
+  }
+  return { ok: false, name: null };
 });
 
 ipcMain.handle('sessions:close', (evt, { projectPath, sessionId }) => {
