@@ -17,7 +17,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   const [folderMenu, setFolderMenu] = useState(null);   // menu de pasta { x, y, folder }
   const [addMenu, setAddMenu] = useState(null);         // popover do "+" { left, bottom } (fixed) | null
   const [renamingFolder, setRenamingFolder] = useState(null); // pasta aberta no modal de renomear | null
-  const [folderTip, setFolderTip] = useState(null);           // tooltip do nome da pasta { name, x, y } | null
+  const [tip, setTip] = useState(null);           // tooltip do nome (projeto/pasta) { name, x, y } | null
   // Personalização (nome/cor/imagem) do projeto vive no ProjectSettingsModal. Guardamos
   // só o PATH do projeto aberto e derivamos o objeto vivo da lista, pra o preview refletir
   // na hora as mudanças de cor/imagem já persistidas.
@@ -28,10 +28,14 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   // --- drag (borda reordena, centro cria/entra pasta) ---
   const [drag, setDrag] = useState(null);   // { path } | { folderId }
   const [over, setOver] = useState(null);    // { key, zone: 'reorder'|'merge' }
-  const dwellRef = useRef(null);
+  const mergeRef = useRef(null);      // timer do merge (criar/entrar pasta) no centro
+  const reorderRef = useRef(null);    // timer do slide de reordenar (atraso curto estilo iOS)
   const dwellKeyRef = useRef(null);
-  const clearDwell = () => { if (dwellRef.current) { clearTimeout(dwellRef.current); dwellRef.current = null; } };
-  const resetDrag = () => { clearDwell(); dwellKeyRef.current = null; setDrag(null); setOver(null); };
+  const clearTimers = () => {
+    if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
+    if (reorderRef.current) { clearTimeout(reorderRef.current); reorderRef.current = null; }
+  };
+  const resetDrag = () => { clearTimers(); dwellKeyRef.current = null; setDrag(null); setOver(null); };
 
   const dragKeyOf = () => (drag?.path ? drag.path : (drag?.folderId ? 'folder:' + drag.folderId : null));
 
@@ -39,27 +43,32 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const dragKey = dragKeyOf();
-    if (!dragKey || row.key === dragKey) { clearDwell(); return; }
+    if (!dragKey || row.key === dragKey) { clearTimers(); return; }
     const r = e.currentTarget.getBoundingClientRect();
     const cx = e.clientX - r.left, cy = e.clientY - r.top;
     const inCenter = cx > r.width * 0.28 && cx < r.width * 0.72 && cy > r.height * 0.28 && cy < r.height * 0.72;
     const canMerge = !drag?.folderId && (row.kind === 'project' || row.kind === 'folder' || row.kind === 'child');
 
+    // Entrou numa linha nova: NÃO desliza na hora (feel iOS). Agenda o slide (reorder) com
+    // um atraso curto; assim dá tempo de pousar no centro pra criar/entrar pasta.
     if (dwellKeyRef.current !== row.key) {
-      clearDwell();
-      setOver({ key: row.key, zone: 'reorder' });
+      clearTimers();
       dwellKeyRef.current = row.key;
+      reorderRef.current = setTimeout(() => {
+        reorderRef.current = null;
+        setOver({ key: row.key, zone: 'reorder' });
+      }, 150);
     }
 
     if (inCenter && canMerge) {
-      if (!dwellRef.current) {
-        dwellRef.current = setTimeout(() => {
-          dwellRef.current = null;
+      if (!mergeRef.current) {
+        mergeRef.current = setTimeout(() => {
+          mergeRef.current = null;
           setOver({ key: row.key, zone: 'merge' });
-        }, 400);
+        }, 420);
       }
     } else {
-      clearDwell();
+      if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
       setOver((prev) => (prev && prev.key === row.key && prev.zone === 'merge' ? { key: row.key, zone: 'reorder' } : prev));
     }
   };
@@ -91,7 +100,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   };
 
   // Renomear pasta abre um modal central (nome não cabe no ícone; edição inline era ruim).
-  const openFolderRename = (f) => { setFolderTip(null); setRenamingFolder(f); };
+  const openFolderRename = (f) => { setTip(null); setRenamingFolder(f); };
 
   const openMenu = (e, p) => {
     e.preventDefault();
@@ -119,7 +128,8 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         onClick={() => onOpen(p)}
         onDoubleClick={() => openProjectSettings(p)}
         onContextMenu={(e) => openMenu(e, p)}
-        title={p.name}
+        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setTip({ name: p.name, x: r.right + 8, y: r.top + r.height / 2 }); }}
+        onMouseLeave={() => setTip(null)}
         className={cn(
           'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border font-bold text-white transition-all hover:-translate-y-0.5 hover:rounded-2xl active:cursor-grabbing',
           active?.path === p.path && 'rounded-2xl ring-2 ring-primary',
@@ -180,10 +190,9 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         onDrop={(e) => onRowDrop(e, row)}
         onDragEnd={resetDrag}
         onClick={() => onToggleFolder?.(f.id)}
-        onDoubleClick={() => openFolderRename(f)}
         onContextMenu={(e) => openFolderMenu(e, f)}
-        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFolderTip({ name: label, x: r.right + 8, y: r.top + r.height / 2 }); }}
-        onMouseLeave={() => setFolderTip(null)}
+        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setTip({ name: label, x: r.right + 8, y: r.top + r.height / 2 }); }}
+        onMouseLeave={() => setTip(null)}
         className={cn(
           'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 active:cursor-grabbing',
           open && 'ring-2 ring-primary/50',
@@ -204,14 +213,33 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   // vizinhos abrem espaço na hora porque o motion `layout` anima o deslocamento. É só
   // visual; o drop de verdade continua no onApplyDrop.
   let displayRows = rows;
-  if (drag?.path && over && over.zone === 'reorder') {
-    const from = rows.findIndex((r) => (r.kind === 'project' || r.kind === 'child') && r.key === drag.path);
-    const to = rows.findIndex((r) => r.key === over.key);
-    if (from !== -1 && to !== -1 && from !== to) {
-      const copy = rows.slice();
-      const [moved] = copy.splice(from, 1);
-      copy.splice(to > from ? to - 1 : to, 0, moved);
-      displayRows = copy;
+  if (over && over.zone === 'reorder') {
+    if (drag?.path) {
+      // Move uma linha de projeto/filho pra posição do alvo.
+      const from = rows.findIndex((r) => (r.kind === 'project' || r.kind === 'child') && r.key === drag.path);
+      const to = rows.findIndex((r) => r.key === over.key);
+      if (from !== -1 && to !== -1 && from !== to) {
+        const copy = rows.slice();
+        const [moved] = copy.splice(from, 1);
+        copy.splice(to > from ? to - 1 : to, 0, moved);
+        displayRows = copy;
+      }
+    } else if (drag?.folderId) {
+      // Move a PASTA + seus filhos abertos (bloco) pra posição do alvo, pra os vizinhos
+      // abrirem espaço igual acontece com projeto.
+      const key = 'folder:' + drag.folderId;
+      const start = rows.findIndex((r) => r.key === key);
+      if (start !== -1) {
+        let end = start + 1;
+        while (end < rows.length && rows[end].kind === 'child' && rows[end].folderId === drag.folderId) end++;
+        const block = rows.slice(start, end);
+        const rest = [...rows.slice(0, start), ...rows.slice(end)];
+        const to = rest.findIndex((r) => r.key === over.key);
+        if (to !== -1) {
+          rest.splice(to, 0, ...block);
+          displayRows = rest;
+        }
+      }
     }
   }
 
@@ -358,12 +386,12 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       />
 
       {/* Tooltip do nome da pasta (o nome não cabe no ícone). Fixed → escapa o overflow. */}
-      {folderTip && (
+      {tip && (
         <div
           className="pointer-events-none fixed z-[60] -translate-y-1/2 rounded-md border bg-popover px-2 py-1 text-[12px] font-medium text-popover-foreground shadow-md"
-          style={{ left: folderTip.x, top: folderTip.y }}
+          style={{ left: tip.x, top: tip.y }}
         >
-          {folderTip.name}
+          {tip.name}
         </div>
       )}
 
