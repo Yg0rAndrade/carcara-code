@@ -68,4 +68,24 @@ describe('makeConnections', () => {
     const p = conns.connFor('ygor@h:22'); client._ready(); await p;
     expect(client._cfg).toMatchObject({ privateKey: Buffer.from('KEY'), passphrase: 'frase' });
   });
+
+  it('rejeita se close vier antes de ready/error', async () => {
+    const client = fakeClient();
+    const conns = makeConnections(baseDeps(client));
+    const p = conns.connFor('ygor@h:22');
+    client._close();
+    await expect(p).rejects.toThrow();
+  });
+
+  it('close atrasado do cliente antigo não remove o novo após reconnect', async () => {
+    const client1 = fakeClient();
+    const client2 = fakeClient();
+    let n = 0;
+    const deps = { ...baseDeps(client1), Client: vi.fn(function () { return n++ === 0 ? client1 : client2; }) };
+    const conns = makeConnections(deps);
+    const p1 = conns.connFor('ygor@h:22'); client1._ready(); await p1;
+    const p2 = conns.reconnect('ygor@h:22'); client2._ready(); await p2;
+    client1._close();                                  // close atrasado do antigo
+    expect(conns.status('ygor@h:22')).toBe('connected'); // rec do client2 preservado
+  });
 });

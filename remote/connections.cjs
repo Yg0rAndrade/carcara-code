@@ -61,8 +61,11 @@ function makeConnections(deps) {
         if (!settled) { settled = true; reject(err); }
       });
       client.on('close', () => {
-        if (rec.status === 'connected') { rec.status = 'disconnected'; onStatus(hostKey, 'disconnected'); }
-        conns.delete(hostKey);
+        if (conns.get(hostKey) === rec) {
+          if (rec.status === 'connected') { rec.status = 'disconnected'; onStatus(hostKey, 'disconnected'); }
+          conns.delete(hostKey);
+        }
+        if (!settled) { settled = true; reject(new Error('conexão fechada antes de conectar')); }
       });
       try { client.connect(buildConnectConfig(hostKey, profile)); }
       catch (err) { if (!settled) { settled = true; reject(err); } }
@@ -72,11 +75,11 @@ function makeConnections(deps) {
   return {
     connFor,
     status: (hostKey) => (conns.get(hostKey) || {}).status || 'idle',
-    reconnect(hostKey) { const r = conns.get(hostKey); if (r) { try { r.client.end(); } catch {} conns.delete(hostKey); } return connFor(hostKey); },
+    reconnect(hostKey) { const r = conns.get(hostKey); if (r) { try { r.client.removeAllListeners('close'); } catch {} try { r.client.end(); } catch {} conns.delete(hostKey); } return connFor(hostKey); },
     end(hostKey) {
       const r = conns.get(hostKey);
       if (!r) return;
-      r.endTimer = setTimeout(() => { try { r.client.end(); } catch {} conns.delete(hostKey); }, 3000);
+      r.endTimer = setTimeout(() => { try { r.client.end(); } catch {} if (conns.get(hostKey) === r) conns.delete(hostKey); }, 3000);
     },
     endAll() { for (const [, r] of conns) { try { r.client.end(); } catch {} } conns.clear(); },
   };
