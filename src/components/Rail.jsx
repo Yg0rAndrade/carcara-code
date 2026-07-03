@@ -16,7 +16,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   const t = useT();
   const [menu, setMenu] = useState(null);               // menu de projeto { x, y, project }
   const [folderMenu, setFolderMenu] = useState(null);   // menu de pasta { x, y, folder }
-  const [addMenu, setAddMenu] = useState(false);        // popover do "+"
+  const [addMenu, setAddMenu] = useState(null);         // popover do "+" { left, bottom } (fixed) | null
   const [renamingFolderId, setRenamingFolderId] = useState(null); // pasta em edição de nome
   const [folderDraft, setFolderDraft] = useState('');
   // Personalização (nome/cor/imagem) do projeto vive no ProjectSettingsModal. Guardamos
@@ -274,7 +274,12 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       <div className="relative shrink-0 px-2 pt-2">
         <div className="flex flex-col items-center gap-1.5 py-2">
           <button
-            onClick={() => setAddMenu((v) => !v)}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              // Abre pra DIREITA, fora do rail (fixed escapa o overflow-hidden do <nav>);
+              // ancora a base do menu na base do botão pra crescer pra cima e não vazar embaixo.
+              setAddMenu((cur) => (cur ? null : { left: r.right + 8, bottom: window.innerHeight - r.bottom }));
+            }}
             title={t('rail.add_open_tooltip')}
             className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
           >
@@ -292,11 +297,14 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
 
         {addMenu && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setAddMenu(false)} />
-            <div className="absolute bottom-[76px] left-1/2 z-50 min-w-[170px] -translate-x-1/2 overflow-hidden rounded-md border bg-background py-1 shadow-md">
+            <div className="fixed inset-0 z-40" onClick={() => setAddMenu(null)} />
+            <div
+              className="fixed z-50 min-w-[170px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
+              style={{ left: addMenu.left, bottom: addMenu.bottom }}
+            >
               <button
                 type="button"
-                onClick={() => { setAddMenu(false); onAdd?.(); }}
+                onClick={() => { setAddMenu(null); onAdd?.(); }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
               >
                 <FolderPlus className="h-3.5 w-3.5 shrink-0" />
@@ -304,7 +312,7 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
               </button>
               <button
                 type="button"
-                onClick={() => { setAddMenu(false); toast(t('rail.add_folder_hint')); }}
+                onClick={() => { setAddMenu(null); toast(t('rail.add_folder_hint')); }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
               >
                 <FolderIcon className="h-3.5 w-3.5 shrink-0" />
