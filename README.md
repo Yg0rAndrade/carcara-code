@@ -63,11 +63,22 @@ Cada projeto escolhe qual CLI usar: Claude Code, Codex, OpenCode, Antigravity ou
 
 **E ainda:** chamadas de API (aba REST), conexão MCP, subir pro GitHub e checkpoints para "voltar no tempo" — sem sujar o Git do seu projeto (o histórico vive num repositório-sombra separado).
 
-## Baixar (Windows)
+## Baixar
 
-Pegue o instalador mais recente na página de **[Releases](../../releases)**. Baixe o `CarcaraCode-Setup-*.exe`, execute e pronto.
+Pegue a versão mais recente na página de **[Releases](../../releases)**.
+
+**Windows** — baixe o `CarcaraCode-Setup-*.exe`, execute e pronto.
 
 > Na primeira execução o Windows pode mostrar um aviso do SmartScreen ("O Windows protegeu seu PC"), porque o instalador ainda não é assinado. Clique em **Mais informações → Executar assim mesmo**. É seguro — o código é aberto, dá pra auditar tudo aqui.
+
+**Linux** — baixe o `CarcaraCode-*.AppImage`, dê permissão de execução e abra:
+
+```bash
+chmod +x CarcaraCode-*.AppImage
+./CarcaraCode-*.AppImage
+```
+
+> É um arquivo único e portátil — não precisa instalar. No gerenciador de arquivos, dá também pra marcar "Permitir execução" nas propriedades e abrir com duplo-clique.
 
 ## Como rodar (a partir do código)
 

@@ -9,6 +9,7 @@
     "start": "electron .",
     "test": "vitest run",
     "pack:exe": "vite build && electron-builder --win nsis --publish never",
+    "pack:appimage": "vite build && electron-builder --linux AppImage --publish never",
     "test:i18n": "node scripts/i18n-parity.smoke.cjs",
     "test:csv": "node scripts/csv-smoke.cjs"
   },
@@ -42,6 +43,12 @@
       "shortcutName": "Carcará Code",
       "uninstallDisplayName": "Carcará Code ${version}",
       "artifactName": "CarcaraCode-Setup-${version}.exe"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png",
+      "category": "Development",
+      "artifactName": "CarcaraCode-${version}.AppImage"
     }
   },
   "devDependencies": {
