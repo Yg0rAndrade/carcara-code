@@ -525,6 +525,7 @@
     "aiAgyDesc": "Google · substituiu o Gemini CLI.",
     "aiCustomDesc": "Defina o comando manualmente.",
     "aiCustomLabel": "Personalizado",
+    "aiMinOne": "Pelo menos uma IA precisa ficar marcada.",
     "appTheme": "Tema da interface",
     "themeLight": "Claro",
     "themeDark": "Escuro",

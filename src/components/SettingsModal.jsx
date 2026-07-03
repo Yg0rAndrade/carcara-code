@@ -95,7 +95,7 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
   // Quando reabre apontando pra uma aba específica (ex.: clique na versão do rail).
   useEffect(() => { if (open) setTab(initialTab); }, [open, initialTab]);
   const [projects, setProjects] = useState([]);
-  const [sel, setSel] = useState({}); // path -> { cli, custom }
+  const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
@@ -163,18 +163,22 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
 
   if (!open) return null;
 
-  const choose = (path, key) => {
+  const toggle = (path, key) => {
     setSel((s) => {
-      const next = { ...s, [path]: { cli: key, custom: s[path]?.custom || '' } };
-      window.api.setAi(path, key, next[path].custom);
+      const cur = s[path] || { ais: ['claude'], custom: '' };
+      const has = cur.ais.includes(key);
+      let ais = has ? cur.ais.filter((k) => k !== key) : [...cur.ais, key];
+      if (ais.length === 0) ais = cur.ais; // nunca zera: mantém a seleção anterior
+      const next = { ...s, [path]: { ...cur, ais } };
+      window.api.setAi(path, ais, next[path].custom);
       return next;
     });
   };
   const onCustom = (path, val) => {
     setSel((s) => {
-      const cur = s[path] || {};
-      const next = { ...s, [path]: { cli: cur.cli || 'custom', custom: val } };
-      if (cur.cli === 'custom') window.api.setAi(path, 'custom', val);
+      const cur = s[path] || { ais: ['claude'], custom: '' };
+      const next = { ...s, [path]: { ...cur, custom: val } };
+      if (cur.ais.includes('custom')) window.api.setAi(path, cur.ais, val);
       return next;
     });
   };
@@ -229,7 +233,7 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
                   </div>
                 )}
                 {projects.map((p) => {
-                  const cur = sel[p.path] || { cli: 'claude', custom: '' };
+                  const cur = sel[p.path] || { ais: ['claude'], custom: '' };
                   return (
                     <div key={p.path} className="rounded-lg border p-3">
                       <div className="mb-2.5 flex items-center gap-2">
@@ -238,15 +242,14 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
                           : <span className="grid size-5 place-items-center rounded-sm bg-muted text-[11px] font-semibold uppercase">{p.name?.[0] || '?'}</span>}
                         <span className="truncate text-sm font-medium">{p.name}</span>
                         <span className="ml-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <CliBadge optKey={cur.cli} small />
-                          {cur.cli === 'custom' ? t('settings.aiCustomLabel') : OPT[cur.cli]?.label}
+                          {cur.ais.map((k) => <CliBadge key={k} optKey={k} small />)}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {AI_OPTIONS.map((opt) => {
-                          const active = cur.cli === opt.key;
+                          const active = cur.ais.includes(opt.key);
                           return (
-                            <button key={opt.key} type="button" onClick={() => choose(p.path, opt.key)}
+                            <button key={opt.key} type="button" onClick={() => toggle(p.path, opt.key)}
                               title={t(opt.desc)}
                               className={cn(
                                 'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
@@ -259,7 +262,7 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
                           );
                         })}
                       </div>
-                      {cur.cli === 'custom' && (
+                      {cur.ais.includes('custom') && (
                         <Input
                           value={cur.custom || ''}
                           onChange={(e) => onCustom(p.path, e.target.value)}
@@ -267,6 +270,7 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
                           className="mt-2.5 h-8 font-mono text-xs"
                         />
                       )}
+                      <p className="mt-2 text-[11px] text-muted-foreground">{t('settings.aiMinOne')}</p>
                     </div>
                   );
                 })}
