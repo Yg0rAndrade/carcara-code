@@ -11,6 +11,7 @@ const mcpCore = require('./mcp-core.cjs');
 const mcpOauth = require('./mcp-oauth.cjs');
 const mediaCore = require('./media-core.cjs');
 const claudeSessions = require('./claude-sessions.cjs');
+const aiCli = require('./ai-cli.cjs');
 const { initUpdater } = require('./updater.cjs');
 const phpRuntime = require('./php-runtime.cjs');
 
@@ -364,7 +365,6 @@ ipcMain.handle('setup:isDone', () => !!loadConfig().setupDone);
 ipcMain.handle('setup:markDone', () => { const c = loadConfig(); c.setupDone = true; saveConfig(c); return { ok: true }; });
 
 // ---------- CLI de IA (Claude Code / OpenCode / Antigravity / custom) ----------
-const AI_CLIS = { claude: 'claude', opencode: 'opencode', agy: 'agy', codex: 'codex' };
 
 // O Claude Code guarda o transcript em ~/.claude/projects/<projeto>/<id>.jsonl.
 // Procura esse arquivo (em qualquer projeto) E confirma que tem conversa de verdade
@@ -423,35 +423,23 @@ function captureResumeId(entry) {
 // SÓ ao reabrir o app inteiro (quando há id com conversa salva); aba nova = em branco.
 function buildLaunchCommand(sessionId, projectPath) {
   const c = loadConfig();
-  const { cli, custom } = resolveProjectCli(projectPath, c);
+  const { ais, custom } = aiCli.resolveProjectAis(c, projectPath);
+  const s = getSessionMeta(c, projectPath, sessionId);
+  const cli = aiCli.effectiveCli(s, ais);
   if (cli === 'claude') {
-    const s = getSessionMeta(c, projectPath, sessionId);
     // Id do Claude desacoplado do id da aba. Migra o esquema antigo (id da aba).
     let cid = s && s.claudeId;
     if (!cid && claudeHistoryExists(sessionId)) cid = sessionId;
     if (cid && claudeHistoryExists(cid)) {           // tem conversa salva → retoma
       if (s && s.claudeId !== cid) { s.claudeId = cid; saveConfig(c); }
-      return { cmd: `claude --resume ${cid}`, capture: false, claudeId: cid };
+      return { cmd: `claude --resume ${cid}`, capture: false, claudeId: cid, cli };
     }
     // Sem conversa válida (aba nova, ou "morta" sem mensagens) → sobe `claude` puro,
     // igual ao Claude Code real (sem flag de retomada). O id real da conversa é
     // capturado depois do transcript (capture:true) pra permitir o --resume no restart.
-    return { cmd: 'claude', capture: true, claudeId: null };
+    return { cmd: 'claude', capture: true, claudeId: null, cli };
   }
-  if (cli === 'opencode') {
-    const s = getSessionMeta(c, projectPath, sessionId);
-    return { cmd: s?.resume?.opencode ? `opencode --session ${s.resume.opencode}` : 'opencode', capture: false };
-  }
-  if (cli === 'agy') {
-    const s = getSessionMeta(c, projectPath, sessionId);
-    return { cmd: s?.resume?.agy ? `agy --conversation=${s.resume.agy}` : 'agy', capture: false };
-  }
-  if (cli === 'codex') {
-    const s = getSessionMeta(c, projectPath, sessionId);
-    return { cmd: s?.resume?.codex ? `codex resume ${s.resume.codex}` : 'codex', capture: false };
-  }
-  if (cli === 'custom') return { cmd: (custom || '').trim() || 'claude', capture: false };
-  return { cmd: AI_CLIS[cli] || 'claude', capture: false };
+  return { cmd: aiCli.buildResumeCommand(cli, s, custom), capture: false, cli };
 }
 
 // Salva o id real da conversa do Claude amarrado à aba (pra retomar no restart).
@@ -507,19 +495,22 @@ function startClaudeWatcher(entry, capture) {
   };
   entry.titleTimer = setInterval(tick, 1500);
 }
-// CLI por projeto. Cai pro global antigo (cfg.cli) e por fim 'claude'.
-function resolveProjectCli(projectPath, cfg) {
-  const c = cfg || loadConfig();
-  const pc = c.projectCli && c.projectCli[projectPath];
-  if (pc && pc.cli) return { cli: pc.cli, custom: pc.custom || '' };
-  return { cli: c.cli || 'claude', custom: c.cliCustom || '' };
-}
-ipcMain.handle('ai:get', (evt, { projectPath }) => resolveProjectCli(projectPath));
-ipcMain.handle('ai:set', (evt, { projectPath, cli, custom }) => {
+ipcMain.handle('ai:get', (evt, { projectPath }) => aiCli.resolveProjectAis(loadConfig(), projectPath));
+ipcMain.handle('ai:set', (evt, { projectPath, ais, custom }) => {
   const c = loadConfig();
   c.projectCli = c.projectCli || {};
-  c.projectCli[projectPath] = { cli: cli || 'claude', custom: custom || '' };
+  const list = Array.isArray(ais) ? ais.filter((k) => aiCli.VALID_CLIS.includes(k)) : [];
+  c.projectCli[projectPath] = { ais: list.length ? list : ['claude'], custom: custom || '' };
   saveConfig(c);
+  return { ok: true };
+});
+ipcMain.handle('session:setCli', (evt, { projectPath, sessionId, cli }) => {
+  const c = loadConfig();
+  const s = getSessionMeta(c, projectPath, sessionId);
+  // { ok: false } = sessão não encontrada (getSessionMeta null); não deveria acontecer hoje, pois
+  // sessions:create persiste o meta antes de o renderer conseguir chamar setCli.
+  if (!s) return { ok: false };
+  if (aiCli.VALID_CLIS.includes(cli) && s.cli !== cli) { s.cli = cli; saveConfig(c); }
   return { ok: true };
 });
 
@@ -1502,7 +1493,8 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
     cwd: projectPath,
     env: cleanEnv(),
   });
-  const { cli } = resolveProjectCli(projectPath);
+  const launch = buildLaunchCommand(sessionId, projectPath);
+  const cli = launch.cli;
   const entry = { pty: proc, buffer: '', projectPath, sessionId, cli };
   terminals.set(sessionId, entry);
 
@@ -1527,7 +1519,6 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
 
   // Sobe o CLI de IA escolhido (Claude Code por padrão) automaticamente nessa sessão.
   // Aba nova = `claude` puro; retoma a conversa só ao reabrir o app (id com histórico).
-  const launch = buildLaunchCommand(sessionId, projectPath);
   if (cli === 'claude') {
     entry.claudeId = launch.claudeId || null;
     startClaudeWatcher(entry, launch.capture); // captura id (se nova) + título da aba

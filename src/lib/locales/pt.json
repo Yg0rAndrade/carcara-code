@@ -538,6 +538,7 @@
     "aiAgyDesc": "Google · substituiu o Gemini CLI.",
     "aiCustomDesc": "Defina o comando manualmente.",
     "aiCustomLabel": "Personalizado",
+    "aiMinOne": "Pelo menos uma IA precisa ficar marcada.",
     "appTheme": "Tema da interface",
     "themeLight": "Claro",
     "themeDark": "Escuro",
@@ -588,5 +589,9 @@
     "layoutPresetRR": "Rail e Claude à direita",
     "aboutVersionLabel": "Versão instalada",
     "checkUpdates": "Verificar atualizações"
+  },
+  "aiPicker": {
+    "title": "Escolha a IA desta aba",
+    "subtitle": "O projeto tem mais de uma IA. Clique para abrir uma nesta aba."
   }
 }

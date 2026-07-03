@@ -538,6 +538,7 @@
     "aiAgyDesc": "Google · replaced the Gemini CLI.",
     "aiCustomDesc": "Set the command manually.",
     "aiCustomLabel": "Custom",
+    "aiMinOne": "At least one AI must stay selected.",
     "appTheme": "Interface theme",
     "themeLight": "Light",
     "themeDark": "Dark",
@@ -588,5 +589,9 @@
     "layoutPresetRR": "Sidebar and Claude on the right",
     "aboutVersionLabel": "Installed version",
     "checkUpdates": "Check for updates"
+  },
+  "aiPicker": {
+    "title": "Choose this tab's AI",
+    "subtitle": "This project has more than one AI. Click one to open it in this tab."
   }
 }
