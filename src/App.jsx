@@ -15,6 +15,7 @@ import { Button } from './components/ui/button.jsx';
 import { ResizeBar } from './components/ui/resize-bar.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { SetupScreen } from './components/SetupScreen.jsx';
+import { RemoteProjectModal } from '@/components/RemoteProjectModal.jsx';
 import { UpdatePill } from './components/UpdatePill.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
@@ -48,6 +49,8 @@ export default function App() {
   // Tela de preparo do 1º uso: aparece só até concluir uma vez. A flag mora no config.json
   // (via main), não no localStorage — começa fechada e abre só se o main disser que falta.
   const [setupOpen, setSetupOpen] = useState(false);
+  // Modal de "adicionar projeto remoto (SSH)" — aberto pelo menu do botão "+" do Rail.
+  const [remoteOpen, setRemoteOpen] = useState(false);
   const closeSetup = () => { window.api.markSetupDone(); setSetupOpen(false); };
   const [railWidth, setRailWidth] = useState(() => Number(localStorage.getItem('railWidth')) || 64);
   const [railResizing, setRailResizing] = useState(false);
@@ -98,6 +101,10 @@ export default function App() {
 
   // Status da auto-atualização (canal único). Reabre a pílula a cada estado novo.
   useEffect(() => window.api.on('update:status', (s) => { setUpdate(s || { state: 'idle' }); setPillDismissed(false); }), []);
+
+  // Status de conexão SSH de projetos remotos (conectando/conectado/erro/etc.):
+  // recarrega a lista pra refletir a bolinha de status no rail.
+  useEffect(() => window.api.on('remote:status', () => reload()), [reload]);
 
   // No 1º uso (flag ausente no config.json), abre a tela de preparo. Migra quem já
   // tinha dispensado pelo localStorage antigo, pra não ver a tela de novo.
@@ -407,6 +414,7 @@ export default function App() {
       activity={activity}
       onOpen={setActive}
       onAdd={addProjects}
+      onAddRemote={() => setRemoteOpen(true)}
       onRemove={setPendingRemove}
       onRestart={restartProject}
       onStop={stopProject}
@@ -571,6 +579,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
       />
       <SetupScreen open={setupOpen} onClose={closeSetup} />
+      <RemoteProjectModal open={remoteOpen} onClose={() => setRemoteOpen(false)} onAdded={() => reload()} />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

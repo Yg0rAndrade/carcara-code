@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { hasPendingUpdate } from '@/lib/updateView';
 
-export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onRename, onSetColor, onSetIcon, onResetCustom, onOpenSettings, onSearch, onRailGrab, width = 64, version = '', update, onOpenAbout }) {
+export function Rail({ projects, active, activity = {}, onOpen, onAdd, onAddRemote, onRemove, onRestart, onStop, onReorder, onRename, onSetColor, onSetIcon, onResetCustom, onOpenSettings, onSearch, onRailGrab, width = 64, version = '', update, onOpenAbout }) {
   const t = useT();
   const [menu, setMenu] = useState(null);         // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
+  const [addMenu, setAddMenu] = useState(false);  // menu do botão "+": pasta local vs SSH
   // Personalização (nome/cor/imagem) vive num modal central. Guardamos só o PATH do
   // projeto aberto e derivamos o objeto vivo da lista, pra o preview refletir na hora
   // as mudanças de cor/imagem que já persistiram.
@@ -110,6 +111,13 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
             {p.running && (
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
             )}
+            {p.remote && (
+              <span
+                title={t('rail.ssh_' + (p.status || 'idle'))}
+                className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card"
+                style={{ background: p.status === 'connected' ? '#16a34a' : p.status === 'connecting' ? '#f59e0b' : (p.status === 'error' || p.status === 'disconnected') ? '#ef4444' : '#9ca3af' }}
+              />
+            )}
             {/* Atividade do Claude (canto superior, separado do verde de "preview rodando"),
                 agregada por projeto: âmbar pulsando = trabalhando; âmbar com halo = pediu
                 uma confirmação; âmbar fixo = terminou e você ainda não viu. O badge some ao
@@ -140,13 +148,24 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
           mesmo com a lista rolada pro fim. */}
       <div className="shrink-0 px-2 pt-2">
         <div className="flex flex-col items-center gap-1.5 py-2">
-          <button
-            onClick={onAdd}
-            title={t('rail.add_project_tooltip')}
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setAddMenu((v) => !v)}
+              title={t('rail.add_project_tooltip')}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+            {addMenu && (
+              <div
+                className="absolute bottom-0 left-[46px] z-50 w-40 rounded-lg border border-border bg-popover p-1 shadow-xl"
+                onMouseLeave={() => setAddMenu(false)}
+              >
+                <button className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); onAdd?.(); }}>{t('rail.add_local')}</button>
+                <button className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); onAddRemote?.(); }}>{t('rail.add_remote')}</button>
+              </div>
+            )}
+          </div>
           <div className="h-px w-7 rounded-full bg-border" />
           <button
             onClick={onOpenSettings}
