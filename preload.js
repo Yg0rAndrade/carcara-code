@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // CLI de IA por projeto (qual ferramenta sobe nas sessões daquele projeto)
   getAi: (projectPath) => ipcRenderer.invoke('ai:get', { projectPath }),
-  setAi: (projectPath, cli, custom) => ipcRenderer.invoke('ai:set', { projectPath, cli, custom }),
+  setAi: (projectPath, ais, custom) => ipcRenderer.invoke('ai:set', { projectPath, ais, custom }),
   getLayout: () => ipcRenderer.invoke('layout:get'),
   setLayout: (layout) => ipcRenderer.invoke('layout:set', layout),
   getProjectLayout: (projectPath) => ipcRenderer.invoke('layout:getProject', { projectPath }),
@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('api', {
   sessionsRename: (projectPath, sessionId, name) => ipcRenderer.invoke('sessions:rename', { projectPath, sessionId, name }),
   sessionsClose: (projectPath, sessionId) => ipcRenderer.invoke('sessions:close', { projectPath, sessionId }),
   sessionRefreshTitle: (projectPath, sessionId) => ipcRenderer.invoke('session:refreshTitle', { projectPath, sessionId }),
+  sessionSetCli: (projectPath, sessionId, cli) => ipcRenderer.invoke('session:setCli', { projectPath, sessionId, cli }),
 
   // Terminal (Claude Code real) — por sessão
   termEnsure: (sessionId, projectPath, cols, rows, theme) => ipcRenderer.invoke('term:ensure', { sessionId, projectPath, cols, rows, theme }),
