@@ -1,0 +1,71 @@
+import { describe, it, expect, vi } from 'vitest';
+import { makeConnections } from './connections.cjs';
+
+function fakeClient() {
+  const h = {};
+  return {
+    on(ev, cb) { h[ev] = cb; return this; },
+    connect: vi.fn(function (cfg) { this._cfg = cfg; }),
+    end: vi.fn(),
+    _ready() { h.ready && h.ready(); },
+    _error(e) { h.error && h.error(e); },
+    _close() { h.close && h.close(); },
+    _cfg: null,
+  };
+}
+
+const baseDeps = (client) => ({
+  Client: vi.fn(function () { return client; }),
+  getProfile: () => ({ host: 'h', port: 22, user: 'ygor', authType: 'password', keyPath: '', remoteDir: '/srv' }),
+  getSecret: () => 'senha',
+  readKey: () => Buffer.from('KEY'),
+  knownHosts: { check: () => 'trusted', trust: vi.fn(), fingerprint: () => 'SHA256:x' },
+  confirmHostKey: vi.fn(async () => true),
+  onStatus: vi.fn(),
+  agentFor: () => '/tmp/agent.sock',
+});
+
+describe('makeConnections', () => {
+  it('conecta com senha e emite connecting→connected', async () => {
+    const client = fakeClient();
+    const deps = baseDeps(client);
+    const conns = makeConnections(deps);
+    const p = conns.connFor('ygor@h:22');
+    expect(deps.onStatus).toHaveBeenCalledWith('ygor@h:22', 'connecting');
+    expect(client.connect).toHaveBeenCalled();
+    expect(client._cfg).toMatchObject({ host: 'h', port: 22, username: 'ygor', password: 'senha' });
+    client._ready();
+    await expect(p).resolves.toBe(client);
+    expect(deps.onStatus).toHaveBeenCalledWith('ygor@h:22', 'connected');
+  });
+
+  it('reusa a conexão já conectada', async () => {
+    const client = fakeClient();
+    const deps = baseDeps(client);
+    const conns = makeConnections(deps);
+    const p = conns.connFor('ygor@h:22'); client._ready(); await p;
+    const again = await conns.connFor('ygor@h:22');
+    expect(again).toBe(client);
+    expect(deps.Client).toHaveBeenCalledTimes(1); // não recriou
+  });
+
+  it('rejeita quando a autenticação falha', async () => {
+    const client = fakeClient();
+    const deps = baseDeps(client);
+    const conns = makeConnections(deps);
+    const p = conns.connFor('ygor@h:22');
+    client._error(new Error('All authentication methods failed'));
+    await expect(p).rejects.toThrow(/authentication/i);
+    expect(deps.onStatus).toHaveBeenCalledWith('ygor@h:22', 'error');
+  });
+
+  it('monta auth por chave quando authType=key', async () => {
+    const client = fakeClient();
+    const deps = { ...baseDeps(client),
+      getProfile: () => ({ host: 'h', port: 22, user: 'ygor', authType: 'key', keyPath: '/k/id', remoteDir: '/' }),
+      getSecret: () => 'frase' };
+    const conns = makeConnections(deps);
+    const p = conns.connFor('ygor@h:22'); client._ready(); await p;
+    expect(client._cfg).toMatchObject({ privateKey: Buffer.from('KEY'), passphrase: 'frase' });
+  });
+});
