@@ -147,7 +147,9 @@ export function SettingsModal({ open, onClose, initialTab = 'appearance', appVer
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const list = await window.api.listProjects();
+      // projects:list devolve { projects, rail } (pastas do rail); aqui só a lista importa.
+      const res = await window.api.listProjects();
+      const list = Array.isArray(res) ? res : (res?.projects || []);
       setProjects(list);
       const entries = await Promise.all(list.map(async (p) => [p.path, await window.api.getAi(p.path)]));
       setSel(Object.fromEntries(entries));
