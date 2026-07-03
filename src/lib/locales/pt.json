@@ -576,5 +576,9 @@
     "layoutPresetRR": "Rail e Claude à direita",
     "aboutVersionLabel": "Versão instalada",
     "checkUpdates": "Verificar atualizações"
+  },
+  "aiPicker": {
+    "title": "Escolha a IA desta aba",
+    "subtitle": "O projeto tem mais de uma IA. Clique para abrir uma nesta aba."
   }
 }
