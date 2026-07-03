@@ -15,7 +15,11 @@
   "build": {
     "appId": "com.carcara.code",
     "productName": "Carcará Code",
-    "publish": { "provider": "github", "owner": "Yg0rAndrade", "repo": "carcara-code" },
+    "publish": {
+      "provider": "github",
+      "owner": "Yg0rAndrade",
+      "repo": "carcara-code"
+    },
     "directories": {
       "output": "release"
     },
@@ -112,6 +116,7 @@
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
     "simple-git": "^3.36.0",
+    "ssh2": "^1.17.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tldraw": "^5.1.1",
