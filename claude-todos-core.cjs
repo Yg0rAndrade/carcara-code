@@ -209,4 +209,106 @@ function readTaskStream(lines, skipSidechain) {
   });
 }
 
-module.exports = { parseTodos };
+// Invocações da tool Agent no transcript principal: o nome exibível vem do
+// param opcional `name` (a maioria só preenche `description` — cai nela).
+// O tool_result diz o destino: com toolUseResult.agentId = concluiu; sem = foi
+// rejeitada (não vira card); sem result ainda = está rodando.
+function readAgentInvocations(lines) {
+  const invocations = new Map(); // tool_use_id -> { name, prompt }
+  const resultKind = new Map();  // tool_use_id -> 'completed' | 'rejected'
+  for (const line of lines) {
+    if (!line) continue;
+    const entry = parseLine(line);
+    if (!entry) continue;
+    const content = entry.message && entry.message.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (block && block.type === 'tool_use' && block.name === 'Agent' && typeof block.id === 'string') {
+        const input = block.input || {};
+        const label = typeof input.name === 'string' ? input.name
+          : typeof input.description === 'string' ? input.description : undefined;
+        if (typeof label === 'string' && typeof input.prompt === 'string') {
+          invocations.set(block.id, { name: label, prompt: input.prompt });
+        }
+      }
+      if (block && block.type === 'tool_result' && typeof block.tool_use_id === 'string') {
+        const agentId = entry.toolUseResult && entry.toolUseResult.agentId;
+        resultKind.set(block.tool_use_id, typeof agentId === 'string' ? 'completed' : 'rejected');
+      }
+    }
+  }
+  const out = [];
+  for (const [toolUseId, inv] of invocations) {
+    const kind = resultKind.get(toolUseId);
+    if (kind === 'rejected') continue;
+    out.push({ name: inv.name, prompt: inv.prompt, status: kind === 'completed' ? 'completed' : 'running' });
+  }
+  return out;
+}
+
+// O prompt de um sub-agent é a primeira mensagem `user` do agent-*.jsonl dele —
+// idêntico ao input.prompt da invocação. É essa igualdade que casa arquivo ↔ card.
+function readSubAgentPrompt(lines) {
+  for (const line of lines) {
+    if (!line) continue;
+    const entry = parseLine(line);
+    if (entry && entry.type === 'user') {
+      const content = entry.message && entry.message.content;
+      if (typeof content === 'string') return content;
+    }
+  }
+  return null;
+}
+
+function readLines(fp) {
+  try { return fs.readFileSync(fp, 'utf-8').split('\n'); } catch { return null; }
+}
+
+// Grupo visual: rodando primeiro, depois concluídos com todos, histórico no fim.
+function subAgentGroup(agent) {
+  if (agent.status === 'running') return 0;
+  if (agent.todos.length > 0) return 1;
+  return 2;
+}
+
+function listSubAgents(mainLines, subagentsDir) {
+  const invocations = readAgentInvocations(mainLines);
+  if (invocations.length === 0) return [];
+  let files;
+  try {
+    files = fs.readdirSync(subagentsDir).filter((f) => f.startsWith('agent-') && f.endsWith('.jsonl'));
+  } catch { return []; }
+
+  const byPrompt = new Map();
+  for (const file of files) {
+    const fp = path.join(subagentsDir, file);
+    const lines = readLines(fp);
+    if (!lines) continue;
+    const prompt = readSubAgentPrompt(lines);
+    if (prompt === null) continue;
+    let updatedAt = 0;
+    try { updatedAt = fs.statSync(fp).mtimeMs; } catch {}
+    byPrompt.set(prompt, {
+      agentId: file.slice('agent-'.length, -'.jsonl'.length),
+      todos: parseTodos(lines, false) || [],
+      updatedAt,
+    });
+  }
+
+  const out = [];
+  const seen = new Set();
+  for (const inv of invocations) {
+    const match = byPrompt.get(inv.prompt);
+    if (!match || seen.has(match.agentId)) continue;
+    seen.add(match.agentId);
+    out.push({ agentId: match.agentId, name: inv.name, isMain: false, status: inv.status, todos: match.todos, updatedAt: match.updatedAt });
+  }
+  out.sort((a, b) => {
+    const ga = subAgentGroup(a), gb = subAgentGroup(b);
+    if (ga !== gb) return ga - gb;
+    return b.updatedAt - a.updatedAt;
+  });
+  return out;
+}
+
+module.exports = { parseTodos, readAgentInvocations, listSubAgents };

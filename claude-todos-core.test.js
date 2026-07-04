@@ -1,5 +1,8 @@
 // claude-todos-core.test.js
 import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import core from './claude-todos-core.cjs';
 
 // Linha de transcript com um tool_use TodoWrite carregando o snapshot completo.
@@ -112,5 +115,68 @@ describe('parseTodos — schema TaskCreate/TaskUpdate', () => {
       tcr('c1', '1'),
     ];
     expect(core.parseTodos(lines, true).map((t) => t.content)).toEqual(['Nova']);
+  });
+});
+
+// Helpers para testes de sub-agents
+const agentUse = (toolUseId, input) => JSON.stringify({
+  type: 'assistant',
+  message: { content: [{ type: 'tool_use', id: toolUseId, name: 'Agent', input }] },
+});
+const agentResult = (toolUseId, agentId) => JSON.stringify({
+  type: 'user', toolUseResult: agentId ? { agentId } : {},
+  message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: 'done' }] },
+});
+const subFirstLine = (prompt) => JSON.stringify({ type: 'user', message: { role: 'user', content: prompt } });
+
+describe('readAgentInvocations', () => {
+  it('usa name, cai pra description, e deriva status pelo tool_result', () => {
+    const lines = [
+      agentUse('a1', { name: 'pesquisador', description: 'Pesquisar X', prompt: 'P1' }),
+      agentUse('a2', { description: 'Revisar Y', prompt: 'P2' }),
+      agentResult('a1', 'abc123'),
+    ];
+    const out = core.readAgentInvocations(lines);
+    expect(out).toEqual([
+      { name: 'pesquisador', prompt: 'P1', status: 'completed' },
+      { name: 'Revisar Y', prompt: 'P2', status: 'running' },
+    ]);
+  });
+
+  it('descarta invocação rejeitada (tool_result sem agentId)', () => {
+    const lines = [agentUse('a1', { description: 'D', prompt: 'P' }), agentResult('a1', null)];
+    expect(core.readAgentInvocations(lines)).toEqual([]);
+  });
+});
+
+describe('listSubAgents', () => {
+  it('casa agent-*.jsonl com a invocação por prompt idêntico e ordena por grupo', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'subagents-'));
+    // done-1: concluído COM todos; run-2: rodando; hist-3: concluído sem todos (histórico)
+    fs.writeFileSync(path.join(dir, 'agent-done1.jsonl'), [
+      subFirstLine('P1'),
+      tw('2026-07-03T12:00:00Z', [todo('S1', 'completed')]),
+    ].join('\n'));
+    fs.writeFileSync(path.join(dir, 'agent-run2.jsonl'), [subFirstLine('P2')].join('\n'));
+    fs.writeFileSync(path.join(dir, 'agent-hist3.jsonl'), [subFirstLine('P3')].join('\n'));
+    const mainLines = [
+      agentUse('a1', { name: 'done', prompt: 'P1' }),
+      agentUse('a2', { name: 'run', prompt: 'P2' }),
+      agentUse('a3', { name: 'hist', prompt: 'P3' }),
+      agentResult('a1', 'x1'),
+      agentResult('a3', 'x3'),
+    ];
+    const out = core.listSubAgents(mainLines, dir);
+    expect(out.map((a) => [a.agentId, a.status, a.todos.length])).toEqual([
+      ['run2', 'running', 0],
+      ['done1', 'completed', 1],
+      ['hist3', 'completed', 0],
+    ]);
+    expect(out.every((a) => a.isMain === false)).toBe(true);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('dir inexistente ou sem invocações devolve []', () => {
+    expect(core.listSubAgents([], 'C:/nao/existe')).toEqual([]);
   });
 });
