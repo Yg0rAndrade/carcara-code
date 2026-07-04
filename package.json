@@ -15,7 +15,7 @@
   "build": {
     "appId": "com.carcara.code",
     "productName": "Carcará Code",
-    "publish": { "provider": "github", "owner": "Yg0rAndrade", "repo": "carcara-code" },
+    "publish": { "provider": "github", "owner": "puppe1990", "repo": "carcara-code" },
     "directories": {
       "output": "release"
     },

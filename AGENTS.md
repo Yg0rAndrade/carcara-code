@@ -91,7 +91,8 @@ consagrado** (`Git`, `commit`, `MCP`, `API`, `Preview`, `terminal`, `DevTools`) 
 
 ## Backup diário automático
 
-Este repositório está no GitHub (`origin`: https://github.com/Yg0rAndrade/carcara-code).
+Este repositório está no GitHub (`origin`: https://github.com/puppe1990/carcara-code;
+`upstream`: https://github.com/Yg0rAndrade/carcara-code).
 Para garantir que o projeto **sempre tenha um backup do dia**, existe um hook
 `UserPromptSubmit` em `.claude/settings.json` que roda `scripts/daily-backup-check.cjs`
 a cada mensagem do usuário. O script verifica se já há um commit feito **hoje**:

@@ -10,7 +10,8 @@ com chat e preview lado a lado. Usa a assinatura do Claude, nunca a API.
   com o app: se o pitch, a versão ou os recursos mudarem aqui, refletir lá também.
   Build: `npm run build` (na pasta do site). Deploy via Cloudflare (`wrangler.jsonc`).
 
-- **Repo público do app:** https://github.com/Yg0rAndrade/carcara-code
+- **Repo do fork:** https://github.com/puppe1990/carcara-code
+- **Upstream (original):** https://github.com/Yg0rAndrade/carcara-code
 
 ## Notas de desenvolvimento
 

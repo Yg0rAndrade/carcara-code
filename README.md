@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="../../releases"><img src="https://img.shields.io/github/v/release/Yg0rAndrade/carcara-code?style=flat-square&color=D99748&label=download" alt="Release"></a>
+  <a href="../../releases"><img src="https://img.shields.io/github/v/release/puppe1990/carcara-code?style=flat-square&color=D99748&label=download" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licença-MIT-D99748?style=flat-square" alt="MIT"></a>
   <img src="https://img.shields.io/badge/plataforma-Windows-D99748?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/feito%20com-Electron%20%2B%20React-D99748?style=flat-square" alt="Electron + React">
-  <a href="../../stargazers"><img src="https://img.shields.io/github/stars/Yg0rAndrade/carcara-code?style=flat-square&color=D99748" alt="Stars"></a>
+  <a href="../../stargazers"><img src="https://img.shields.io/github/stars/puppe1990/carcara-code?style=flat-square&color=D99748" alt="Stars"></a>
 </p>
 
 <p align="center">
