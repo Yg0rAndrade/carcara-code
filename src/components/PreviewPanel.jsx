@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { Terminal, X, Copy, Bug, Loader2, Crosshair, ExternalLink, Monitor, Tablet, Smartphone, Plus, Globe } from 'lucide-react';
+import { Terminal, X, Copy, Bug, Loader2, Crosshair, ExternalLink, Monitor, Tablet, Smartphone, Plus, Globe, ListTodo } from 'lucide-react';
 // Ícones animados (lucide-animated): animam no hover. Só os que têm versão no
 // registry; Crosshair/Bug seguem estáticos (não há equivalente animado).
 import { EarthIcon } from './ui/earth.jsx';
@@ -53,6 +53,7 @@ const ShellView = lazy(() => import('./ShellView.jsx').then((m) => ({ default: m
 const MCPPanel = lazy(() => import('./MCPPanel.jsx').then((m) => ({ default: m.MCPPanel })));
 const TldrawPanel = lazy(() => import('./TldrawPanel.jsx').then((m) => ({ default: m.TldrawPanel })));
 const CheckpointsPanel = lazy(() => import('./CheckpointsPanel.jsx').then((m) => ({ default: m.CheckpointsPanel })));
+const TodosPanel = lazy(() => import('./TodosPanel.jsx').then((m) => ({ default: m.TodosPanel })));
 
 // Fallback enquanto o chunk do painel carrega (costuma ser instantâneo no disco).
 function PanelFallback() {
@@ -287,7 +288,7 @@ function applyViewport(w, vp) {
   }
 }
 
-export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeChange }) {
+export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsRef, onModeChange }) {
   const t = useT();
   const [view, setView] = useState('preview');
   const [openRequest, setOpenRequest] = useState(null); // { path, name, seq } — abrir arquivo na aba Código (paleta)
@@ -972,6 +973,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
   const inApi = view === 'api';
   const inMcp = view === 'mcp';
   const inBoard = view === 'board';
+  const inTodos = view === 'todos';
   const inHistory = view === 'history';
 
   return (
@@ -983,6 +985,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
             <TabsTrigger value="preview" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={EarthIcon} />{t('preview.tab')}</TabsTrigger>
             <TabsTrigger value="code" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={ChevronsLeftRightIcon} />{t('preview.code')}</TabsTrigger>
             <TabsTrigger value="git" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={GitBranchIcon} />{t('preview.git')}</TabsTrigger>
+            <TabsTrigger value="todos" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><ListTodo />{t('preview.todos')}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -1036,7 +1039,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
           </>
         )}
 
-        {(inCode || inGit || inApi || inMcp || inBoard) && <div className="flex-1" />}
+        {(inCode || inGit || inApi || inMcp || inBoard || inTodos) && <div className="flex-1" />}
 
         <ToolButton
           onClick={() => setTermOpen((o) => !o)}
@@ -1133,6 +1136,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
           {inApi && <LazyPanel label="API"><ApiPanel key={active?.path || 'none'} active={active} /></LazyPanel>}
           {inMcp && <LazyPanel label="MCP"><MCPPanel active={active} /></LazyPanel>}
           {inBoard && <LazyPanel label="Quadro"><TldrawPanel active={active} /></LazyPanel>}
+          {inTodos && <LazyPanel label="Tarefas"><TodosPanel active={active} chatSession={chatSession} /></LazyPanel>}
         </div>
 
         {/* Alça pra redimensionar o painel de DevTools. */}
