@@ -11,6 +11,7 @@
 // O schema vigente é o do ÚLTIMO evento relevante do transcript.
 const fs = require('fs');
 const path = require('path');
+const claudeSessions = require('./claude-sessions.cjs');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'completed'];
 
@@ -374,4 +375,91 @@ function contextForLines(lines) {
   return { tokens, limit: contextLimitFor(last.model, tokens) };
 }
 
-module.exports = { parseTodos, readAgentInvocations, listSubAgents, modelsAndCacheForLines, contextForLines, contextLimitFor };
+// claudeId entra em caminhos de arquivo — restringe a um charset seguro pra um
+// id forjado (.., separadores) não escapar da pasta de projects.
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+
+// Sub-agents moram AO LADO do transcript: <projDir>/<claudeId>/subagents/.
+// Deriva do caminho já resolvido (cobre transcript achado por varredura global).
+function subagentsDirFor(transcriptFile, claudeId) {
+  return path.join(path.dirname(transcriptFile), claudeId, 'subagents');
+}
+
+// Carimbo barato de mudança: mtime do transcript + de cada agent-*.jsonl.
+// O watcher só re-parseia quando isto muda — ler stat é ordens de grandeza mais
+// barato que parsear um JSONL de megabytes a cada 1,5s.
+function transcriptStamp(projectPath, claudeId) {
+  if (!claudeId || !SAFE_ID.test(claudeId)) return null;
+  const fp = claudeSessions.transcriptPath(projectPath, claudeId);
+  if (!fp) return null;
+  const parts = [];
+  try { parts.push('m:' + fs.statSync(fp).mtimeMs); } catch { return null; }
+  try {
+    const dir = subagentsDirFor(fp, claudeId);
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.startsWith('agent-') || !f.endsWith('.jsonl')) continue;
+      try { parts.push(f + ':' + fs.statSync(path.join(dir, f)).mtimeMs); } catch {}
+    }
+  } catch {}
+  return parts.join('|');
+}
+
+// Snapshot completo da sessão: agentes (main + subs) com seus todos + uso de
+// tokens. null = sem transcript (UI mostra "sem sessão"). agents vazio = sessão
+// existe mas nunca emitiu todos (UI mostra "aguardando tasks").
+function buildSnapshot(projectPath, claudeId) {
+  if (!claudeId || !SAFE_ID.test(claudeId)) return null;
+  const fp = claudeSessions.transcriptPath(projectPath, claudeId);
+  if (!fp) return null;
+  const mainLines = readLines(fp);
+  if (!mainLines) return null;
+
+  const agents = [];
+  const mainTodos = parseTodos(mainLines, true);
+  if (mainTodos) {
+    let mtime = 0;
+    try { mtime = fs.statSync(fp).mtimeMs; } catch {}
+    agents.push({ agentId: claudeId, isMain: true, name: 'main', todos: mainTodos, updatedAt: mtime });
+  }
+  const subDir = subagentsDirFor(fp, claudeId);
+  const subs = listSubAgents(mainLines, subDir);
+  agents.push(...subs);
+
+  // Uso: principal (sem sidechain) + cada sub-agent no próprio arquivo. Agentes
+  // sem linhas de usage ficam fora da tabela (mesma regra da extensão original).
+  const byAgent = [];
+  const cache = { input: 0, read: 0, creation: 0 };
+  const usageAgents = agents.some((a) => a.isMain)
+    ? agents
+    : [{ agentId: claudeId, isMain: true, name: 'main' }, ...subs]; // usage do main aparece mesmo antes do 1º TodoWrite
+  for (const a of usageAgents) {
+    const lines = a.isMain ? mainLines : readLines(path.join(subDir, 'agent-' + a.agentId + '.jsonl'));
+    if (!lines) continue;
+    const r = modelsAndCacheForLines(lines, a.isMain);
+    if (r.models.length === 0) continue;
+    byAgent.push({ agentId: a.agentId, name: a.name, isMain: a.isMain, models: r.models });
+    cache.input += r.cache.input;
+    cache.read += r.cache.read;
+    cache.creation += r.cache.creation;
+  }
+  const byModel = new Map();
+  for (const a of byAgent) {
+    for (const m of a.models) {
+      const acc = byModel.get(m.model) || { model: m.model, input: 0, output: 0, cache: 0 };
+      acc.input += m.input; acc.output += m.output; acc.cache += m.cache;
+      byModel.set(m.model, acc);
+    }
+  }
+  const cacheTotal = cache.input + cache.read + cache.creation;
+  const usage = byAgent.length > 0
+    ? { byModel: [...byModel.values()], byAgent, context: contextForLines(mainLines), cache: cacheTotal > 0 ? cache : null }
+    : null;
+
+  return { claudeId, agents, usage, updatedAt: Date.now() };
+}
+
+module.exports = {
+  parseTodos, readAgentInvocations, listSubAgents,
+  modelsAndCacheForLines, contextForLines, contextLimitFor,
+  buildSnapshot, transcriptStamp,
+};

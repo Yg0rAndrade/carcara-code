@@ -1,5 +1,5 @@
 // claude-todos-core.test.js
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -215,5 +215,75 @@ describe('uso de tokens', () => {
     expect(core.contextLimitFor('claude-haiku-4-5', 0)).toBe(200000);
     expect(core.contextLimitFor('claude-3-5-sonnet-20241022', 0)).toBe(200000);
     expect(core.contextLimitFor('claude-haiku-4-5', 250000)).toBe(1000000);
+  });
+});
+
+function makeFakeClaudeDir(projectPath, claudeId) {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-cfg-'));
+  const projDir = path.join(base, 'projects', String(projectPath).replace(/[^A-Za-z0-9]/g, '-'));
+  fs.mkdirSync(projDir, { recursive: true });
+  return { base, projDir, transcript: path.join(projDir, claudeId + '.jsonl') };
+}
+
+describe('buildSnapshot / transcriptStamp', () => {
+  const PROJ = 'C:/tmp/proj-x';
+  let fake;
+  afterEach(() => {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    if (fake) fs.rmSync(fake.base, { recursive: true, force: true });
+    fake = null;
+  });
+
+  it('monta o snapshot completo: main + sub-agent + usage', () => {
+    fake = makeFakeClaudeDir(PROJ, 'sess1');
+    process.env.CLAUDE_CONFIG_DIR = fake.base;
+    fs.writeFileSync(fake.transcript, [
+      tw('2026-07-03T12:00:00Z', [todo('A', 'in_progress')]),
+      usageLine('claude-opus-4-8', { input_tokens: 10, output_tokens: 5 }),
+      agentUse('a1', { name: 'sub', prompt: 'PS' }),
+      agentResult('a1', 'sub1'),
+    ].join('\n'));
+    const subDir = path.join(fake.projDir, 'sess1', 'subagents');
+    fs.mkdirSync(subDir, { recursive: true });
+    fs.writeFileSync(path.join(subDir, 'agent-sub1.jsonl'), [
+      subFirstLine('PS'),
+      usageLine('claude-haiku-4-5', { input_tokens: 3, output_tokens: 2 }),
+    ].join('\n'));
+
+    const snap = core.buildSnapshot(PROJ, 'sess1');
+    expect(snap.claudeId).toBe('sess1');
+    expect(snap.agents.map((a) => [a.isMain, a.name])).toEqual([[true, 'main'], [false, 'sub']]);
+    expect(snap.usage.byAgent.map((a) => a.name)).toEqual(['main', 'sub']);
+    expect(snap.usage.byModel.map((m) => m.model)).toEqual(['claude-opus-4-8', 'claude-haiku-4-5']);
+    expect(snap.usage.context.tokens).toBe(10);
+  });
+
+  it('transcript sem eventos de todos → agents vazio (UI mostra "aguardando")', () => {
+    fake = makeFakeClaudeDir(PROJ, 'sess2');
+    process.env.CLAUDE_CONFIG_DIR = fake.base;
+    fs.writeFileSync(fake.transcript, usageLine('claude-opus-4-8', { input_tokens: 1, output_tokens: 1 }));
+    const snap = core.buildSnapshot(PROJ, 'sess2');
+    expect(snap.agents).toEqual([]);
+    expect(snap.usage).not.toBeNull();
+  });
+
+  it('transcript inexistente ou claudeId inseguro → null', () => {
+    fake = makeFakeClaudeDir(PROJ, 'sess3');
+    process.env.CLAUDE_CONFIG_DIR = fake.base;
+    expect(core.buildSnapshot(PROJ, 'nao-existe')).toBeNull();
+    expect(core.buildSnapshot(PROJ, '../../etc')).toBeNull();
+    expect(core.transcriptStamp(PROJ, '../../etc')).toBeNull();
+  });
+
+  it('transcriptStamp muda quando o arquivo muda', () => {
+    fake = makeFakeClaudeDir(PROJ, 'sess4');
+    process.env.CLAUDE_CONFIG_DIR = fake.base;
+    fs.writeFileSync(fake.transcript, tw('2026-07-03T12:00:00Z', [todo('A', 'pending')]));
+    const s1 = core.transcriptStamp(PROJ, 'sess4');
+    expect(typeof s1).toBe('string');
+    fs.writeFileSync(fake.transcript, tw('2026-07-03T12:01:00Z', [todo('A', 'completed')]) + '\nextra');
+    const st = fs.statSync(fake.transcript);
+    fs.utimesSync(fake.transcript, st.atime, new Date(st.mtimeMs + 2000)); // garante mtime distinto em FS de baixa resolução
+    expect(core.transcriptStamp(PROJ, 'sess4')).not.toBe(s1);
   });
 });
