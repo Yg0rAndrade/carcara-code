@@ -139,7 +139,74 @@ function parseTodos(lines, skipSidechain) {
       return tm ? makeTodo(t.content, t.activeForm, t.status, tm.startedAt, tm.completedAt) : makeTodo(t.content, t.activeForm, t.status);
     });
   }
-  return null; // schema 'Task' entra na Task 2
+  if (schema === 'Task') return readTaskStream(lines, skipSidechain);
+  return null;
+}
+
+// O id definitivo de um TaskCreate só aparece no tool_result (toolUseResult.task.id
+// ou o texto "Task #N"). Guardamos os creates pendentes por tool_use_id até o
+// result chegar; updates fora de ordem (task desconhecida) são ignorados.
+function resolveCreatedTaskId(entry, block) {
+  const fromResult = entry.toolUseResult && entry.toolUseResult.task && entry.toolUseResult.task.id;
+  if (typeof fromResult === 'string') return fromResult;
+  if (typeof block.content === 'string') {
+    const m = block.content.match(/Task #(\d+)/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function readTaskStream(lines, skipSidechain) {
+  const tasks = new Map();          // taskId -> { content, activeForm, status, startedAt?, completedAt? }
+  const order = [];
+  const pendingCreates = new Map(); // tool_use_id -> { content, activeForm }
+
+  for (const line of lines) {
+    if (!line) continue;
+    const entry = parseLine(line);
+    if (!entry || (skipSidechain && entry.isSidechain)) continue;
+    const content = entry.message && entry.message.content;
+    if (!Array.isArray(content)) continue;
+
+    for (const block of content) {
+      if (block && block.type === 'tool_use' && typeof block.id === 'string') {
+        if (block.name === 'TaskCreate') {
+          const subject = block.input && block.input.subject;
+          const activeForm = block.input && block.input.activeForm;
+          if (typeof subject === 'string') {
+            pendingCreates.set(block.id, { content: subject, activeForm: typeof activeForm === 'string' ? activeForm : subject });
+          }
+        } else if (block.name === 'TaskUpdate') {
+          const taskId = block.input && block.input.taskId;
+          const status = block.input && block.input.status;
+          if (typeof taskId === 'string' && VALID_STATUSES.includes(status)) {
+            const t = tasks.get(taskId);
+            if (t) {
+              t.status = status;
+              const ts = parseEpoch(entry.timestamp);
+              if (ts !== undefined) {
+                if (status === 'in_progress' && t.startedAt === undefined) t.startedAt = ts;
+                if (status === 'completed' && t.completedAt === undefined) t.completedAt = ts;
+              }
+            }
+          }
+        }
+      } else if (block && block.type === 'tool_result' && typeof block.tool_use_id === 'string') {
+        const pending = pendingCreates.get(block.tool_use_id);
+        if (!pending) continue;
+        const taskId = resolveCreatedTaskId(entry, block);
+        if (taskId && !tasks.has(taskId)) {
+          tasks.set(taskId, Object.assign({}, pending, { status: 'pending' }));
+          order.push(taskId);
+        }
+        pendingCreates.delete(block.tool_use_id);
+      }
+    }
+  }
+  return order.map((id) => {
+    const t = tasks.get(id);
+    return makeTodo(t.content, t.activeForm, t.status, t.startedAt, t.completedAt);
+  });
 }
 
 module.exports = { parseTodos };

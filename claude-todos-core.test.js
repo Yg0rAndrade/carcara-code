@@ -62,3 +62,55 @@ describe('parseTodos — schema TodoWrite', () => {
     expect(core.parseTodos(lines, true).map((t) => t.content)).toEqual(['A']);
   });
 });
+
+const tc = (iso, toolUseId, subject, activeForm) => JSON.stringify({
+  type: 'assistant', timestamp: iso,
+  message: { content: [{ type: 'tool_use', id: toolUseId, name: 'TaskCreate', input: { subject, activeForm } }] },
+});
+const tcr = (toolUseId, taskId, text) => JSON.stringify({
+  type: 'user', toolUseResult: taskId ? { task: { id: taskId } } : undefined,
+  message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: text || 'ok' }] },
+});
+const tu = (iso, taskId, status) => JSON.stringify({
+  type: 'assistant', timestamp: iso,
+  message: { content: [{ type: 'tool_use', id: 'u-' + taskId + '-' + status, name: 'TaskUpdate', input: { taskId, status } }] },
+});
+
+describe('parseTodos — schema TaskCreate/TaskUpdate', () => {
+  it('cria via tool_result e muta por taskId, com timings', () => {
+    const t1 = Date.parse('2026-07-03T12:01:00Z');
+    const t2 = Date.parse('2026-07-03T12:02:00Z');
+    const lines = [
+      tc('2026-07-03T12:00:00Z', 'c1', 'Tarefa A', 'Fazendo A'),
+      tcr('c1', '1'),
+      tc('2026-07-03T12:00:30Z', 'c2', 'Tarefa B', 'Fazendo B'),
+      tcr('c2', '2'),
+      tu('2026-07-03T12:01:00Z', '1', 'in_progress'),
+      tu('2026-07-03T12:02:00Z', '1', 'completed'),
+    ];
+    const out = core.parseTodos(lines, true);
+    expect(out).toEqual([
+      { content: 'Tarefa A', activeForm: 'Fazendo A', status: 'completed', startedAt: t1, completedAt: t2 },
+      { content: 'Tarefa B', activeForm: 'Fazendo B', status: 'pending' },
+    ]);
+  });
+
+  it('extrai o taskId do texto "Task #N" quando o toolUseResult não traz', () => {
+    const lines = [
+      tc('2026-07-03T12:00:00Z', 'c1', 'A', 'A'),
+      tcr('c1', null, 'Created Task #7'),
+      tu('2026-07-03T12:01:00Z', '7', 'in_progress'),
+    ];
+    const out = core.parseTodos(lines, true);
+    expect(out[0].status).toBe('in_progress');
+  });
+
+  it('o schema do ÚLTIMO evento vence quando os dois aparecem', () => {
+    const lines = [
+      tw('2026-07-03T11:00:00Z', [todo('Velha', 'pending')]),
+      tc('2026-07-03T12:00:00Z', 'c1', 'Nova', 'Nova'),
+      tcr('c1', '1'),
+    ];
+    expect(core.parseTodos(lines, true).map((t) => t.content)).toEqual(['Nova']);
+  });
+});
