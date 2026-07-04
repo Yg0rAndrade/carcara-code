@@ -18,11 +18,12 @@
     "test:csv": "node scripts/csv-smoke.cjs"
   },
   "lint-staged": {
-    "*.{js,jsx,cjs,mjs,json,css,md,yml,yaml}": [
+    "*.{js,jsx,cjs,mjs}": [
+      "eslint --fix",
       "prettier --write"
     ],
-    "*.{js,jsx,cjs,mjs}": [
-      "eslint --fix"
+    "*.{json,css,md,yml,yaml}": [
+      "prettier --write"
     ]
   },
   "build": {

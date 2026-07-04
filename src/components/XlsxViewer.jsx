@@ -106,7 +106,7 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
 
   // Primeiro chunk ao montar (remonta a cada troca de aba via key no pai).
   useEffect(() => {
-    loadNext();  
+    loadNext();
   }, []);
 
   // Se o conteúdo carregado ainda não preenche a viewport, busca mais — senão não há
@@ -114,7 +114,6 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
   useEffect(() => {
     const el = scrollRef.current;
     if (el && loadedUpto < shownRows && el.scrollHeight <= el.clientHeight + 4) loadNext();
-     
   }, [loadedUpto, shownRows]);
 
   // Carrega o próximo chunk ao chegar perto do fim (throttle por rAF).
