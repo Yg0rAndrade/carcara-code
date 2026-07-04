@@ -311,4 +311,67 @@ function listSubAgents(mainLines, subagentsDir) {
   return out;
 }
 
-module.exports = { parseTodos, readAgentInvocations, listSubAgents };
+// ---- Uso de tokens ----
+const DEFAULT_CONTEXT_LIMIT = 200000;
+const ONE_MILLION = 1000000;
+// opus/sonnet geração 4–19 (opus-4-8, sonnet-4-6…). O (?!\d) impede o id legado
+// "claude-3-5-sonnet-20241022" de casar (o "sonnet-20" dele não é [4-9] nem 1\d).
+const ONE_M_FAMILY = /(?:opus|sonnet)-(?:[4-9]|1\d)(?!\d)/i;
+
+function num(v) { return typeof v === 'number' && Number.isFinite(v) ? v : 0; }
+
+// Janela de contexto do modelo: 1M quando a família suporta (ou sufixo 1m
+// explícito) OU quando o observado já passou de 200k (prova de janela maior).
+// Sempre eleva, nunca abaixa.
+function contextLimitFor(model, observedTokens) {
+  const base = (/1m/i.test(model) || ONE_M_FAMILY.test(model)) ? ONE_MILLION : DEFAULT_CONTEXT_LIMIT;
+  return (observedTokens || 0) > base ? ONE_MILLION : base;
+}
+
+// Uma passada no arquivo: tokens por modelo + quebra de cache. No transcript
+// principal os turnos sidechain são pulados (cada sub-agent conta no próprio
+// agent-*.jsonl, senão contaria dobrado).
+function modelsAndCacheForLines(lines, skipSidechain) {
+  const byModel = new Map();
+  const cache = { input: 0, read: 0, creation: 0 };
+  for (const line of lines) {
+    if (!line) continue;
+    const entry = parseLine(line);
+    if (!entry || (skipSidechain && entry.isSidechain)) continue;
+    const msg = entry.message;
+    if (!msg || !msg.usage || typeof msg.model !== 'string') continue;
+    const u = msg.usage;
+    const input = num(u.input_tokens);
+    const read = num(u.cache_read_input_tokens);
+    const creation = num(u.cache_creation_input_tokens);
+    const acc = byModel.get(msg.model) || { model: msg.model, input: 0, output: 0, cache: 0 };
+    acc.input += input;
+    acc.output += num(u.output_tokens);
+    acc.cache += creation + read;
+    byModel.set(msg.model, acc);
+    cache.input += input;
+    cache.read += read;
+    cache.creation += creation;
+  }
+  return { models: [...byModel.values()], cache };
+}
+
+// Contexto atual = input + cache da ÚLTIMA mensagem com usage do transcript
+// principal (output fica fora; sidechain idem). null = sem usage ainda.
+function contextForLines(lines) {
+  let last = null;
+  for (const line of lines) {
+    if (!line) continue;
+    const entry = parseLine(line);
+    if (!entry || entry.isSidechain) continue;
+    const msg = entry.message;
+    if (!msg || !msg.usage || typeof msg.model !== 'string') continue;
+    last = msg;
+  }
+  if (!last) return null;
+  const u = last.usage;
+  const tokens = num(u.input_tokens) + num(u.cache_read_input_tokens) + num(u.cache_creation_input_tokens);
+  return { tokens, limit: contextLimitFor(last.model, tokens) };
+}
+
+module.exports = { parseTodos, readAgentInvocations, listSubAgents, modelsAndCacheForLines, contextForLines, contextLimitFor };

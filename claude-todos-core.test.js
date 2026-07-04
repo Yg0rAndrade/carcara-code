@@ -180,3 +180,40 @@ describe('listSubAgents', () => {
     expect(core.listSubAgents([], 'C:/nao/existe')).toEqual([]);
   });
 });
+
+const usageLine = (model, usage, extra = {}) => JSON.stringify({
+  type: 'assistant', ...extra, message: { model, usage },
+});
+
+describe('uso de tokens', () => {
+  it('agrega por modelo e soma o cache do arquivo', () => {
+    const lines = [
+      usageLine('claude-opus-4-8', { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 50 }),
+      usageLine('claude-opus-4-8', { input_tokens: 2, output_tokens: 3 }),
+      usageLine('claude-haiku-4-5', { input_tokens: 1, output_tokens: 1 }),
+      usageLine('claude-opus-4-8', { input_tokens: 99, output_tokens: 99 }, { isSidechain: true }),
+    ];
+    const { models, cache } = core.modelsAndCacheForLines(lines, true);
+    expect(models).toEqual([
+      { model: 'claude-opus-4-8', input: 12, output: 8, cache: 150 },
+      { model: 'claude-haiku-4-5', input: 1, output: 1, cache: 0 },
+    ]);
+    expect(cache).toEqual({ input: 13, read: 100, creation: 50 });
+  });
+
+  it('contexto = input+cache da última mensagem com usage (sem sidechain)', () => {
+    const lines = [
+      usageLine('claude-opus-4-8', { input_tokens: 10, cache_read_input_tokens: 5 }),
+      usageLine('claude-opus-4-8', { input_tokens: 20, cache_read_input_tokens: 30, cache_creation_input_tokens: 1 }),
+    ];
+    expect(core.contextForLines(lines)).toEqual({ tokens: 51, limit: 1000000 });
+    expect(core.contextForLines(['{"type":"user"}'])).toBeNull();
+  });
+
+  it('contextLimitFor: 1M pra opus/sonnet gen 4+, 200k pro resto, eleva pelo observado', () => {
+    expect(core.contextLimitFor('claude-opus-4-8', 0)).toBe(1000000);
+    expect(core.contextLimitFor('claude-haiku-4-5', 0)).toBe(200000);
+    expect(core.contextLimitFor('claude-3-5-sonnet-20241022', 0)).toBe(200000);
+    expect(core.contextLimitFor('claude-haiku-4-5', 250000)).toBe(1000000);
+  });
+});
