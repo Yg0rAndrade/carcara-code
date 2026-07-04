@@ -869,6 +869,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
 
   // Troca de projeto: inicia/retoma o preview do projeto ativo.
   useEffect(() => {
+    if (active?.remote) { setView('code'); return; }
     let cancelled = false; // efeito desmontou/trocou de projeto: corta o setTimeout e o poller
     activePathRef.current = active?.path || null;
     refreshTabBar(); // a tira reflete as abas do novo projeto ativo
@@ -1104,6 +1105,7 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
 
   const inPreview = view === 'preview';
   const inCode = view === 'code';
+  const remote = !!active?.remote;
   const inGit = view === 'git';
   const inApi = view === 'api';
   const inMcp = view === 'mcp';
@@ -1114,16 +1116,16 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     <>
       {active && (
       <div className="relative z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
-        <Tabs value={view} onValueChange={setView}>
+        <Tabs value={remote ? 'code' : view} onValueChange={setView}>
           <TabsList className="h-8 gap-0.5 p-0.5">
-            <TabsTrigger value="preview" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={EarthIcon} />{t('preview.tab')}</TabsTrigger>
+            {!remote && <TabsTrigger value="preview" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={EarthIcon} />{t('preview.tab')}</TabsTrigger>}
             <TabsTrigger value="code" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={ChevronsLeftRightIcon} />{t('preview.code')}</TabsTrigger>
-            <TabsTrigger value="git" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={GitBranchIcon} />{t('preview.git')}</TabsTrigger>
+            {!remote && <TabsTrigger value="git" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={GitBranchIcon} />{t('preview.git')}</TabsTrigger>}
           </TabsList>
         </Tabs>
 
         {/* Ferramentas menos usadas (API, MCP) num menu com seta, pra enxugar a barra. */}
-        <MoreTools view={view} onPick={setView} />
+        {!remote && <MoreTools view={view} onPick={setView} />}
 
         {inPreview && (
           <>
