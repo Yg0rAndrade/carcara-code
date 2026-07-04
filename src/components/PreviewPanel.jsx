@@ -1103,14 +1103,14 @@ export function PreviewPanel({ active, onProjectsChanged, controlsRef, onModeCha
     } catch {}
   };
 
-  const inPreview = view === 'preview';
-  const inCode = view === 'code';
   const remote = !!active?.remote;
-  const inGit = view === 'git';
-  const inApi = view === 'api';
-  const inMcp = view === 'mcp';
-  const inBoard = view === 'board';
-  const inHistory = view === 'history';
+  const inPreview = !remote && view === 'preview';
+  const inCode = remote || view === 'code';
+  const inGit = !remote && view === 'git';
+  const inApi = !remote && view === 'api';
+  const inMcp = !remote && view === 'mcp';
+  const inBoard = !remote && view === 'board';
+  const inHistory = !remote && view === 'history';
 
   return (
     <>
