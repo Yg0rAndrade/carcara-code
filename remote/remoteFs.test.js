@@ -35,3 +35,37 @@ describe('remoteFs.listDir', () => {
     await expect(rfs.listDir('ssh://root@h:22/root')).rejects.toThrow('sem permissão');
   });
 });
+
+describe('remoteFs.readFile', () => {
+  const withStat = (size, readImpl) => ({
+    stat: (p, cb) => cb(null, { size }),
+    readFile: readImpl,
+  });
+
+  it('devolve o conteúdo de texto', async () => {
+    const rfs = makeRemoteFs({
+      getSftp: async () => withStat(3, (p, cb) => cb(null, Buffer.from('oi\n'))),
+      isBinaryExt: () => false,
+    });
+    expect(await rfs.readFile('ssh://root@h:22/root/a.txt')).toEqual({ content: 'oi\n' });
+  });
+
+  it('marca binário por extensão sem ler o conteúdo', async () => {
+    let read = 0;
+    const rfs = makeRemoteFs({
+      getSftp: async () => withStat(10, (p, cb) => { read++; cb(null, Buffer.from('x')); }),
+      isBinaryExt: (ext) => ext === '.png',
+    });
+    expect(await rfs.readFile('ssh://root@h:22/root/logo.png')).toEqual({ binary: true });
+    expect(read).toBe(0);
+  });
+
+  it('recusa texto acima de 1MB', async () => {
+    const rfs = makeRemoteFs({
+      getSftp: async () => withStat(2 * 1024 * 1024, (p, cb) => cb(null, Buffer.from(''))),
+      isBinaryExt: () => false,
+    });
+    const r = await rfs.readFile('ssh://root@h:22/root/big.log');
+    expect(r.error).toMatch(/grande/);
+  });
+});

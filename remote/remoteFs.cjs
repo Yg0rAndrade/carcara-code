@@ -33,7 +33,25 @@ function makeRemoteFs({ getSftp, isBinaryExt }) {
       .sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1));
   }
 
-  return { listDir };
+  async function readFile(uri) {
+    const ext = path.posix.extname(remotePathOf(uri)).toLowerCase();
+    // Imagem/PDF/mídia/planilha/binário: preview remoto fica pra depois -> sinaliza binário.
+    if (isBinaryExt(ext)) return { binary: true };
+    const sftp = await sftpOf(uri);
+    const p = remotePathOf(uri);
+    try {
+      const size = await new Promise((resolve, reject) => {
+        sftp.stat(p, (err, st) => (err ? reject(err) : resolve(st.size)));
+      });
+      if (size > 1024 * 1024) return { error: 'arquivo muito grande (>1MB) pra exibir' };
+      const buf = await new Promise((resolve, reject) => {
+        sftp.readFile(p, (err, b) => (err ? reject(err) : resolve(b)));
+      });
+      return { content: buf.toString('utf8') };
+    } catch (err) { return { error: String((err && err.message) || err) }; }
+  }
+
+  return { listDir, readFile };
 }
 
 module.exports = { makeRemoteFs };
