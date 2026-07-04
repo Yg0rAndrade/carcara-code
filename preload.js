@@ -42,25 +42,34 @@ contextBridge.exposeInMainWorld('api', {
   getLayout: () => ipcRenderer.invoke('layout:get'),
   setLayout: (layout) => ipcRenderer.invoke('layout:set', layout),
   getProjectLayout: (projectPath) => ipcRenderer.invoke('layout:getProject', { projectPath }),
-  setProjectLayout: (projectPath, claudeSide) => ipcRenderer.invoke('layout:setProject', { projectPath, claudeSide }),
+  setProjectLayout: (projectPath, claudeSide) =>
+    ipcRenderer.invoke('layout:setProject', { projectPath, claudeSide }),
   addProjects: () => ipcRenderer.invoke('projects:add'),
   removeProject: (projectPath) => ipcRenderer.invoke('projects:remove', { projectPath }),
   reorderProjects: (paths) => ipcRenderer.invoke('projects:reorder', { paths }),
   listProjects: () => ipcRenderer.invoke('projects:list'),
-  renameProject: (projectPath, name) => ipcRenderer.invoke('projects:rename', { projectPath, name }),
-  setProjectColor: (projectPath, color) => ipcRenderer.invoke('projects:setColor', { projectPath, color }),
-  setProjectIcon: (projectPath, dataUrl) => ipcRenderer.invoke('projects:setIcon', { projectPath, dataUrl }),
+  renameProject: (projectPath, name) =>
+    ipcRenderer.invoke('projects:rename', { projectPath, name }),
+  setProjectColor: (projectPath, color) =>
+    ipcRenderer.invoke('projects:setColor', { projectPath, color }),
+  setProjectIcon: (projectPath, dataUrl) =>
+    ipcRenderer.invoke('projects:setIcon', { projectPath, dataUrl }),
   resetProjectCustom: (projectPath) => ipcRenderer.invoke('projects:resetCustom', { projectPath }),
 
   // Sessões do Claude Code (várias por projeto)
   sessionsList: (projectPath) => ipcRenderer.invoke('sessions:list', { projectPath }),
-  sessionsCreate: (projectPath, name) => ipcRenderer.invoke('sessions:create', { projectPath, name }),
-  sessionsRename: (projectPath, sessionId, name) => ipcRenderer.invoke('sessions:rename', { projectPath, sessionId, name }),
-  sessionsClose: (projectPath, sessionId) => ipcRenderer.invoke('sessions:close', { projectPath, sessionId }),
-  sessionRefreshTitle: (projectPath, sessionId) => ipcRenderer.invoke('session:refreshTitle', { projectPath, sessionId }),
+  sessionsCreate: (projectPath, name) =>
+    ipcRenderer.invoke('sessions:create', { projectPath, name }),
+  sessionsRename: (projectPath, sessionId, name) =>
+    ipcRenderer.invoke('sessions:rename', { projectPath, sessionId, name }),
+  sessionsClose: (projectPath, sessionId) =>
+    ipcRenderer.invoke('sessions:close', { projectPath, sessionId }),
+  sessionRefreshTitle: (projectPath, sessionId) =>
+    ipcRenderer.invoke('session:refreshTitle', { projectPath, sessionId }),
 
   // Terminal (Claude Code real) — por sessão
-  termEnsure: (sessionId, projectPath, cols, rows, theme) => ipcRenderer.invoke('term:ensure', { sessionId, projectPath, cols, rows, theme }),
+  termEnsure: (sessionId, projectPath, cols, rows, theme) =>
+    ipcRenderer.invoke('term:ensure', { sessionId, projectPath, cols, rows, theme }),
   termInput: (sessionId, data) => ipcRenderer.send('term:input', { sessionId, data }),
   termResize: (sessionId, cols, rows) => ipcRenderer.send('term:resize', { sessionId, cols, rows }),
 
@@ -77,14 +86,17 @@ contextBridge.exposeInMainWorld('api', {
   setLang: (lang) => ipcRenderer.invoke('lang:set', { lang }),
 
   // Terminal livre (shell comum)
-  shellEnsure: (projectPath, cols, rows) => ipcRenderer.invoke('shell:ensure', { projectPath, cols, rows }),
+  shellEnsure: (projectPath, cols, rows) =>
+    ipcRenderer.invoke('shell:ensure', { projectPath, cols, rows }),
   shellInput: (projectPath, data) => ipcRenderer.send('shell:input', { projectPath, data }),
-  shellResize: (projectPath, cols, rows) => ipcRenderer.send('shell:resize', { projectPath, cols, rows }),
+  shellResize: (projectPath, cols, rows) =>
+    ipcRenderer.send('shell:resize', { projectPath, cols, rows }),
 
   // Git (source control)
   gitIsRepo: (projectPath) => ipcRenderer.invoke('git:isRepo', { projectPath }),
   gitStatus: (projectPath) => ipcRenderer.invoke('git:status', { projectPath }),
-  gitDiff: (projectPath, file, staged, untracked) => ipcRenderer.invoke('git:diff', { projectPath, file, staged, untracked }),
+  gitDiff: (projectPath, file, staged, untracked) =>
+    ipcRenderer.invoke('git:diff', { projectPath, file, staged, untracked }),
   gitStage: (projectPath, files) => ipcRenderer.invoke('git:stage', { projectPath, files }),
   gitUnstage: (projectPath, files) => ipcRenderer.invoke('git:unstage', { projectPath, files }),
   gitCommit: (projectPath, message) => ipcRenderer.invoke('git:commit', { projectPath, message }),
@@ -92,17 +104,21 @@ contextBridge.exposeInMainWorld('api', {
   gitPull: (projectPath) => ipcRenderer.invoke('git:pull', { projectPath }),
   gitBranches: (projectPath) => ipcRenderer.invoke('git:branches', { projectPath }),
   gitCheckout: (projectPath, branch) => ipcRenderer.invoke('git:checkout', { projectPath, branch }),
-  gitCreateBranch: (projectPath, name) => ipcRenderer.invoke('git:createBranch', { projectPath, name }),
+  gitCreateBranch: (projectPath, name) =>
+    ipcRenderer.invoke('git:createBranch', { projectPath, name }),
   gitInit: (projectPath) => ipcRenderer.invoke('git:init', { projectPath }),
   gitAddRemote: (projectPath, url) => ipcRenderer.invoke('git:addRemote', { projectPath, url }),
 
   // API connector (REST)
   httpSend: (request, workingDir) => ipcRenderer.invoke('http:send', { request, workingDir }),
-  httpToSnippet: (request, target, client) => ipcRenderer.invoke('http:toSnippet', { request, target, client }),
+  httpToSnippet: (request, target, client) =>
+    ipcRenderer.invoke('http:toSnippet', { request, target, client }),
   httpListSaved: (projectPath) => ipcRenderer.invoke('http:listSaved', { projectPath }),
   httpReadSaved: (projectPath, name) => ipcRenderer.invoke('http:readSaved', { projectPath, name }),
-  httpSaveRequest: (projectPath, name, request) => ipcRenderer.invoke('http:saveRequest', { projectPath, name, request }),
-  httpDeleteSaved: (projectPath, name) => ipcRenderer.invoke('http:deleteSaved', { projectPath, name }),
+  httpSaveRequest: (projectPath, name, request) =>
+    ipcRenderer.invoke('http:saveRequest', { projectPath, name, request }),
+  httpDeleteSaved: (projectPath, name) =>
+    ipcRenderer.invoke('http:deleteSaved', { projectPath, name }),
 
   // MCP connector
   mcpConnect: (config) => ipcRenderer.invoke('mcp:connect', { config }),
@@ -111,9 +127,12 @@ contextBridge.exposeInMainWorld('api', {
   mcpListResources: (connId) => ipcRenderer.invoke('mcp:listResources', { connId }),
   mcpListResourceTemplates: (connId) => ipcRenderer.invoke('mcp:listResourceTemplates', { connId }),
   mcpListPrompts: (connId) => ipcRenderer.invoke('mcp:listPrompts', { connId }),
-  mcpSubscribeResource: (connId, uri) => ipcRenderer.invoke('mcp:subscribeResource', { connId, uri }),
-  mcpUnsubscribeResource: (connId, uri) => ipcRenderer.invoke('mcp:unsubscribeResource', { connId, uri }),
-  mcpComplete: (connId, ref, argName, argValue) => ipcRenderer.invoke('mcp:complete', { connId, ref, argName, argValue }),
+  mcpSubscribeResource: (connId, uri) =>
+    ipcRenderer.invoke('mcp:subscribeResource', { connId, uri }),
+  mcpUnsubscribeResource: (connId, uri) =>
+    ipcRenderer.invoke('mcp:unsubscribeResource', { connId, uri }),
+  mcpComplete: (connId, ref, argName, argValue) =>
+    ipcRenderer.invoke('mcp:complete', { connId, ref, argName, argValue }),
   mcpCallTool: (connId, name, args) => ipcRenderer.invoke('mcp:callTool', { connId, name, args }),
   mcpReadResource: (connId, uri) => ipcRenderer.invoke('mcp:readResource', { connId, uri }),
   mcpGetPrompt: (connId, name, args) => ipcRenderer.invoke('mcp:getPrompt', { connId, name, args }),
@@ -121,11 +140,14 @@ contextBridge.exposeInMainWorld('api', {
   mcpSetLogLevel: (connId, level) => ipcRenderer.invoke('mcp:setLogLevel', { connId, level }),
   mcpListServers: (projectPath) => ipcRenderer.invoke('mcp:listServers', { projectPath }),
   mcpReadServer: (projectPath, name) => ipcRenderer.invoke('mcp:readServer', { projectPath, name }),
-  mcpSaveServer: (projectPath, name, config) => ipcRenderer.invoke('mcp:saveServer', { projectPath, name, config }),
-  mcpDeleteServer: (projectPath, name) => ipcRenderer.invoke('mcp:deleteServer', { projectPath, name }),
+  mcpSaveServer: (projectPath, name, config) =>
+    ipcRenderer.invoke('mcp:saveServer', { projectPath, name, config }),
+  mcpDeleteServer: (projectPath, name) =>
+    ipcRenderer.invoke('mcp:deleteServer', { projectPath, name }),
   mcpOauthLogout: (url) => ipcRenderer.invoke('mcp:oauthLogout', { url }),
   mcpSetRoots: (connId, roots) => ipcRenderer.invoke('mcp:setRoots', { connId, roots }),
-  mcpRespondServerRequest: (reqId, result, error) => ipcRenderer.invoke('mcp:respondServerRequest', { reqId, result, error }),
+  mcpRespondServerRequest: (reqId, result, error) =>
+    ipcRenderer.invoke('mcp:respondServerRequest', { reqId, result, error }),
 
   // Biblioteca de prompts salvos (por projeto, em .carcara/prompts.json)
   promptsList: (projectPath) => ipcRenderer.invoke('prompts:list', { projectPath }),
@@ -133,9 +155,12 @@ contextBridge.exposeInMainWorld('api', {
 
   // Checkpoints (voltar no tempo) — shadow git separado do repo do usuário
   checkpointList: (projectPath) => ipcRenderer.invoke('checkpoint:list', { projectPath }),
-  checkpointCreate: (projectPath, label) => ipcRenderer.invoke('checkpoint:create', { projectPath, label }),
-  checkpointRestore: (projectPath, hash) => ipcRenderer.invoke('checkpoint:restore', { projectPath, hash }),
-  checkpointDiff: (projectPath, hash) => ipcRenderer.invoke('checkpoint:diff', { projectPath, hash }),
+  checkpointCreate: (projectPath, label) =>
+    ipcRenderer.invoke('checkpoint:create', { projectPath, label }),
+  checkpointRestore: (projectPath, hash) =>
+    ipcRenderer.invoke('checkpoint:restore', { projectPath, hash }),
+  checkpointDiff: (projectPath, hash) =>
+    ipcRenderer.invoke('checkpoint:diff', { projectPath, hash }),
   checkpointGetEnabled: () => ipcRenderer.invoke('checkpoint:getEnabled'),
   checkpointSetEnabled: (enabled) => ipcRenderer.invoke('checkpoint:setEnabled', { enabled }),
 
@@ -151,7 +176,8 @@ contextBridge.exposeInMainWorld('api', {
   searchFiles: (root, query) => ipcRenderer.invoke('fs:search', { root, query }),
   readFile: (filePath) => ipcRenderer.invoke('fs:read', { filePath }),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:write', { filePath, content }),
-  getXlsxRows: (filePath, sheet, start, count) => ipcRenderer.invoke('xlsx:rows', { filePath, sheet, start, count }),
+  getXlsxRows: (filePath, sheet, start, count) =>
+    ipcRenderer.invoke('xlsx:rows', { filePath, sheet, start, count }),
   // Meta da grade de um CSV (sob demanda, quando alterna de texto pra planilha).
   openCsvGrid: (filePath) => ipcRenderer.invoke('csv:grid', { filePath }),
 
@@ -166,9 +192,16 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
 
   // Drag and drop de arquivos
-  getDroppedPath: (file) => { try { return webUtils.getPathForFile(file); } catch { return ''; } },
+  getDroppedPath: (file) => {
+    try {
+      return webUtils.getPathForFile(file);
+    } catch {
+      return '';
+    }
+  },
   startDrag: (filePath) => ipcRenderer.send('drag:start', filePath),
-  dockDevTools: (previewId, devtoolsId) => ipcRenderer.send('devtools:dock', { previewId, devtoolsId }),
+  dockDevTools: (previewId, devtoolsId) =>
+    ipcRenderer.send('devtools:dock', { previewId, devtoolsId }),
   undockDevTools: (previewId) => ipcRenderer.send('devtools:undock', { previewId }),
 
   // Registra um listener e devolve uma função pra removê-lo. Sem isso, painéis que

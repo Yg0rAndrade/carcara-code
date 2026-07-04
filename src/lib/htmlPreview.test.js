@@ -27,8 +27,9 @@ describe('fileUrlFor', () => {
   });
 
   it('codifica espaços no caminho', () => {
-    expect(fileUrlFor('C:\\Users\\Ygor Andrade\\a b.html'))
-      .toBe('file:///C:/Users/Ygor%20Andrade/a%20b.html');
+    expect(fileUrlFor('C:\\Users\\Ygor Andrade\\a b.html')).toBe(
+      'file:///C:/Users/Ygor%20Andrade/a%20b.html',
+    );
   });
 
   it('aceita caminho que já usa barras normais', () => {

@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, RotateCcw, Square, GripHorizontal, Pencil, Image as ImageIcon, Undo2 } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  RotateCcw,
+  Square,
+  GripHorizontal,
+  Pencil,
+  Image as ImageIcon,
+  Undo2,
+} from 'lucide-react';
 import { SettingsIcon } from './ui/settings.jsx';
 import { SearchIcon } from './ui/search.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
@@ -7,18 +16,42 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { hasPendingUpdate } from '@/lib/updateView';
 
-export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove, onRestart, onStop, onReorder, onRename, onSetColor, onSetIcon, onResetCustom, onOpenSettings, onSearch, onRailGrab, width = 64, version = '', update, onOpenAbout }) {
+export function Rail({
+  projects,
+  active,
+  activity = {},
+  onOpen,
+  onAdd,
+  onRemove,
+  onRestart,
+  onStop,
+  onReorder,
+  onRename,
+  onSetColor,
+  onSetIcon,
+  onResetCustom,
+  onOpenSettings,
+  onSearch,
+  onRailGrab,
+  width = 64,
+  version = '',
+  update,
+  onOpenAbout,
+}) {
   const t = useT();
-  const [menu, setMenu] = useState(null);         // { x, y, project }
+  const [menu, setMenu] = useState(null); // { x, y, project }
   const [dragPath, setDragPath] = useState(null); // path do item sendo arrastado
   const [overPath, setOverPath] = useState(null); // path do item sob o cursor
   const [renamingPath, setRenamingPath] = useState(null); // projeto em edição de nome
   const [renameDraft, setRenameDraft] = useState('');
-  const fileInputRef = useRef(null);              // input file oculto p/ enviar imagem
-  const iconTargetRef = useRef(null);             // projeto alvo do upload de imagem
+  const fileInputRef = useRef(null); // input file oculto p/ enviar imagem
+  const iconTargetRef = useRef(null); // projeto alvo do upload de imagem
 
   // Abre o seletor nativo de imagem p/ um projeto; o resultado vira data URL no onChange.
-  const pickImage = (p) => { iconTargetRef.current = p; fileInputRef.current?.click(); };
+  const pickImage = (p) => {
+    iconTargetRef.current = p;
+    fileInputRef.current?.click();
+  };
   const onImageChosen = (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = ''; // permite reescolher o mesmo arquivo depois
@@ -29,8 +62,14 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
     reader.readAsDataURL(file);
   };
 
-  const startRename = (p) => { setRenameDraft(p.name || ''); setRenamingPath(p.path); };
-  const cancelRename = () => { setRenamingPath(null); setRenameDraft(''); };
+  const startRename = (p) => {
+    setRenameDraft(p.name || '');
+    setRenamingPath(p.path);
+  };
+  const cancelRename = () => {
+    setRenamingPath(null);
+    setRenameDraft('');
+  };
   const commitRename = (p) => {
     if (renamingPath !== p.path) return;
     const name = renameDraft.trim();
@@ -46,7 +85,10 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
     setMenu({ x, y, project: p });
   };
 
-  const resetDrag = () => { setDragPath(null); setOverPath(null); };
+  const resetDrag = () => {
+    setDragPath(null);
+    setOverPath(null);
+  };
 
   // Ordem exibida durante o arraste: o item arrastado já ocupa o lugar do alvo,
   // empurrando os demais (estilo Kanban). O que se vê é o que será salvo.
@@ -93,9 +135,12 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
       <div
         className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          commitDrop();
+        }}
       >
-        {display.map((p) => (
+        {display.map((p) =>
           renamingPath === p.path ? (
             // Modo de edição de nome: input ocupando o lugar do avatar. Enter salva,
             // Esc cancela, blur salva. Não é <button> (input dentro de button é inválido).
@@ -110,72 +155,94 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
                 onFocus={(e) => e.target.select()}
                 onBlur={() => commitRename(p)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); commitRename(p); }
-                  else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitRename(p);
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelRename();
+                  }
                 }}
                 className="h-full w-full rounded-xl bg-transparent px-1 text-center text-[11px] font-bold text-foreground outline-none"
               />
             </div>
           ) : (
-          <button
-            key={p.path}
-            draggable
-            onDragStart={(e) => { setDragPath(p.path); e.dataTransfer.effectAllowed = 'move'; }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              if (p.path !== dragPath && p.path !== overPath) setOverPath(p.path);
-            }}
-            onDragEnd={resetDrag}
-            onDrop={(e) => { e.preventDefault(); commitDrop(); }}
-            onClick={() => onOpen(p)}
-            onDoubleClick={() => startRename(p)}
-            onContextMenu={(e) => openMenu(e, p)}
-            title={p.name}
-            className={cn(
-              'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border font-bold text-white transition-all hover:-translate-y-0.5 hover:rounded-2xl active:cursor-grabbing',
-              active?.path === p.path && 'rounded-2xl ring-2 ring-primary',
-              dragPath === p.path && 'opacity-40'
-            )}
-            style={p.icon ? { background: 'hsl(var(--secondary))' } : { background: p.color || colorFor(p.name) }}
-          >
-            {/* Recorte do ícone nos cantos arredondados fica neste wrapper interno,
-                para que a bolinha de status (abaixo) não seja cortada pelo overflow. */}
-            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-[inherit]">
-              {p.icon ? (
-                <img src={p.icon} alt={p.name} draggable={false} className="h-full w-full object-contain p-1" />
-              ) : (
-                <span>{initials(p.name)}</span>
+            <button
+              key={p.path}
+              draggable
+              onDragStart={(e) => {
+                setDragPath(p.path);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (p.path !== dragPath && p.path !== overPath) setOverPath(p.path);
+              }}
+              onDragEnd={resetDrag}
+              onDrop={(e) => {
+                e.preventDefault();
+                commitDrop();
+              }}
+              onClick={() => onOpen(p)}
+              onDoubleClick={() => startRename(p)}
+              onContextMenu={(e) => openMenu(e, p)}
+              title={p.name}
+              className={cn(
+                'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border font-bold text-white transition-all hover:-translate-y-0.5 hover:rounded-2xl active:cursor-grabbing',
+                active?.path === p.path && 'rounded-2xl ring-2 ring-primary',
+                dragPath === p.path && 'opacity-40',
               )}
-            </span>
-            {p.running && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
-            )}
-            {/* Atividade do Claude (canto superior, separado do verde de "preview rodando"),
+              style={
+                p.icon
+                  ? { background: 'hsl(var(--secondary))' }
+                  : { background: p.color || colorFor(p.name) }
+              }
+            >
+              {/* Recorte do ícone nos cantos arredondados fica neste wrapper interno,
+                para que a bolinha de status (abaixo) não seja cortada pelo overflow. */}
+              <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-[inherit]">
+                {p.icon ? (
+                  <img
+                    src={p.icon}
+                    alt={p.name}
+                    draggable={false}
+                    className="h-full w-full object-contain p-1"
+                  />
+                ) : (
+                  <span>{initials(p.name)}</span>
+                )}
+              </span>
+              {p.running && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+              )}
+              {/* Atividade do Claude (canto superior, separado do verde de "preview rodando"),
                 agregada por projeto: âmbar pulsando = trabalhando; âmbar com halo = pediu
                 uma confirmação; âmbar fixo = terminou e você ainda não viu. O badge some ao
                 focar o projeto; o detalhe por sessão aparece na aba (ver ChatPanel). */}
-            {activity[p.path] && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
-                {activity[p.path] === 'asking' && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
-                )}
-                <span
-                  title={
-                    activity[p.path] === 'working' ? t('rail.claude_working')
-                    : activity[p.path] === 'asking' ? t('rail.claude_asking')
-                    : t('rail.claude_done')
-                  }
-                  className={cn(
-                    'relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500',
-                    activity[p.path] === 'working' && 'animate-pulse'
+              {activity[p.path] && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                  {activity[p.path] === 'asking' && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
                   )}
-                />
-              </span>
-            )}
-          </button>
-          )
-        ))}
+                  <span
+                    title={
+                      activity[p.path] === 'working'
+                        ? t('rail.claude_working')
+                        : activity[p.path] === 'asking'
+                          ? t('rail.claude_asking')
+                          : t('rail.claude_done')
+                    }
+                    className={cn(
+                      'relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500',
+                      activity[p.path] === 'working' && 'animate-pulse',
+                    )}
+                  />
+                </span>
+              )}
+            </button>
+          ),
+        )}
       </div>
 
       {/* Rodapé fixo (card): adicionar projeto + configurações sempre acessíveis,
@@ -207,8 +274,8 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
               title={t('rail.version_tooltip')}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
             >
-              {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}
-              v{version}
+              {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}v
+              {version}
             </button>
           </div>
         )}
@@ -226,14 +293,35 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
       <RailMenu
         menu={menu}
         onClose={() => setMenu(null)}
-        onRestart={(p) => { setMenu(null); onRestart?.(p); }}
-        onStop={(p) => { setMenu(null); onStop?.(p); }}
-        onRemove={(p) => { setMenu(null); onRemove(p); }}
-        onRename={(p) => { setMenu(null); startRename(p); }}
+        onRestart={(p) => {
+          setMenu(null);
+          onRestart?.(p);
+        }}
+        onStop={(p) => {
+          setMenu(null);
+          onStop?.(p);
+        }}
+        onRemove={(p) => {
+          setMenu(null);
+          onRemove(p);
+        }}
+        onRename={(p) => {
+          setMenu(null);
+          startRename(p);
+        }}
         onSetColor={(p, c) => onSetColor?.(p, c)}
-        onPickImage={(p) => { setMenu(null); pickImage(p); }}
-        onRemoveImage={(p) => { setMenu(null); onSetIcon?.(p, ''); }}
-        onReset={(p) => { setMenu(null); onResetCustom?.(p); }}
+        onPickImage={(p) => {
+          setMenu(null);
+          pickImage(p);
+        }}
+        onRemoveImage={(p) => {
+          setMenu(null);
+          onSetIcon?.(p, '');
+        }}
+        onReset={(p) => {
+          setMenu(null);
+          onResetCustom?.(p);
+        }}
       />
     </nav>
   );
@@ -241,16 +329,42 @@ export function Rail({ projects, active, activity = {}, onOpen, onAdd, onRemove,
 
 // Cores prontas p/ o avatar do projeto. A última "casa" do seletor é um input de cor
 // livre, então estas são só atalhos comuns — não uma paleta fechada.
-const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#64748b'];
+const PRESET_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#14b8a6',
+  '#3b82f6',
+  '#6366f1',
+  '#a855f7',
+  '#ec4899',
+  '#64748b',
+];
 
 // Menu de contexto do rail (botão direito) — no mesmo padrão da árvore de arquivos.
-function RailMenu({ menu, onClose, onRestart, onStop, onRemove, onRename, onSetColor, onPickImage, onRemoveImage, onReset }) {
+function RailMenu({
+  menu,
+  onClose,
+  onRestart,
+  onStop,
+  onRemove,
+  onRename,
+  onSetColor,
+  onPickImage,
+  onRemoveImage,
+  onReset,
+}) {
   const t = useT();
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onClose);
@@ -291,7 +405,7 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove, onRename, onSetC
               title={c}
               className={cn(
                 'h-4 w-4 rounded-full border border-black/10 transition-transform hover:scale-110',
-                p.color === c && 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                p.color === c && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
               )}
               style={{ background: c }}
             />
@@ -349,7 +463,9 @@ function RailMenu({ menu, onClose, onRestart, onStop, onRemove, onRename, onSetC
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{p.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}</span>
+        <span className="truncate">
+          {p.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}
+        </span>
       </button>
       {p.running && (
         <button

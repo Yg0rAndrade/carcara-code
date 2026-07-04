@@ -76,7 +76,7 @@ os dois idiomas nesse arquivo.
 ### Antes de fechar qualquer tarefa que mexa em texto
 
 - Rode o smoke de paridade: **`node scripts/i18n-parity.smoke.cjs`** (ou `npm run
-  test:i18n`). Ele falha se uma chave existir num idioma e faltar no outro.
+test:i18n`). Ele falha se uma chave existir num idioma e faltar no outro.
 - Lembre que edições em `src/` só aparecem após `npm run build`.
 
 ### Tom da tradução
@@ -122,13 +122,16 @@ que mudou, no estilo do **n8n**: duas seções, **Features** (novas funcionalida
 ## [0.2.0] — 2026-07-01
 
 ### Features
+
 - Aba CSV: importar e validar arquivos via `csv-core.cjs` (#NN) (hash)
 
 ### Bug Fixes
+
 - Corrige paridade de i18n que faltava chave em EN (#NN) (hash)
 ```
 
 Regras:
+
 - Use **versionamento semântico** (`MAJOR.MINOR.PATCH`) e a **data** no cabeçalho.
 - Cada item: descrição curta no imperativo + (quando houver) número da issue/PR e o
   **hash curto** do commit, como o n8n faz.

@@ -32,7 +32,9 @@ export function LanguageProvider({ children }) {
     localStorage.setItem('lang', lang);
     document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
     // Mantém o processo main em sincronia (menus/notificações nativas), inclusive no boot.
-    try { window.api?.setLang?.(lang); } catch {}
+    try {
+      window.api?.setLang?.(lang);
+    } catch {}
   }, [lang]);
 
   // Fallback em cascata: idioma ativo → pt → a própria chave. Nunca lança.
@@ -44,8 +46,13 @@ export function LanguageProvider({ children }) {
   return <I18nCtx.Provider value={{ lang, setLang, t }}>{children}</I18nCtx.Provider>;
 }
 
-export function useT() { return useContext(I18nCtx).t; }
-export function useLang() { const { lang, setLang } = useContext(I18nCtx); return { lang, setLang }; }
+export function useT() {
+  return useContext(I18nCtx).t;
+}
+export function useLang() {
+  const { lang, setLang } = useContext(I18nCtx);
+  return { lang, setLang };
+}
 
 // Helper para componentes de classe (ex.: ErrorBoundary) onde hooks não funcionam.
 // Lê localStorage diretamente; o idioma do componente muda na próxima renderização.

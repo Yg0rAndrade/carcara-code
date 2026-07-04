@@ -1,4 +1,16 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, nativeImage, Menu, webContents, Notification, protocol } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  shell,
+  clipboard,
+  nativeImage,
+  Menu,
+  webContents,
+  Notification,
+  protocol,
+} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -16,8 +28,8 @@ const { initUpdater } = require('./updater.cjs');
 let mainWindow;
 let updater = null;
 const runningServers = new Map(); // projectPath -> { proc, url, port, log }
-const terminals = new Map();      // sessionId -> { pty, buffer, projectPath } (sessões do Claude Code)
-const shells = new Map();         // projectPath -> { pty, buffer } (terminal livre por projeto)
+const terminals = new Map(); // sessionId -> { pty, buffer, projectPath } (sessões do Claude Code)
+const shells = new Map(); // projectPath -> { pty, buffer } (terminal livre por projeto)
 let ptyLib = null;
 
 const APP_NAME = 'Carcará Code';
@@ -32,7 +44,10 @@ if (process.platform === 'win32') app.setAppUserModelId('com.carcara.code');
 // Chrome traz por padrão fica desligado — então sites que estilizam o scroll
 // (::-webkit-scrollbar) ou esperam o visual moderno apareciam "errados" no preview.
 // Precisa ser setado ANTES do app ficar pronto (switch de linha de comando).
-app.commandLine.appendSwitch('enable-features', 'OverlayScrollbar,FluentOverlayScrollbar,FluentScrollbar');
+app.commandLine.appendSwitch(
+  'enable-features',
+  'OverlayScrollbar,FluentOverlayScrollbar,FluentScrollbar',
+);
 
 // Remove os tokens próprios do User-Agent ("Carcará Code/x" e "Electron/x") pra o
 // WebView se apresentar como Chrome puro. O nome com acento gerava um byte inválido
@@ -57,7 +72,11 @@ const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
 function loadConfig() {
   let c;
-  try { c = JSON.parse(fs.readFileSync(configPath(), 'utf8')); } catch { c = {}; }
+  try {
+    c = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+  } catch {
+    c = {};
+  }
   if (!Array.isArray(c.projects)) c.projects = [];
   // Migração única: tinha um 'root' antigo? Importa as subpastas pra lista e descarta o root.
   if (c.root && c.projects.length === 0) {
@@ -72,7 +91,9 @@ function loadConfig() {
   return c;
 }
 function saveConfig(cfg) {
-  try { fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2)); } catch {}
+  try {
+    fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2));
+  } catch {}
 }
 
 const NATIVE_STRINGS = require('./main.i18n.cjs');
@@ -87,7 +108,8 @@ function currentLang() {
 function tn(key, vars) {
   const lang = currentLang();
   const dict = NATIVE_STRINGS[lang] || NATIVE_STRINGS.pt;
-  let s = dict[key] != null ? dict[key] : (NATIVE_STRINGS.pt[key] != null ? NATIVE_STRINGS.pt[key] : key);
+  let s =
+    dict[key] != null ? dict[key] : NATIVE_STRINGS.pt[key] != null ? NATIVE_STRINGS.pt[key] : key;
   if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   return s;
 }
@@ -95,28 +117,51 @@ function tn(key, vars) {
 function killProc(proc) {
   if (!proc) return;
   if (process.platform === 'win32') {
-    try { spawn('taskkill', ['/pid', String(proc.pid), '/f', '/t']); } catch {}
+    try {
+      spawn('taskkill', ['/pid', String(proc.pid), '/f', '/t']);
+    } catch {}
   } else {
-    try { proc.kill(); } catch {}
+    try {
+      proc.kill();
+    } catch {}
   }
 }
 
 // Envia pro renderer só se a janela ainda existir (evita "Object has been destroyed").
 function safeSend(channel, payload) {
-  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+  if (
+    mainWindow &&
+    !mainWindow.isDestroyed() &&
+    mainWindow.webContents &&
+    !mainWindow.webContents.isDestroyed()
+  ) {
     mainWindow.webContents.send(channel, payload);
   }
 }
 
 // Encerra todos os processos (terminais + servidores de preview).
 function cleanup() {
-  for (const s of runningServers.values()) { if (s.probe) clearInterval(s.probe); killProc(s.proc); }
+  for (const s of runningServers.values()) {
+    if (s.probe) clearInterval(s.probe);
+    killProc(s.proc);
+  }
   runningServers.clear();
-  for (const t of terminals.values()) { if (t.idleTimer) clearTimeout(t.idleTimer); try { t.pty.kill(); } catch {} }
+  for (const t of terminals.values()) {
+    if (t.idleTimer) clearTimeout(t.idleTimer);
+    try {
+      t.pty.kill();
+    } catch {}
+  }
   terminals.clear();
-  for (const s of shells.values()) { try { s.pty.kill(); } catch {} }
+  for (const s of shells.values()) {
+    try {
+      s.pty.kill();
+    } catch {}
+  }
   shells.clear();
-  try { mcpCore.mcpDisconnectAll(); } catch {}
+  try {
+    mcpCore.mcpDisconnectAll();
+  } catch {}
 }
 
 // Serve um arquivo de mídia pelo scheme ygc-media://, respeitando o header Range pra
@@ -125,15 +170,23 @@ function cleanup() {
 function registerMediaProtocol() {
   protocol.handle('ygc-media', async (request) => {
     let filePath = '';
-    try { filePath = decodeURIComponent(new URL(request.url).searchParams.get('p') || ''); }
-    catch { return new Response('bad request', { status: 400 }); }
+    try {
+      filePath = decodeURIComponent(new URL(request.url).searchParams.get('p') || '');
+    } catch {
+      return new Response('bad request', { status: 400 });
+    }
     if (!filePath) return new Response('bad request', { status: 400 });
 
-    const roots = (loadConfig().projects) || [];
-    if (!mediaCore.isWithinRoots(filePath, roots)) return new Response('forbidden', { status: 403 });
+    const roots = loadConfig().projects || [];
+    if (!mediaCore.isWithinRoots(filePath, roots))
+      return new Response('forbidden', { status: 403 });
 
     let st;
-    try { st = fs.statSync(filePath); } catch { return new Response('not found', { status: 404 }); }
+    try {
+      st = fs.statSync(filePath);
+    } catch {
+      return new Response('not found', { status: 404 });
+    }
     if (!st.isFile()) return new Response('not found', { status: 404 });
 
     const size = st.size;
@@ -214,7 +267,10 @@ function createWindow() {
   });
 
   // Ao fechar a janela: mata os processos na hora e zera a referência.
-  mainWindow.on('closed', () => { cleanup(); mainWindow = null; });
+  mainWindow.on('closed', () => {
+    cleanup();
+    mainWindow = null;
+  });
 
   // Auto-atualização (só no app empacotado). Envia status pro renderer por um canal só.
   updater = initUpdater({
@@ -223,13 +279,20 @@ function createWindow() {
     notify: (version) => {
       const n = new Notification({ title: APP_NAME, body: tn('update_notify_body', { version }) });
       n.on('click', () => {
-        if (mainWindow && !mainWindow.isDestroyed()) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); }
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.focus();
+        }
       });
       n.show();
     },
   });
   // Espera o boot assentar antes de checar (não competir com o startup).
-  setTimeout(() => { try { updater && updater.checkOnBoot(); } catch {} }, 4000);
+  setTimeout(() => {
+    try {
+      updater && updater.checkOnBoot();
+    } catch {}
+  }, 4000);
 }
 
 app.whenReady().then(() => {
@@ -258,20 +321,40 @@ app.on('web-contents-created', (_event, contents) => {
     const can = params.editFlags;
     Menu.buildFromTemplate([
       { label: tn('ctx_back'), enabled: contents.canGoBack(), click: () => contents.goBack() },
-      { label: tn('ctx_forward'), enabled: contents.canGoForward(), click: () => contents.goForward() },
+      {
+        label: tn('ctx_forward'),
+        enabled: contents.canGoForward(),
+        click: () => contents.goForward(),
+      },
       { label: tn('ctx_reload'), click: () => contents.reload() },
       { type: 'separator' },
       { label: tn('ctx_cut'), role: 'cut', enabled: can.canCut },
       { label: tn('ctx_copy'), role: 'copy', enabled: can.canCopy },
       { label: tn('ctx_paste'), role: 'paste', enabled: can.canPaste },
       { label: tn('ctx_select_all'), role: 'selectAll' },
-      ...(params.linkURL ? [
-        { type: 'separator' },
-        { label: tn('ctx_open_new_tab'), click: () => safeSend('preview:new-tab', { sourceId: contents.id, url: params.linkURL, disposition: 'foreground-tab' }) },
-        { label: tn('ctx_copy_link'), click: () => clipboard.writeText(params.linkURL) },
-      ] : []),
+      ...(params.linkURL
+        ? [
+            { type: 'separator' },
+            {
+              label: tn('ctx_open_new_tab'),
+              click: () =>
+                safeSend('preview:new-tab', {
+                  sourceId: contents.id,
+                  url: params.linkURL,
+                  disposition: 'foreground-tab',
+                }),
+            },
+            { label: tn('ctx_copy_link'), click: () => clipboard.writeText(params.linkURL) },
+          ]
+        : []),
       { type: 'separator' },
-      { label: tn('ctx_inspect'), click: () => { lastInspect = { x: params.x, y: params.y }; safeSend('devtools:toggle'); } },
+      {
+        label: tn('ctx_inspect'),
+        click: () => {
+          lastInspect = { x: params.x, y: params.y };
+          safeSend('devtools:toggle');
+        },
+      },
     ]).popup();
   });
 
@@ -280,11 +363,20 @@ app.on('web-contents-created', (_event, contents) => {
     if (input.type !== 'keyDown') return;
     const isF12 = input.key === 'F12';
     const isInspect = input.control && input.shift && input.key.toLowerCase() === 'i';
-    if (isF12 || isInspect) { lastInspect = null; safeSend('devtools:toggle'); return; }
+    if (isF12 || isInspect) {
+      lastInspect = null;
+      safeSend('devtools:toggle');
+      return;
+    }
     // Ctrl/Cmd+F com o foco DENTRO do preview: o webview engoliria o atalho (e o
     // site abriria o SEU próprio "buscar"). Barramos e avisamos o renderer, que
     // abre a barra de busca da app (mesmo esquema do F12/botões do mouse).
-    if ((input.control || input.meta) && !input.alt && !input.shift && input.key.toLowerCase() === 'f') {
+    if (
+      (input.control || input.meta) &&
+      !input.alt &&
+      !input.shift &&
+      input.key.toLowerCase() === 'f'
+    ) {
       safeSend('preview:find', { id: contents.id });
       _e.preventDefault();
       return;
@@ -296,7 +388,7 @@ app.on('web-contents-created', (_event, contents) => {
       const isZoom = k === '=' || k === '+' || k === '-' || k === '_' || k === '0';
       if (isZoom) {
         const cur = contents.getZoomLevel();
-        const next = k === '0' ? 0 : (k === '-' || k === '_') ? cur - 0.5 : cur + 0.5;
+        const next = k === '0' ? 0 : k === '-' || k === '_' ? cur - 0.5 : cur + 0.5;
         contents.setZoomLevel(Math.max(-3, Math.min(3, next)));
         _e.preventDefault();
       }
@@ -324,7 +416,6 @@ app.on('web-contents-created', (_event, contents) => {
     }
     return { action: 'deny' };
   });
-
 });
 
 // Encaixa o DevTools do preview DENTRO de um segundo webview (à direita), estilo Chrome.
@@ -338,21 +429,34 @@ ipcMain.on('devtools:dock', (_e, { previewId, devtoolsId }) => {
     target.setDevToolsWebContents(host);
     target.openDevTools();
     host.focus();
-    if (lastInspect) { try { target.inspectElement(lastInspect.x, lastInspect.y); } catch {} }
+    if (lastInspect) {
+      try {
+        target.inspectElement(lastInspect.x, lastInspect.y);
+      } catch {}
+    }
     lastInspect = null;
   } catch {}
 });
 ipcMain.on('devtools:undock', (_e, { previewId }) => {
-  try { const t = webContents.fromId(previewId); if (t && t.isDevToolsOpened()) t.closeDevTools(); } catch {}
+  try {
+    const t = webContents.fromId(previewId);
+    if (t && t.isDevToolsOpened()) t.closeDevTools();
+  } catch {}
 });
 
 // Versão do app (lida do package.json). Funciona empacotado e rodando do fonte.
 ipcMain.handle('app:getVersion', () => app.getVersion());
 
 // Auto-atualização
-ipcMain.handle('update:check', () => { updater && updater.check(); });
-ipcMain.handle('update:download', () => { updater && updater.download(); });
-ipcMain.handle('update:install', () => { updater && updater.install(); });
+ipcMain.handle('update:check', () => {
+  updater && updater.check();
+});
+ipcMain.handle('update:download', () => {
+  updater && updater.download();
+});
+ipcMain.handle('update:install', () => {
+  updater && updater.install();
+});
 
 // ---------- Config / projetos ----------
 ipcMain.handle('config:get', () => loadConfig());
@@ -360,7 +464,12 @@ ipcMain.handle('config:get', () => loadConfig());
 // Tela de preparo do 1º uso: a flag mora no config.json (userData), não no localStorage —
 // o localStorage do renderer pode ser limpo (cache/origin) e a tela voltava a cada abertura.
 ipcMain.handle('setup:isDone', () => !!loadConfig().setupDone);
-ipcMain.handle('setup:markDone', () => { const c = loadConfig(); c.setupDone = true; saveConfig(c); return { ok: true }; });
+ipcMain.handle('setup:markDone', () => {
+  const c = loadConfig();
+  c.setupDone = true;
+  saveConfig(c);
+  return { ok: true };
+});
 
 // ---------- CLI de IA (Claude Code / OpenCode / Antigravity / custom) ----------
 const AI_CLIS = { claude: 'claude', opencode: 'opencode', agy: 'agy', codex: 'codex' };
@@ -428,8 +537,12 @@ function buildLaunchCommand(sessionId, projectPath) {
     // Id do Claude desacoplado do id da aba. Migra o esquema antigo (id da aba).
     let cid = s && s.claudeId;
     if (!cid && claudeHistoryExists(sessionId)) cid = sessionId;
-    if (cid && claudeHistoryExists(cid)) {           // tem conversa salva → retoma
-      if (s && s.claudeId !== cid) { s.claudeId = cid; saveConfig(c); }
+    if (cid && claudeHistoryExists(cid)) {
+      // tem conversa salva → retoma
+      if (s && s.claudeId !== cid) {
+        s.claudeId = cid;
+        saveConfig(c);
+      }
       return { cmd: `claude --resume ${cid}`, capture: false, claudeId: cid };
     }
     // Sem conversa válida (aba nova, ou "morta" sem mensagens) → sobe `claude` puro,
@@ -439,7 +552,10 @@ function buildLaunchCommand(sessionId, projectPath) {
   }
   if (cli === 'opencode') {
     const s = getSessionMeta(c, projectPath, sessionId);
-    return { cmd: s?.resume?.opencode ? `opencode --session ${s.resume.opencode}` : 'opencode', capture: false };
+    return {
+      cmd: s?.resume?.opencode ? `opencode --session ${s.resume.opencode}` : 'opencode',
+      capture: false,
+    };
   }
   if (cli === 'agy') {
     const s = getSessionMeta(c, projectPath, sessionId);
@@ -457,7 +573,10 @@ function buildLaunchCommand(sessionId, projectPath) {
 function saveClaudeId(projectPath, sessionId, claudeId) {
   const cfg = loadConfig();
   const s = getSessionMeta(cfg, projectPath, sessionId);
-  if (s && s.claudeId !== claudeId) { s.claudeId = claudeId; saveConfig(cfg); }
+  if (s && s.claudeId !== claudeId) {
+    s.claudeId = claudeId;
+    saveConfig(cfg);
+  }
 }
 
 // Renomeia a aba com o título que o próprio Claude gera (aiTitle), persistindo e
@@ -493,7 +612,10 @@ function startClaudeWatcher(entry, capture) {
     try {
       if (!e.claudeId && e.preSnapshot) {
         const found = claudeSessions.newTranscript(e.projectPath, e.preSnapshot);
-        if (found) { e.claudeId = found; saveClaudeId(e.projectPath, e.sessionId, found); }
+        if (found) {
+          e.claudeId = found;
+          saveClaudeId(e.projectPath, e.sessionId, found);
+        }
       }
       if (e.claudeId) {
         const title = readSessionTitle(e.projectPath, e.claudeId);
@@ -539,12 +661,15 @@ ipcMain.handle('layout:set', (evt, { railSide, claudeSide }) => {
 });
 ipcMain.handle('layout:getProject', (evt, { projectPath }) => {
   const p = loadConfig().projectLayout?.[projectPath];
-  return (p && (p.claudeSide === 'left' || p.claudeSide === 'right')) ? { claudeSide: p.claudeSide } : null;
+  return p && (p.claudeSide === 'left' || p.claudeSide === 'right')
+    ? { claudeSide: p.claudeSide }
+    : null;
 });
 ipcMain.handle('layout:setProject', (evt, { projectPath, claudeSide }) => {
   const c = loadConfig();
   c.projectLayout = c.projectLayout || {};
-  if (claudeSide === 'left' || claudeSide === 'right') c.projectLayout[projectPath] = { claudeSide };
+  if (claudeSide === 'left' || claudeSide === 'right')
+    c.projectLayout[projectPath] = { claudeSide };
   else delete c.projectLayout[projectPath];
   saveConfig(c);
   return { ok: true };
@@ -560,7 +685,10 @@ ipcMain.handle('projects:add', async () => {
   const cfg = loadConfig();
   let added = 0;
   for (const p of res.filePaths) {
-    if (!cfg.projects.includes(p)) { cfg.projects.push(p); added++; }
+    if (!cfg.projects.includes(p)) {
+      cfg.projects.push(p);
+      added++;
+    }
   }
   saveConfig(cfg);
   return { added };
@@ -572,7 +700,12 @@ ipcMain.handle('projects:remove', (evt, { projectPath }) => {
   cfg.projects = cfg.projects.filter((p) => p !== projectPath);
   // Mata os PTYs das sessões desse projeto e descarta a metadata.
   for (const [id, e] of terminals) {
-    if (e.projectPath === projectPath) { try { e.pty.kill(); } catch {} terminals.delete(id); }
+    if (e.projectPath === projectPath) {
+      try {
+        e.pty.kill();
+      } catch {}
+      terminals.delete(id);
+    }
   }
   if (cfg.sessions) delete cfg.sessions[projectPath];
   if (cfg.projectMeta) delete cfg.projectMeta[projectPath];
@@ -597,32 +730,48 @@ ipcMain.handle('projects:reorder', (evt, { paths }) => {
 const iconCache = new Map(); // projectPath -> dataUrl | null
 function toDataUrl(fp, buf) {
   const ext = path.extname(fp).toLowerCase();
-  const mime = ext === '.svg' ? 'image/svg+xml'
-    : ext === '.png' ? 'image/png'
-    : ext === '.ico' ? 'image/x-icon'
-    : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
-    : ext === '.webp' ? 'image/webp'
-    : ext === '.gif' ? 'image/gif'
-    : ext === '.bmp' ? 'image/bmp'
-    : ext === '.avif' ? 'image/avif'
-    : 'application/octet-stream';
+  const mime =
+    ext === '.svg'
+      ? 'image/svg+xml'
+      : ext === '.png'
+        ? 'image/png'
+        : ext === '.ico'
+          ? 'image/x-icon'
+          : ext === '.jpg' || ext === '.jpeg'
+            ? 'image/jpeg'
+            : ext === '.webp'
+              ? 'image/webp'
+              : ext === '.gif'
+                ? 'image/gif'
+                : ext === '.bmp'
+                  ? 'image/bmp'
+                  : ext === '.avif'
+                    ? 'image/avif'
+                    : 'application/octet-stream';
   return `data:${mime};base64,${buf.toString('base64')}`;
 }
 function findFavicon(p) {
   if (iconCache.has(p)) return iconCache.get(p);
   const dirs = ['', 'public', 'src', 'static', 'app', 'src/assets', 'assets', 'public/assets'];
   const names = [
-    'favicon.svg', 'favicon.ico', 'favicon.png',
-    'icon.svg', 'icon.png', 'logo.svg', 'apple-touch-icon.png',
+    'favicon.svg',
+    'favicon.ico',
+    'favicon.png',
+    'icon.svg',
+    'icon.png',
+    'logo.svg',
+    'apple-touch-icon.png',
   ];
   let icon = null;
-  outer:
-  for (const d of dirs) {
+  outer: for (const d of dirs) {
     for (const n of names) {
       const fp = path.join(p, d, n);
       try {
         const buf = fs.readFileSync(fp);
-        if (buf.length <= 512 * 1024) { icon = toDataUrl(fp, buf); break outer; }
+        if (buf.length <= 512 * 1024) {
+          icon = toDataUrl(fp, buf);
+          break outer;
+        }
       } catch {}
     }
   }
@@ -646,18 +795,27 @@ ipcMain.handle('projects:list', () => {
   const meta = cfg.projectMeta || {};
   // Preserva a ordem salva no config.json (definida pelo drag-and-drop do rail).
   return cfg.projects
-    .filter((p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } })
+    .filter((p) => {
+      try {
+        return fs.statSync(p).isDirectory();
+      } catch {
+        return false;
+      }
+    })
     .map((p) => {
       let hasPkg = false;
-      try { fs.accessSync(path.join(p, 'package.json')); hasPkg = true; } catch {}
+      try {
+        fs.accessSync(path.join(p, 'package.json'));
+        hasPkg = true;
+      } catch {}
       const m = meta[p] || {};
       return {
         name: m.name || path.basename(p),
         path: p,
         hasPkg,
         running: runningServers.has(p),
-        icon: m.icon || findFavicon(p),   // imagem escolhida à mão vence o favicon
-        color: m.color || null,           // null → o rail usa colorFor(name)
+        icon: m.icon || findFavicon(p), // imagem escolhida à mão vence o favicon
+        color: m.color || null, // null → o rail usa colorFor(name)
       };
     });
 });
@@ -697,25 +855,65 @@ ipcMain.handle('projects:setIcon', (evt, { projectPath, dataUrl }) => {
 // Restaura o padrão: apaga todos os overrides (nome, cor e ícone) do projeto.
 ipcMain.handle('projects:resetCustom', (evt, { projectPath }) => {
   const cfg = loadConfig();
-  if (cfg.projectMeta) { delete cfg.projectMeta[projectPath]; saveConfig(cfg); }
+  if (cfg.projectMeta) {
+    delete cfg.projectMeta[projectPath];
+    saveConfig(cfg);
+  }
   return { ok: true };
 });
 
 // ---------- Código: árvore de arquivos e leitura ----------
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next', '.astro', '.cache',
-  '.turbo', '.output', '.vercel', '.svelte-kit', 'coverage', '.parcel-cache',
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.astro',
+  '.cache',
+  '.turbo',
+  '.output',
+  '.vercel',
+  '.svelte-kit',
+  'coverage',
+  '.parcel-cache',
 ]);
 const BINARY_EXT = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp', '.avif',
-  '.woff', '.woff2', '.ttf', '.otf', '.eot', '.zip', '.gz', '.tgz',
-  '.rar', '.7z', '.node', '.exe', '.dll', '.so', '.dylib', '.wasm',
-  '.class', '.jar',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.bmp',
+  '.avif',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.otf',
+  '.eot',
+  '.zip',
+  '.gz',
+  '.tgz',
+  '.rar',
+  '.7z',
+  '.node',
+  '.exe',
+  '.dll',
+  '.so',
+  '.dylib',
+  '.wasm',
+  '.class',
+  '.jar',
 ]);
 
 ipcMain.handle('fs:dir', (evt, { dirPath }) => {
   let ents = [];
-  try { ents = fs.readdirSync(dirPath, { withFileTypes: true }); } catch { return []; }
+  try {
+    ents = fs.readdirSync(dirPath, { withFileTypes: true });
+  } catch {
+    return [];
+  }
   return ents
     .filter((en) => !(en.isDirectory() && IGNORE_DIRS.has(en.name)))
     .map((en) => {
@@ -725,7 +923,13 @@ ipcMain.handle('fs:dir', (evt, { dirPath }) => {
       // claro e abrir no Explorador em vez de tentar expandir/abrir como arquivo.
       const isLink = en.isSymbolicLink();
       let isDir = en.isDirectory();
-      if (isLink) { try { isDir = fs.statSync(p).isDirectory(); } catch { isDir = false; } }
+      if (isLink) {
+        try {
+          isDir = fs.statSync(p).isDirectory();
+        } catch {
+          isDir = false;
+        }
+      }
       return { name: en.name, path: p, isDir, isLink };
     })
     .sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1));
@@ -740,8 +944,16 @@ let fsWatcher = null;
 let fsWatchedDir = null;
 let fsWatchTimer = null;
 function closeFsWatcher() {
-  if (fsWatcher) { try { fsWatcher.close(); } catch {} fsWatcher = null; }
-  if (fsWatchTimer) { clearTimeout(fsWatchTimer); fsWatchTimer = null; }
+  if (fsWatcher) {
+    try {
+      fsWatcher.close();
+    } catch {}
+    fsWatcher = null;
+  }
+  if (fsWatchTimer) {
+    clearTimeout(fsWatchTimer);
+    fsWatchTimer = null;
+  }
   fsWatchedDir = null;
 }
 ipcMain.handle('fs:watch', (evt, { dirPath }) => {
@@ -756,22 +968,35 @@ ipcMain.handle('fs:watch', (evt, { dirPath }) => {
         if (IGNORE_DIRS.has(first)) return;
       }
       if (fsWatchTimer) clearTimeout(fsWatchTimer);
-      fsWatchTimer = setTimeout(() => { fsWatchTimer = null; safeSend('fs:changed', { dirPath }); }, 250);
+      fsWatchTimer = setTimeout(() => {
+        fsWatchTimer = null;
+        safeSend('fs:changed', { dirPath });
+      }, 250);
     });
     fsWatchedDir = dirPath;
     return { ok: true };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Subsequência fuzzy (estilo "quick open" do VS Code): todos os caracteres da
 // query aparecem na ordem dentro do texto. Pontua mais quando os caracteres ficam
 // grudados (streak). Devolve null quando não casa.
 function subseqScore(q, text) {
-  let ti = 0, score = 0, streak = 0;
+  let ti = 0,
+    score = 0,
+    streak = 0;
   for (let qi = 0; qi < q.length; qi++) {
     const found = text.indexOf(q[qi], ti);
     if (found === -1) return null;
-    if (found === ti) { streak++; score += 1 + streak; } else { streak = 0; score += 1; }
+    if (found === ti) {
+      streak++;
+      score += 1 + streak;
+    } else {
+      streak = 0;
+      score += 1;
+    }
     ti = found + 1;
   }
   return score;
@@ -782,7 +1007,9 @@ function subseqScore(q, text) {
 // do arquivo vale muito mais que casar só no caminho. Limita visita e resultados
 // pra não travar em projetos grandes.
 ipcMain.handle('fs:search', (evt, { root, query, limit = 200 }) => {
-  const q = String(query || '').trim().toLowerCase();
+  const q = String(query || '')
+    .trim()
+    .toLowerCase();
   if (!q) return [];
   const out = [];
   const MAX_VISIT = 50000;
@@ -790,7 +1017,11 @@ ipcMain.handle('fs:search', (evt, { root, query, limit = 200 }) => {
   const walk = (dir) => {
     if (visited > MAX_VISIT) return;
     let ents;
-    try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
     for (const en of ents) {
       if (visited > MAX_VISIT) return;
       visited++;
@@ -810,7 +1041,17 @@ ipcMain.handle('fs:search', (evt, { root, query, limit = 200 }) => {
   return out.slice(0, limit).map(({ score, ...r }) => r);
 });
 
-const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.bmp', '.ico', '.svg']);
+const IMAGE_EXT = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.avif',
+  '.bmp',
+  '.ico',
+  '.svg',
+]);
 
 // ---------- Leitura de planilhas (.xlsx/.xlsm) com estilos, pro XlsxViewer ----------
 // O render é paginado (o renderer pede ~150 linhas por vez via 'xlsx:rows'), então
@@ -872,11 +1113,13 @@ function parseMerge(range) {
   const [a, b] = range.split(':');
   const ma = a.match(/^([A-Z]+)(\d+)$/i);
   if (!ma) return null;
-  const c1 = colToNum(ma[1].toUpperCase()), r1 = Number(ma[2]);
+  const c1 = colToNum(ma[1].toUpperCase()),
+    r1 = Number(ma[2]);
   if (!b) return { c: c1, r: r1, cs: 1, rs: 1 };
   const mb = b.match(/^([A-Z]+)(\d+)$/i);
   if (!mb) return { c: c1, r: r1, cs: 1, rs: 1 };
-  const c2 = colToNum(mb[1].toUpperCase()), r2 = Number(mb[2]);
+  const c2 = colToNum(mb[1].toUpperCase()),
+    r2 = Number(mb[2]);
   return { c: c1, r: r1, cs: c2 - c1 + 1, rs: r2 - r1 + 1 };
 }
 
@@ -901,9 +1144,13 @@ function buildXlsxSheetMeta(ws) {
     cols.push(Math.round((w || 8.43) * 7) + 8);
   }
   return {
-    name: ws.name, cols, mergeMap,
-    totalRows, totalCols: ws.columnCount || 0,
-    shownRows, shownCols: nCols,
+    name: ws.name,
+    cols,
+    mergeMap,
+    totalRows,
+    totalCols: ws.columnCount || 0,
+    shownRows,
+    shownCols: nCols,
     truncated: totalRows > XLSX_MAX_ROWS || (ws.columnCount || 0) > XLSX_MAX_COLS,
   };
 }
@@ -928,7 +1175,10 @@ function sliceXlsxRows(ws, meta, start, count) {
       if (text === '' && !st && !span) continue;
       const entry = { c, t: text };
       if (st) entry.s = st;
-      if (span) { if (span.cs > 1) entry.cs = span.cs; if (span.rs > 1) entry.rs = span.rs; }
+      if (span) {
+        if (span.cs > 1) entry.cs = span.cs;
+        if (span.rs > 1) entry.rs = span.rs;
+      }
       cells.push(entry);
     }
     if (cells.length) rows.push({ r, h: row.height ? Math.round(row.height * 1.33) : null, cells });
@@ -941,7 +1191,16 @@ function sliceXlsxRows(ws, meta, start, count) {
 function buildXlsSheetMeta(ws, name) {
   const XLSX = require('xlsx');
   if (!ws || !ws['!ref']) {
-    return { name, cols: [], mergeMap: new Map(), totalRows: 0, totalCols: 0, shownRows: 0, shownCols: 0, truncated: false };
+    return {
+      name,
+      cols: [],
+      mergeMap: new Map(),
+      totalRows: 0,
+      totalCols: 0,
+      shownRows: 0,
+      shownCols: 0,
+      truncated: false,
+    };
   }
   const range = XLSX.utils.decode_range(ws['!ref']);
   const totalRows = range.e.r + 1;
@@ -950,21 +1209,26 @@ function buildXlsSheetMeta(ws, name) {
   // Merges (0-based) -> mapa "r:c" do master (1-based) -> {cs, rs}.
   const mergeMap = new Map();
   for (const m of ws['!merges'] || []) {
-    const cs = m.e.c - m.s.c + 1, rs = m.e.r - m.s.r + 1;
-    if (cs > 1 || rs > 1) mergeMap.set((m.s.r + 1) + ':' + (m.s.c + 1), { cs, rs });
+    const cs = m.e.c - m.s.c + 1,
+      rs = m.e.r - m.s.r + 1;
+    if (cs > 1 || rs > 1) mergeMap.set(m.s.r + 1 + ':' + (m.s.c + 1), { cs, rs });
   }
   // Larguras: !cols traz wpx/wch quando existe; senão usa o default.
   const cols = [];
   const wc = ws['!cols'] || [];
   for (let c = 0; c < nCols; c++) {
     const spec = wc[c];
-    const w = spec ? (spec.wpx || (spec.wch ? spec.wch * 7 : 0)) : 0;
+    const w = spec ? spec.wpx || (spec.wch ? spec.wch * 7 : 0) : 0;
     cols.push((w ? Math.round(w) : Math.round(8.43 * 7)) + 8);
   }
   return {
-    name, cols, mergeMap,
-    totalRows, totalCols,
-    shownRows: Math.min(totalRows, XLSX_MAX_ROWS), shownCols: nCols,
+    name,
+    cols,
+    mergeMap,
+    totalRows,
+    totalCols,
+    shownRows: Math.min(totalRows, XLSX_MAX_ROWS),
+    shownCols: nCols,
     truncated: totalRows > XLSX_MAX_ROWS || totalCols > XLSX_MAX_COLS,
   };
 }
@@ -980,10 +1244,19 @@ function sliceXlsRows(ws, meta, start, count) {
       const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
       const span = meta.mergeMap.get(r + ':' + c);
       // w = texto formatado; v = valor cru. Sem estilo no .xls.
-      const text = cell ? (cell.w != null ? String(cell.w) : (cell.v != null ? String(cell.v) : '')) : '';
+      const text = cell
+        ? cell.w != null
+          ? String(cell.w)
+          : cell.v != null
+            ? String(cell.v)
+            : ''
+        : '';
       if (text === '' && !span) continue;
       const entry = { c, t: text };
-      if (span) { if (span.cs > 1) entry.cs = span.cs; if (span.rs > 1) entry.rs = span.rs; }
+      if (span) {
+        if (span.cs > 1) entry.cs = span.cs;
+        if (span.rs > 1) entry.rs = span.rs;
+      }
       cells.push(entry);
     }
     if (cells.length) rows.push({ r, h: null, cells });
@@ -998,8 +1271,17 @@ const XLSX_CACHE_MAX = 4;
 
 function parseXlsLegacy(filePath, mtimeMs) {
   const XLSX = require('xlsx');
-  const wb = XLSX.read(fs.readFileSync(filePath), { type: 'buffer', cellStyles: false, cellDates: true });
-  return { mtimeMs, kind: 'xls', wb, sheets: wb.SheetNames.map((nm) => buildXlsSheetMeta(wb.Sheets[nm], nm)) };
+  const wb = XLSX.read(fs.readFileSync(filePath), {
+    type: 'buffer',
+    cellStyles: false,
+    cellDates: true,
+  });
+  return {
+    mtimeMs,
+    kind: 'xls',
+    wb,
+    sheets: wb.SheetNames.map((nm) => buildXlsSheetMeta(wb.Sheets[nm], nm)),
+  };
 }
 
 // CSV/TSV: reaproveita o mesmo modelo "só valores" do .xls; as linhas são fatiadas sob
@@ -1025,13 +1307,17 @@ async function openSpreadsheet(filePath) {
   const st = fs.statSync(filePath);
   const hit = xlsxCache.get(filePath);
   if (hit && hit.mtimeMs === st.mtimeMs) {
-    xlsxCache.delete(filePath); xlsxCache.set(filePath, hit); // "toca" a entrada (LRU)
+    xlsxCache.delete(filePath);
+    xlsxCache.set(filePath, hit); // "toca" a entrada (LRU)
     return hit;
   }
   const ext = path.extname(filePath).toLowerCase();
-  const entry = ext === '.xls' ? parseXlsLegacy(filePath, st.mtimeMs)
-    : (ext === '.csv' || ext === '.tsv') ? parseCsv(filePath, st.mtimeMs)
-    : await parseXlsxModern(filePath, st.mtimeMs);
+  const entry =
+    ext === '.xls'
+      ? parseXlsLegacy(filePath, st.mtimeMs)
+      : ext === '.csv' || ext === '.tsv'
+        ? parseCsv(filePath, st.mtimeMs)
+        : await parseXlsxModern(filePath, st.mtimeMs);
   xlsxCache.set(filePath, entry);
   while (xlsxCache.size > XLSX_CACHE_MAX) xlsxCache.delete(xlsxCache.keys().next().value);
   return entry;
@@ -1054,9 +1340,13 @@ function xlsxMetaForRenderer(entry, filePath) {
   return {
     filePath,
     sheets: entry.sheets.map((m) => ({
-      name: m.name, cols: m.cols,
-      totalRows: m.totalRows, totalCols: m.totalCols,
-      shownRows: m.shownRows, shownCols: m.shownCols, truncated: m.truncated,
+      name: m.name,
+      cols: m.cols,
+      totalRows: m.totalRows,
+      totalCols: m.totalCols,
+      shownRows: m.shownRows,
+      shownCols: m.shownCols,
+      truncated: m.truncated,
     })),
   };
 }
@@ -1069,16 +1359,21 @@ ipcMain.handle('fs:read', async (evt, { filePath }) => {
       const st = fs.statSync(filePath);
       if (st.size > 16 * 1024 * 1024) return { error: 'imagem muito grande (>16MB)' };
       return { image: toDataUrl(filePath, fs.readFileSync(filePath)), size: st.size };
-    } catch (err) { return { error: String(err) }; }
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
   // PDF: devolve como data URL pro leitor nativo do Chromium (iframe).
   if (ext === '.pdf') {
     try {
       const st = fs.statSync(filePath);
-      if (st.size > 50 * 1024 * 1024) return { error: 'PDF muito grande (>50MB) pra pré-visualizar' };
+      if (st.size > 50 * 1024 * 1024)
+        return { error: 'PDF muito grande (>50MB) pra pré-visualizar' };
       const buf = fs.readFileSync(filePath);
       return { pdf: `data:application/pdf;base64,${buf.toString('base64')}`, size: st.size };
-    } catch (err) { return { error: String(err) }; }
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
   // Planilhas: parse no main (uma vez, com cache) e devolve só os metadados. As linhas
   // vêm sob demanda via 'xlsx:rows' (paginação de ~150 em 150), mantendo payload e
@@ -1086,10 +1381,13 @@ ipcMain.handle('fs:read', async (evt, { filePath }) => {
   if (ext === '.xlsx' || ext === '.xlsm' || ext === '.xls') {
     try {
       const st = fs.statSync(filePath);
-      if (st.size > 25 * 1024 * 1024) return { error: 'planilha muito grande (>25MB) pra pré-visualizar' };
+      if (st.size > 25 * 1024 * 1024)
+        return { error: 'planilha muito grande (>25MB) pra pré-visualizar' };
       const entry = await openSpreadsheet(filePath);
       return { xlsx: xlsxMetaForRenderer(entry, filePath) };
-    } catch (err) { return { error: 'Não foi possível ler a planilha: ' + ((err && err.message) || String(err)) }; }
+    } catch (err) {
+      return { error: 'Não foi possível ler a planilha: ' + ((err && err.message) || String(err)) };
+    }
   }
   // CSV/TSV: pequenos abrem como texto editável (CodeMirror) com botão pra virar grade;
   // grandes (acima do teto, pesados pra editar como texto) abrem direto na grade
@@ -1102,7 +1400,9 @@ ipcMain.handle('fs:read', async (evt, { filePath }) => {
         return { xlsx: xlsxMetaForRenderer(entry, filePath), csvLarge: true };
       }
       return { content: fs.readFileSync(filePath, 'utf8'), csv: true };
-    } catch (err) { return { error: 'Não foi possível ler o CSV: ' + ((err && err.message) || String(err)) }; }
+    } catch (err) {
+      return { error: 'Não foi possível ler o CSV: ' + ((err && err.message) || String(err)) };
+    }
   }
   // Áudio/vídeo web-native: servidos pelo protocolo de streaming (ygc-media://) com Range/seek.
   const mkind = mediaCore.mediaKind(filePath);
@@ -1111,7 +1411,9 @@ ipcMain.handle('fs:read', async (evt, { filePath }) => {
       const st = fs.statSync(filePath);
       const url = 'ygc-media://local/?p=' + encodeURIComponent(filePath);
       return { [mkind]: url, mime: mediaCore.mimeForMedia(filePath), size: st.size };
-    } catch (err) { return { error: String(err) }; }
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
   // Formatos de mídia que o Chromium não decodifica: aviso claro em vez de tela preta.
   if (mediaCore.isUnsupportedMedia(filePath)) return { unsupportedMedia: true };
@@ -1120,7 +1422,9 @@ ipcMain.handle('fs:read', async (evt, { filePath }) => {
     const st = fs.statSync(filePath);
     if (st.size > 1024 * 1024) return { error: 'arquivo muito grande (>1MB) pra exibir' };
     return { content: fs.readFileSync(filePath, 'utf8') };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Página de linhas de uma planilha (sob demanda, pro XlsxViewer ir carregando aos
@@ -1132,7 +1436,9 @@ ipcMain.handle('xlsx:rows', async (evt, { filePath, sheet, start, count }) => {
     const n = Math.max(1, Math.min(Number(count) || 150, XLSX_CHUNK_MAX));
     const s = Math.max(1, Number(start) || 1);
     return { rows: sliceRows(entry, idx, s, n) };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Meta da grade de um CSV sob demanda: usado quando o usuário clica "Ver como
@@ -1141,12 +1447,18 @@ ipcMain.handle('csv:grid', async (evt, { filePath }) => {
   try {
     const entry = await openSpreadsheet(filePath);
     return { xlsx: xlsxMetaForRenderer(entry, filePath) };
-  } catch (err) { return { error: 'Não foi possível ler o CSV: ' + ((err && err.message) || String(err)) }; }
+  } catch (err) {
+    return { error: 'Não foi possível ler o CSV: ' + ((err && err.message) || String(err)) };
+  }
 });
 
 ipcMain.handle('fs:write', (evt, { filePath, content }) => {
-  try { fs.writeFileSync(filePath, content, 'utf8'); return { ok: true }; }
-  catch (err) { return { error: String(err) }; }
+  try {
+    fs.writeFileSync(filePath, content, 'utf8');
+    return { ok: true };
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Arrastar um arquivo da árvore PRA FORA (outro app / site). Precisa de um ícone.
@@ -1155,16 +1467,21 @@ function dragIcon() {
   if (DRAG_ICON) return DRAG_ICON;
   try {
     const img = nativeImage.createFromPath(APP_ICON);
-    if (img && !img.isEmpty()) { DRAG_ICON = img.resize({ width: 28, height: 28 }); return DRAG_ICON; }
+    if (img && !img.isEmpty()) {
+      DRAG_ICON = img.resize({ width: 28, height: 28 });
+      return DRAG_ICON;
+    }
   } catch {}
   // Fallback: ícone genérico 16x16 (PNG embutido) pra não quebrar o startDrag.
   DRAG_ICON = nativeImage.createFromDataURL(
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR4nO3OMQ0AIBDAwIfMv2YkIO0MM3T8z1RVe2Z2dvfMzCQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4HFM5AYG3M2tCAAAAAElFTkSuQmCC'
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR4nO3OMQ0AIBDAwIfMv2YkIO0MM3T8z1RVe2Z2dvfMzCQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4HFM5AYG3M2tCAAAAAElFTkSuQmCC',
   );
   return DRAG_ICON;
 }
 ipcMain.on('drag:start', (evt, filePath) => {
-  try { evt.sender.startDrag({ file: filePath, icon: dragIcon() }); } catch {}
+  try {
+    evt.sender.startDrag({ file: filePath, icon: dragIcon() });
+  } catch {}
 });
 
 // Abre uma URL no navegador padrão do sistema (sem lock-in: o usuário escolhe).
@@ -1175,19 +1492,29 @@ ipcMain.handle('shell:openExternal', async (evt, { url }) => {
     if (!/^(https?|mailto):/i.test(u)) return { error: 'URL inválida' };
     await shell.openExternal(u);
     return { ok: true };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // ---------- Operações do menu de contexto (botão direito) ----------
 ipcMain.handle('fs:reveal', (evt, { targetPath }) => {
-  try { shell.showItemInFolder(targetPath); return { ok: true }; }
-  catch (err) { return { error: String(err) }; }
+  try {
+    shell.showItemInFolder(targetPath);
+    return { ok: true };
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Delete = manda pra Lixeira (reversível), nunca apaga de vez.
 ipcMain.handle('fs:trash', async (evt, { targetPath }) => {
-  try { await shell.trashItem(targetPath); return { ok: true }; }
-  catch (err) { return { error: String(err) }; }
+  try {
+    await shell.trashItem(targetPath);
+    return { ok: true };
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 ipcMain.handle('fs:rename', (evt, { targetPath, newName }) => {
@@ -1198,7 +1525,9 @@ ipcMain.handle('fs:rename', (evt, { targetPath, newName }) => {
     if (fs.existsSync(dest)) return { error: 'já existe um item com esse nome' };
     fs.renameSync(targetPath, dest);
     return { ok: true, path: dest };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // Cria um arquivo vazio ou uma pasta dentro de `destDir`. Usado pelo "Novo arquivo /
@@ -1212,17 +1541,26 @@ ipcMain.handle('fs:create', (evt, { destDir, name, isDir }) => {
     if (isDir) fs.mkdirSync(dest, { recursive: true });
     else fs.writeFileSync(dest, '', 'utf8');
     return { ok: true, path: dest };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 ipcMain.handle('clip:write', (evt, { text }) => {
-  try { clipboard.writeText(String(text)); return { ok: true }; }
-  catch (err) { return { error: String(err) }; }
+  try {
+    clipboard.writeText(String(text));
+    return { ok: true };
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 ipcMain.handle('clip:read', () => {
-  try { return { text: clipboard.readText() }; }
-  catch { return { text: '' }; }
+  try {
+    return { text: clipboard.readText() };
+  } catch {
+    return { text: '' };
+  }
 });
 
 function uniqueDest(destDir, base) {
@@ -1246,18 +1584,24 @@ ipcMain.handle('fs:paste', (evt, { srcPath, destDir, move }) => {
     let dest = path.join(destDir, base);
     if ((sameDir && !move) || fs.existsSync(dest)) dest = uniqueDest(destDir, base);
     // não deixa colar uma pasta dentro dela mesma
-    if (path.resolve(dest).startsWith(path.resolve(srcPath) + path.sep)) return { error: 'destino inválido' };
+    if (path.resolve(dest).startsWith(path.resolve(srcPath) + path.sep))
+      return { error: 'destino inválido' };
     if (move) {
-      try { fs.renameSync(srcPath, dest); }
-      catch (e) {
-        if (e.code === 'EXDEV') { fs.cpSync(srcPath, dest, { recursive: true }); fs.rmSync(srcPath, { recursive: true, force: true }); }
-        else throw e;
+      try {
+        fs.renameSync(srcPath, dest);
+      } catch (e) {
+        if (e.code === 'EXDEV') {
+          fs.cpSync(srcPath, dest, { recursive: true });
+          fs.rmSync(srcPath, { recursive: true, force: true });
+        } else throw e;
       }
     } else {
       fs.cpSync(srcPath, dest, { recursive: true });
     }
     return { ok: true, path: dest };
-  } catch (err) { return { error: String(err) }; }
+  } catch (err) {
+    return { error: String(err) };
+  }
 });
 
 // ---------- Terminal (Claude Code de verdade, via node-pty) ----------
@@ -1291,16 +1635,23 @@ function applyClaudeTheme(theme) {
   try {
     const fp = claudeSettingsPath();
     let cfg = {};
-    try { cfg = JSON.parse(fs.readFileSync(fp, 'utf8')); } catch { cfg = {}; }
+    try {
+      cfg = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    } catch {
+      cfg = {};
+    }
     if (cfg && typeof cfg === 'object' && cfg.theme === want) return;
-    cfg = (cfg && typeof cfg === 'object') ? cfg : {};
+    cfg = cfg && typeof cfg === 'object' ? cfg : {};
     cfg.theme = want;
     fs.mkdirSync(path.dirname(fp), { recursive: true });
     fs.writeFileSync(fp, JSON.stringify(cfg, null, 2));
   } catch {}
 }
 
-ipcMain.handle('claude:applyTheme', (evt, { theme }) => { applyClaudeTheme(theme); return { ok: true }; });
+ipcMain.handle('claude:applyTheme', (evt, { theme }) => {
+  applyClaudeTheme(theme);
+  return { ok: true };
+});
 
 // ---------- Sessões do Claude Code (várias por projeto) ----------
 // A lista de sessões vive no config.json (cfg.sessions[projectPath] = [{ id, name }]),
@@ -1321,7 +1672,10 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   for (const s of list) {
     if (!s.manual && (!s.name || s.name === 'Untitled') && s.claudeId) {
       const t = readSessionTitle(projectPath, s.claudeId);
-      if (t && t !== s.name) { s.name = t; changed = true; }
+      if (t && t !== s.name) {
+        s.name = t;
+        changed = true;
+      }
     }
   }
   if (changed) saveConfig(cfg);
@@ -1359,8 +1713,13 @@ ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
   const s = getSessions(cfg, projectPath).find((x) => x.id === sessionId);
   if (s) {
     const clean = String(name || '').trim();
-    if (clean) { s.name = clean; s.manual = true; }
-    else { s.manual = false; s.name = readSessionTitle(projectPath, s.claudeId) || 'Untitled'; }
+    if (clean) {
+      s.name = clean;
+      s.manual = true;
+    } else {
+      s.manual = false;
+      s.name = readSessionTitle(projectPath, s.claudeId) || 'Untitled';
+    }
     saveConfig(cfg);
     safeSend('session:meta', { projectPath, sessionId, name: s.name });
     return { ok: true, name: s.name };
@@ -1370,7 +1729,12 @@ ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
 
 ipcMain.handle('sessions:close', (evt, { projectPath, sessionId }) => {
   const e = terminals.get(sessionId);
-  if (e) { try { e.pty.kill(); } catch {} terminals.delete(sessionId); }
+  if (e) {
+    try {
+      e.pty.kill();
+    } catch {}
+    terminals.delete(sessionId);
+  }
   const cfg = loadConfig();
   cfg.sessions = cfg.sessions || {};
   if (Array.isArray(cfg.sessions[projectPath])) {
@@ -1387,16 +1751,21 @@ ipcMain.handle('sessions:close', (evt, { projectPath, sessionId }) => {
 // por projeto no renderer. A notificação do SO só dispara se o projeto não estiver
 // em foco (decisão de produto: silencioso quando você já está olhando).
 let activeProjectPath = null;
-const ACTIVITY_IDLE_MS = 3000;   // silêncio que marca "terminou"
-const ACTIVITY_MIN_BYTES = 40;   // ignora eco/ruído trivial pra não disparar à toa
-const lastNotifyAt = new Map();  // projectPath -> ts (coalescência por projeto)
+const ACTIVITY_IDLE_MS = 3000; // silêncio que marca "terminou"
+const ACTIVITY_MIN_BYTES = 40; // ignora eco/ruído trivial pra não disparar à toa
+const lastNotifyAt = new Map(); // projectPath -> ts (coalescência por projeto)
 
 function notifyEnabled() {
   return loadConfig().notify !== false; // padrão: ligado
 }
 
 function emitActivity(entry, state, extra) {
-  safeSend('activity:state', { projectPath: entry.projectPath, sessionId: entry.sessionId, state, ...extra });
+  safeSend('activity:state', {
+    projectPath: entry.projectPath,
+    sessionId: entry.sessionId,
+    state,
+    ...extra,
+  });
 }
 
 // Tira os códigos ANSI (cores, posicionamento de cursor) pra sobrar só o texto visível.
@@ -1419,7 +1788,10 @@ function looksLikeAsking(entry) {
 
 // Reinicia o debounce de ociosidade e marca a sessão como "trabalhando".
 function activityWorking(entry) {
-  if (!entry.working) { entry.working = true; emitActivity(entry, 'working'); }
+  if (!entry.working) {
+    entry.working = true;
+    emitActivity(entry, 'working');
+  }
   if (entry.idleTimer) clearTimeout(entry.idleTimer);
   entry.idleTimer = setTimeout(() => activityIdle(entry), ACTIVITY_IDLE_MS);
 }
@@ -1463,21 +1835,33 @@ function maybeNotifyDone(entry, asking) {
 // Alimenta o rastreador com um chunk de output da sessão (só pra claude).
 function activityOnData(entry, data) {
   if (entry.cli !== 'claude') return;
-  if (entry.working) { activityWorking(entry); return; } // mantém vivo o debounce
-  if (!entry.armed) return;                              // só conta depois de você enviar algo
+  if (entry.working) {
+    activityWorking(entry);
+    return;
+  } // mantém vivo o debounce
+  if (!entry.armed) return; // só conta depois de você enviar algo
   entry.outBytes = (entry.outBytes || 0) + data.length;
   if (entry.outBytes >= ACTIVITY_MIN_BYTES) activityWorking(entry);
 }
 
 // Qual projeto está aberto no momento (renderer avisa). Usado pra não notificar/badgear
 // o projeto que você está olhando.
-ipcMain.on('activity:setActive', (evt, { projectPath }) => { activeProjectPath = projectPath || null; });
+ipcMain.on('activity:setActive', (evt, { projectPath }) => {
+  activeProjectPath = projectPath || null;
+});
 ipcMain.handle('notify:get', () => ({ enabled: notifyEnabled() }));
-ipcMain.handle('notify:set', (evt, { enabled }) => { const c = loadConfig(); c.notify = !!enabled; saveConfig(c); return { ok: true }; });
+ipcMain.handle('notify:set', (evt, { enabled }) => {
+  const c = loadConfig();
+  c.notify = !!enabled;
+  saveConfig(c);
+  return { ok: true };
+});
 ipcMain.handle('lang:get', () => ({ lang: currentLang() }));
 ipcMain.handle('lang:set', (evt, { lang }) => {
   if (lang !== 'pt' && lang !== 'en') return { ok: false };
-  const c = loadConfig(); c.language = lang; saveConfig(c);
+  const c = loadConfig();
+  c.language = lang;
+  saveConfig(c);
   return { ok: true };
 });
 
@@ -1511,8 +1895,14 @@ ipcMain.handle('term:ensure', (evt, { sessionId, projectPath, cols, rows, theme 
     safeSend('term:data', { sessionId, data });
   });
   proc.onExit(() => {
-    if (entry.idleTimer) { clearTimeout(entry.idleTimer); entry.idleTimer = null; }
-    if (entry.titleTimer) { clearInterval(entry.titleTimer); entry.titleTimer = null; }
+    if (entry.idleTimer) {
+      clearTimeout(entry.idleTimer);
+      entry.idleTimer = null;
+    }
+    if (entry.titleTimer) {
+      clearInterval(entry.titleTimer);
+      entry.titleTimer = null;
+    }
     terminals.delete(sessionId);
     emitActivity(entry, 'idle'); // limpa o indicador no rail
     safeSend('term:exit', { sessionId });
@@ -1538,13 +1928,20 @@ ipcMain.on('term:input', (evt, { sessionId, data }) => {
   if (e) {
     e.pty.write(data);
     // Enviar algo (Enter) "arma" a detecção: o output que vier a seguir conta como trabalho.
-    if (e.cli === 'claude' && /[\r\n]/.test(data)) { e.armed = true; e.outBytes = 0; }
+    if (e.cli === 'claude' && /[\r\n]/.test(data)) {
+      e.armed = true;
+      e.outBytes = 0;
+    }
   }
 });
 
 ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {
   const e = terminals.get(sessionId);
-  if (e) { try { e.pty.resize(cols, rows); } catch {} }
+  if (e) {
+    try {
+      e.pty.resize(cols, rows);
+    } catch {}
+  }
 });
 
 // ---------- Terminal livre (shell comum p/ npm, instalar skills, etc.) ----------
@@ -1590,7 +1987,11 @@ ipcMain.on('shell:input', (evt, { projectPath, data }) => {
 
 ipcMain.on('shell:resize', (evt, { projectPath, cols, rows }) => {
   const e = shells.get(projectPath);
-  if (e) { try { e.pty.resize(cols, rows); } catch {} }
+  if (e) {
+    try {
+      e.pty.resize(cols, rows);
+    } catch {}
+  }
 });
 
 // ---------- Git (source control) ----------
@@ -1607,23 +2008,34 @@ let _sg = null;
 // Tirar essas vars é seguro: o app gerencia o próprio git e a config normal do usuário continua valendo.
 function gitEnv(extra) {
   const e = { ...process.env, ...(extra || {}) };
-  delete e.EDITOR; delete e.VISUAL; delete e.GIT_EDITOR; delete e.GIT_SEQUENCE_EDITOR;
+  delete e.EDITOR;
+  delete e.VISUAL;
+  delete e.GIT_EDITOR;
+  delete e.GIT_SEQUENCE_EDITOR;
   const n = Number(e.GIT_CONFIG_COUNT);
   if (Number.isFinite(n) && n > 0) {
-    for (let i = 0; i < n; i++) { delete e[`GIT_CONFIG_KEY_${i}`]; delete e[`GIT_CONFIG_VALUE_${i}`]; }
+    for (let i = 0; i < n; i++) {
+      delete e[`GIT_CONFIG_KEY_${i}`];
+      delete e[`GIT_CONFIG_VALUE_${i}`];
+    }
   }
-  delete e.GIT_CONFIG_COUNT; delete e.GIT_CONFIG_PARAMETERS;
+  delete e.GIT_CONFIG_COUNT;
+  delete e.GIT_CONFIG_PARAMETERS;
   return e;
 }
 function gitFor(cwd) {
-  if (!_sg) { const m = require('simple-git'); _sg = m.simpleGit || m.default || m; }
+  if (!_sg) {
+    const m = require('simple-git');
+    _sg = m.simpleGit || m.default || m;
+  }
   return _sg(cwd).env(gitEnv());
 }
 // Roda uma operação git e devolve sempre { ok, ... } — nunca derruba o handler.
 async function gitTry(fn) {
-  try { return { ok: true, ...(await fn()) }; }
-  catch (e) {
-    const msg = (e && e.message) ? e.message : String(e);
+  try {
+    return { ok: true, ...(await fn()) };
+  } catch (e) {
+    const msg = e && e.message ? e.message : String(e);
     // Git não instalado na máquina (comum em PC de não-dev): o spawn falha com ENOENT.
     // Sinaliza com gitMissing pra UI mostrar um aviso amigável em vez do stack trace.
     if ((e && e.code === 'ENOENT') || /spawn git ENOENT/i.test(msg)) {
@@ -1638,20 +2050,40 @@ async function gitTry(fn) {
 // do projeto), com a árvore de trabalho apontando pro projeto. Assim o histórico e o
 // staging do usuário ficam intocados, arquivos untracked entram, e funciona até sem
 // git no projeto. Mesma técnica do Cline. Ver memória "checkpoints-shadow-git".
-const CHECKPOINT_EXCLUDE = [
-  '.git/', 'node_modules/', 'dist/', 'build/', 'out/', '.next/', '.nuxt/',
-  '.svelte-kit/', '.turbo/', '.cache/', 'coverage/', '.venv/', 'venv/',
-  '__pycache__/', '.DS_Store', '*.log',
-].join('\n') + '\n';
+const CHECKPOINT_EXCLUDE =
+  [
+    '.git/',
+    'node_modules/',
+    'dist/',
+    'build/',
+    'out/',
+    '.next/',
+    '.nuxt/',
+    '.svelte-kit/',
+    '.turbo/',
+    '.cache/',
+    'coverage/',
+    '.venv/',
+    'venv/',
+    '__pycache__/',
+    '.DS_Store',
+    '*.log',
+  ].join('\n') + '\n';
 
 function shadowDir(projectPath) {
-  const hash = crypto.createHash('sha1').update(path.resolve(projectPath)).digest('hex').slice(0, 16);
+  const hash = crypto
+    .createHash('sha1')
+    .update(path.resolve(projectPath))
+    .digest('hex')
+    .slice(0, 16);
   return path.join(app.getPath('userData'), 'checkpoints', hash + '.git');
 }
 
 function shadowGit(projectPath) {
   const dir = shadowDir(projectPath);
-  return gitFor(projectPath).env(gitEnv({ GIT_DIR: dir, GIT_WORK_TREE: path.resolve(projectPath) }));
+  return gitFor(projectPath).env(
+    gitEnv({ GIT_DIR: dir, GIT_WORK_TREE: path.resolve(projectPath) }),
+  );
 }
 
 async function ensureShadow(projectPath) {
@@ -1674,7 +2106,10 @@ const checkpointQueues = new Map();
 function withCheckpointLock(projectPath, fn) {
   const prev = checkpointQueues.get(projectPath) || Promise.resolve();
   const next = prev.then(fn, fn);
-  checkpointQueues.set(projectPath, next.catch(() => {}));
+  checkpointQueues.set(
+    projectPath,
+    next.catch(() => {}),
+  );
   return next;
 }
 
@@ -1687,7 +2122,7 @@ async function checkpointCreate(projectPath, label, { allowEmpty = false } = {})
       const st = (await g.raw(['status', '--porcelain'])).trim();
       if (!st) return { skipped: true };
     }
-    const msg = label || ('Checkpoint ' + new Date().toISOString());
+    const msg = label || 'Checkpoint ' + new Date().toISOString();
     const args = ['commit', '-m', msg];
     if (allowEmpty) args.push('--allow-empty');
     await g.raw(args);
@@ -1712,7 +2147,9 @@ async function checkpointList(projectPath) {
 // depois). Tira um snapshot do estado atual antes — então voltar é reversível. O HEAD
 // do shadow não se move: a história inteira segue alcançável (dá pra ir e voltar).
 async function checkpointRestore(projectPath, hash) {
-  await checkpointCreate(projectPath, 'Antes de voltar ' + new Date().toISOString(), { allowEmpty: true });
+  await checkpointCreate(projectPath, 'Antes de voltar ' + new Date().toISOString(), {
+    allowEmpty: true,
+  });
   return withCheckpointLock(projectPath, async () => {
     const g = shadowGit(projectPath);
     await g.raw(['read-tree', hash]);
@@ -1724,7 +2161,9 @@ async function checkpointRestore(projectPath, hash) {
 
 // Auto-checkpoint quando um turno do Claude termina (engatado em activityIdle). Só
 // claude, gateado por config e silencioso quando nada mudou.
-function checkpointsEnabled() { return loadConfig().checkpoints !== false; }
+function checkpointsEnabled() {
+  return loadConfig().checkpoints !== false;
+}
 function scheduleAutoCheckpoint(entry) {
   const projectPath = entry && entry.projectPath;
   if (!projectPath || !checkpointsEnabled()) return;
@@ -1732,120 +2171,185 @@ function scheduleAutoCheckpoint(entry) {
   // Histórico mostra o MESMO nome da aba. Cai pro rótulo genérico só quando o
   // Claude ainda não titulou esta conversa.
   const title = readSessionTitle(projectPath, entry.claudeId) || entry.lastTitle || null;
-  const label = title || ('Após resposta do Claude ' + new Date().toISOString());
+  const label = title || 'Após resposta do Claude ' + new Date().toISOString();
   checkpointCreate(projectPath, label)
-    .then((r) => { if (r && r.hash) safeSend('checkpoint:added', { projectPath, hash: r.hash }); })
+    .then((r) => {
+      if (r && r.hash) safeSend('checkpoint:added', { projectPath, hash: r.hash });
+    })
     .catch(() => {});
 }
 
-ipcMain.handle('checkpoint:list', (evt, { projectPath }) => gitTry(async () => ({ items: await checkpointList(projectPath) })));
-ipcMain.handle('checkpoint:create', (evt, { projectPath, label }) => gitTry(() => checkpointCreate(projectPath, label, { allowEmpty: true })));
-ipcMain.handle('checkpoint:restore', (evt, { projectPath, hash }) => gitTry(() => checkpointRestore(projectPath, hash)));
+ipcMain.handle('checkpoint:list', (evt, { projectPath }) =>
+  gitTry(async () => ({ items: await checkpointList(projectPath) })),
+);
+ipcMain.handle('checkpoint:create', (evt, { projectPath, label }) =>
+  gitTry(() => checkpointCreate(projectPath, label, { allowEmpty: true })),
+);
+ipcMain.handle('checkpoint:restore', (evt, { projectPath, hash }) =>
+  gitTry(() => checkpointRestore(projectPath, hash)),
+);
 // Diff de um checkpoint vs o anterior no shadow repo (pra IA titular o histórico).
-ipcMain.handle('checkpoint:diff', (evt, { projectPath, hash }) => gitTry(async () => {
-  const g = shadowGit(projectPath);
-  let diff;
-  try { diff = await g.raw(['diff', hash + '^', hash]); }
-  catch { diff = await g.raw(['show', '--format=', hash]); } // commit raiz (sem pai)
-  return { diff };
-}));
+ipcMain.handle('checkpoint:diff', (evt, { projectPath, hash }) =>
+  gitTry(async () => {
+    const g = shadowGit(projectPath);
+    let diff;
+    try {
+      diff = await g.raw(['diff', hash + '^', hash]);
+    } catch {
+      diff = await g.raw(['show', '--format=', hash]);
+    } // commit raiz (sem pai)
+    return { diff };
+  }),
+);
 ipcMain.handle('checkpoint:getEnabled', () => ({ enabled: checkpointsEnabled() }));
-ipcMain.handle('checkpoint:setEnabled', (evt, { enabled }) => { const c = loadConfig(); c.checkpoints = !!enabled; saveConfig(c); return { ok: true }; });
+ipcMain.handle('checkpoint:setEnabled', (evt, { enabled }) => {
+  const c = loadConfig();
+  c.checkpoints = !!enabled;
+  saveConfig(c);
+  return { ok: true };
+});
 
 // ---------- Biblioteca de prompts (por projeto, em .carcara/prompts.json) ----------
 // Prompts reutilizáveis que o usuário injeta no input do chat. Ficam versionáveis
 // junto do projeto (.carcara/), então acompanham o repo e a equipe.
-function promptsFile(projectPath) { return path.join(projectPath, '.carcara', 'prompts.json'); }
+function promptsFile(projectPath) {
+  return path.join(projectPath, '.carcara', 'prompts.json');
+}
 ipcMain.handle('prompts:list', (evt, { projectPath }) => {
   try {
     const f = promptsFile(projectPath);
     if (!fs.existsSync(f)) return { ok: true, items: [] };
     const items = JSON.parse(fs.readFileSync(f, 'utf8'));
     return { ok: true, items: Array.isArray(items) ? items : [] };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e), items: [] }; }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e), items: [] };
+  }
 });
 ipcMain.handle('prompts:save', (evt, { projectPath, items }) => {
   try {
     fs.mkdirSync(path.join(projectPath, '.carcara'), { recursive: true });
     fs.writeFileSync(promptsFile(projectPath), JSON.stringify(items || [], null, 2));
     return { ok: true };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 ipcMain.handle('git:isRepo', (evt, { projectPath }) =>
-  gitTry(async () => ({ isRepo: await gitFor(projectPath).checkIsRepo() })));
+  gitTry(async () => ({ isRepo: await gitFor(projectPath).checkIsRepo() })),
+);
 
-ipcMain.handle('git:status', (evt, { projectPath }) => gitTry(async () => {
-  const git = gitFor(projectPath);
-  if (!(await git.checkIsRepo())) return { isRepo: false };
-  const s = await git.status();
-  // Sem 'origin' não dá pra publicar — o painel usa isto pra pedir a URL antes de tentar o push.
-  let hasRemote = false;
-  try { hasRemote = (await git.getRemotes()).some((r) => r.name === 'origin'); } catch {}
-  return {
-    isRepo: true,
-    branch: s.current,
-    tracking: s.tracking,
-    ahead: s.ahead,
-    behind: s.behind,
-    hasRemote,
-    files: s.files.map((f) => ({ path: f.path, index: f.index, working: f.working_dir })),
-  };
-}));
+ipcMain.handle('git:status', (evt, { projectPath }) =>
+  gitTry(async () => {
+    const git = gitFor(projectPath);
+    if (!(await git.checkIsRepo())) return { isRepo: false };
+    const s = await git.status();
+    // Sem 'origin' não dá pra publicar — o painel usa isto pra pedir a URL antes de tentar o push.
+    let hasRemote = false;
+    try {
+      hasRemote = (await git.getRemotes()).some((r) => r.name === 'origin');
+    } catch {}
+    return {
+      isRepo: true,
+      branch: s.current,
+      tracking: s.tracking,
+      ahead: s.ahead,
+      behind: s.behind,
+      hasRemote,
+      files: s.files.map((f) => ({ path: f.path, index: f.index, working: f.working_dir })),
+    };
+  }),
+);
 
-ipcMain.handle('git:diff', (evt, { projectPath, file, staged, untracked }) => gitTry(async () => {
-  if (untracked) {
-    let content = '';
-    try { content = fs.readFileSync(path.join(projectPath, file), 'utf8'); } catch {}
-    return { diff: content, untracked: true };
-  }
-  const args = staged ? ['--cached', '--', file] : ['--', file];
-  return { diff: await gitFor(projectPath).diff(args) };
-}));
+ipcMain.handle('git:diff', (evt, { projectPath, file, staged, untracked }) =>
+  gitTry(async () => {
+    if (untracked) {
+      let content = '';
+      try {
+        content = fs.readFileSync(path.join(projectPath, file), 'utf8');
+      } catch {}
+      return { diff: content, untracked: true };
+    }
+    const args = staged ? ['--cached', '--', file] : ['--', file];
+    return { diff: await gitFor(projectPath).diff(args) };
+  }),
+);
 
 ipcMain.handle('git:stage', (evt, { projectPath, files }) =>
-  gitTry(async () => { await gitFor(projectPath).add(files); return {}; }));
+  gitTry(async () => {
+    await gitFor(projectPath).add(files);
+    return {};
+  }),
+);
 
 ipcMain.handle('git:unstage', (evt, { projectPath, files }) =>
-  gitTry(async () => { await gitFor(projectPath).reset(['--', ...files]); return {}; }));
+  gitTry(async () => {
+    await gitFor(projectPath).reset(['--', ...files]);
+    return {};
+  }),
+);
 
 ipcMain.handle('git:commit', (evt, { projectPath, message }) =>
-  gitTry(async () => ({ result: await gitFor(projectPath).commit(message) })));
+  gitTry(async () => ({ result: await gitFor(projectPath).commit(message) })),
+);
 
-ipcMain.handle('git:push', (evt, { projectPath }) => gitTry(async () => {
-  const git = gitFor(projectPath);
-  const s = await git.status();
-  if (!s.tracking) await git.push(['-u', 'origin', s.current]); // primeiro push: cria o upstream
-  else await git.push();
-  return {};
-}));
+ipcMain.handle('git:push', (evt, { projectPath }) =>
+  gitTry(async () => {
+    const git = gitFor(projectPath);
+    const s = await git.status();
+    if (!s.tracking)
+      await git.push(['-u', 'origin', s.current]); // primeiro push: cria o upstream
+    else await git.push();
+    return {};
+  }),
+);
 
 ipcMain.handle('git:pull', (evt, { projectPath }) =>
-  gitTry(async () => ({ result: await gitFor(projectPath).pull() })));
+  gitTry(async () => ({ result: await gitFor(projectPath).pull() })),
+);
 
-ipcMain.handle('git:branches', (evt, { projectPath }) => gitTry(async () => {
-  const b = await gitFor(projectPath).branchLocal();
-  return { current: b.current, all: b.all };
-}));
+ipcMain.handle('git:branches', (evt, { projectPath }) =>
+  gitTry(async () => {
+    const b = await gitFor(projectPath).branchLocal();
+    return { current: b.current, all: b.all };
+  }),
+);
 
 ipcMain.handle('git:checkout', (evt, { projectPath, branch }) =>
-  gitTry(async () => { await gitFor(projectPath).checkout(branch); return {}; }));
+  gitTry(async () => {
+    await gitFor(projectPath).checkout(branch);
+    return {};
+  }),
+);
 
 ipcMain.handle('git:createBranch', (evt, { projectPath, name }) =>
-  gitTry(async () => { await gitFor(projectPath).checkoutLocalBranch(name); return {}; }));
+  gitTry(async () => {
+    await gitFor(projectPath).checkoutLocalBranch(name);
+    return {};
+  }),
+);
 
 ipcMain.handle('git:init', (evt, { projectPath }) =>
-  gitTry(async () => { await gitFor(projectPath).init(); return {}; }));
+  gitTry(async () => {
+    await gitFor(projectPath).init();
+    return {};
+  }),
+);
 
-ipcMain.handle('git:addRemote', (evt, { projectPath, url }) => gitTry(async () => {
-  const git = gitFor(projectPath);
-  // Conectar ao GitHub é a ação natural num projeto novo — não exija "Inicializar Git" antes.
-  // Sem isto, addRemote numa pasta sem .git falha com "fatal: not a git repository".
-  if (!(await git.checkIsRepo())) await git.init();
-  try { await git.addRemote('origin', url); }
-  catch { await git.remote(['set-url', 'origin', url]); } // origin já existia → atualiza
-  return {};
-}));
+ipcMain.handle('git:addRemote', (evt, { projectPath, url }) =>
+  gitTry(async () => {
+    const git = gitFor(projectPath);
+    // Conectar ao GitHub é a ação natural num projeto novo — não exija "Inicializar Git" antes.
+    // Sem isto, addRemote numa pasta sem .git falha com "fatal: not a git repository".
+    if (!(await git.checkIsRepo())) await git.init();
+    try {
+      await git.addRemote('origin', url);
+    } catch {
+      await git.remote(['set-url', 'origin', url]);
+    } // origin já existia → atualiza
+    return {};
+  }),
+);
 
 // ---------- API connector (REST) ----------
 // Roda as requests no processo principal (sem CORS, como o Thunder Client faz).
@@ -1885,18 +2389,31 @@ ipcMain.handle('http:send', async (evt, { request, workingDir }) => {
 
     let res = null;
     const started = Date.now();
-    await httpyac.send({ httpFile, httpRegion: region, logResponse: (r) => { res = r; } });
+    await httpyac.send({
+      httpFile,
+      httpRegion: region,
+      logResponse: (r) => {
+        res = r;
+      },
+    });
     if (!res) return { ok: false, error: 'A request não retornou resposta.' };
 
-    const sizeBytes = res.rawBody ? res.rawBody.length : Buffer.byteLength(res.prettyPrintBody || String(res.body || ''));
+    const sizeBytes = res.rawBody
+      ? res.rawBody.length
+      : Buffer.byteLength(res.prettyPrintBody || String(res.body || ''));
     return {
       ok: true,
       status: res.statusCode,
       statusText: res.statusMessage || '',
       contentType: (res.contentType && res.contentType.mimeType) || '',
       headers: res.headers || {},
-      body: res.prettyPrintBody != null ? res.prettyPrintBody : (typeof res.body === 'string' ? res.body : JSON.stringify(res.body, null, 2)),
-      timeMs: Math.round((res.timings && res.timings.total) || (Date.now() - started)),
+      body:
+        res.prettyPrintBody != null
+          ? res.prettyPrintBody
+          : typeof res.body === 'string'
+            ? res.body
+            : JSON.stringify(res.body, null, 2),
+      timeMs: Math.round((res.timings && res.timings.total) || Date.now() - started),
       sizeBytes,
       protocol: res.protocol || '',
     };
@@ -1912,7 +2429,10 @@ function buildHar({ method = 'GET', url = '', headers = {}, body = '' }) {
     const u = new URL(url);
     queryString = [...u.searchParams.entries()].map(([name, value]) => ({ name, value }));
   } catch {}
-  const headerArr = Object.entries(headers || {}).map(([name, value]) => ({ name, value: String(value ?? '') }));
+  const headerArr = Object.entries(headers || {}).map(([name, value]) => ({
+    name,
+    value: String(value ?? ''),
+  }));
   const har = {
     method: (method || 'GET').toUpperCase(),
     url,
@@ -1934,7 +2454,8 @@ ipcMain.handle('http:toSnippet', async (evt, { request, target, client }) => {
   try {
     const { HTTPSnippet } = require('httpsnippet');
     const snippet = new HTTPSnippet(buildHar(request || {})).convert(target, client);
-    if (typeof snippet !== 'string') return { ok: false, error: 'Conversão não suportada para esse alvo.' };
+    if (typeof snippet !== 'string')
+      return { ok: false, error: 'Conversão não suportada para esse alvo.' };
     return { ok: true, snippet };
   } catch (e) {
     return { ok: false, error: (e && e.message) || String(e) };
@@ -1942,26 +2463,42 @@ ipcMain.handle('http:toSnippet', async (evt, { request, target, client }) => {
 });
 
 // Persistência das requests como arquivos .http no projeto (git-friendly, compatível com VS Code REST Client).
-function requestsDir(projectPath) { return path.join(projectPath, '.carcara', 'requests'); }
-function safeName(name) { return String(name || '').replace(/[\\/:*?"<>|]/g, '_').trim() || 'request'; }
+function requestsDir(projectPath) {
+  return path.join(projectPath, '.carcara', 'requests');
+}
+function safeName(name) {
+  return (
+    String(name || '')
+      .replace(/[\\/:*?"<>|]/g, '_')
+      .trim() || 'request'
+  );
+}
 
 ipcMain.handle('http:listSaved', (evt, { projectPath }) => {
   try {
     const dir = requestsDir(projectPath);
     if (!fs.existsSync(dir)) return { ok: true, items: [] };
-    const items = fs.readdirSync(dir)
+    const items = fs
+      .readdirSync(dir)
       .filter((f) => f.toLowerCase().endsWith('.http'))
       .map((f) => ({ name: f.replace(/\.http$/i, '') }))
       .sort((a, b) => a.name.localeCompare(b.name));
     return { ok: true, items };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 ipcMain.handle('http:readSaved', (evt, { projectPath, name }) => {
   try {
-    const text = fs.readFileSync(path.join(requestsDir(projectPath), safeName(name) + '.http'), 'utf8');
+    const text = fs.readFileSync(
+      path.join(requestsDir(projectPath), safeName(name) + '.http'),
+      'utf8',
+    );
     return { ok: true, text };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 ipcMain.handle('http:saveRequest', (evt, { projectPath, name, request }) => {
@@ -1972,12 +2509,18 @@ ipcMain.handle('http:saveRequest', (evt, { projectPath, name, request }) => {
     const safe = safeName(name);
     fs.writeFileSync(path.join(dir, safe + '.http'), text);
     return { ok: true, name: safe };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 ipcMain.handle('http:deleteSaved', (evt, { projectPath, name }) => {
-  try { fs.unlinkSync(path.join(requestsDir(projectPath), safeName(name) + '.http')); return { ok: true }; }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  try {
+    fs.unlinkSync(path.join(requestsDir(projectPath), safeName(name) + '.http'));
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 // ---------- MCP connector ----------
@@ -1988,7 +2531,11 @@ ipcMain.handle('http:deleteSaved', (evt, { projectPath, name }) => {
 const mcpPending = new Map();
 let mcpReqSeq = 0;
 function rejectAllPending(reason) {
-  for (const [, p] of mcpPending) { try { p.reject(new Error(reason)); } catch {} }
+  for (const [, p] of mcpPending) {
+    try {
+      p.reject(new Error(reason));
+    } catch {}
+  }
   mcpPending.clear();
 }
 
@@ -2005,105 +2552,193 @@ ipcMain.handle('mcp:connect', async (evt, { config }) => {
     }
     const res = await mcpCore.mcpConnect(config, {
       onLog: (text) => mainWindow?.webContents.send('mcp:log', { text }),
-      onClose: (connId) => { rejectAllPending('conexão encerrada'); mainWindow?.webContents.send('mcp:closed', { connId }); },
-      onTraffic: ({ dir, message }) => mainWindow?.webContents.send('mcp:traffic', { dir, message, ts: Date.now() }),
+      onClose: (connId) => {
+        rejectAllPending('conexão encerrada');
+        mainWindow?.webContents.send('mcp:closed', { connId });
+      },
+      onTraffic: ({ dir, message }) =>
+        mainWindow?.webContents.send('mcp:traffic', { dir, message, ts: Date.now() }),
       oauth,
       roots: Array.isArray(config?.roots) ? config.roots : [],
-      onServerRequest: ({ kind, params }) => new Promise((resolve, reject) => {
-        const reqId = String(++mcpReqSeq);
-        mcpPending.set(reqId, { resolve, reject });
-        mainWindow?.webContents.send('mcp:serverRequest', { reqId, kind, params });
-      }),
+      onServerRequest: ({ kind, params }) =>
+        new Promise((resolve, reject) => {
+          const reqId = String(++mcpReqSeq);
+          mcpPending.set(reqId, { resolve, reject });
+          mainWindow?.webContents.send('mcp:serverRequest', { reqId, kind, params });
+        }),
     });
     return { ok: true, ...res };
-  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
-  finally { try { oauth && oauth.cleanup(); } catch {} }
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  } finally {
+    try {
+      oauth && oauth.cleanup();
+    } catch {}
+  }
 });
 // Resposta do usuário a uma requisição do servidor (sampling/elicitation).
 ipcMain.handle('mcp:respondServerRequest', (e, { reqId, result, error }) => {
   const p = mcpPending.get(reqId);
   if (!p) return { ok: false };
   mcpPending.delete(reqId);
-  if (error) p.reject(new Error(error)); else p.resolve(result);
+  if (error) p.reject(new Error(error));
+  else p.resolve(result);
   return { ok: true };
 });
 ipcMain.handle('mcp:setRoots', async (e, { connId, roots }) => {
-  try { return { ok: true, ...(await mcpCore.mcpSetRoots(connId, roots)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpSetRoots(connId, roots)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:oauthLogout', async (e, { url }) => {
-  try { return { ok: mcpOauth.clearTokens(url) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: mcpOauth.clearTokens(url) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 ipcMain.handle('mcp:disconnect', async (evt, { connId }) => {
-  try { await mcpCore.mcpDisconnect(connId); return { ok: true }; }
-  catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
+  try {
+    await mcpCore.mcpDisconnect(connId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
 });
 
 // Listas paginadas (Bloco A): esgota nextCursor pra trazer todos os itens.
 ipcMain.handle('mcp:listTools', async (e, { connId }) => {
-  try { const c = mcpCore.mcpClient(connId); return { ok: true, tools: await mcpCore.drainPages((p) => c.listTools(p), 'tools') }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    const c = mcpCore.mcpClient(connId);
+    return { ok: true, tools: await mcpCore.drainPages((p) => c.listTools(p), 'tools') };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:listResources', async (e, { connId }) => {
-  try { const c = mcpCore.mcpClient(connId); return { ok: true, resources: await mcpCore.drainPages((p) => c.listResources(p), 'resources') }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    const c = mcpCore.mcpClient(connId);
+    return {
+      ok: true,
+      resources: await mcpCore.drainPages((p) => c.listResources(p), 'resources'),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:listResourceTemplates', async (e, { connId }) => {
-  try { return { ok: true, ...(await mcpCore.mcpListResourceTemplates(connId)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpListResourceTemplates(connId)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:listPrompts', async (e, { connId }) => {
-  try { const c = mcpCore.mcpClient(connId); return { ok: true, prompts: await mcpCore.drainPages((p) => c.listPrompts(p), 'prompts') }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    const c = mcpCore.mcpClient(connId);
+    return { ok: true, prompts: await mcpCore.drainPages((p) => c.listPrompts(p), 'prompts') };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:subscribeResource', async (e, { connId, uri }) => {
-  try { return { ok: true, ...(await mcpCore.mcpSubscribeResource(connId, uri)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpSubscribeResource(connId, uri)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:unsubscribeResource', async (e, { connId, uri }) => {
-  try { return { ok: true, ...(await mcpCore.mcpUnsubscribeResource(connId, uri)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpUnsubscribeResource(connId, uri)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:complete', async (e, { connId, ref, argName, argValue }) => {
-  try { return { ok: true, ...(await mcpCore.mcpComplete(connId, ref, argName, argValue)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpComplete(connId, ref, argName, argValue)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 ipcMain.handle('mcp:callTool', async (e, { connId, name, args }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).callTool({ name, arguments: args || {} }, undefined, mcpCore.mcpReqOpts(connId))) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return {
+      ok: true,
+      ...(await mcpCore
+        .mcpClient(connId)
+        .callTool({ name, arguments: args || {} }, undefined, mcpCore.mcpReqOpts(connId))),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:readResource', async (e, { connId, uri }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).readResource({ uri }, mcpCore.mcpReqOpts(connId))) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return {
+      ok: true,
+      ...(await mcpCore.mcpClient(connId).readResource({ uri }, mcpCore.mcpReqOpts(connId))),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:ping', async (e, { connId }) => {
-  try { return { ok: true, ...(await mcpCore.mcpPing(connId)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpPing(connId)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:setLogLevel', async (e, { connId, level }) => {
-  try { return { ok: true, ...(await mcpCore.mcpSetLogLevel(connId, level)) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, ...(await mcpCore.mcpSetLogLevel(connId, level)) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:getPrompt', async (e, { connId, name, args }) => {
-  try { return { ok: true, ...(await mcpCore.mcpClient(connId).getPrompt({ name, arguments: args || {} }, mcpCore.mcpReqOpts(connId))) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return {
+      ok: true,
+      ...(await mcpCore
+        .mcpClient(connId)
+        .getPrompt({ name, arguments: args || {} }, mcpCore.mcpReqOpts(connId))),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 // Persistência dos servidores salvos: <projeto>/.carcara/mcp-servers.json (nome -> config).
-function mcpServersFile(projectPath) { return path.join(projectPath, '.carcara', 'mcp-servers.json'); }
+function mcpServersFile(projectPath) {
+  return path.join(projectPath, '.carcara', 'mcp-servers.json');
+}
 function readMcpServers(projectPath) {
-  try { return JSON.parse(fs.readFileSync(mcpServersFile(projectPath), 'utf8')); } catch { return {}; }
+  try {
+    return JSON.parse(fs.readFileSync(mcpServersFile(projectPath), 'utf8'));
+  } catch {
+    return {};
+  }
 }
 ipcMain.handle('mcp:listServers', (e, { projectPath }) => {
-  try { return { ok: true, servers: readMcpServers(projectPath) }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, servers: readMcpServers(projectPath) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:readServer', (e, { projectPath, name }) => {
-  try { return { ok: true, config: readMcpServers(projectPath)[name] || null }; }
-  catch (err) { return { ok: false, error: err.message }; }
+  try {
+    return { ok: true, config: readMcpServers(projectPath)[name] || null };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:saveServer', (e, { projectPath, name, config }) => {
   try {
@@ -2112,7 +2747,9 @@ ipcMain.handle('mcp:saveServer', (e, { projectPath, name, config }) => {
     fs.mkdirSync(path.join(projectPath, '.carcara'), { recursive: true });
     fs.writeFileSync(mcpServersFile(projectPath), JSON.stringify(all, null, 2));
     return { ok: true };
-  } catch (err) { return { ok: false, error: err.message }; }
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle('mcp:deleteServer', (e, { projectPath, name }) => {
   try {
@@ -2120,7 +2757,9 @@ ipcMain.handle('mcp:deleteServer', (e, { projectPath, name }) => {
     delete all[name];
     fs.writeFileSync(mcpServersFile(projectPath), JSON.stringify(all, null, 2));
     return { ok: true };
-  } catch (err) { return { ok: false, error: err.message }; }
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 // ---------- Preview (dev server) ----------
@@ -2130,9 +2769,15 @@ function cmdAvailable(cmd) {
   if (cmdCache.has(cmd)) return cmdCache.get(cmd);
   let ok = false;
   try {
-    const r = require('child_process').spawnSync(cmd, ['--version'], { shell: true, stdio: 'ignore', timeout: 5000 });
+    const r = require('child_process').spawnSync(cmd, ['--version'], {
+      shell: true,
+      stdio: 'ignore',
+      timeout: 5000,
+    });
     ok = !r.error && r.status === 0;
-  } catch { ok = false; }
+  } catch {
+    ok = false;
+  }
   cmdCache.set(cmd, ok);
   return ok;
 }
@@ -2142,9 +2787,15 @@ function cmdAvailable(cmd) {
 ipcMain.handle('system:checkTools', () => {
   const has = (cmd) => {
     try {
-      const r = require('child_process').spawnSync(cmd, ['--version'], { shell: true, stdio: 'ignore', timeout: 8000 });
+      const r = require('child_process').spawnSync(cmd, ['--version'], {
+        shell: true,
+        stdio: 'ignore',
+        timeout: 8000,
+      });
       return !r.error && r.status === 0;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   };
   return { ok: true, git: has('git'), node: has('node'), npm: has('npm'), claude: has('claude') };
 });
@@ -2159,8 +2810,11 @@ function pickPackageManager(p) {
 
 function detectDevCommand(projectPath) {
   let pkg;
-  try { pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8')); }
-  catch { return null; }
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
+  } catch {
+    return null;
+  }
   const scripts = pkg.scripts || {};
   const script = scripts.dev ? 'dev' : scripts.start ? 'start' : scripts.serve ? 'serve' : null;
   if (!script) return null;
@@ -2168,10 +2822,16 @@ function detectDevCommand(projectPath) {
 }
 
 function hasNodeModules(p) {
-  try { fs.accessSync(path.join(p, 'node_modules')); return true; } catch { return false; }
+  try {
+    fs.accessSync(path.join(p, 'node_modules'));
+    return true;
+  } catch {
+    return false;
+  }
 }
 function needsInstall(p, pkg) {
-  const deps = Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length;
+  const deps =
+    Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length;
   return deps > 0 && !hasNodeModules(p);
 }
 
@@ -2179,7 +2839,9 @@ function needsInstall(p, pkg) {
 // e espera ELA subir. Vínculo em memória, vale enquanto o projeto roda.
 async function pickFreePort() {
   // Portas que ESTE Carcará já reservou (mesmo processo).
-  const used = new Set([...runningServers.values()].map((e) => Number(e.chosenPort)).filter(Boolean));
+  const used = new Set(
+    [...runningServers.values()].map((e) => Number(e.chosenPort)).filter(Boolean),
+  );
   let base = 8080;
   // O detect-port só faz bind check TCP (0.0.0.0/127.0.0.1) e não enxerga o
   // runningServers de OUTRO Carcará — e ainda erra quando o dev server escuta só
@@ -2188,8 +2850,15 @@ async function pickFreePort() {
   for (let attempt = 0; attempt < 200; attempt++) {
     while (used.has(base)) base++;
     let candidate;
-    try { candidate = await detectPort(base); } catch { candidate = base; }
-    if (used.has(candidate)) { base = candidate + 1; continue; }
+    try {
+      candidate = await detectPort(base);
+    } catch {
+      candidate = base;
+    }
+    if (used.has(candidate)) {
+      base = candidate + 1;
+      continue;
+    }
     if (await probePort(candidate)) {
       // Já tem alguém vivo aqui (outro Carcará?). Marca e tenta a próxima.
       used.add(candidate);
@@ -2231,15 +2900,27 @@ function sendPhase(projectPath, text) {
 function probeOne(host, port) {
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
-    const req = http.get({ host, port, path: '/', timeout: 1500 }, (res) => { res.destroy(); finish(true); });
+    const finish = (v) => {
+      if (!settled) {
+        settled = true;
+        resolve(v);
+      }
+    };
+    const req = http.get({ host, port, path: '/', timeout: 1500 }, (res) => {
+      res.destroy();
+      finish(true);
+    });
     req.on('error', () => finish(false));
-    req.on('timeout', () => { req.destroy(); finish(false); });
+    req.on('timeout', () => {
+      req.destroy();
+      finish(false);
+    });
   });
 }
 function probePort(port) {
-  return Promise.all([probeOne('127.0.0.1', port), probeOne('::1', port)])
-    .then((rs) => rs.some(Boolean));
+  return Promise.all([probeOne('127.0.0.1', port), probeOne('::1', port)]).then((rs) =>
+    rs.some(Boolean),
+  );
 }
 
 function runInstall(projectPath, manager) {
@@ -2248,7 +2929,10 @@ function runInstall(projectPath, manager) {
     proc.stdout.on('data', (d) => sendLog(projectPath, d.toString()));
     proc.stderr.on('data', (d) => sendLog(projectPath, d.toString()));
     proc.on('exit', (code) => resolve(code));
-    proc.on('error', (e) => { sendLog(projectPath, '\n' + e.message + '\n'); resolve(1); });
+    proc.on('error', (e) => {
+      sendLog(projectPath, '\n' + e.message + '\n');
+      resolve(1);
+    });
   });
 }
 
@@ -2267,7 +2951,10 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
 
   // 1) Primeira vez? Instala as dependências.
   if (needsInstall(projectPath, cmd.pkg)) {
-    sendPhase(projectPath, `Instalando dependências com ${cmd.manager} (primeira vez, pode demorar)…`);
+    sendPhase(
+      projectPath,
+      `Instalando dependências com ${cmd.manager} (primeira vez, pode demorar)…`,
+    );
     const code = await runInstall(projectPath, cmd.manager);
     if (code !== 0) {
       runningServers.delete(projectPath);
@@ -2279,10 +2966,13 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
   const port = await pickFreePort();
   entry.chosenPort = port;
   const flags = devPortFlags(cmd.pkg, port);
-  const args = cmd.manager === 'npm'
-    ? ['run', cmd.script, ...(flags.length ? ['--', ...flags] : [])]
-    : [cmd.script, ...flags];
-  console.log(`[preview] ${path.basename(projectPath)} -> porta livre ${port} | ${cmd.manager} ${args.join(' ')}`);
+  const args =
+    cmd.manager === 'npm'
+      ? ['run', cmd.script, ...(flags.length ? ['--', ...flags] : [])]
+      : [cmd.script, ...flags];
+  console.log(
+    `[preview] ${path.basename(projectPath)} -> porta livre ${port} | ${cmd.manager} ${args.join(' ')}`,
+  );
   sendPhase(projectPath, `Porta livre escolhida: ${port}`);
   sendPhase(projectPath, `Subindo: ${cmd.manager} ${args.join(' ')}`);
 
@@ -2294,7 +2984,10 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
     if (entry.url) return;
     entry.port = foundPort;
     entry.url = `http://localhost:${foundPort}`;
-    if (entry.probe) { clearInterval(entry.probe); entry.probe = null; }
+    if (entry.probe) {
+      clearInterval(entry.probe);
+      entry.probe = null;
+    }
     console.log(`[preview] ${path.basename(projectPath)} pronto em ${entry.url}`);
     sendPhase(projectPath, `Preview pronto em ${entry.url}`);
     safeSend('preview:ready', { projectPath, url: entry.url });
@@ -2312,16 +3005,24 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
   // Plano B: se o framework ignorou a flag e subiu noutra porta, usa a que ELE imprimiu.
   entry.probe = setInterval(async () => {
     if (entry.url) return;
-    if (await probePort(port)) { markReady(port); return; }
-    const urls = [...entry.log.matchAll(/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d+)/gi)];
+    if (await probePort(port)) {
+      markReady(port);
+      return;
+    }
+    const urls = [
+      ...entry.log.matchAll(/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d+)/gi),
+    ];
     if (urls.length) {
       const p = Number(urls[urls.length - 1][1]);
-      if (p !== port && p >= 1024 && p <= 65535 && await probePort(p)) markReady(p);
+      if (p !== port && p >= 1024 && p <= 65535 && (await probePort(p))) markReady(p);
     }
   }, 600);
 
   proc.on('exit', (code) => {
-    if (entry.probe) { clearInterval(entry.probe); entry.probe = null; }
+    if (entry.probe) {
+      clearInterval(entry.probe);
+      entry.probe = null;
+    }
     if (!entry.url) {
       console.log(`[preview] ${path.basename(projectPath)} encerrou sem subir (código ${code})`);
       sendLog(projectPath, `\n[servidor encerrou sem subir — código ${code}]\n`);

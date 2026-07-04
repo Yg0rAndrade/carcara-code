@@ -17,27 +17,32 @@ If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or 
 Gather this context (ask if not provided):
 
 ### 1. Platform & Format
+
 - What platform? (Google Ads, Meta, LinkedIn, TikTok, Twitter/X)
 - What ad format? (Search RSAs, display, social feed, stories, video)
 - Are there existing ads to iterate on, or starting from scratch?
 
 ### 2. Product & Offer
+
 - What are you promoting? (Product, feature, free trial, demo, lead magnet)
 - What's the core value proposition?
 - What makes this different from competitors?
 
 ### 3. Audience & Intent
+
 - Who is the target audience?
 - What stage of awareness? (Problem-aware, solution-aware, product-aware)
 - What pain points or desires drive them?
 
 ### 4. Performance Data (if iterating)
+
 - What creative is currently running?
 - Which headlines/descriptions are performing best? (CTR, conversion rate, ROAS)
 - Which are underperforming?
 - What angles or themes have been tested?
 
 ### 5. Constraints
+
 - Brand voice guidelines or words to avoid?
 - Compliance requirements? (Industry regulations, platform policies)
 - Any mandatory elements? (Brand name, trademark symbols, disclaimers)
@@ -49,9 +54,11 @@ Gather this context (ask if not provided):
 This skill supports two modes:
 
 ### Mode 1: Generate from Scratch
+
 When starting fresh, you generate a full set of ad creative based on product context, audience insights, and platform best practices.
 
 ### Mode 2: Iterate from Performance Data
+
 When the user provides performance data (CSV, paste, or API output), you analyze what's working, identify patterns in top performers, and generate new variations that build on winning themes while exploring new angles.
 
 The core loop:
@@ -68,13 +75,14 @@ Platforms reject or truncate creative that exceeds these limits, so verify every
 
 ### Google Ads (Responsive Search Ads)
 
-| Element | Limit | Quantity |
-|---------|-------|----------|
-| Headline | 30 characters | Up to 15 |
-| Description | 90 characters | Up to 4 |
-| Display URL path | 15 characters each | 2 paths |
+| Element          | Limit              | Quantity |
+| ---------------- | ------------------ | -------- |
+| Headline         | 30 characters      | Up to 15 |
+| Description      | 90 characters      | Up to 4  |
+| Display URL path | 15 characters each | 2 paths  |
 
 **RSA rules:**
+
 - Headlines must make sense independently and in any combination
 - Pin headlines to positions only when necessary (reduces optimization)
 - Include at least one keyword-focused headline
@@ -83,34 +91,34 @@ Platforms reject or truncate creative that exceeds these limits, so verify every
 
 ### Meta Ads (Facebook/Instagram)
 
-| Element | Limit | Notes |
-|---------|-------|-------|
-| Primary text | 125 chars visible (up to 2,200) | Front-load the hook |
-| Headline | 40 characters recommended | Below the image |
-| Description | 30 characters recommended | Below headline |
-| URL display link | 40 characters | Optional |
+| Element          | Limit                           | Notes               |
+| ---------------- | ------------------------------- | ------------------- |
+| Primary text     | 125 chars visible (up to 2,200) | Front-load the hook |
+| Headline         | 40 characters recommended       | Below the image     |
+| Description      | 30 characters recommended       | Below headline      |
+| URL display link | 40 characters                   | Optional            |
 
 ### LinkedIn Ads
 
-| Element | Limit | Notes |
-|---------|-------|-------|
-| Intro text | 150 chars recommended (600 max) | Above the image |
-| Headline | 70 chars recommended (200 max) | Below the image |
+| Element     | Limit                           | Notes                      |
+| ----------- | ------------------------------- | -------------------------- |
+| Intro text  | 150 chars recommended (600 max) | Above the image            |
+| Headline    | 70 chars recommended (200 max)  | Below the image            |
 | Description | 100 chars recommended (300 max) | Appears in some placements |
 
 ### TikTok Ads
 
-| Element | Limit | Notes |
-|---------|-------|-------|
-| Ad text | 80 chars recommended (100 max) | Above the video |
-| Display name | 40 characters | Brand name |
+| Element      | Limit                          | Notes           |
+| ------------ | ------------------------------ | --------------- |
+| Ad text      | 80 chars recommended (100 max) | Above the video |
+| Display name | 40 characters                  | Brand name      |
 
 ### Twitter/X Ads
 
-| Element | Limit | Notes |
-|---------|-------|-------|
-| Tweet text | 280 characters | The ad copy |
-| Headline | 70 characters | Card headline |
+| Element     | Limit          | Notes            |
+| ----------- | -------------- | ---------------- |
+| Tweet text  | 280 characters | The ad copy      |
+| Headline    | 70 characters  | Card headline    |
 | Description | 200 characters | Card description |
 
 For detailed specs and format variations, see [references/platform-specs.md](references/platform-specs.md).
@@ -129,6 +137,7 @@ For image and video ad creative, use generative AI tools and code-based video re
 - **Cost comparison** — Pricing for 100+ ad variations across tools
 
 **Recommended workflow for scaled production:**
+
 1. Generate hero creative with AI tools (exploratory, high-quality)
 2. Build Remotion templates based on winning patterns
 3. Batch produce variations with Remotion using data feeds
@@ -144,20 +153,21 @@ Before writing individual headlines, establish 3-5 distinct **angles** — diffe
 
 **Common angle categories:**
 
-| Category | Example Angle |
-|----------|---------------|
-| Pain point | "Stop wasting time on X" |
-| Outcome | "Achieve Y in Z days" |
-| Social proof | "Join 10,000+ teams who..." |
-| Curiosity | "The X secret top companies use" |
-| Comparison | "Unlike X, we do Y" |
-| Urgency | "Limited time: get X free" |
-| Identity | "Built for [specific role/type]" |
-| Contrarian | "Why [common practice] doesn't work" |
+| Category     | Example Angle                        |
+| ------------ | ------------------------------------ |
+| Pain point   | "Stop wasting time on X"             |
+| Outcome      | "Achieve Y in Z days"                |
+| Social proof | "Join 10,000+ teams who..."          |
+| Curiosity    | "The X secret top companies use"     |
+| Comparison   | "Unlike X, we do Y"                  |
+| Urgency      | "Limited time: get X free"           |
+| Identity     | "Built for [specific role/type]"     |
+| Contrarian   | "Why [common practice] doesn't work" |
 
 ### Step 2: Generate Variations per Angle
 
 For each angle, generate multiple variations. Vary:
+
 - **Word choice** — synonyms, active vs. passive
 - **Specificity** — numbers vs. general claims
 - **Tone** — direct vs. question vs. command
@@ -196,6 +206,7 @@ Look at the worst performers and identify:
 ### Step 3: Generate New Variations
 
 Create new creative that:
+
 - **Doubles down** on winning themes with fresh phrasing
 - **Extends** winning angles into new variations
 - **Tests** 1-2 new angles not yet explored
@@ -223,12 +234,14 @@ Track what was learned and what's being tested:
 ### Headlines That Click
 
 **Strong headlines:**
+
 - Specific ("Cut reporting time 75%") over vague ("Save time")
 - Benefits ("Ship code faster") over features ("CI/CD pipeline")
 - Active voice ("Automate your reports") over passive ("Reports are automated")
 - Include numbers when possible ("3x faster," "in 5 minutes," "10,000+ teams")
 
 **Avoid:**
+
 - Jargon the audience won't recognize
 - Claims without specificity ("Best," "Leading," "Top")
 - All caps or excessive punctuation
@@ -237,6 +250,7 @@ Track what was learned and what's being tested:
 ### Descriptions That Convert
 
 Descriptions should complement headlines, not repeat them. Use descriptions to:
+
 - Add proof points (numbers, testimonials, awards)
 - Handle objections ("No credit card required," "Free forever for small teams")
 - Reinforce CTAs ("Start your free trial today")
@@ -298,16 +312,19 @@ When iterating, include a summary:
 For large-scale creative production (Anthropic's growth team generates 100+ variations per cycle):
 
 ### 1. Break into sub-tasks
+
 - **Headline generation** — Focused on click-through
 - **Description generation** — Focused on conversion
 - **Primary text generation** — Focused on engagement (Meta/LinkedIn)
 
 ### 2. Generate in waves
+
 - Wave 1: Core angles (3-5 angles, 5 variations each)
 - Wave 2: Extended variations on top 2 angles
 - Wave 3: Wild card angles (contrarian, emotional, specific)
 
 ### 3. Quality filter
+
 - Remove anything over character limit
 - Remove duplicates or near-duplicates
 - Flag anything that might violate platform policies
@@ -332,12 +349,12 @@ For large-scale creative production (Anthropic's growth team generates 100+ vari
 
 For pulling performance data and managing campaigns, see the [tools registry](../../tools/REGISTRY.md).
 
-| Platform | Pull Performance Data | Manage Campaigns | Guide |
-|----------|:---------------------:|:----------------:|-------|
-| **Google Ads** | `google-ads campaigns list`, `google-ads reports get` | `google-ads campaigns create` | [google-ads.md](../../tools/integrations/google-ads.md) |
-| **Meta Ads** | `meta-ads insights get` | `meta-ads campaigns list` | [meta-ads.md](../../tools/integrations/meta-ads.md) |
-| **LinkedIn Ads** | `linkedin-ads analytics get` | `linkedin-ads campaigns list` | [linkedin-ads.md](../../tools/integrations/linkedin-ads.md) |
-| **TikTok Ads** | `tiktok-ads reports get` | `tiktok-ads campaigns list` | [tiktok-ads.md](../../tools/integrations/tiktok-ads.md) |
+| Platform         |                 Pull Performance Data                 |       Manage Campaigns        | Guide                                                       |
+| ---------------- | :---------------------------------------------------: | :---------------------------: | ----------------------------------------------------------- |
+| **Google Ads**   | `google-ads campaigns list`, `google-ads reports get` | `google-ads campaigns create` | [google-ads.md](../../tools/integrations/google-ads.md)     |
+| **Meta Ads**     |                `meta-ads insights get`                |   `meta-ads campaigns list`   | [meta-ads.md](../../tools/integrations/meta-ads.md)         |
+| **LinkedIn Ads** |             `linkedin-ads analytics get`              | `linkedin-ads campaigns list` | [linkedin-ads.md](../../tools/integrations/linkedin-ads.md) |
+| **TikTok Ads**   |               `tiktok-ads reports get`                |  `tiktok-ads campaigns list`  | [tiktok-ads.md](../../tools/integrations/tiktok-ads.md)     |
 
 ### Workflow: Pull Data, Analyze, Generate
 

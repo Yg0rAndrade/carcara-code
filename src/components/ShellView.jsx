@@ -12,28 +12,44 @@ const TERM_THEMES = {
     foreground: '#1f2430',
     cursor: '#2563eb',
     selectionBackground: '#cfe0ff',
-    black: '#1f2430', brightBlack: '#6b7280',
-    red: '#d12d36', brightRed: '#e5484d',
-    green: '#15803d', brightGreen: '#1a9d4d',
-    yellow: '#b45309', brightYellow: '#c2710c',
-    blue: '#2563eb', brightBlue: '#3b82f6',
-    magenta: '#7c3aed', brightMagenta: '#9333ea',
-    cyan: '#0e7490', brightCyan: '#0891b2',
-    white: '#1f2430', brightWhite: '#0b0e14',
+    black: '#1f2430',
+    brightBlack: '#6b7280',
+    red: '#d12d36',
+    brightRed: '#e5484d',
+    green: '#15803d',
+    brightGreen: '#1a9d4d',
+    yellow: '#b45309',
+    brightYellow: '#c2710c',
+    blue: '#2563eb',
+    brightBlue: '#3b82f6',
+    magenta: '#7c3aed',
+    brightMagenta: '#9333ea',
+    cyan: '#0e7490',
+    brightCyan: '#0891b2',
+    white: '#1f2430',
+    brightWhite: '#0b0e14',
   },
   dark: {
     background: '#0b0f17',
     foreground: '#e6e8ee',
     cursor: '#7c5cff',
     selectionBackground: '#33405e',
-    black: '#1b1f28', brightBlack: '#5c6473',
-    red: '#ff7a7a', brightRed: '#ff9a9a',
-    green: '#34d399', brightGreen: '#52e0ad',
-    yellow: '#ffce6b', brightYellow: '#ffd98a',
-    blue: '#6ea8fe', brightBlue: '#8fc0ff',
-    magenta: '#c7a6ff', brightMagenta: '#d6bcff',
-    cyan: '#6be0d6', brightCyan: '#8aeae1',
-    white: '#e6e8ee', brightWhite: '#ffffff',
+    black: '#1b1f28',
+    brightBlack: '#5c6473',
+    red: '#ff7a7a',
+    brightRed: '#ff9a9a',
+    green: '#34d399',
+    brightGreen: '#52e0ad',
+    yellow: '#ffce6b',
+    brightYellow: '#ffd98a',
+    blue: '#6ea8fe',
+    brightBlue: '#8fc0ff',
+    magenta: '#c7a6ff',
+    brightMagenta: '#d6bcff',
+    cyan: '#6be0d6',
+    brightCyan: '#8aeae1',
+    white: '#e6e8ee',
+    brightWhite: '#ffffff',
   },
 };
 
@@ -84,7 +100,8 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
   useEffect(() => {
     if (!visible || !activeProject) return;
     const host = hostRef.current;
-    for (const [p, t] of termsRef.current) t.el.style.display = p === activeProject ? 'block' : 'none';
+    for (const [p, t] of termsRef.current)
+      t.el.style.display = p === activeProject ? 'block' : 'none';
 
     let t = termsRef.current.get(activeProject);
     if (!t) {
@@ -108,9 +125,11 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
       // Links clicáveis no terminal (addon oficial do xterm). Ctrl/Cmd+clique
       // abre a URL no preview do Carcará em vez do navegador externo; clique
       // simples é ignorado pra não atrapalhar a seleção de texto.
-      term.loadAddon(new WebLinksAddon((event, uri) => {
-        if (event.ctrlKey || event.metaKey) onOpenUrlRef.current?.(uri);
-      }));
+      term.loadAddon(
+        new WebLinksAddon((event, uri) => {
+          if (event.ctrlKey || event.metaKey) onOpenUrlRef.current?.(uri);
+        }),
+      );
       // Copiar/colar no terminal. Ctrl/Cmd+C copia a seleção quando há texto
       // selecionado; sem seleção, deixa virar SIGINT (interromper comando), igual
       // ao VS Code. Ctrl/Cmd+V: NÃO colamos por conta própria — o xterm já trata o
@@ -124,8 +143,15 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
         const k = e.key.toLowerCase();
         if (k === 'c') {
           const sel = term.getSelection();
-          if (sel && !e.shiftKey) { window.api.copyText(sel); term.clearSelection(); return false; }
-          if (sel && e.shiftKey) { window.api.copyText(sel); return false; }
+          if (sel && !e.shiftKey) {
+            window.api.copyText(sel);
+            term.clearSelection();
+            return false;
+          }
+          if (sel && e.shiftKey) {
+            window.api.copyText(sel);
+            return false;
+          }
           return true; // sem seleção: Ctrl+C normal (SIGINT)
         }
         if (k === 'v') return false; // deixa a colagem nativa do xterm cuidar (uma vez só)
@@ -138,7 +164,11 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
       // renderizador DOM deixava. Se o contexto WebGL cair, volta pro DOM sozinho.
       try {
         const webgl = new WebglAddon();
-        webgl.onContextLoss(() => { try { webgl.dispose(); } catch {} });
+        webgl.onContextLoss(() => {
+          try {
+            webgl.dispose();
+          } catch {}
+        });
         term.loadAddon(webgl);
       } catch {}
       term.onData((d) => window.api.shellInput(activeProject, d));
@@ -179,14 +209,20 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
       });
     });
     if (hostRef.current) ro.observe(hostRef.current);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [activeProject]);
 
   return (
     <div
       ref={hostRef}
       className="absolute inset-0"
-      style={{ display: visible ? 'block' : 'none', background: TERM_THEMES[terminalTheme].background }}
+      style={{
+        display: visible ? 'block' : 'none',
+        background: TERM_THEMES[terminalTheme].background,
+      }}
     >
       {!activeProject && (
         <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-muted-foreground">

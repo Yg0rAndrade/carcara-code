@@ -2,7 +2,10 @@
 
 // Arquivos que o visualizador trata como página renderizável.
 export function isHtml(name) {
-  const e = String(name || '').toLowerCase().split('.').pop();
+  const e = String(name || '')
+    .toLowerCase()
+    .split('.')
+    .pop();
   return ['html', 'htm', 'xhtml'].includes(e);
 }
 
@@ -11,6 +14,8 @@ export function isHtml(name) {
 // caracteres que quebrariam a URL. encodeURI preserva ':' e '/', mas deixa
 // '#' e '?' passarem — por isso a troca explícita desses dois.
 export function fileUrlFor(path) {
-  const norm = String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  const norm = String(path || '')
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '');
   return 'file:///' + encodeURI(norm).replace(/#/g, '%23').replace(/\?/g, '%3F');
 }

@@ -6,10 +6,21 @@ export function updateView(update, t) {
     case 'checking':
       return { visible: true, title: t('update.checking'), showProgress: false, action: null };
     case 'available':
-      return { visible: true, title: t('update.available', { version: update.version }), showProgress: false, action: 'download' };
+      return {
+        visible: true,
+        title: t('update.available', { version: update.version }),
+        showProgress: false,
+        action: 'download',
+      };
     case 'downloading': {
       const percent = (update && update.percent) || 0;
-      return { visible: true, title: t('update.downloading', { percent }), showProgress: true, percent, action: null };
+      return {
+        visible: true,
+        title: t('update.downloading', { percent }),
+        showProgress: true,
+        percent,
+        action: null,
+      };
     }
     case 'downloaded':
       return { visible: true, title: t('update.ready'), showProgress: false, action: 'install' };

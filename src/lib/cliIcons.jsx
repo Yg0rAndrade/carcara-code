@@ -13,12 +13,20 @@ function LogoImg({ src, className }) {
   return <img src={src} alt="" draggable={false} className={cn('object-contain', className)} />;
 }
 
-export function ClaudeCodeIcon({ className }) { return <LogoImg src={claudeCodeUrl} className={className} />; }
-export function CodexIcon({ className }) { return <LogoImg src={codexUrl} className={className} />; }
-export function AntigravityIcon({ className }) { return <LogoImg src={antigravityUrl} className={className} />; }
+export function ClaudeCodeIcon({ className }) {
+  return <LogoImg src={claudeCodeUrl} className={className} />;
+}
+export function CodexIcon({ className }) {
+  return <LogoImg src={codexUrl} className={className} />;
+}
+export function AntigravityIcon({ className }) {
+  return <LogoImg src={antigravityUrl} className={className} />;
+}
 
 // OpenCode é o único com duas cores: usa a versão clara no tema escuro e vice-versa.
 export function OpenCodeIcon({ className }) {
   const { theme } = useTheme();
-  return <LogoImg src={theme === 'dark' ? opencodeDarkUrl : opencodeLightUrl} className={className} />;
+  return (
+    <LogoImg src={theme === 'dark' ? opencodeDarkUrl : opencodeLightUrl} className={className} />
+  );
 }

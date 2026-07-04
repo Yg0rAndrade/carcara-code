@@ -10,12 +10,17 @@ function readMirror() {
   try {
     const s = JSON.parse(localStorage.getItem(LKEY) || '{}');
     return { railSide: sideOf(s.railSide), claudeSide: sideOf(s.claudeSide) };
-  } catch { return { railSide: 'left', claudeSide: 'left' }; }
+  } catch {
+    return { railSide: 'left', claudeSide: 'left' };
+  }
 }
 
 const LayoutCtx = createContext({
-  railSide: 'left', claudeSide: 'left',
-  setRailSide: () => {}, setClaudeSideGlobal: () => {}, setPreset: () => {},
+  railSide: 'left',
+  claudeSide: 'left',
+  setRailSide: () => {},
+  setClaudeSideGlobal: () => {},
+  setPreset: () => {},
 });
 
 export function LayoutProvider({ children }) {
@@ -24,17 +29,24 @@ export function LayoutProvider({ children }) {
   // Re-sincroniza com o config.json ao montar (fonte da verdade).
   useEffect(() => {
     let alive = true;
-    window.api.getLayout?.().then((l) => {
-      if (!alive || !l) return;
-      setGlobal({ railSide: sideOf(l.railSide), claudeSide: sideOf(l.claudeSide) });
-    }).catch(() => {});
-    return () => { alive = false; };
+    window.api
+      .getLayout?.()
+      .then((l) => {
+        if (!alive || !l) return;
+        setGlobal({ railSide: sideOf(l.railSide), claudeSide: sideOf(l.claudeSide) });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Grava no espelho local + main sempre que muda.
   const persist = (next) => {
     setGlobal(next);
-    try { localStorage.setItem(LKEY, JSON.stringify(next)); } catch {}
+    try {
+      localStorage.setItem(LKEY, JSON.stringify(next));
+    } catch {}
     window.api.setLayout?.(next);
   };
 
@@ -48,4 +60,6 @@ export function LayoutProvider({ children }) {
   return <LayoutCtx.Provider value={value}>{children}</LayoutCtx.Provider>;
 }
 
-export function useLayout() { return useContext(LayoutCtx); }
+export function useLayout() {
+  return useContext(LayoutCtx);
+}

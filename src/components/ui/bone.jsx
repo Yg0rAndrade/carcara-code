@@ -1,15 +1,15 @@
-"use client";;
-import { motion, useAnimation } from "motion/react";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+'use client';
+import { motion, useAnimation } from 'motion/react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const VARIANTS = {
   normal: { rotate: 0 },
   animate: {
     rotate: [0, -8, 8, -6, 0],
     transition: {
-      ease: "circIn",
+      ease: 'circIn',
       rotate: {
         duration: 0.5,
       },
@@ -17,60 +17,71 @@ const VARIANTS = {
   },
 };
 
-const BoneIcon = forwardRef(({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
-  const controls = useAnimation();
-  const isControlledRef = useRef(false);
+const BoneIcon = forwardRef(
+  ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
+    const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
-  useImperativeHandle(ref, () => {
-    isControlledRef.current = true;
+    useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
 
-    return {
-      startAnimation: () => controls.start("animate"),
-      stopAnimation: () => controls.start("normal"),
-    };
-  });
+      return {
+        startAnimation: () => controls.start('animate'),
+        stopAnimation: () => controls.start('normal'),
+      };
+    });
 
-  const handleMouseEnter = useCallback((e) => {
-    if (isControlledRef.current) {
-      onMouseEnter?.(e);
-    } else {
-      controls.set("normal");
-      controls.start("animate");
-    }
-  }, [controls, onMouseEnter]);
+    const handleMouseEnter = useCallback(
+      (e) => {
+        if (isControlledRef.current) {
+          onMouseEnter?.(e);
+        } else {
+          controls.set('normal');
+          controls.start('animate');
+        }
+      },
+      [controls, onMouseEnter],
+    );
 
-  const handleMouseLeave = useCallback((e) => {
-    if (isControlledRef.current) {
-      onMouseLeave?.(e);
-    } else {
-      controls.start("normal");
-    }
-  }, [controls, onMouseLeave]);
-  return (
-    <div
-      className={cn(className)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      {...props}>
-      <svg
-        fill="none"
-        height={size}
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-        width={size}
-        xmlns="http://www.w3.org/2000/svg">
-        <motion.path
-          animate={controls}
-          d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"
-          variants={VARIANTS} />
-      </svg>
-    </div>
-  );
-});
+    const handleMouseLeave = useCallback(
+      (e) => {
+        if (isControlledRef.current) {
+          onMouseLeave?.(e);
+        } else {
+          controls.start('normal');
+        }
+      },
+      [controls, onMouseLeave],
+    );
+    return (
+      <div
+        className={cn(className)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...props}
+      >
+        <svg
+          fill="none"
+          height={size}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          width={size}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <motion.path
+            animate={controls}
+            d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"
+            variants={VARIANTS}
+          />
+        </svg>
+      </div>
+    );
+  },
+);
 
-BoneIcon.displayName = "BoneIcon";
+BoneIcon.displayName = 'BoneIcon';
 
 export { BoneIcon };

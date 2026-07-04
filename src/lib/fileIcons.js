@@ -32,7 +32,10 @@ export function fileIconUrl(fileName) {
     const parts = lower.split('.');
     for (let i = 1; i < parts.length; i++) {
       const ext = parts.slice(i).join('.');
-      if (manifest.fileExtensions[ext]) { icon = manifest.fileExtensions[ext]; break; }
+      if (manifest.fileExtensions[ext]) {
+        icon = manifest.fileExtensions[ext];
+        break;
+      }
     }
   }
 

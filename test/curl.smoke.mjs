@@ -4,10 +4,16 @@
 
 import { parseCurl } from '../src/lib/curl.js';
 
-let pass = 0, fail = 0;
+let pass = 0,
+  fail = 0;
 function check(name, cond) {
-  if (cond) { pass++; console.log('  ok  ', name); }
-  else { fail++; console.error('  FAIL', name); }
+  if (cond) {
+    pass++;
+    console.log('  ok  ', name);
+  } else {
+    fail++;
+    console.error('  FAIL', name);
+  }
 }
 
 // 1. GET simples
@@ -21,14 +27,22 @@ function check(name, cond) {
 {
   const r = parseCurl("curl 'https://api.exemplo.com/x?a=1&b=2'");
   check('query: url sem ?', r.url === 'https://api.exemplo.com/x');
-  check('query: 2 params', r.params.length === 2 && r.params[0].key === 'a' && r.params[1].val === '2');
+  check(
+    'query: 2 params',
+    r.params.length === 2 && r.params[0].key === 'a' && r.params[1].val === '2',
+  );
 }
 
 // 3. POST com header + JSON
 {
-  const r = parseCurl(`curl -X POST https://api.exemplo.com/u -H "Content-Type: application/json" -d '{"a":1}'`);
+  const r = parseCurl(
+    `curl -X POST https://api.exemplo.com/u -H "Content-Type: application/json" -d '{"a":1}'`,
+  );
   check('POST: método', r.method === 'POST');
-  check('POST: header', r.headers.some((h) => h.key === 'Content-Type' && h.val === 'application/json'));
+  check(
+    'POST: header',
+    r.headers.some((h) => h.key === 'Content-Type' && h.val === 'application/json'),
+  );
   check('POST: body', r.body === '{"a":1}');
 }
 
@@ -42,7 +56,10 @@ function check(name, cond) {
 {
   const r = parseCurl(`curl https://api.exemplo.com/u --json '{"a":1}'`);
   check('--json: body', r.body === '{"a":1}');
-  check('--json: content-type', r.headers.some((h) => h.key === 'Content-Type' && h.val === 'application/json'));
+  check(
+    '--json: content-type',
+    r.headers.some((h) => h.key === 'Content-Type' && h.val === 'application/json'),
+  );
   check('--json: método POST', r.method === 'POST');
 }
 
@@ -51,7 +68,10 @@ function check(name, cond) {
   const cmd = `curl https://api.exemplo.com/u \\\n  -H "Accept: application/json" \\\n  -d '{"a":1}'`;
   const r = parseCurl(cmd);
   check('multilinha: url', r.url === 'https://api.exemplo.com/u');
-  check('multilinha: header', r.headers.some((h) => h.key === 'Accept'));
+  check(
+    'multilinha: header',
+    r.headers.some((h) => h.key === 'Accept'),
+  );
   check('multilinha: body', r.body === '{"a":1}');
 }
 
@@ -60,7 +80,10 @@ function check(name, cond) {
   const r = parseCurl('curl https://api.exemplo.com/u -u alice:secret');
   const auth = r.headers.find((h) => h.key === 'Authorization');
   check('-u: header existe', !!auth);
-  check('-u: base64', auth && auth.val === 'Basic ' + Buffer.from('alice:secret').toString('base64'));
+  check(
+    '-u: base64',
+    auth && auth.val === 'Basic ' + Buffer.from('alice:secret').toString('base64'),
+  );
 }
 
 // 8. Flags ruidosas ignoradas
@@ -80,7 +103,10 @@ function check(name, cond) {
   const cmd = `curl 'https://abc.supabase.co/rest/v1/categories?select=*' -H "apikey: KEY" -H "Authorization: Bearer KEY"`;
   const r = parseCurl(cmd);
   check('supabase: url limpa', r.url === 'https://abc.supabase.co/rest/v1/categories');
-  check('supabase: param select', r.params.some((p) => p.key === 'select' && p.val === '*'));
+  check(
+    'supabase: param select',
+    r.params.some((p) => p.key === 'select' && p.val === '*'),
+  );
   check('supabase: 2 headers', r.headers.filter((h) => h.key).length === 2);
 }
 

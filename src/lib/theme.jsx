@@ -14,7 +14,7 @@ const ThemeCtx = createContext({
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [terminalAppearance, setTerminalAppearance] = useState(
-    () => localStorage.getItem('terminalAppearance') || 'auto'
+    () => localStorage.getItem('terminalAppearance') || 'auto',
   );
 
   useEffect(() => {

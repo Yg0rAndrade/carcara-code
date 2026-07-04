@@ -20,7 +20,11 @@ export default function HtmlViewer({ path }) {
     w.style.height = '100%';
     w.style.background = '#fff';
     host.appendChild(w);
-    return () => { try { w.remove(); } catch {} };
+    return () => {
+      try {
+        w.remove();
+      } catch {}
+    };
   }, [path]);
   return <div ref={hostRef} className="absolute inset-0 bg-white" />;
 }

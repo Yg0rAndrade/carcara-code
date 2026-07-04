@@ -3,6 +3,7 @@
 Reference for calculating sample sizes and test duration.
 
 ## Contents
+
 - Sample Size Fundamentals (required inputs, what these mean)
 - Sample Size Quick Reference Tables
 - Duration Calculator (formula, examples, minimum duration rules, maximum duration guidelines)
@@ -27,6 +28,7 @@ Reference for calculating sample sizes and test duration.
 **Baseline conversion rate**: If your page converts at 5%, that's your baseline.
 
 **MDE (Minimum Detectable Effect)**: The smallest improvement you care about detecting. Set this based on:
+
 - Business impact (is a 5% lift meaningful?)
 - Implementation cost (worth the effort?)
 - Realistic expectations (what have past tests shown?)
@@ -41,53 +43,53 @@ Reference for calculating sample sizes and test duration.
 
 ### Conversion Rate: 1%
 
-| Lift to Detect | Sample per Variant | Total Sample |
-|----------------|-------------------|--------------|
-| 5% (1% → 1.05%) | 1,500,000 | 3,000,000 |
-| 10% (1% → 1.1%) | 380,000 | 760,000 |
-| 20% (1% → 1.2%) | 97,000 | 194,000 |
-| 50% (1% → 1.5%) | 16,000 | 32,000 |
-| 100% (1% → 2%) | 4,200 | 8,400 |
+| Lift to Detect  | Sample per Variant | Total Sample |
+| --------------- | ------------------ | ------------ |
+| 5% (1% → 1.05%) | 1,500,000          | 3,000,000    |
+| 10% (1% → 1.1%) | 380,000            | 760,000      |
+| 20% (1% → 1.2%) | 97,000             | 194,000      |
+| 50% (1% → 1.5%) | 16,000             | 32,000       |
+| 100% (1% → 2%)  | 4,200              | 8,400        |
 
 ### Conversion Rate: 3%
 
-| Lift to Detect | Sample per Variant | Total Sample |
-|----------------|-------------------|--------------|
-| 5% (3% → 3.15%) | 480,000 | 960,000 |
-| 10% (3% → 3.3%) | 120,000 | 240,000 |
-| 20% (3% → 3.6%) | 31,000 | 62,000 |
-| 50% (3% → 4.5%) | 5,200 | 10,400 |
-| 100% (3% → 6%) | 1,400 | 2,800 |
+| Lift to Detect  | Sample per Variant | Total Sample |
+| --------------- | ------------------ | ------------ |
+| 5% (3% → 3.15%) | 480,000            | 960,000      |
+| 10% (3% → 3.3%) | 120,000            | 240,000      |
+| 20% (3% → 3.6%) | 31,000             | 62,000       |
+| 50% (3% → 4.5%) | 5,200              | 10,400       |
+| 100% (3% → 6%)  | 1,400              | 2,800        |
 
 ### Conversion Rate: 5%
 
-| Lift to Detect | Sample per Variant | Total Sample |
-|----------------|-------------------|--------------|
-| 5% (5% → 5.25%) | 280,000 | 560,000 |
-| 10% (5% → 5.5%) | 72,000 | 144,000 |
-| 20% (5% → 6%) | 18,000 | 36,000 |
-| 50% (5% → 7.5%) | 3,100 | 6,200 |
-| 100% (5% → 10%) | 810 | 1,620 |
+| Lift to Detect  | Sample per Variant | Total Sample |
+| --------------- | ------------------ | ------------ |
+| 5% (5% → 5.25%) | 280,000            | 560,000      |
+| 10% (5% → 5.5%) | 72,000             | 144,000      |
+| 20% (5% → 6%)   | 18,000             | 36,000       |
+| 50% (5% → 7.5%) | 3,100              | 6,200        |
+| 100% (5% → 10%) | 810                | 1,620        |
 
 ### Conversion Rate: 10%
 
-| Lift to Detect | Sample per Variant | Total Sample |
-|----------------|-------------------|--------------|
-| 5% (10% → 10.5%) | 130,000 | 260,000 |
-| 10% (10% → 11%) | 34,000 | 68,000 |
-| 20% (10% → 12%) | 8,700 | 17,400 |
-| 50% (10% → 15%) | 1,500 | 3,000 |
-| 100% (10% → 20%) | 400 | 800 |
+| Lift to Detect   | Sample per Variant | Total Sample |
+| ---------------- | ------------------ | ------------ |
+| 5% (10% → 10.5%) | 130,000            | 260,000      |
+| 10% (10% → 11%)  | 34,000             | 68,000       |
+| 20% (10% → 12%)  | 8,700              | 17,400       |
+| 50% (10% → 15%)  | 1,500              | 3,000        |
+| 100% (10% → 20%) | 400                | 800          |
 
 ### Conversion Rate: 20%
 
-| Lift to Detect | Sample per Variant | Total Sample |
-|----------------|-------------------|--------------|
-| 5% (20% → 21%) | 60,000 | 120,000 |
-| 10% (20% → 22%) | 16,000 | 32,000 |
-| 20% (20% → 24%) | 4,000 | 8,000 |
-| 50% (20% → 30%) | 700 | 1,400 |
-| 100% (20% → 40%) | 200 | 400 |
+| Lift to Detect   | Sample per Variant | Total Sample |
+| ---------------- | ------------------ | ------------ |
+| 5% (20% → 21%)   | 60,000             | 120,000      |
+| 10% (20% → 22%)  | 16,000             | 32,000       |
+| 20% (20% → 24%)  | 4,000              | 8,000        |
+| 50% (20% → 30%)  | 700                | 1,400        |
+| 100% (20% → 40%) | 200                | 400          |
 
 ---
 
@@ -102,18 +104,21 @@ Duration (days) = (Sample per variant × Number of variants) / (Daily traffic ×
 ### Examples
 
 **Scenario 1: High-traffic page**
+
 - Need: 10,000 per variant (2 variants = 20,000 total)
 - Daily traffic: 5,000 visitors
 - 100% exposed to test
 - Duration: 20,000 / 5,000 = **4 days**
 
 **Scenario 2: Medium-traffic page**
+
 - Need: 30,000 per variant (60,000 total)
 - Daily traffic: 2,000 visitors
 - 100% exposed
 - Duration: 60,000 / 2,000 = **30 days**
 
 **Scenario 3: Low-traffic with partial exposure**
+
 - Need: 15,000 per variant (30,000 total)
 - Daily traffic: 500 visitors
 - 50% exposed to test
@@ -123,6 +128,7 @@ Duration (days) = (Sample per variant × Number of variants) / (Daily traffic ×
 ### Minimum Duration Rules
 
 Even with sufficient sample size, run tests for at least:
+
 - **1 full week**: To capture day-of-week variation
 - **2 business cycles**: If B2B (weekday vs. weekend patterns)
 - **Through paydays**: If e-commerce (beginning/end of month)
@@ -130,6 +136,7 @@ Even with sufficient sample size, run tests for at least:
 ### Maximum Duration Guidelines
 
 Avoid running tests longer than 4-8 weeks:
+
 - Novelty effects wear off
 - External factors intervene
 - Opportunity cost of other tests
@@ -142,21 +149,25 @@ Avoid running tests longer than 4-8 weeks:
 
 **Evan Miller's Calculator**
 https://www.evanmiller.org/ab-testing/sample-size.html
+
 - Simple interface
 - Bookmark-worthy
 
 **Optimizely's Calculator**
 https://www.optimizely.com/sample-size-calculator/
+
 - Business-friendly language
 - Duration estimates
 
 **AB Test Guide Calculator**
 https://www.abtestguide.com/calc/
+
 - Includes Bayesian option
 - Multiple test types
 
 **VWO Duration Calculator**
 https://vwo.com/tools/ab-test-duration-calculator/
+
 - Duration-focused
 - Good for planning
 
@@ -166,14 +177,15 @@ https://vwo.com/tools/ab-test-duration-calculator/
 
 With more than 2 variants (A/B/n tests), you need more sample:
 
-| Variants | Multiplier |
-|----------|------------|
-| 2 (A/B) | 1x |
-| 3 (A/B/C) | ~1.5x |
-| 4 (A/B/C/D) | ~2x |
-| 5+ | Consider reducing variants |
+| Variants    | Multiplier                 |
+| ----------- | -------------------------- |
+| 2 (A/B)     | 1x                         |
+| 3 (A/B/C)   | ~1.5x                      |
+| 4 (A/B/C/D) | ~2x                        |
+| 5+          | Consider reducing variants |
 
 **Why?** More comparisons increase chance of false positives. You're comparing:
+
 - A vs B
 - A vs C
 - B vs C (sometimes)
@@ -185,22 +197,27 @@ Apply Bonferroni correction or use tools that handle this automatically.
 ## Common Sample Size Mistakes
 
 ### 1. Underpowered tests
+
 **Problem**: Not enough sample to detect realistic effects
 **Fix**: Be realistic about MDE, get more traffic, or don't test
 
 ### 2. Overpowered tests
+
 **Problem**: Waiting for sample size when you already have significance
 **Fix**: This is actually fine—you committed to sample size, honor it
 
 ### 3. Wrong baseline rate
+
 **Problem**: Using wrong conversion rate for calculation
 **Fix**: Use the specific metric and page, not site-wide averages
 
 ### 4. Ignoring segments
+
 **Problem**: Calculating for full traffic, then analyzing segments
 **Fix**: If you plan segment analysis, calculate sample for smallest segment
 
 ### 5. Testing too many things
+
 **Problem**: Dividing traffic too many ways
 **Fix**: Prioritize ruthlessly, run fewer concurrent tests
 
@@ -225,19 +242,23 @@ Options when you can't get enough traffic:
 If you must check results before reaching sample size:
 
 ### What is it?
+
 Statistical method that adjusts for multiple looks at data.
 
 ### When to use
+
 - High-risk changes
 - Need to stop bad variants early
 - Time-sensitive decisions
 
 ### Tools that support it
+
 - Optimizely (Stats Accelerator)
 - VWO (SmartStats)
 - PostHog (Bayesian approach)
 
 ### Tradeoff
+
 - More flexibility to stop early
 - Slightly larger sample size requirement
 - More complex analysis

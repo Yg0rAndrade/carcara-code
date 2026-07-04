@@ -14,12 +14,14 @@ const path = require('path');
 const XLSX = require('xlsx');
 const { parseCsvBuffer } = require('../csv-core.cjs');
 
-function assert(cond, msg) { if (!cond) throw new Error('ASSERT: ' + msg); }
+function assert(cond, msg) {
+  if (!cond) throw new Error('ASSERT: ' + msg);
+}
 
 // Espelha a leitura de célula do sliceXlsRows (main.js): w = formatado, v = cru.
 function cellText(ws, r, c) {
   const cell = ws[XLSX.utils.encode_cell({ r, c })];
-  return cell ? (cell.w != null ? String(cell.w) : (cell.v != null ? String(cell.v) : '')) : '';
+  return cell ? (cell.w != null ? String(cell.w) : cell.v != null ? String(cell.v) : '') : '';
 }
 
 function parse(buf) {
@@ -41,24 +43,29 @@ function writeTmp(name, buf) {
 try {
   // 1) Vírgula + campo entre aspas (vírgula e quebra) + acento UTF-8 + zero à esquerda.
   const commaCsv =
-    'codigo,nome,obs\r\n' +
-    '007,Ana,"mora em São Paulo, SP\nfone 99"\r\n' +
-    '042,Beto,sem obs\r\n';
+    'codigo,nome,obs\r\n' + '007,Ana,"mora em São Paulo, SP\nfone 99"\r\n' + '042,Beto,sem obs\r\n';
   const a = parse(fs.readFileSync(writeTmp('comma.csv', Buffer.from(commaCsv, 'utf8'))));
   assert(a.cols === 3, `comma: esperava 3 colunas, veio ${a.cols}`);
   assert(a.rows === 3, `comma: esperava 3 linhas, veio ${a.rows}`);
-  assert(cellText(a.ws, 1, 0) === '007', `comma: zero à esquerda perdido -> "${cellText(a.ws, 1, 0)}"`);
+  assert(
+    cellText(a.ws, 1, 0) === '007',
+    `comma: zero à esquerda perdido -> "${cellText(a.ws, 1, 0)}"`,
+  );
   const obs = cellText(a.ws, 1, 2);
-  assert(obs.includes('São Paulo, SP') && obs.includes('fone 99'),
-    `comma: campo entre aspas (vírgula+quebra+acento) não bateu -> "${obs}"`);
+  assert(
+    obs.includes('São Paulo, SP') && obs.includes('fone 99'),
+    `comma: campo entre aspas (vírgula+quebra+acento) não bateu -> "${obs}"`,
+  );
   console.log('[ok] vírgula: aspas/quebra/acento-UTF8/zero-à-esquerda preservados');
 
   // 2) Ponto-e-vírgula + acento em latin1/ANSI (Excel pt-BR antigo).
   const semiLatin = Buffer.from('nome;cidade\r\nAna;São Paulo\r\nBeto;Brasília\r\n', 'latin1');
   const b = parse(fs.readFileSync(writeTmp('semi-ansi.csv', semiLatin)));
   assert(b.cols === 2, `semi: esperava 2 colunas (separador ';' detectado), veio ${b.cols}`);
-  assert(cellText(b.ws, 1, 1) === 'São Paulo' && cellText(b.ws, 2, 1) === 'Brasília',
-    `semi: acento latin1 não decodificou -> "${cellText(b.ws, 1, 1)}" / "${cellText(b.ws, 2, 1)}"`);
+  assert(
+    cellText(b.ws, 1, 1) === 'São Paulo' && cellText(b.ws, 2, 1) === 'Brasília',
+    `semi: acento latin1 não decodificou -> "${cellText(b.ws, 1, 1)}" / "${cellText(b.ws, 2, 1)}"`,
+  );
   console.log('[ok] ponto-e-vírgula + latin1: separador detectado e acento certo');
 
   // 3) CSV > 1MB: parseia e conta as linhas certas.
@@ -75,6 +82,12 @@ try {
 
   console.log('\nSMOKE OK');
 } finally {
-  for (const p of cleanup) { try { fs.unlinkSync(p); } catch {} }
-  try { fs.rmdirSync(tmp); } catch {}
+  for (const p of cleanup) {
+    try {
+      fs.unlinkSync(p);
+    } catch {}
+  }
+  try {
+    fs.rmdirSync(tmp);
+  } catch {}
 }
