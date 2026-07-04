@@ -29,7 +29,9 @@ function PanelError({ label, error, onRetry }) {
       else await navigator.clipboard.writeText(payload);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard indisponível: ignora */ }
+    } catch {
+      /* clipboard indisponível: ignora */
+    }
   };
 
   return (
@@ -41,7 +43,9 @@ function PanelError({ label, error, onRetry }) {
           </span>
           <div className="min-w-0">
             <p className="eyebrow text-primary">{tStatic('error.something_broke')}</p>
-            <p className="truncate text-sm font-semibold text-foreground">{label || tStatic('error.panel_label')}</p>
+            <p className="truncate text-sm font-semibold text-foreground">
+              {label || tStatic('error.panel_label')}
+            </p>
           </div>
         </div>
 
@@ -55,7 +59,9 @@ function PanelError({ label, error, onRetry }) {
               <span className="eyebrow text-muted-foreground">{tStatic('error.code_label')}</span>
               <code className="select-all font-mono font-semibold text-primary">{code}</code>
             </div>
-            <p className="mt-1.5 break-words font-mono text-xs leading-relaxed text-red-500">{message}</p>
+            <p className="mt-1.5 break-words font-mono text-xs leading-relaxed text-red-500">
+              {message}
+            </p>
           </div>
 
           {stack && (
@@ -65,7 +71,8 @@ function PanelError({ label, error, onRetry }) {
                 onClick={() => setOpen((o) => !o)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground [&_svg]:size-3.5"
               >
-                {open ? <ChevronDown /> : <ChevronRight />}{tStatic('error.technical_details')}
+                {open ? <ChevronDown /> : <ChevronRight />}
+                {tStatic('error.technical_details')}
               </button>
               {open && (
                 <pre className="mt-1.5 max-h-48 overflow-auto rounded-md border bg-background px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
@@ -78,7 +85,8 @@ function PanelError({ label, error, onRetry }) {
 
         <div className="flex items-center gap-2 border-t px-5 py-3">
           <Button variant="ghost" size="sm" onClick={copy}>
-            {copied ? <Check className="mr-1" /> : <Copy className="mr-1" />}{copied ? tStatic('error.copied_button') : tStatic('error.copy_error_button')}
+            {copied ? <Check className="mr-1" /> : <Copy className="mr-1" />}
+            {copied ? tStatic('error.copied_button') : tStatic('error.copy_error_button')}
           </Button>
           <div className="flex-1" />
           {/* Recarrega só o renderer (index.html novo, hashes de chunk certos). As sessões
@@ -88,7 +96,8 @@ function PanelError({ label, error, onRetry }) {
             {tStatic('error.reload_button')}
           </Button>
           <Button size="sm" onClick={onRetry}>
-            <RotateCw className="mr-1" />{tStatic('error.retry_button')}
+            <RotateCw className="mr-1" />
+            {tStatic('error.retry_button')}
           </Button>
         </div>
       </div>
@@ -115,7 +124,11 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // Loga com o código pra casar com o que a pessoa vê na tela.
-    console.error(`[ErrorBoundary] ${this.props.label || 'painel'} ${errCode(error)}`, error, info?.componentStack);
+    console.error(
+      `[ErrorBoundary] ${this.props.label || 'painel'} ${errCode(error)}`,
+      error,
+      info?.componentStack,
+    );
   }
 
   retry = () => {

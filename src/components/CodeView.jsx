@@ -2,12 +2,41 @@
 // demanda (React.lazy). Concentra TODO o peso do CodeMirror (16 linguagens),
 // dos modos legados e do react-zoom-pan-pinch: nada disso entra no bundle inicial;
 // só carrega quando o usuário abre a aba "Código".
-import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  Save, Copy, X, Search, ChevronRight, ChevronDown,
-  Scissors, ClipboardPaste, Link2, Pencil, Trash2, ExternalLink,
-  ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Plus, KeyRound, Code2,
-  FilePlus, FolderPlus, Sheet, Music,
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Save,
+  Copy,
+  X,
+  Search,
+  ChevronRight,
+  ChevronDown,
+  Scissors,
+  ClipboardPaste,
+  Link2,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Eye,
+  EyeOff,
+  Plus,
+  KeyRound,
+  Code2,
+  FilePlus,
+  FolderPlus,
+  Sheet,
+  Music,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -53,12 +82,18 @@ const XlsxViewer = lazy(() => import('./XlsxViewer.jsx'));
 const HtmlViewer = lazy(() => import('./HtmlViewer.jsx'));
 
 function isMarkdown(name) {
-  const e = String(name || '').toLowerCase().split('.').pop();
+  const e = String(name || '')
+    .toLowerCase()
+    .split('.')
+    .pop();
   return ['md', 'markdown', 'mdx'].includes(e);
 }
 
 function isCsv(name) {
-  const e = String(name || '').toLowerCase().split('.').pop();
+  const e = String(name || '')
+    .toLowerCase()
+    .split('.')
+    .pop();
   return ['csv', 'tsv'].includes(e);
 }
 
@@ -95,9 +130,11 @@ function langFor(name) {
   if (e === 'go') return [go()];
   if (['rb', 'gemfile', 'rake'].includes(e)) return [StreamLanguage.define(ruby)];
   if (e === 'lua') return [StreamLanguage.define(lua)];
-  if (['sh', 'bash', 'zsh', 'fish', 'cmd', 'bat', 'ps1'].includes(e)) return [StreamLanguage.define(shell)];
+  if (['sh', 'bash', 'zsh', 'fish', 'cmd', 'bat', 'ps1'].includes(e))
+    return [StreamLanguage.define(shell)];
   if (e === 'toml') return [StreamLanguage.define(toml)];
-  if (['ini', 'cfg', 'conf', 'env', 'properties'].includes(e)) return [StreamLanguage.define(properties)];
+  if (['ini', 'cfg', 'conf', 'env', 'properties'].includes(e))
+    return [StreamLanguage.define(properties)];
   if (lower === 'dockerfile' || e === 'dockerfile') return [StreamLanguage.define(dockerFile)];
   return [];
 }
@@ -106,7 +143,16 @@ function langFor(name) {
 const FileTreeCtx = createContext(null);
 
 // Diálogo de confirmação no estilo do app (substitui o window.confirm do sistema).
-function ConfirmDialog({ open, title, message, confirmLabel = 'OK', cancelLabel = 'Cancelar', danger, onConfirm, onCancel }) {
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = 'OK',
+  cancelLabel = 'Cancelar',
+  danger,
+  onConfirm,
+  onCancel,
+}) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -127,10 +173,16 @@ function ConfirmDialog({ open, title, message, confirmLabel = 'OK', cancelLabel 
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
-        {message && <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{message}</p>}
+        {message && (
+          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{message}</p>
+        )}
         <div className="mt-5 flex justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={danger ? 'destructive' : 'default'} size="sm" onClick={onConfirm}>{confirmLabel}</Button>
+          <Button variant="secondary" size="sm" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+          <Button variant={danger ? 'destructive' : 'default'} size="sm" onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
         </div>
       </div>
     </div>
@@ -141,7 +193,9 @@ function ConfirmDialog({ open, title, message, confirmLabel = 'OK', cancelLabel 
 function PromptDialog({ open, title, placeholder, confirmLabel, onConfirm, onCancel }) {
   const t = useT();
   const [val, setVal] = useState('');
-  useEffect(() => { if (open) setVal(''); }, [open]);
+  useEffect(() => {
+    if (open) setVal('');
+  }, [open]);
   if (!open) return null;
   return (
     <div
@@ -158,16 +212,22 @@ function PromptDialog({ open, title, placeholder, confirmLabel, onConfirm, onCan
           value={val}
           onChange={(e) => setVal(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') { e.preventDefault(); onConfirm(val); }
-            else if (e.key === 'Escape') onCancel();
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onConfirm(val);
+            } else if (e.key === 'Escape') onCancel();
           }}
           placeholder={placeholder}
           spellCheck={false}
           className="mt-4 h-9 w-full rounded-md border bg-background px-3 text-[13px] outline-none focus:ring-1 focus:ring-ring"
         />
         <div className="mt-5 flex justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={onCancel}>{t('create.cancel')}</Button>
-          <Button variant="default" size="sm" onClick={() => onConfirm(val)}>{confirmLabel ?? t('create.button')}</Button>
+          <Button variant="secondary" size="sm" onClick={onCancel}>
+            {t('create.cancel')}
+          </Button>
+          <Button variant="default" size="sm" onClick={() => onConfirm(val)}>
+            {confirmLabel ?? t('create.button')}
+          </Button>
         </div>
       </div>
     </div>
@@ -182,7 +242,10 @@ function parentDir(p) {
 // Normaliza pra comparar caminhos no arrastar-soltar: barras unificadas, sem barra
 // final, minúsculas (Windows é case-insensitive). Só pra comparação, não pra I/O.
 function normPath(p) {
-  return String(p || '').replace(/[\\/]+$/, '').replace(/\\/g, '/').toLowerCase();
+  return String(p || '')
+    .replace(/[\\/]+$/, '')
+    .replace(/\\/g, '/')
+    .toLowerCase();
 }
 
 export function CodeView({ active, openRequest }) {
@@ -199,20 +262,22 @@ export function CodeView({ active, openRequest }) {
   // .env abertos como texto cru (CodeMirror) em vez do editor mascarado. Por path.
   const [rawEnv, setRawEnv] = useState(() => new Set());
   const envRaw = activeTab && rawEnv.has(activeTab.path);
-  const toggleEnvRaw = () => setRawEnv((s) => {
-    const n = new Set(s);
-    n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
-    return n;
-  });
+  const toggleEnvRaw = () =>
+    setRawEnv((s) => {
+      const n = new Set(s);
+      n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
+      return n;
+    });
   // .md abertos no editor cru (CodeMirror) em vez do preview renderizado. Por path:
   // markdown abre renderizado por padrão; este set marca os que estão em modo edição.
   const [mdEdit, setMdEdit] = useState(() => new Set());
   const mdPreview = activeTab && isMarkdown(activeTab.name) && !mdEdit.has(activeTab.path);
-  const toggleMdEdit = () => setMdEdit((s) => {
-    const n = new Set(s);
-    n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
-    return n;
-  });
+  const toggleMdEdit = () =>
+    setMdEdit((s) => {
+      const n = new Set(s);
+      n.has(activeTab.path) ? n.delete(activeTab.path) : n.add(activeTab.path);
+      return n;
+    });
 
   // .html abertos em modo PREVIEW (renderizado). Padrão é código; este set marca
   // quem está em visualização. Por path, pra preservar ao alternar abas.
@@ -223,7 +288,11 @@ export function CodeView({ active, openRequest }) {
     if (!activeTab) return;
     const path = activeTab.path;
     if (htmlPreview.has(path)) {
-      setHtmlPreview((s) => { const n = new Set(s); n.delete(path); return n; });
+      setHtmlPreview((s) => {
+        const n = new Set(s);
+        n.delete(path);
+        return n;
+      });
       return;
     }
     if (activeTab.dirty && !activeTab.notice) {
@@ -231,14 +300,19 @@ export function CodeView({ active, openRequest }) {
       if (res.error) return; // falhou ao salvar: não entra em preview
       setTabs((cur) => cur.map((x) => (x.path === path ? { ...x, dirty: false } : x)));
     }
-    setHtmlPreview((s) => { const n = new Set(s); n.add(path); return n; });
+    setHtmlPreview((s) => {
+      const n = new Set(s);
+      n.add(path);
+      return n;
+    });
   };
 
   // CSV/TSV mostrados como GRADE (planilha read-only) em vez de texto. Por path. CSVs
   // pequenos abrem como texto editável e este set marca quem virou grade; CSVs grandes
   // (csvLarge) já abrem na grade e ficam presos nela (texto seria pesado pra editar).
   const [csvGrid, setCsvGrid] = useState(() => new Set());
-  const csvShown = !!activeTab && (activeTab.csvLarge || (!!activeTab.csv && csvGrid.has(activeTab.path)));
+  const csvShown =
+    !!activeTab && (activeTab.csvLarge || (!!activeTab.csv && csvGrid.has(activeTab.path)));
   // Alterna texto <-> grade num CSV pequeno. Ao entrar na grade, salva edições
   // pendentes (a grade lê do disco) e busca a meta da planilha no main; o main re-parsea
   // só se o mtime mudou (cache), então rebuscar é barato. As linhas seguem vindo
@@ -247,23 +321,37 @@ export function CodeView({ active, openRequest }) {
     if (!activeTab || activeTab.csvLarge) return;
     const path = activeTab.path;
     if (csvGrid.has(path)) {
-      setCsvGrid((s) => { const n = new Set(s); n.delete(path); return n; });
+      setCsvGrid((s) => {
+        const n = new Set(s);
+        n.delete(path);
+        return n;
+      });
       return;
     }
     if (activeTab.dirty && !activeTab.notice) {
       const w = await window.api.writeFile(path, activeTab.content);
-      if (w.error) { toast.error(w.error); return; } // falhou ao salvar: não entra na grade
+      if (w.error) {
+        toast.error(w.error);
+        return;
+      } // falhou ao salvar: não entra na grade
       setTabs((cur) => cur.map((x) => (x.path === path ? { ...x, dirty: false } : x)));
     }
     const r = await window.api.openCsvGrid(path);
-    if (r.error) { toast.error(r.error); return; }
+    if (r.error) {
+      toast.error(r.error);
+      return;
+    }
     setTabs((cur) => cur.map((x) => (x.path === path ? { ...x, csvMeta: r.xlsx } : x)));
-    setCsvGrid((s) => { const n = new Set(s); n.add(path); return n; });
+    setCsvGrid((s) => {
+      const n = new Set(s);
+      n.add(path);
+      return n;
+    });
   };
 
   // Menu de contexto da árvore
-  const [menu, setMenu] = useState(null);     // { x, y, item }
-  const [clip, setClip] = useState(null);     // { path, name, isDir, mode: 'cut' | 'copy' }
+  const [menu, setMenu] = useState(null); // { x, y, item }
+  const [clip, setClip] = useState(null); // { path, name, isDir, mode: 'cut' | 'copy' }
   const [delItems, setDelItems] = useState(null); // array de itens aguardando confirmação de exclusão
   const [creating, setCreating] = useState(null); // { destDir, isDir } aguardando o nome do novo item
   const [renaming, setRenaming] = useState(null); // path em edição de nome
@@ -294,7 +382,11 @@ export function CodeView({ active, openRequest }) {
     for (let i = lo; i <= hi; i++) {
       const r = rows[i];
       const p = r.getAttribute('data-path');
-      m.set(p, { path: p, name: r.getAttribute('data-name'), isDir: r.getAttribute('data-dir') === '1' });
+      m.set(p, {
+        path: p,
+        name: r.getAttribute('data-name'),
+        isDir: r.getAttribute('data-dir') === '1',
+      });
     }
     return m;
   };
@@ -343,7 +435,9 @@ export function CodeView({ active, openRequest }) {
     if (!active) return;
     window.api.watchDir(active.path);
     const off = window.api.on('fs:changed', () => bump());
-    return () => { off?.(); };
+    return () => {
+      off?.();
+    };
   }, [active]);
   // Busca de arquivos no topo da árvore. Com texto, mostra uma lista achatada de
   // resultados (varredura recursiva no main); vazia, mostra a árvore normal.
@@ -351,19 +445,29 @@ export function CodeView({ active, openRequest }) {
   const [results, setResults] = useState([]);
   useEffect(() => {
     const q = query.trim();
-    if (!active || !q) { setResults([]); return; }
+    if (!active || !q) {
+      setResults([]);
+      return;
+    }
     let alive = true;
     const t = setTimeout(() => {
-      window.api.searchFiles(active.path, q).then((r) => { if (alive) setResults(r || []); });
+      window.api.searchFiles(active.path, q).then((r) => {
+        if (alive) setResults(r || []);
+      });
     }, 120);
-    return () => { alive = false; clearTimeout(t); };
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
   }, [query, active, refresh]);
   const [treeDragOver, setTreeDragOver] = useState(false);
   // Arrastar-soltar INTERNO (mover dentro da árvore). dragItemsRef guarda os itens
   // sendo arrastados (1 ou vários, da seleção); dragActive liga o realce de alvo.
   const dragItemsRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
-  const [treeWidth, setTreeWidth] = useState(() => Number(localStorage.getItem('codeTreeWidth')) || 256);
+  const [treeWidth, setTreeWidth] = useState(
+    () => Number(localStorage.getItem('codeTreeWidth')) || 256,
+  );
   const [treeResizing, setTreeResizing] = useState(false);
   const codeRowRef = useRef(null);
 
@@ -381,7 +485,10 @@ export function CodeView({ active, openRequest }) {
       window.removeEventListener('mouseup', onUp);
       document.body.style.cursor = '';
       setTreeResizing(false);
-      setTreeWidth((w) => { localStorage.setItem('codeTreeWidth', String(Math.round(w))); return w; });
+      setTreeWidth((w) => {
+        localStorage.setItem('codeTreeWidth', String(Math.round(w)));
+        return w;
+      });
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -421,11 +528,12 @@ export function CodeView({ active, openRequest }) {
   const canDropItems = (destDir) => {
     const items = dragItemsRef.current;
     if (!items?.length) return false;
-    return items.some((it) => (
-      normPath(it.path) !== normPath(destDir) &&
-      normPath(parentDir(it.path)) !== normPath(destDir) &&
-      !normPath(destDir).startsWith(normPath(it.path) + '/')
-    ));
+    return items.some(
+      (it) =>
+        normPath(it.path) !== normPath(destDir) &&
+        normPath(parentDir(it.path)) !== normPath(destDir) &&
+        !normPath(destDir).startsWith(normPath(it.path) + '/'),
+    );
   };
 
   // Início do arrasto de um nó: se o nó faz parte de uma seleção múltipla, arrasta
@@ -485,12 +593,17 @@ export function CodeView({ active, openRequest }) {
       if (!clip) return;
       const destDir = it.isDir ? it.path : parentDir(it.path);
       const r = await window.api.pasteItem(clip.path, destDir, clip.mode === 'cut');
-      if (!r.error) { if (clip.mode === 'cut') setClip(null); bump(); }
+      if (!r.error) {
+        if (clip.mode === 'cut') setClip(null);
+        bump();
+      }
     },
     rename: (it) => setRenaming(it.path),
     // Novo arquivo/pasta: cria dentro da pasta clicada (ou na pasta do arquivo clicado).
-    newFile: (it) => setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: false }),
-    newFolder: (it) => setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: true }),
+    newFile: (it) =>
+      setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: false }),
+    newFolder: (it) =>
+      setCreating({ destDir: it.isDir ? it.path : parentDir(it.path), isDir: true }),
     del: (it) => {
       // Se o item clicado faz parte de uma seleção múltipla, apaga todos os selecionados.
       const sel = selItemsRef.current;
@@ -527,7 +640,12 @@ export function CodeView({ active, openRequest }) {
       const r = await window.api.trashItem(it.path);
       if (!r.error) {
         // Fecha a aba do item e, se for pasta, qualquer aba aberta dentro dela.
-        removeTabs((t) => t.path === it.path || t.path.startsWith(it.path + '/') || t.path.startsWith(it.path + '\\'));
+        removeTabs(
+          (t) =>
+            t.path === it.path ||
+            t.path.startsWith(it.path + '/') ||
+            t.path.startsWith(it.path + '\\'),
+        );
       }
     }
     setSelItems(new Map());
@@ -557,7 +675,8 @@ export function CodeView({ active, openRequest }) {
     if (r.error) return;
     setTabs((cur) => cur.map((t) => (t.path === it.path ? { ...t, path: r.path, name } : t)));
     if (activePathRef.current === it.path) setActivePath(r.path);
-    if (selectedRef.current?.path === it.path) setSelected({ path: r.path, name, isDir: !!it.isDir });
+    if (selectedRef.current?.path === it.path)
+      setSelected({ path: r.path, name, isDir: !!it.isDir });
     if (selItemsRef.current.has(it.path)) {
       setSelItems((prev) => {
         const n = new Map(prev);
@@ -574,9 +693,26 @@ export function CodeView({ active, openRequest }) {
     setSelItems(new Map([[item.path, { path: item.path, name: item.name, isDir: false }]]));
     setAnchorPath(item.path);
     // Já aberto? só ativa a aba existente.
-    if (tabs.some((t) => t.path === item.path)) { setActivePath(item.path); return; }
+    if (tabs.some((t) => t.path === item.path)) {
+      setActivePath(item.path);
+      return;
+    }
     const r = await window.api.readFile(item.path);
-    const tab = { path: item.path, name: item.name, content: '', image: null, pdf: null, xlsx: null, video: null, audio: null, csv: false, csvLarge: false, csvMeta: null, notice: null, dirty: false };
+    const tab = {
+      path: item.path,
+      name: item.name,
+      content: '',
+      image: null,
+      pdf: null,
+      xlsx: null,
+      video: null,
+      audio: null,
+      csv: false,
+      csvLarge: false,
+      csvMeta: null,
+      notice: null,
+      dirty: false,
+    };
     if (r.image) tab.image = r.image;
     else if (r.pdf) tab.pdf = r.pdf;
     else if (r.video) tab.video = r.video;
@@ -584,9 +720,13 @@ export function CodeView({ active, openRequest }) {
     else if (r.unsupportedMedia) tab.notice = t('code.media_unsupported');
     // CSV grande: já vem como grade (read-only). Pequeno: texto editável + flag pra
     // mostrar o botão "Ver como planilha".
-    else if (r.csvLarge) { tab.csvLarge = true; tab.csvMeta = r.xlsx; }
-    else if (r.csv) { tab.csv = true; tab.content = r.content; }
-    else if (r.xlsx) tab.xlsx = r.xlsx;
+    else if (r.csvLarge) {
+      tab.csvLarge = true;
+      tab.csvMeta = r.xlsx;
+    } else if (r.csv) {
+      tab.csv = true;
+      tab.content = r.content;
+    } else if (r.xlsx) tab.xlsx = r.xlsx;
     else if (r.binary) tab.notice = t('code.binary_notice');
     else if (r.error) tab.notice = t('code.error_notice') + ' ' + r.error;
     else tab.content = r.content;
@@ -630,7 +770,8 @@ export function CodeView({ active, openRequest }) {
     const id = setTimeout(async () => {
       for (const t of dirty) {
         const res = await window.api.writeFile(t.path, t.content);
-        if (!res.error) setTabs((cur) => cur.map((x) => (x.path === t.path ? { ...x, dirty: false } : x)));
+        if (!res.error)
+          setTabs((cur) => cur.map((x) => (x.path === t.path ? { ...x, dirty: false } : x)));
       }
     }, 800);
     return () => clearTimeout(id);
@@ -640,12 +781,20 @@ export function CodeView({ active, openRequest }) {
     const t = tabs.find((x) => x.path === activePath);
     if (!t || t.notice) return;
     const res = await window.api.writeFile(t.path, t.content);
-    if (!res.error) setTabs((cur) => cur.map((x) => (x.path === t.path ? { ...x, dirty: false } : x)));
+    if (!res.error)
+      setTabs((cur) => cur.map((x) => (x.path === t.path ? { ...x, dirty: false } : x)));
   }, [tabs, activePath]);
   saveRef.current = save;
 
   const saveKeymap = keymap.of([
-    { key: 'Mod-s', preventDefault: true, run: () => { saveRef.current(); return true; } },
+    {
+      key: 'Mod-s',
+      preventDefault: true,
+      run: () => {
+        saveRef.current();
+        return true;
+      },
+    },
   ]);
 
   // Atalhos na árvore: Ctrl+C / Ctrl+X / Ctrl+V e Delete sobre o arquivo selecionado.
@@ -656,7 +805,13 @@ export function CodeView({ active, openRequest }) {
       if (!active) return;
       const el = document.activeElement;
       const tag = el?.tagName;
-      if (el?.closest?.('.cm-editor') || tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
+      if (
+        el?.closest?.('.cm-editor') ||
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        el?.isContentEditable
+      )
+        return;
 
       // F2 renomeia o item selecionado na árvore (arquivo ou pasta), igual no VS Code.
       if (e.key === 'F2') {
@@ -675,13 +830,21 @@ export function CodeView({ active, openRequest }) {
       if (mod && (k === 'c' || k === 'x')) {
         if (!it) return;
         e.preventDefault();
-        setClip({ path: it.path, name: it.name, isDir: !!it.isDir, mode: k === 'x' ? 'cut' : 'copy' });
+        setClip({
+          path: it.path,
+          name: it.name,
+          isDir: !!it.isDir,
+          mode: k === 'x' ? 'cut' : 'copy',
+        });
       } else if (mod && k === 'v') {
         if (!clip) return;
         e.preventDefault();
         const destDir = it ? (it.isDir ? it.path : parentDir(it.path)) : active.path;
         const r = await window.api.pasteItem(clip.path, destDir, clip.mode === 'cut');
-        if (!r.error) { if (clip.mode === 'cut') setClip(null); bump(); }
+        if (!r.error) {
+          if (clip.mode === 'cut') setClip(null);
+          bump();
+        }
       } else if (e.key === 'Delete') {
         // Prioriza a seleção da árvore (pode ter vários itens); senão, a aba ativa.
         const sel = selItemsRef.current;
@@ -701,7 +864,7 @@ export function CodeView({ active, openRequest }) {
         style={{ width: treeWidth }}
         className={cn(
           'flex shrink-0 flex-col border-r transition-colors',
-          treeDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/40'
+          treeDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/40',
         )}
         onDragOver={(e) => {
           if (!active) return;
@@ -712,16 +875,20 @@ export function CodeView({ active, openRequest }) {
             setTreeDragOver(true);
           }
         }}
-        onDragLeave={(e) => { if (e.currentTarget === e.target) setTreeDragOver(false); }}
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setTreeDragOver(false);
+        }}
         onDrop={(e) => {
           if (!active) return;
           if (e.dataTransfer.files?.length) {
-            e.preventDefault(); setTreeDragOver(false);
+            e.preventDefault();
+            setTreeDragOver(false);
             importFiles(e.dataTransfer.files, active.path);
             return;
           }
           if (dragActive) {
-            e.preventDefault(); setTreeDragOver(false);
+            e.preventDefault();
+            setTreeDragOver(false);
             dropMove(active.path);
           }
         }}
@@ -734,7 +901,9 @@ export function CodeView({ active, openRequest }) {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape') setQuery(''); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setQuery('');
+                  }}
                   placeholder={t('tree.search_placeholder')}
                   spellCheck={false}
                   className="h-7 w-full rounded-md border bg-background pl-7 pr-7 text-[13px] outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
@@ -761,7 +930,10 @@ export function CodeView({ active, openRequest }) {
               {query.trim() ? (
                 results.length ? (
                   results.map((r) => {
-                    const dir = r.rel.slice(0, r.rel.length - r.name.length).replace(/[\\/]+$/, '').replace(/\\/g, '/');
+                    const dir = r.rel
+                      .slice(0, r.rel.length - r.name.length)
+                      .replace(/[\\/]+$/, '')
+                      .replace(/\\/g, '/');
                     const isSel = (selected?.path ?? activePath) === r.path;
                     return (
                       <button
@@ -771,17 +943,28 @@ export function CodeView({ active, openRequest }) {
                         title={r.rel}
                         className={cn(
                           'flex w-full items-center gap-1.5 px-2 py-[3px] text-left text-[13px] hover:bg-muted',
-                          isSel && 'bg-accent'
+                          isSel && 'bg-accent',
                         )}
                       >
-                        <img src={fileIconUrl(r.name)} alt="" draggable={false} className="h-4 w-4 shrink-0" />
+                        <img
+                          src={fileIconUrl(r.name)}
+                          alt=""
+                          draggable={false}
+                          className="h-4 w-4 shrink-0"
+                        />
                         <span className="shrink-0 truncate">{r.name}</span>
-                        {dir && <span className="ml-auto truncate pl-2 text-[11px] text-muted-foreground">{dir}</span>}
+                        {dir && (
+                          <span className="ml-auto truncate pl-2 text-[11px] text-muted-foreground">
+                            {dir}
+                          </span>
+                        )}
                       </button>
                     );
                   })
                 ) : (
-                  <div className="px-3 py-1 text-xs text-muted-foreground">{t('tree.no_results')}</div>
+                  <div className="px-3 py-1 text-xs text-muted-foreground">
+                    {t('tree.no_results')}
+                  </div>
                 )
               ) : (
                 <FileTreeCtx.Provider
@@ -816,7 +999,13 @@ export function CodeView({ active, openRequest }) {
         )}
       </div>
       <ResizeBar onMouseDown={startTreeResize} />
-      <FileMenu menu={menu} clip={clip} actions={actions} selItems={selItems} onClose={() => setMenu(null)} />
+      <FileMenu
+        menu={menu}
+        clip={clip}
+        actions={actions}
+        selItems={selItems}
+        onClose={() => setMenu(null)}
+      />
       <div className="flex min-w-0 flex-1 flex-col shadow-[inset_7px_0_14px_-12px_rgba(0,0,0,0.22)]">
         <div className="flex h-9 shrink-0 items-center border-b bg-card">
           {tabs.length ? (
@@ -827,15 +1016,27 @@ export function CodeView({ active, openRequest }) {
                   return (
                     <div
                       key={tab.path}
-                      onClick={() => { setActivePath(tab.path); setSelected({ path: tab.path, name: tab.name, isDir: false }); }}
-                      onMouseDown={(e) => { if (e.button === 1) closeFile(e, tab.path); }}
+                      onClick={() => {
+                        setActivePath(tab.path);
+                        setSelected({ path: tab.path, name: tab.name, isDir: false });
+                      }}
+                      onMouseDown={(e) => {
+                        if (e.button === 1) closeFile(e, tab.path);
+                      }}
                       title={tab.path}
                       className={cn(
                         'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors',
-                        isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'
+                        isActive
+                          ? 'bg-muted text-foreground'
+                          : 'text-muted-foreground hover:bg-muted/60',
                       )}
                     >
-                      <img src={fileIconUrl(tab.name)} alt="" draggable={false} className="h-3.5 w-3.5 shrink-0" />
+                      <img
+                        src={fileIconUrl(tab.name)}
+                        alt=""
+                        draggable={false}
+                        className="h-3.5 w-3.5 shrink-0"
+                      />
                       <span className="max-w-[160px] truncate">{tab.name}</span>
                       <button
                         type="button"
@@ -856,41 +1057,142 @@ export function CodeView({ active, openRequest }) {
                   );
                 })}
               </div>
-              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isEnvFile(activeTab.name) && (
-                <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleEnvRaw}
-                  title={envRaw ? t('code.env_raw_hide_tip') : t('code.env_raw_show_tip')}>
-                  {envRaw ? <><KeyRound className="size-3.5" />{t('code.env_raw_hide_btn')}</> : <><Eye className="size-3.5" />{t('code.env_raw_show_btn')}</>}
-                </Button>
-              )}
-              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isMarkdown(activeTab.name) && (
-                <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleMdEdit}
-                  title={mdPreview ? t('code.md_toggle_edit') : t('code.md_toggle_preview')}>
-                  {mdPreview ? <><Code2 className="size-3.5" />{t('code.md_button_edit')}</> : <><Eye className="size-3.5" />{t('code.md_button_preview')}</>}
-                </Button>
-              )}
-              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isHtml(activeTab.name) && (
-                <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleHtmlPreview}
-                  title={htmlShown ? t('code.html_toggle_edit') : t('code.html_toggle_preview')}>
-                  {htmlShown ? <><Code2 className="size-3.5" />{t('code.html_button_edit')}</> : <><Eye className="size-3.5" />{t('code.html_button_preview')}</>}
-                </Button>
-              )}
-              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && isCsv(activeTab.name) && (
-                activeTab.csvLarge ? (
-                  <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" disabled title={t('code.csv_large_tip')}>
-                    <Sheet className="size-3.5" />{t('code.csv_button_grid')}
+              {activeTab &&
+                !activeTab.notice &&
+                !activeTab.image &&
+                !activeTab.pdf &&
+                !activeTab.xlsx &&
+                isEnvFile(activeTab.name) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                    onClick={toggleEnvRaw}
+                    title={envRaw ? t('code.env_raw_hide_tip') : t('code.env_raw_show_tip')}
+                  >
+                    {envRaw ? (
+                      <>
+                        <KeyRound className="size-3.5" />
+                        {t('code.env_raw_hide_btn')}
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="size-3.5" />
+                        {t('code.env_raw_show_btn')}
+                      </>
+                    )}
+                  </Button>
+                )}
+              {activeTab &&
+                !activeTab.notice &&
+                !activeTab.image &&
+                !activeTab.pdf &&
+                !activeTab.xlsx &&
+                isMarkdown(activeTab.name) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                    onClick={toggleMdEdit}
+                    title={mdPreview ? t('code.md_toggle_edit') : t('code.md_toggle_preview')}
+                  >
+                    {mdPreview ? (
+                      <>
+                        <Code2 className="size-3.5" />
+                        {t('code.md_button_edit')}
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="size-3.5" />
+                        {t('code.md_button_preview')}
+                      </>
+                    )}
+                  </Button>
+                )}
+              {activeTab &&
+                !activeTab.notice &&
+                !activeTab.image &&
+                !activeTab.pdf &&
+                !activeTab.xlsx &&
+                isHtml(activeTab.name) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                    onClick={toggleHtmlPreview}
+                    title={htmlShown ? t('code.html_toggle_edit') : t('code.html_toggle_preview')}
+                  >
+                    {htmlShown ? (
+                      <>
+                        <Code2 className="size-3.5" />
+                        {t('code.html_button_edit')}
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="size-3.5" />
+                        {t('code.html_button_preview')}
+                      </>
+                    )}
+                  </Button>
+                )}
+              {activeTab &&
+                !activeTab.notice &&
+                !activeTab.image &&
+                !activeTab.pdf &&
+                !activeTab.xlsx &&
+                isCsv(activeTab.name) &&
+                (activeTab.csvLarge ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                    disabled
+                    title={t('code.csv_large_tip')}
+                  >
+                    <Sheet className="size-3.5" />
+                    {t('code.csv_button_grid')}
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 text-muted-foreground" onClick={toggleCsvGrid}
-                    title={csvShown ? t('code.csv_toggle_text') : t('code.csv_toggle_grid')}>
-                    {csvShown ? <><Code2 className="size-3.5" />{t('code.csv_button_text')}</> : <><Sheet className="size-3.5" />{t('code.csv_button_grid')}</>}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                    onClick={toggleCsvGrid}
+                    title={csvShown ? t('code.csv_toggle_text') : t('code.csv_toggle_grid')}
+                  >
+                    {csvShown ? (
+                      <>
+                        <Code2 className="size-3.5" />
+                        {t('code.csv_button_text')}
+                      </>
+                    ) : (
+                      <>
+                        <Sheet className="size-3.5" />
+                        {t('code.csv_button_grid')}
+                      </>
+                    )}
                   </Button>
-                )
-              )}
-              {activeTab && !activeTab.notice && !activeTab.image && !activeTab.pdf && !activeTab.xlsx && !activeTab.video && !activeTab.audio && !csvShown && (
-                <Button variant="secondary" size="sm" className="mr-2 h-7 shrink-0" onClick={save} disabled={!activeTab.dirty} title={t('code.save_tooltip')}>
-                  <Save className="mr-1" />{t('code.save_button')}
-                </Button>
-              )}
+                ))}
+              {activeTab &&
+                !activeTab.notice &&
+                !activeTab.image &&
+                !activeTab.pdf &&
+                !activeTab.xlsx &&
+                !activeTab.video &&
+                !activeTab.audio &&
+                !csvShown && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mr-2 h-7 shrink-0"
+                    onClick={save}
+                    disabled={!activeTab.dirty}
+                    title={t('code.save_tooltip')}
+                  >
+                    <Save className="mr-1" />
+                    {t('code.save_button')}
+                  </Button>
+                )}
             </>
           ) : (
             <span className="px-3 text-xs text-muted-foreground">{t('code.tabs_select_file')}</span>
@@ -906,23 +1208,47 @@ export function CodeView({ active, openRequest }) {
           ) : activeTab?.audio ? (
             <AudioViewer src={activeTab.audio} name={activeTab.name} />
           ) : activeTab?.xlsx ? (
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">{t('code.loading_spreadsheet')}</div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  {t('code.loading_spreadsheet')}
+                </div>
+              }
+            >
               <XlsxViewer data={activeTab.xlsx} name={activeTab.name} />
             </Suspense>
           ) : csvShown ? (
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">{t('code.loading_spreadsheet')}</div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  {t('code.loading_spreadsheet')}
+                </div>
+              }
+            >
               <XlsxViewer data={activeTab.csvMeta} name={activeTab.name} />
             </Suspense>
           ) : activeTab?.notice ? (
-            <div className="flex h-full items-center justify-center text-muted-foreground">{activeTab.notice}</div>
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              {activeTab.notice}
+            </div>
           ) : htmlShown ? (
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">{t('code.loading_preview')}</div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  {t('code.loading_preview')}
+                </div>
+              }
+            >
               <HtmlViewer path={activeTab.path} />
             </Suspense>
           ) : mdPreview ? (
             <div className="absolute inset-0 overflow-y-auto px-8 py-6">
               <div className="mx-auto max-w-3xl">
-                <Suspense fallback={<div className="text-sm text-muted-foreground">{t('code.loading_preview')}</div>}>
+                <Suspense
+                  fallback={
+                    <div className="text-sm text-muted-foreground">{t('code.loading_preview')}</div>
+                  }
+                >
                   <Markdown text={activeTab.content} />
                 </Suspense>
               </div>
@@ -930,7 +1256,13 @@ export function CodeView({ active, openRequest }) {
           ) : activeTab && isEnvFile(activeTab.name) && !envRaw ? (
             <EnvEditor
               value={activeTab.content}
-              onChange={(v) => setTabs((cur) => cur.map((x) => (x.path === activePathRef.current ? { ...x, content: v, dirty: true } : x)))}
+              onChange={(v) =>
+                setTabs((cur) =>
+                  cur.map((x) =>
+                    x.path === activePathRef.current ? { ...x, content: v, dirty: true } : x,
+                  ),
+                )
+              }
             />
           ) : activeTab ? (
             <CodeMirror
@@ -939,8 +1271,19 @@ export function CodeView({ active, openRequest }) {
               theme={theme === 'dark' ? vscodeDark : vscodeLight}
               height="100%"
               style={{ height: '100%' }}
-              extensions={[saveKeymap, editorTheme, ...(wordWrap ? [EditorView.lineWrapping] : []), ...langFor(activeTab.name)]}
-              onChange={(v) => setTabs((cur) => cur.map((x) => (x.path === activePathRef.current ? { ...x, content: v, dirty: true } : x)))}
+              extensions={[
+                saveKeymap,
+                editorTheme,
+                ...(wordWrap ? [EditorView.lineWrapping] : []),
+                ...langFor(activeTab.name),
+              ]}
+              onChange={(v) =>
+                setTabs((cur) =>
+                  cur.map((x) =>
+                    x.path === activePathRef.current ? { ...x, content: v, dirty: true } : x,
+                  ),
+                )
+              }
             />
           ) : (
             <EmptyState>{t('code.empty')}</EmptyState>
@@ -967,7 +1310,9 @@ export function CodeView({ active, openRequest }) {
       <PromptDialog
         open={!!creating}
         title={creating?.isDir ? t('create.folder_title') : t('create.file_title')}
-        placeholder={creating?.isDir ? t('create.folder_placeholder') : t('create.file_placeholder')}
+        placeholder={
+          creating?.isDir ? t('create.folder_placeholder') : t('create.file_placeholder')
+        }
         confirmLabel={t('create.button')}
         onConfirm={performCreate}
         onCancel={() => setCreating(null)}
@@ -995,7 +1340,9 @@ function parseEnv(text) {
   });
 }
 function serializeEnv(rows) {
-  return rows.map((r) => (r.type === 'kv' ? r.indent + r.key + r.sep + r.value : r.text)).join('\n');
+  return rows
+    .map((r) => (r.type === 'kv' ? r.indent + r.key + r.sep + r.value : r.text))
+    .join('\n');
 }
 
 // Editor de .env com valores mascarados por padrão (•••). Revela por linha (olho) ou
@@ -1073,7 +1420,9 @@ function EnvEditor({ value, onChange }) {
                     <button
                       type="button"
                       onClick={() => toggle(i)}
-                      title={revealAll || revealed.has(i) ? t('env.toggle_hide') : t('env.toggle_reveal')}
+                      title={
+                        revealAll || revealed.has(i) ? t('env.toggle_hide') : t('env.toggle_reveal')
+                      }
                       className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
                     >
                       {revealAll || revealed.has(i) ? <EyeOff /> : <Eye />}
@@ -1088,7 +1437,7 @@ function EnvEditor({ value, onChange }) {
                     <Trash2 />
                   </button>
                 </div>
-              )
+              ),
             )}
           </div>
         )}
@@ -1098,7 +1447,8 @@ function EnvEditor({ value, onChange }) {
           onClick={addRow}
           className="mt-3 flex h-8 items-center gap-1.5 rounded-md border border-dashed px-2.5 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground [&_svg]:size-3.5"
         >
-          <Plus />{t('env.variable_add')}
+          <Plus />
+          {t('env.variable_add')}
         </button>
       </div>
     </div>
@@ -1114,9 +1464,33 @@ function ImageViewer({ src, name }) {
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="flex h-8 shrink-0 items-center gap-1 border-b bg-card px-2 text-xs text-muted-foreground">
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => zoomOut()} title={t('image.zoom_out')}><ZoomOut /></Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => zoomIn()} title={t('image.zoom_in')}><ZoomIn /></Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => resetTransform()} title={t('image.fit')}><Maximize2 /></Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => zoomOut()}
+                title={t('image.zoom_out')}
+              >
+                <ZoomOut />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => zoomIn()}
+                title={t('image.zoom_in')}
+              >
+                <ZoomIn />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => resetTransform()}
+                title={t('image.fit')}
+              >
+                <Maximize2 />
+              </Button>
               <span className="ml-1 truncate">{t('image.help')}</span>
             </div>
             <div className="ygc-checker relative min-h-0 flex-1">
@@ -1125,7 +1499,12 @@ function ImageViewer({ src, name }) {
                 contentStyle={{ width: '100%', height: '100%' }}
               >
                 <div className="flex h-full w-full items-center justify-center p-4">
-                  <img src={src} alt={name} draggable={false} className="max-h-full max-w-full object-contain" />
+                  <img
+                    src={src}
+                    alt={name}
+                    draggable={false}
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </div>
               </TransformComponent>
             </div>
@@ -1140,11 +1519,7 @@ function ImageViewer({ src, name }) {
 // paginação, impressão) apontando um <iframe> pra data URL. Zero dependências.
 function PdfViewer({ src, name }) {
   return (
-    <iframe
-      src={src}
-      title={name}
-      className="absolute inset-0 h-full w-full border-0 bg-card"
-    />
+    <iframe src={src} title={name} className="absolute inset-0 h-full w-full border-0 bg-card" />
   );
 }
 
@@ -1205,7 +1580,9 @@ function MediaFallback({ name }) {
 function Tree({ dirPath, depth }) {
   const { refresh } = useContext(FileTreeCtx);
   const [items, setItems] = useState(null);
-  useEffect(() => { window.api.listDir(dirPath).then(setItems); }, [dirPath, refresh]);
+  useEffect(() => {
+    window.api.listDir(dirPath).then(setItems);
+  }, [dirPath, refresh]);
   if (!items) return null;
   return items.map((it) => <TreeNode key={it.path} item={it} depth={depth} />);
 }
@@ -1215,7 +1592,9 @@ function TreeNode({ item, depth }) {
   const ctx = useContext(FileTreeCtx);
   const [open, setOpen] = useState(false);
   const [over, setOver] = useState(false);
-  const isSel = ctx.selectedSet?.has(item.path) || (ctx.selectedSet?.size === 0 && ctx.activePath === item.path);
+  const isSel =
+    ctx.selectedSet?.has(item.path) ||
+    (ctx.selectedSet?.size === 0 && ctx.activePath === item.path);
   const isRenaming = ctx.renaming === item.path;
   const isCut = ctx.cutPath === item.path;
   return (
@@ -1233,7 +1612,8 @@ function TreeNode({ item, depth }) {
           const isFiles = e.dataTransfer.types.includes('Files');
           const internal = ctx.dragActive && ctx.canDropItems(dest);
           if (!isFiles && !internal) return;
-          e.preventDefault(); e.stopPropagation();
+          e.preventDefault();
+          e.stopPropagation();
           e.dataTransfer.dropEffect = isFiles ? 'copy' : 'move';
           setOver(true);
         }}
@@ -1244,12 +1624,18 @@ function TreeNode({ item, depth }) {
           // o realce do painel (senão a moldura fica grudada — vale pro drop de arquivos
           // de fora, que não dispara o dragend interno).
           if (e.dataTransfer.files?.length) {
-            e.preventDefault(); e.stopPropagation(); setOver(false); ctx.clearTreeDragOver?.();
+            e.preventDefault();
+            e.stopPropagation();
+            setOver(false);
+            ctx.clearTreeDragOver?.();
             ctx.onDropFiles?.(e.dataTransfer.files, dest);
             return;
           }
           if (ctx.dragActive) {
-            e.preventDefault(); e.stopPropagation(); setOver(false); ctx.clearTreeDragOver?.();
+            e.preventDefault();
+            e.stopPropagation();
+            setOver(false);
+            ctx.clearTreeDragOver?.();
             ctx.onDropMove?.(dest);
           }
         }}
@@ -1257,24 +1643,33 @@ function TreeNode({ item, depth }) {
           'flex cursor-pointer select-none items-center gap-1.5 py-[3px] pr-2 text-[13px] hover:bg-muted',
           isSel && 'bg-accent',
           isCut && 'opacity-50',
-          over && 'bg-primary/10 ring-1 ring-inset ring-primary/50'
+          over && 'bg-primary/10 ring-1 ring-inset ring-primary/50',
         )}
         style={{ paddingLeft: depth * 12 + 8 }}
         onClick={(e) => {
           ctx.onNodeClick(e, item);
           if (e.shiftKey || e.ctrlKey || e.metaKey) return; // seleção múltipla: não abre/expande
           // Link (atalho/junction): não dá pra expandir/abrir aqui — abre no Explorador.
-          if (item.isLink) { window.api.revealItem(item.path); return; }
+          if (item.isLink) {
+            window.api.revealItem(item.path);
+            return;
+          }
           item.isDir ? setOpen((o) => !o) : ctx.onSelect(item);
         }}
-        onContextMenu={(e) => { ctx.onContextNode(item); ctx.openMenu(e, item); }}
+        onContextMenu={(e) => {
+          ctx.onContextNode(item);
+          ctx.openMenu(e, item);
+        }}
         title={item.isLink ? t('tree.link_title', { name: item.name }) : item.name}
       >
         {item.isLink ? (
           <Link2 className="h-3.5 w-3.5 shrink-0 text-primary" />
         ) : item.isDir ? (
-          open ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-               : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          open ? (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          )
         ) : (
           <span className="w-3.5 shrink-0" />
         )}
@@ -1322,7 +1717,7 @@ function MenuItem({ icon: Icon, label, onClick, danger, disabled }) {
       disabled={disabled}
       className={cn(
         'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted disabled:pointer-events-none disabled:opacity-40',
-        danger && 'text-red-600'
+        danger && 'text-red-600',
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -1336,8 +1731,12 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onClose);
@@ -1349,7 +1748,10 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
   }, [menu, onClose]);
   if (!menu) return null;
   const { x, y, item } = menu;
-  const run = (fn) => () => { onClose(); fn(item); };
+  const run = (fn) => () => {
+    onClose();
+    fn(item);
+  };
   // Quantos itens o "Delete" vai apagar (a seleção inteira se o item clicado fizer parte dela).
   const delCount = selItems?.has(item.path) && selItems.size > 1 ? selItems.size : 1;
   return (
@@ -1361,25 +1763,67 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
       {item.root ? (
         // Área em branco: criar na raiz do projeto, ou colar.
         <>
-          <MenuItem icon={FilePlus} label={t('contextMenu.newFile')} onClick={run(actions.newFile)} />
-          <MenuItem icon={FolderPlus} label={t('contextMenu.newFolder')} onClick={run(actions.newFolder)} />
+          <MenuItem
+            icon={FilePlus}
+            label={t('contextMenu.newFile')}
+            onClick={run(actions.newFile)}
+          />
+          <MenuItem
+            icon={FolderPlus}
+            label={t('contextMenu.newFolder')}
+            onClick={run(actions.newFolder)}
+          />
           <div className="my-1 border-t" />
-          <MenuItem icon={ClipboardPaste} label={t('contextMenu.paste')} disabled={!clip} onClick={run(actions.paste)} />
+          <MenuItem
+            icon={ClipboardPaste}
+            label={t('contextMenu.paste')}
+            disabled={!clip}
+            onClick={run(actions.paste)}
+          />
         </>
       ) : (
         <>
-          <MenuItem icon={FilePlus} label={t('contextMenu.newFile')} onClick={run(actions.newFile)} />
-          <MenuItem icon={FolderPlus} label={t('contextMenu.newFolder')} onClick={run(actions.newFolder)} />
+          <MenuItem
+            icon={FilePlus}
+            label={t('contextMenu.newFile')}
+            onClick={run(actions.newFile)}
+          />
+          <MenuItem
+            icon={FolderPlus}
+            label={t('contextMenu.newFolder')}
+            onClick={run(actions.newFolder)}
+          />
           <div className="my-1 border-t" />
-          <MenuItem icon={ExternalLink} label={t('contextMenu.reveal')} onClick={run(actions.reveal)} />
+          <MenuItem
+            icon={ExternalLink}
+            label={t('contextMenu.reveal')}
+            onClick={run(actions.reveal)}
+          />
           <div className="my-1 border-t" />
           <MenuItem icon={Scissors} label={t('contextMenu.cut')} onClick={run(actions.cut)} />
           <MenuItem icon={Copy} label={t('contextMenu.copy')} onClick={run(actions.copy)} />
-          {clip && <MenuItem icon={ClipboardPaste} label={t('contextMenu.paste')} onClick={run(actions.paste)} />}
-          <MenuItem icon={Link2} label={t('contextMenu.copyPath')} onClick={run(actions.copyPath)} />
+          {clip && (
+            <MenuItem
+              icon={ClipboardPaste}
+              label={t('contextMenu.paste')}
+              onClick={run(actions.paste)}
+            />
+          )}
+          <MenuItem
+            icon={Link2}
+            label={t('contextMenu.copyPath')}
+            onClick={run(actions.copyPath)}
+          />
           <div className="my-1 border-t" />
           <MenuItem icon={Pencil} label={t('contextMenu.rename')} onClick={run(actions.rename)} />
-          <MenuItem icon={Trash2} label={t(delCount === 1 ? 'contextMenu.delete_single' : 'contextMenu.delete_multiple', { count: delCount })} danger onClick={run(actions.del)} />
+          <MenuItem
+            icon={Trash2}
+            label={t(delCount === 1 ? 'contextMenu.delete_single' : 'contextMenu.delete_multiple', {
+              count: delCount,
+            })}
+            danger
+            onClick={run(actions.del)}
+          />
         </>
       )}
     </div>

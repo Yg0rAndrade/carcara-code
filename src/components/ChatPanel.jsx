@@ -2,14 +2,31 @@ import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { Plus, X, Library, Pencil, Trash2, ArrowUpLeft, Search, Star, CornerDownLeft } from 'lucide-react';
+import {
+  Plus,
+  X,
+  Library,
+  Pencil,
+  Trash2,
+  ArrowUpLeft,
+  Search,
+  Star,
+  CornerDownLeft,
+} from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
 import {
-  isPane, firstPane, allPanes, paneCount,
-  applyDrop, addSessionToPane, setActiveInPane, closeSessionInTree, reconcile,
+  isPane,
+  firstPane,
+  allPanes,
+  paneCount,
+  applyDrop,
+  addSessionToPane,
+  setActiveInPane,
+  closeSessionInTree,
+  reconcile,
 } from '@/lib/paneLayout.js';
 import { cn } from '@/lib/utils';
 import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
@@ -36,28 +53,44 @@ const TERM_THEMES = {
     foreground: '#1f2430',
     cursor: '#2563eb',
     selectionBackground: '#cfe0ff',
-    black: '#1f2430', brightBlack: '#6b7280',
-    red: '#d12d36', brightRed: '#e5484d',
-    green: '#15803d', brightGreen: '#1a9d4d',
-    yellow: '#b45309', brightYellow: '#c2710c',
-    blue: '#2563eb', brightBlue: '#3b82f6',
-    magenta: '#7c3aed', brightMagenta: '#9333ea',
-    cyan: '#0e7490', brightCyan: '#0891b2',
-    white: '#1f2430', brightWhite: '#0b0e14',
+    black: '#1f2430',
+    brightBlack: '#6b7280',
+    red: '#d12d36',
+    brightRed: '#e5484d',
+    green: '#15803d',
+    brightGreen: '#1a9d4d',
+    yellow: '#b45309',
+    brightYellow: '#c2710c',
+    blue: '#2563eb',
+    brightBlue: '#3b82f6',
+    magenta: '#7c3aed',
+    brightMagenta: '#9333ea',
+    cyan: '#0e7490',
+    brightCyan: '#0891b2',
+    white: '#1f2430',
+    brightWhite: '#0b0e14',
   },
   dark: {
     background: '#0b0f17',
     foreground: '#e6e8ee',
     cursor: '#7c5cff',
     selectionBackground: '#33405e',
-    black: '#1b1f28', brightBlack: '#5c6473',
-    red: '#ff7a7a', brightRed: '#ff9a9a',
-    green: '#34d399', brightGreen: '#52e0ad',
-    yellow: '#ffce6b', brightYellow: '#ffd98a',
-    blue: '#6ea8fe', brightBlue: '#8fc0ff',
-    magenta: '#c7a6ff', brightMagenta: '#d6bcff',
-    cyan: '#6be0d6', brightCyan: '#8aeae1',
-    white: '#e6e8ee', brightWhite: '#ffffff',
+    black: '#1b1f28',
+    brightBlack: '#5c6473',
+    red: '#ff7a7a',
+    brightRed: '#ff9a9a',
+    green: '#34d399',
+    brightGreen: '#52e0ad',
+    yellow: '#ffce6b',
+    brightYellow: '#ffd98a',
+    blue: '#6ea8fe',
+    brightBlue: '#8fc0ff',
+    magenta: '#c7a6ff',
+    brightMagenta: '#d6bcff',
+    cyan: '#6be0d6',
+    brightCyan: '#8aeae1',
+    white: '#e6e8ee',
+    brightWhite: '#ffffff',
   },
 };
 
@@ -77,20 +110,32 @@ function syncSize(t, sessionId, resizeFn) {
 // Layout salvo por projeto (só no renderer; estrutura + tamanhos das divisórias).
 const LKEY = (p) => `paneLayout:v1:${p}`;
 function loadLayout(projectPath) {
-  try { const s = localStorage.getItem(LKEY(projectPath)); return s ? JSON.parse(s) : null; } catch { return null; }
+  try {
+    const s = localStorage.getItem(LKEY(projectPath));
+    return s ? JSON.parse(s) : null;
+  } catch {
+    return null;
+  }
 }
 function saveLayout(projectPath, tree) {
-  try { localStorage.setItem(LKEY(projectPath), JSON.stringify(tree)); } catch {}
+  try {
+    localStorage.setItem(LKEY(projectPath), JSON.stringify(tree));
+  } catch {}
 }
-
 
 // Negrito **assim** dentro de uma linha → <strong>.
 function renderInline(text) {
-  return String(text).split(/(\*\*[^*]+\*\*)/g).map((seg, i) =>
-    /^\*\*[^*]+\*\*$/.test(seg)
-      ? <strong key={i} className="font-semibold text-foreground">{seg.slice(2, -2)}</strong>
-      : <span key={i}>{seg}</span>
-  );
+  return String(text)
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((seg, i) =>
+      /^\*\*[^*]+\*\*$/.test(seg) ? (
+        <strong key={i} className="font-semibold text-foreground">
+          {seg.slice(2, -2)}
+        </strong>
+      ) : (
+        <span key={i}>{seg}</span>
+      ),
+    );
 }
 
 // Renderizador leve de markdown pros prompts: dá ênfase (títulos coloridos, negrito,
@@ -105,12 +150,44 @@ function PromptMd({ text }) {
         if (/^#{1,6}\s/.test(t)) {
           const level = t.match(/^#+/)[0].length;
           const txt = t.replace(/^#+\s*/, '');
-          return <div key={i} className={cn('mt-2 font-semibold', level <= 1 ? 'text-[15px] text-foreground' : level === 2 ? 'text-[14px] text-foreground' : 'text-[13px] text-primary')}>{renderInline(txt)}</div>;
+          return (
+            <div
+              key={i}
+              className={cn(
+                'mt-2 font-semibold',
+                level <= 1
+                  ? 'text-[15px] text-foreground'
+                  : level === 2
+                    ? 'text-[14px] text-foreground'
+                    : 'text-[13px] text-primary',
+              )}
+            >
+              {renderInline(txt)}
+            </div>
+          );
         }
-        if (/^[-*]\s/.test(t)) return <div key={i} className="flex gap-1.5 pl-1"><span className="text-primary">•</span><span>{renderInline(t.replace(/^[-*]\s*/, ''))}</span></div>;
-        if (/^\d+\.\s/.test(t)) { const m = t.match(/^(\d+)\.\s*(.*)/); return <div key={i} className="flex gap-1.5 pl-1"><span className="shrink-0 text-primary tabular-nums">{m[1]}.</span><span>{renderInline(m[2])}</span></div>; }
+        if (/^[-*]\s/.test(t))
+          return (
+            <div key={i} className="flex gap-1.5 pl-1">
+              <span className="text-primary">•</span>
+              <span>{renderInline(t.replace(/^[-*]\s*/, ''))}</span>
+            </div>
+          );
+        if (/^\d+\.\s/.test(t)) {
+          const m = t.match(/^(\d+)\.\s*(.*)/);
+          return (
+            <div key={i} className="flex gap-1.5 pl-1">
+              <span className="shrink-0 text-primary tabular-nums">{m[1]}.</span>
+              <span>{renderInline(m[2])}</span>
+            </div>
+          );
+        }
         if (/^(---+|\*\*\*+)$/.test(t)) return <hr key={i} className="my-2.5 border-border" />;
-        return <div key={i} className="mt-0.5">{renderInline(t)}</div>;
+        return (
+          <div key={i} className="mt-0.5">
+            {renderInline(t)}
+          </div>
+        );
       })}
     </div>
   );
@@ -137,10 +214,16 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     const r = await window.api.promptsList(projectPath);
     // Backfill: prompts antigos sem createdAt recebem um valor crescente pela ordem
     // (último = mais novo), pra a ordenação "mais novo em cima" funcionar pra todos.
-    const list = (r && r.ok ? r.items : []).map((p, i) => ({ ...p, createdAt: p.createdAt ?? i + 1 }));
+    const list = (r && r.ok ? r.items : []).map((p, i) => ({
+      ...p,
+      createdAt: p.createdAt ?? i + 1,
+    }));
     setItems(list);
   };
-  const persist = (list) => { setItems(list); window.api.promptsSave(projectPath, list); };
+  const persist = (list) => {
+    setItems(list);
+    window.api.promptsSave(projectPath, list);
+  };
 
   const openMenu = () => {
     setDraft({ title: '', body: '' });
@@ -153,7 +236,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     setOpen(true);
     load();
   };
-  const newPrompt = () => { setViewing(null); setEditingId(null); setDraft({ title: '', body: '' }); };
+  const newPrompt = () => {
+    setViewing(null);
+    setEditingId(null);
+    setDraft({ title: '', body: '' });
+  };
   const toggleFav = (p) => {
     const next = items.map((x) => (x.id === p.id ? { ...x, fav: !x.fav } : x));
     persist(next);
@@ -162,7 +249,12 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === 'Escape') { if (confirmDel) setConfirmDel(null); else setOpen(false); } };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (confirmDel) setConfirmDel(null);
+        else setOpen(false);
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, confirmDel]);
@@ -188,15 +280,25 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
     if (editingId) {
       persist(items.map((p) => (p.id === editingId ? { ...p, title, body } : p)));
     } else {
-      persist([...items, { id: crypto.randomUUID(), title, body, createdAt: Date.now(), fav: false }]);
+      persist([
+        ...items,
+        { id: crypto.randomUUID(), title, body, createdAt: Date.now(), fav: false },
+      ]);
     }
     setDraft({ title: '', body: '' });
     setEditingId(null);
   };
-  const edit = (p) => { setViewing(null); setEditingId(p.id); setDraft({ title: p.title, body: p.body }); };
+  const edit = (p) => {
+    setViewing(null);
+    setEditingId(p.id);
+    setDraft({ title: p.title, body: p.body });
+  };
   const remove = (p) => {
     persist(items.filter((x) => x.id !== p.id));
-    if (editingId === p.id) { setEditingId(null); setDraft({ title: '', body: '' }); }
+    if (editingId === p.id) {
+      setEditingId(null);
+      setDraft({ title: '', body: '' });
+    }
     setConfirmDel(null);
   };
 
@@ -218,22 +320,32 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
         <Library />
       </button>
       {open && mode === 'manage' && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-6"
-          onMouseDown={() => setOpen(false)}>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-6"
+          onMouseDown={() => setOpen(false)}
+        >
           <div
             className="flex h-[80vh] w-[80vw] max-w-[1000px] flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl"
             onMouseDown={(e) => e.stopPropagation()}
           >
             {/* Cabeçalho */}
             <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <button type="button" onClick={() => setMode('picker')} title={t('prompts.back_to_selection')}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4">
+              <button
+                type="button"
+                onClick={() => setMode('picker')}
+                title={t('prompts.back_to_selection')}
+                className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4"
+              >
                 <ArrowUpLeft /> {t('prompts.back_to_selection')}
               </button>
               <span className="text-[14px] font-semibold">{t('prompts.manage_title')}</span>
               <div className="flex-1" />
-              <button type="button" onClick={() => setOpen(false)} title={t('prompts.close')}
-                className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                title={t('prompts.close')}
+                className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]"
+              >
                 <X />
               </button>
             </div>
@@ -255,44 +367,94 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 </div>
                 <div className="flex shrink-0 items-center justify-between px-3 pt-2">
                   <span className="text-[12px] font-medium text-muted-foreground">
-                    {q ? `${visibleItems.length} de ${items.length}` : `${items.length} ${items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}`}
+                    {q
+                      ? `${visibleItems.length} de ${items.length}`
+                      : `${items.length} ${items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}`}
                   </span>
-                  <button type="button" onClick={newPrompt}
-                    className={cn('flex h-7 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium transition-colors',
-                      !viewing && editingId === null ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')}>
+                  <button
+                    type="button"
+                    onClick={newPrompt}
+                    className={cn(
+                      'flex h-7 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium transition-colors',
+                      !viewing && editingId === null
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:bg-muted',
+                    )}
+                  >
                     <Plus className="size-3.5" /> {t('prompts.new')}
                   </button>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-3">
                   {items.length === 0 ? (
-                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">{t('prompts.empty')}</p>
+                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">
+                      {t('prompts.empty')}
+                    </p>
                   ) : visibleItems.length === 0 ? (
-                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">{t('prompts.no_results', { query })}</p>
+                    <p className="px-2 py-8 text-center text-[13px] text-muted-foreground">
+                      {t('prompts.no_results', { query })}
+                    </p>
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       {visibleItems.map((p) => (
-                        <button key={p.id} type="button" onClick={() => setViewing(p)}
-                          className={cn('group w-full rounded-lg border p-3 text-left transition-colors hover:border-primary/50',
-                            (viewing?.id === p.id || editingId === p.id) && 'border-primary ring-1 ring-primary')}>
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setViewing(p)}
+                          className={cn(
+                            'group w-full rounded-lg border p-3 text-left transition-colors hover:border-primary/50',
+                            (viewing?.id === p.id || editingId === p.id) &&
+                              'border-primary ring-1 ring-primary',
+                          )}
+                        >
                           <div className="flex items-start gap-2">
                             <span
-                              role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); toggleFav(p); }}
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFav(p);
+                              }}
                               title={p.fav ? t('prompts.unpin') : t('prompts.pin')}
-                              className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded [&_svg]:size-4',
-                                p.fav ? 'text-amber-500' : 'text-muted-foreground opacity-0 hover:text-amber-500 group-hover:opacity-100')}>
+                              className={cn(
+                                'mt-0.5 grid size-6 shrink-0 place-items-center rounded [&_svg]:size-4',
+                                p.fav
+                                  ? 'text-amber-500'
+                                  : 'text-muted-foreground opacity-0 hover:text-amber-500 group-hover:opacity-100',
+                              )}
+                            >
                               <Star className={p.fav ? 'fill-amber-500' : ''} />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[13.5px] font-medium">{p.title}</span>
-                              <span className="mt-0.5 break-words text-[12px] leading-relaxed text-muted-foreground line-clamp-3">{p.body}</span>
+                              <span className="block truncate text-[13.5px] font-medium">
+                                {p.title}
+                              </span>
+                              <span className="mt-0.5 break-words text-[12px] leading-relaxed text-muted-foreground line-clamp-3">
+                                {p.body}
+                              </span>
                             </span>
                             <span className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
-                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); edit(p); }} title={t('prompts.edit')}
-                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  edit(p);
+                                }}
+                                title={t('prompts.edit')}
+                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+                              >
                                 <Pencil />
                               </span>
-                              <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setConfirmDel(p); }} title={t('prompts.remove')}
-                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5">
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmDel(p);
+                                }}
+                                title={t('prompts.remove')}
+                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5"
+                              >
                                 <Trash2 />
                               </span>
                             </span>
@@ -308,20 +470,44 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
               {viewing && editingId === null ? (
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-                    <button type="button" onClick={() => toggleFav(viewing)} title={viewing.fav ? t('prompts.unpin') : t('prompts.pin')}
-                      className={cn('grid size-8 shrink-0 place-items-center rounded-md border [&_svg]:size-4',
-                        viewing.fav ? 'text-amber-500' : 'text-muted-foreground hover:bg-muted')}>
+                    <button
+                      type="button"
+                      onClick={() => toggleFav(viewing)}
+                      title={viewing.fav ? t('prompts.unpin') : t('prompts.pin')}
+                      className={cn(
+                        'grid size-8 shrink-0 place-items-center rounded-md border [&_svg]:size-4',
+                        viewing.fav ? 'text-amber-500' : 'text-muted-foreground hover:bg-muted',
+                      )}
+                    >
                       <Star className={viewing.fav ? 'fill-amber-500' : ''} />
                     </button>
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{viewing.title}</span>
-                    <button type="button" onClick={() => insert(viewing)} disabled={!sessionId}
-                      className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 [&_svg]:size-3.5">
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+                      {viewing.title}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => insert(viewing)}
+                      disabled={!sessionId}
+                      className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 [&_svg]:size-3.5"
+                    >
                       <ArrowUpLeft /> {t('prompts.insert')}
                     </button>
-                    <button type="button" onClick={() => edit(viewing)} title={t('prompts.edit')}
-                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted [&_svg]:size-4"><Pencil /></button>
-                    <button type="button" onClick={() => setConfirmDel(viewing)} title={t('prompts.remove')}
-                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"><Trash2 /></button>
+                    <button
+                      type="button"
+                      onClick={() => edit(viewing)}
+                      title={t('prompts.edit')}
+                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted [&_svg]:size-4"
+                    >
+                      <Pencil />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDel(viewing)}
+                      title={t('prompts.remove')}
+                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"
+                    >
+                      <Trash2 />
+                    </button>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto p-5">
                     <Suspense fallback={<PromptMd text={viewing.body} />}>
@@ -331,7 +517,9 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 </div>
               ) : (
                 <div className="flex min-w-0 flex-1 flex-col p-4">
-                  <div className="mb-2 text-[13px] font-medium">{editingId ? t('prompts.editor_title_edit') : t('prompts.editor_title_new')}</div>
+                  <div className="mb-2 text-[13px] font-medium">
+                    {editingId ? t('prompts.editor_title_edit') : t('prompts.editor_title_new')}
+                  </div>
                   <input
                     value={draft.title}
                     onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
@@ -346,13 +534,23 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                   />
                   <div className="mt-3 flex justify-end gap-2">
                     {editingId && (
-                      <button type="button" onClick={() => { setEditingId(null); setDraft({ title: '', body: '' }); }}
-                        className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(null);
+                          setDraft({ title: '', body: '' });
+                        }}
+                        className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted"
+                      >
                         {t('prompts.editor_cancel')}
                       </button>
                     )}
-                    <button type="button" onClick={submit} disabled={!draft.body.trim()}
-                      className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40">
+                    <button
+                      type="button"
+                      onClick={submit}
+                      disabled={!draft.body.trim()}
+                      className="h-9 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+                    >
                       {editingId ? t('prompts.editor_save') : t('prompts.editor_add')}
                     </button>
                   </div>
@@ -362,17 +560,33 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 
             {/* Confirmação de remoção */}
             {confirmDel && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40" onMouseDown={() => setConfirmDel(null)}>
-                <div className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-black/40"
+                onMouseDown={() => setConfirmDel(null)}
+              >
+                <div
+                  className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
                   <h2 className="text-[15px] font-semibold">{t('prompts.confirm_title')}</h2>
                   <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                     {t('prompts.confirm_message', { title: confirmDel.title })}
                   </p>
                   <div className="mt-5 flex justify-end gap-2">
-                    <button type="button" onClick={() => setConfirmDel(null)}
-                      className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted">{t('prompts.confirm_cancel')}</button>
-                    <button type="button" onClick={() => remove(confirmDel)}
-                      className="h-9 rounded-md bg-destructive px-4 text-[13px] font-medium text-destructive-foreground hover:opacity-90">{t('prompts.confirm_delete')}</button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDel(null)}
+                      className="h-9 rounded-md px-3 text-[13px] text-muted-foreground hover:bg-muted"
+                    >
+                      {t('prompts.confirm_cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(confirmDel)}
+                      className="h-9 rounded-md bg-destructive px-4 text-[13px] font-medium text-destructive-foreground hover:opacity-90"
+                    >
+                      {t('prompts.confirm_delete')}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -383,26 +597,47 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 
       {/* Seletor rápido (estilo Ctrl+K): digita e Enter pra inserir; botão pra gerenciar */}
       {open && mode === 'picker' && (
-        <div className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-[1px]"
-          onMouseDown={() => setOpen(false)}>
-          <div className="flex max-h-[70vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover text-foreground shadow-2xl"
-            onMouseDown={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-[1px]"
+          onMouseDown={() => setOpen(false)}
+        >
+          <div
+            className="flex max-h-[70vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover text-foreground shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-2 border-b px-3.5">
               <Search className="size-4 shrink-0 text-muted-foreground" />
               <input
                 ref={pickerInputRef}
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setSel(0); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSel(0);
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => (visibleItems.length ? (s + 1) % visibleItems.length : 0)); }
-                  else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => (visibleItems.length ? (s - 1 + visibleItems.length) % visibleItems.length : 0)); }
-                  else if (e.key === 'Enter') { e.preventDefault(); const p = visibleItems[Math.min(sel, visibleItems.length - 1)]; if (p) insert(p); }
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSel((s) => (visibleItems.length ? (s + 1) % visibleItems.length : 0));
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSel((s) =>
+                      visibleItems.length ? (s - 1 + visibleItems.length) % visibleItems.length : 0,
+                    );
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const p = visibleItems[Math.min(sel, visibleItems.length - 1)];
+                    if (p) insert(p);
+                  }
                 }}
                 placeholder={t('prompts.picker_search_placeholder')}
                 className="h-12 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
               />
-              <button type="button" onClick={() => setMode('manage')} title={t('prompts.picker_manage_tooltip')}
-                className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
+              <button
+                type="button"
+                onClick={() => setMode('manage')}
+                title={t('prompts.picker_manage_tooltip')}
+                className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+              >
                 <Pencil /> {t('prompts.picker_manage_button')}
               </button>
             </div>
@@ -412,7 +647,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
                   {items.length === 0 ? t('prompts.picker_empty') : t('prompts.picker_no_results')}
                   <div className="mt-2">
-                    <button type="button" onClick={() => setMode('manage')} className="text-primary hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setMode('manage')}
+                      className="text-primary hover:underline"
+                    >
                       {items.length === 0 ? t('prompts.picker_create') : t('prompts.picker_open')}
                     </button>
                   </div>
@@ -421,13 +660,30 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                 visibleItems.map((p, i) => {
                   const selected = i === Math.min(sel, visibleItems.length - 1);
                   return (
-                    <button key={p.id} type="button" onMouseMove={() => setSel(i)} onClick={() => insert(p)} disabled={!sessionId}
-                      className={cn('flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13.5px] disabled:opacity-50',
-                        selected ? 'bg-primary/12 text-foreground' : 'text-foreground/90')}>
-                      <Star className={cn('size-3.5 shrink-0', p.fav ? 'fill-amber-500 text-amber-500' : 'text-transparent')} />
+                    <button
+                      key={p.id}
+                      type="button"
+                      onMouseMove={() => setSel(i)}
+                      onClick={() => insert(p)}
+                      disabled={!sessionId}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13.5px] disabled:opacity-50',
+                        selected ? 'bg-primary/12 text-foreground' : 'text-foreground/90',
+                      )}
+                    >
+                      <Star
+                        className={cn(
+                          'size-3.5 shrink-0',
+                          p.fav ? 'fill-amber-500 text-amber-500' : 'text-transparent',
+                        )}
+                      />
                       <span className="min-w-0 flex-1 truncate font-medium">{p.title}</span>
-                      <span className="min-w-0 max-w-[45%] shrink truncate text-[12px] text-muted-foreground">{p.body}</span>
-                      {selected && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
+                      <span className="min-w-0 max-w-[45%] shrink truncate text-[12px] text-muted-foreground">
+                        {p.body}
+                      </span>
+                      {selected && (
+                        <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />
+                      )}
                     </button>
                   );
                 })
@@ -436,7 +692,10 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 
             <div className="flex items-center justify-between border-t px-3.5 py-1.5 text-[11px] text-muted-foreground">
               <span>{t('prompts.picker_help')}</span>
-              <span>{items.length} {items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}</span>
+              <span>
+                {items.length}{' '}
+                {items.length === 1 ? t('prompts.count_single') : t('prompts.count_plural')}
+              </span>
             </div>
           </div>
         </div>
@@ -450,18 +709,23 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
 function SessionActivityDot({ state }) {
   const t = useT();
   if (!state) return null;
-  const title = state === 'working' ? t('session.activity_working')
-    : state === 'asking' ? t('session.activity_asking')
-    : t('session.activity_waiting');
+  const title =
+    state === 'working'
+      ? t('session.activity_working')
+      : state === 'asking'
+        ? t('session.activity_asking')
+        : t('session.activity_waiting');
   return (
     <span className="relative flex h-2 w-2 shrink-0" title={title}>
       {state === 'asking' && (
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
       )}
-      <span className={cn(
-        'relative inline-flex h-2 w-2 rounded-full bg-amber-500',
-        state === 'working' && 'animate-pulse'
-      )} />
+      <span
+        className={cn(
+          'relative inline-flex h-2 w-2 rounded-full bg-amber-500',
+          state === 'working' && 'animate-pulse',
+        )}
+      />
     </span>
   );
 }
@@ -471,14 +735,14 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const { terminalTheme } = useTheme();
   const themeRef = useRef(terminalTheme);
   const hostRef = useRef(null);
-  const termsRef = useRef(new Map());      // sessionId -> { term, fit, el, lastCols, lastRows }
-  const paneRefs = useRef(new Map());      // paneId -> elemento de conteúdo do pane
+  const termsRef = useRef(new Map()); // sessionId -> { term, fit, el, lastCols, lastRows }
+  const paneRefs = useRef(new Map()); // paneId -> elemento de conteúdo do pane
 
   const [sessions, setSessions] = useState([]); // todas as sessões do projeto: [{ id, name }]
   // Atividade do Claude POR SESSÃO: sessionId -> 'working' | 'asking' | 'attention'.
   // É o detalhe fino (qual aba) que o rail (agregado por projeto) não mostra.
   const [sessionActivity, setSessionActivity] = useState({});
-  const [layout, setLayout] = useState(null);   // árvore de painéis do projeto ativo
+  const [layout, setLayout] = useState(null); // árvore de painéis do projeto ativo
   const layoutRef = useRef(null);
   const [focusedPane, setFocusedPane] = useState(null);
   const focusedPaneRef = useRef(null);
@@ -507,7 +771,8 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const scheduleSave = () => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      if (projectRef.current && layoutRef.current) saveLayout(projectRef.current, layoutRef.current);
+      if (projectRef.current && layoutRef.current)
+        saveLayout(projectRef.current, layoutRef.current);
     }, 300);
   };
 
@@ -520,7 +785,8 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const refitTimer = useRef(0);
   const refitAll = () => {
     for (const [sid, te] of termsRef.current) {
-      if (te.el.isConnected && te.el.style.display !== 'none') syncSize(te, sid, window.api.termResize);
+      if (te.el.isConnected && te.el.style.display !== 'none')
+        syncSize(te, sid, window.api.termResize);
     }
   };
   const scheduleRefit = () => {
@@ -568,7 +834,13 @@ export function ChatPanel({ activeProject, controlsRef }) {
 
   // Ao trocar de projeto: carrega sessões + restaura/reconcilia o layout salvo.
   useEffect(() => {
-    if (!activeProject) { setSessions([]); setLayout(null); layoutRef.current = null; setFocusedPane(null); return; }
+    if (!activeProject) {
+      setSessions([]);
+      setLayout(null);
+      layoutRef.current = null;
+      setFocusedPane(null);
+      return;
+    }
     let cancelled = false;
     (async () => {
       let list = await window.api.sessionsList(activeProject);
@@ -585,7 +857,9 @@ export function ChatPanel({ activeProject, controlsRef }) {
       saveLayout(activeProject, tree);
       setFocusedPane(firstPane(tree)?.id ?? null);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [activeProject]);
 
   // "Assumir" a sessão: dispensa SÓ a bolinha de "terminou" (attention). É o
@@ -593,12 +867,13 @@ export function ChatPanel({ activeProject, controlsRef }) {
   // resultado e a bolinha some. 'working' (pulsa enquanto roda) e 'asking' (halo,
   // pediu confirmação) ficam intactos: 'asking' se resolve sozinho quando você
   // responde e o Claude volta a 'working'.
-  const assumeSession = (sid) => setSessionActivity((cur) => {
-    if (cur[sid] !== 'attention') return cur;
-    const next = { ...cur };
-    delete next[sid];
-    return next;
-  });
+  const assumeSession = (sid) =>
+    setSessionActivity((cur) => {
+      if (cur[sid] !== 'attention') return cur;
+      const next = { ...cur };
+      delete next[sid];
+      return next;
+    });
 
   // Cria o terminal (xterm) de uma sessão dentro de um container de pane.
   const createTerm = (sessionId, container) => {
@@ -636,8 +911,15 @@ export function ChatPanel({ activeProject, controlsRef }) {
       const k = e.key.toLowerCase();
       if (k === 'c') {
         const sel = term.getSelection();
-        if (sel && !e.shiftKey) { window.api.copyText(sel); term.clearSelection(); return false; }
-        if (sel && e.shiftKey) { window.api.copyText(sel); return false; }
+        if (sel && !e.shiftKey) {
+          window.api.copyText(sel);
+          term.clearSelection();
+          return false;
+        }
+        if (sel && e.shiftKey) {
+          window.api.copyText(sel);
+          return false;
+        }
         return true; // sem seleção: Ctrl+C normal (SIGINT)
       }
       if (k === 'v') return false; // a colagem vai pelo evento 'paste' (evita duplicar)
@@ -651,22 +933,36 @@ export function ChatPanel({ activeProject, controlsRef }) {
     // evento na fase de CAPTURA no container (antes de descer pra textarea do xterm),
     // cancelamos o nativo e colamos uma vez só via pasteIntoSession (bracketed paste
     // garantido — multi-linha intacto). Pega Ctrl/Cmd+V e o paste do botão direito.
-    el.addEventListener('paste', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const text = e.clipboardData?.getData('text');
-      if (text) pasteIntoSession(sessionId, text);
-      else window.api.readText().then((r) => { if (r && r.text) pasteIntoSession(sessionId, r.text); });
-    }, true);
+    el.addEventListener(
+      'paste',
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const text = e.clipboardData?.getData('text');
+        if (text) pasteIntoSession(sessionId, text);
+        else
+          window.api.readText().then((r) => {
+            if (r && r.text) pasteIntoSession(sessionId, r.text);
+          });
+      },
+      true,
+    );
     // Renderizador WebGL: pinta o terminal num único canvas de GPU e repinta a
     // cada frame ao rolar, eliminando os glitches de "tinta velha". Se o contexto
     // WebGL cair, descarta o addon e volta pro DOM sozinho.
     try {
       const webgl = new WebglAddon();
-      webgl.onContextLoss(() => { try { webgl.dispose(); } catch {} });
+      webgl.onContextLoss(() => {
+        try {
+          webgl.dispose();
+        } catch {}
+      });
       term.loadAddon(webgl);
     } catch {}
-    term.onData((d) => { assumeSession(sessionId); window.api.termInput(sessionId, d); });
+    term.onData((d) => {
+      assumeSession(sessionId);
+      window.api.termInput(sessionId, d);
+    });
 
     const t = { term, fit, el, lastCols: 0, lastRows: 0 };
     termsRef.current.set(sessionId, t);
@@ -676,10 +972,12 @@ export function ChatPanel({ activeProject, controlsRef }) {
       fit.fit();
       t.lastCols = term.cols;
       t.lastRows = term.rows;
-      window.api.termEnsure(sessionId, projectRef.current, term.cols, term.rows, themeRef.current).then((res) => {
-        if (res && res.error) term.write('\r\n\x1b[31m[' + res.error + ']\x1b[0m\r\n');
-        else if (res && res.buffer) term.write(res.buffer);
-      });
+      window.api
+        .termEnsure(sessionId, projectRef.current, term.cols, term.rows, themeRef.current)
+        .then((res) => {
+          if (res && res.error) term.write('\r\n\x1b[31m[' + res.error + ']\x1b[0m\r\n');
+          else if (res && res.buffer) term.write(res.buffer);
+        });
       term.focus();
     });
     return t;
@@ -712,12 +1010,20 @@ export function ChatPanel({ activeProject, controlsRef }) {
       raf = requestAnimationFrame(refitAll);
     });
     if (hostRef.current) ro.observe(hostRef.current);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, []);
 
   const focusSession = (sid) => {
     const te = termsRef.current.get(sid);
-    if (te) requestAnimationFrame(() => { try { te.term.focus(); } catch {} });
+    if (te)
+      requestAnimationFrame(() => {
+        try {
+          te.term.focus();
+        } catch {}
+      });
   };
 
   // Insere texto na sessão via bracketed paste (ver pasteIntoSession): texto
@@ -725,7 +1031,12 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const insertText = (sid, text) => {
     pasteIntoSession(sid, text);
     const te = termsRef.current.get(sid);
-    if (te) requestAnimationFrame(() => { try { te.term.focus(); } catch {} });
+    if (te)
+      requestAnimationFrame(() => {
+        try {
+          te.term.focus();
+        } catch {}
+      });
   };
 
   const addSession = async (paneId) => {
@@ -769,7 +1080,13 @@ export function ChatPanel({ activeProject, controlsRef }) {
     if (!activeProject || sessions.length <= 1) return;
     await window.api.sessionsClose(activeProject, sessionId);
     const t = termsRef.current.get(sessionId);
-    if (t) { try { t.term.dispose(); } catch {} t.el.remove(); termsRef.current.delete(sessionId); }
+    if (t) {
+      try {
+        t.term.dispose();
+      } catch {}
+      t.el.remove();
+      termsRef.current.delete(sessionId);
+    }
     setSessions((cur) => cur.filter((s) => s.id !== sessionId));
     commitLayout(closeSessionInTree(layoutRef.current, sessionId));
   };
@@ -788,7 +1105,10 @@ export function ChatPanel({ activeProject, controlsRef }) {
     setRenameDraft(cur && cur !== t('session.untitled') ? cur : '');
     setRenamingSid(sid);
   };
-  const cancelRename = () => { setRenamingSid(null); setRenameDraft(''); };
+  const cancelRename = () => {
+    setRenamingSid(null);
+    setRenameDraft('');
+  };
   const commitRename = async (sid) => {
     if (renamingSid !== sid) return;
     const name = renameDraft.trim();
@@ -806,16 +1126,27 @@ export function ChatPanel({ activeProject, controlsRef }) {
   const onTabDragStart = (paneId, sid, e) => {
     dragRef.current = { sid, from: paneId };
     setDragSid(sid);
-    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', sid); } catch {}
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', sid);
+    } catch {}
   };
-  const endDrag = () => { dragRef.current = null; setDragSid(null); setDropTarget(null); };
+  const endDrag = () => {
+    dragRef.current = null;
+    setDragSid(null);
+    setDropTarget(null);
+  };
 
   const onZoneDragOver = (paneId, e) => {
     e.preventDefault();
-    try { e.dataTransfer.dropEffect = 'move'; } catch {}
+    try {
+      e.dataTransfer.dropEffect = 'move';
+    } catch {}
     const r = e.currentTarget.getBoundingClientRect();
     const zone = computeZone((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    setDropTarget((prev) => (prev && prev.paneId === paneId && prev.zone === zone ? prev : { paneId, zone }));
+    setDropTarget((prev) =>
+      prev && prev.paneId === paneId && prev.zone === zone ? prev : { paneId, zone },
+    );
   };
 
   const onDrop = (paneId, zone, e) => {
@@ -848,11 +1179,21 @@ export function ChatPanel({ activeProject, controlsRef }) {
       <div
         key={p.id}
         onMouseDown={() => setFocusedPane(p.id)}
-        className={'flex h-full flex-col overflow-hidden ' + (isFocused ? 'ring-1 ring-inset ring-primary/40' : '')}
+        className={
+          'flex h-full flex-col overflow-hidden ' +
+          (isFocused ? 'ring-1 ring-inset ring-primary/40' : '')
+        }
       >
         <div
           className="flex h-9 shrink-0 items-center border-b bg-card px-1.5"
-          onDragOver={dragSid ? (e) => { e.preventDefault(); setDropTarget({ paneId: p.id, zone: 'center' }); } : undefined}
+          onDragOver={
+            dragSid
+              ? (e) => {
+                  e.preventDefault();
+                  setDropTarget({ paneId: p.id, zone: 'center' });
+                }
+              : undefined
+          }
           onDrop={dragSid ? (e) => onDrop(p.id, 'center', e) : undefined}
         >
           {/* Só as abas rolam, e só na horizontal. min-w-0 deixa a faixa encolher
@@ -860,54 +1201,61 @@ export function ChatPanel({ activeProject, controlsRef }) {
               scrollbar horizontal provocaria ao roubar altura da barra. O '+' e a
               biblioteca de prompts ficam FORA desta faixa, fixos à direita. */}
           <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden">
-          {p.tabs.map((sid) => {
-            const isActive = sid === p.active;
-            return (
-              <div
-                key={sid}
-                draggable={renamingSid !== sid}
-                onDragStart={(e) => onTabDragStart(p.id, sid, e)}
-                onDragEnd={endDrag}
-                onClick={() => onTabClick(p.id, sid)}
-                onContextMenu={(e) => openTabMenu(sid, e)}
-                title={t('session.tabs_rename_hint')}
-                className={
-                  'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
-                  (isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60')
-                }
-              >
-                {renamingSid === sid ? (
-                  <input
-                    autoFocus
-                    value={renameDraft}
-                    onChange={(e) => setRenameDraft(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onFocus={(e) => e.target.select()}
-                    onBlur={() => commitRename(sid)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') { e.preventDefault(); commitRename(sid); }
-                      else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
-                    }}
-                    placeholder={t('session.untitled')}
-                    className="h-5 w-28 min-w-0 rounded border border-border bg-background px-1 text-[13px] text-foreground outline-none focus:border-foreground/40"
-                  />
-                ) : (
-                  <span>{sessionNames.get(sid) || t('session.untitled')}</span>
-                )}
-                <SessionActivityDot state={sessionActivity[sid]} />
-                {canClose && (
-                  <button
-                    type="button"
-                    onClick={(e) => closeSession(e, sid)}
-                    title={t('session.tabs_close')}
-                    className="grid size-4 place-items-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/10 hover:text-foreground group-hover:opacity-100 [&_svg]:size-3"
-                  >
-                    <X />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+            {p.tabs.map((sid) => {
+              const isActive = sid === p.active;
+              return (
+                <div
+                  key={sid}
+                  draggable={renamingSid !== sid}
+                  onDragStart={(e) => onTabDragStart(p.id, sid, e)}
+                  onDragEnd={endDrag}
+                  onClick={() => onTabClick(p.id, sid)}
+                  onContextMenu={(e) => openTabMenu(sid, e)}
+                  title={t('session.tabs_rename_hint')}
+                  className={
+                    'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
+                    (isActive
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:bg-muted/60')
+                  }
+                >
+                  {renamingSid === sid ? (
+                    <input
+                      autoFocus
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.target.select()}
+                      onBlur={() => commitRename(sid)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          commitRename(sid);
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault();
+                          cancelRename();
+                        }
+                      }}
+                      placeholder={t('session.untitled')}
+                      className="h-5 w-28 min-w-0 rounded border border-border bg-background px-1 text-[13px] text-foreground outline-none focus:border-foreground/40"
+                    />
+                  ) : (
+                    <span>{sessionNames.get(sid) || t('session.untitled')}</span>
+                  )}
+                  <SessionActivityDot state={sessionActivity[sid]} />
+                  {canClose && (
+                    <button
+                      type="button"
+                      onClick={(e) => closeSession(e, sid)}
+                      title={t('session.tabs_close')}
+                      className="grid size-4 place-items-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/10 hover:text-foreground group-hover:opacity-100 [&_svg]:size-3"
+                    >
+                      <X />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -927,7 +1275,9 @@ export function ChatPanel({ activeProject, controlsRef }) {
             <div
               className="absolute inset-0 z-20"
               onDragOver={(e) => onZoneDragOver(p.id, e)}
-              onDrop={(e) => onDrop(p.id, dropTarget?.paneId === p.id ? dropTarget.zone : 'center', e)}
+              onDrop={(e) =>
+                onDrop(p.id, dropTarget?.paneId === p.id ? dropTarget.zone : 'center', e)
+              }
             >
               {dropTarget?.paneId === p.id && (
                 <div
@@ -962,7 +1312,10 @@ export function ChatPanel({ activeProject, controlsRef }) {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden" style={{ background: terminalTheme === 'dark' ? '#0b0f17' : '#ffffff' }}>
+    <div
+      className="flex flex-1 flex-col overflow-hidden"
+      style={{ background: terminalTheme === 'dark' ? '#0b0f17' : '#ffffff' }}
+    >
       <div ref={hostRef} className="relative flex-1 overflow-hidden">
         {!activeProject && (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-muted-foreground">
@@ -974,7 +1327,14 @@ export function ChatPanel({ activeProject, controlsRef }) {
       {tabMenu && (
         <>
           {/* Camada invisível que fecha o menu ao clicar fora ou ao abrir outro. */}
-          <div className="fixed inset-0 z-40" onClick={closeTabMenu} onContextMenu={(e) => { e.preventDefault(); closeTabMenu(); }} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={closeTabMenu}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              closeTabMenu();
+            }}
+          />
           <div
             className="fixed z-50 min-w-[140px] overflow-hidden rounded-md border border-border bg-popover py-1 text-[13px] text-popover-foreground shadow-lg"
             style={{ left: tabMenu.x, top: tabMenu.y }}
@@ -982,7 +1342,11 @@ export function ChatPanel({ activeProject, controlsRef }) {
             <button
               type="button"
               className="flex w-full items-center px-3 py-1.5 text-left hover:bg-muted"
-              onClick={() => { const sid = tabMenu.sid; closeTabMenu(); startRename(sid); }}
+              onClick={() => {
+                const sid = tabMenu.sid;
+                closeTabMenu();
+                startRename(sid);
+              }}
             >
               {t('session.tabs_rename')}
             </button>
@@ -990,7 +1354,11 @@ export function ChatPanel({ activeProject, controlsRef }) {
               <button
                 type="button"
                 className="flex w-full items-center px-3 py-1.5 text-left text-red-500 hover:bg-muted"
-                onClick={() => { const sid = tabMenu.sid; closeTabMenu(); closeSession({ stopPropagation() {} }, sid); }}
+                onClick={() => {
+                  const sid = tabMenu.sid;
+                  closeTabMenu();
+                  closeSession({ stopPropagation() {} }, sid);
+                }}
               >
                 {t('session.tabs_close')}
               </button>

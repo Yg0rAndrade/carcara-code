@@ -20,8 +20,12 @@ app.disableHardwareAcceleration();
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
-    width: SIZE, height: SIZE, show: false, frame: false,
-    transparent: true, backgroundColor: '#00000000',
+    width: SIZE,
+    height: SIZE,
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
     webPreferences: { offscreen: true },
   });
 
@@ -33,7 +37,7 @@ app.whenReady().then(async () => {
   await new Promise((r) => setTimeout(r, 400));
   const bbox = await win.webContents.executeJavaScript(
     `(() => { const b = document.getElementById('s').getBBox();
-       return { x: b.x, y: b.y, w: b.width, h: b.height }; })()`
+       return { x: b.x, y: b.y, w: b.width, h: b.height }; })()`,
   );
 
   // 2) Monta um viewBox quadrado e centralizado, com ~14% de respiro.
@@ -43,8 +47,7 @@ app.whenReady().then(async () => {
   const vb = `${cx - side / 2} ${cy - side / 2} ${side} ${side}`;
 
   // 3) Salva o logo.svg normalizado (quadrado) pra interface.
-  const normSvg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" fill="#000000">${inner}</svg>\n`;
+  const normSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" fill="#000000">${inner}</svg>\n`;
   fs.mkdirSync(path.join(root, 'src', 'assets'), { recursive: true });
   fs.writeFileSync(path.join(root, 'src', 'assets', 'logo.svg'), normSvg);
 

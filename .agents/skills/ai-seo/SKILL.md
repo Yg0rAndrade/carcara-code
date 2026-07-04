@@ -17,22 +17,26 @@ If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or 
 Gather this context (ask if not provided):
 
 ### 1. Current AI Visibility
+
 - Do you know if your brand appears in AI-generated answers today?
 - Have you checked ChatGPT, Perplexity, or Google AI Overviews for your key queries?
 - What queries matter most to your business?
 
 ### 2. Content & Domain
+
 - What type of content do you produce? (Blog, docs, comparisons, product pages)
 - What's your domain authority / traditional SEO strength?
 - Do you have existing structured data (schema markup)?
 
 ### 3. Goals
+
 - Get cited as a source in AI answers?
 - Appear in Google AI Overviews for specific queries?
 - Compete with specific brands already getting cited?
 - Optimize existing content or create new AI-optimized content?
 
 ### 4. Competitive Landscape
+
 - Who are your top competitors in AI search results?
 - Are they being cited where you're not?
 
@@ -42,14 +46,14 @@ Gather this context (ask if not provided):
 
 ### The AI Search Landscape
 
-| Platform | How It Works | Source Selection |
-|----------|-------------|----------------|
-| **Google AI Overviews** | Summarizes top-ranking pages | Strong correlation with traditional rankings |
-| **ChatGPT (with search)** | Searches web, cites sources | Draws from wider range, not just top-ranked |
-| **Perplexity** | Always cites sources with links | Favors authoritative, recent, well-structured content |
-| **Gemini** | Google's AI assistant | Pulls from Google index + Knowledge Graph |
-| **Copilot** | Bing-powered AI search | Bing index + authoritative sources |
-| **Claude** | Brave Search (when enabled) | Training data + Brave search results |
+| Platform                  | How It Works                    | Source Selection                                      |
+| ------------------------- | ------------------------------- | ----------------------------------------------------- |
+| **Google AI Overviews**   | Summarizes top-ranking pages    | Strong correlation with traditional rankings          |
+| **ChatGPT (with search)** | Searches web, cites sources     | Draws from wider range, not just top-ranked           |
+| **Perplexity**            | Always cites sources with links | Favors authoritative, recent, well-structured content |
+| **Gemini**                | Google's AI assistant           | Pulls from Google index + Knowledge Graph             |
+| **Copilot**               | Bing-powered AI search          | Bing index + authoritative sources                    |
+| **Claude**                | Brave Search (when enabled)     | Training data + Brave search results                  |
 
 For a deep dive on how each platform selects sources and what to optimize per platform, see [references/platform-ranking-factors.md](references/platform-ranking-factors.md).
 
@@ -60,6 +64,7 @@ Traditional SEO gets you ranked. AI SEO gets you **cited**.
 In traditional search, you need to rank on page 1. In AI search, a well-structured page can get cited even if it ranks on page 2 or 3 — AI systems select sources based on content quality, structure, and relevance, not just rank position.
 
 **Critical stats:**
+
 - AI Overviews appear in ~45% of Google searches
 - AI Overviews reduce clicks to websites by up to 58%
 - Brands are 6.5x more likely to be cited via third-party sources than their own domains
@@ -71,9 +76,11 @@ In traditional search, you need to rank on page 1. In AI search, a well-structur
 This is important to read once before doing anything else.
 
 **Google's position** ([AI features optimization guide](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)):
+
 > "The best practices for SEO continue to be relevant because our generative AI features on Google Search are rooted in our core Search ranking and quality systems."
 
 Google explicitly says:
+
 - **No special markup or files are required** for AI Overviews or AI Mode
 - **Don't chunk content for AI** — write for people, organize with normal headings and paragraphs
 - **Don't write separate content for AI** — that risks "scaled content abuse" spam policy
@@ -81,11 +88,13 @@ Google explicitly says:
 - **No AI-specific Search Console reporting** — use standard SEO metrics
 
 **Other AI engines (ChatGPT, Claude, Perplexity, Copilot) behave differently:**
+
 - They actively reward extractable structure — passages, FAQs, comparison tables, definition blocks
 - They parse `llms.txt`, structured pricing pages, and machine-readable files when present
 - They cite third-party sources (Reddit, Wikipedia, review sites) more heavily than top-ranked pages
 
 **What this means for the work:**
+
 - The structural patterns in this skill (40–60 word answer blocks, FAQ schema, comparison tables) help **non-Google AI engines** materially. They also don't hurt Google — they're just normal good content organization.
 - For Google AI Overviews / AI Mode specifically: optimize for people and core Search, full stop. Strong E-E-A-T, original information, semantic HTML, clean indexability.
 - For ChatGPT/Claude/Perplexity: layer on the extractable structure + llms.txt + machine-readable files.
@@ -99,6 +108,7 @@ Google's AI features don't just answer the one query a user typed — they gener
 Google's own example: a user asking "how to fix lawns" triggers fan-out queries about herbicides, chemical-free removal, weed prevention, etc. The AI synthesizes across all of them.
 
 **Implications:**
+
 - Single-page-per-keyword targeting is less effective. Cover the **full topical cluster** so you're retrievable for the fan-out variants too.
 - Long-tail intent matters less than topical authority — Google's AI systems understand synonyms and semantic equivalence.
 - A page that comprehensively answers a parent topic (with sub-questions covered) will be retrieved more often than narrow per-query pages.
@@ -115,12 +125,13 @@ Before optimizing, assess your current AI search presence.
 
 Test 10-20 of your most important queries across platforms:
 
-| Query | Google AI Overview | ChatGPT | Perplexity | You Cited? | Competitors Cited? |
-|-------|:-----------------:|:-------:|:----------:|:----------:|:-----------------:|
-| [query 1] | Yes/No | Yes/No | Yes/No | Yes/No | [who] |
-| [query 2] | Yes/No | Yes/No | Yes/No | Yes/No | [who] |
+| Query     | Google AI Overview | ChatGPT | Perplexity | You Cited? | Competitors Cited? |
+| --------- | :----------------: | :-----: | :--------: | :--------: | :----------------: |
+| [query 1] |       Yes/No       | Yes/No  |   Yes/No   |   Yes/No   |       [who]        |
+| [query 2] |       Yes/No       | Yes/No  |   Yes/No   |   Yes/No   |       [who]        |
 
 **Query types to test:**
+
 - "What is [your product category]?"
 - "Best [product category] for [use case]"
 - "[Your brand] vs [competitor]"
@@ -130,6 +141,7 @@ Test 10-20 of your most important queries across platforms:
 ### Step 2: Analyze Citation Patterns
 
 When your competitors get cited and you don't, examine:
+
 - **Content structure** — Is their content more extractable?
 - **Authority signals** — Do they have more citations, stats, expert quotes?
 - **Freshness** — Is their content more recently updated?
@@ -140,18 +152,18 @@ When your competitors get cited and you don't, examine:
 
 For each priority page, verify:
 
-| Check | Pass/Fail |
-|-------|-----------|
-| Clear definition in first paragraph? | |
-| Self-contained answer blocks (work without surrounding context)? | |
-| Statistics with sources cited? | |
-| Comparison tables for "[X] vs [Y]" queries? | |
-| FAQ section with natural-language questions? | |
-| Schema markup (FAQ, HowTo, Article, Product)? | |
-| Expert attribution (author name, credentials)? | |
-| Recently updated (within 6 months)? | |
-| Heading structure matches query patterns? | |
-| AI bots allowed in robots.txt? | |
+| Check                                                            | Pass/Fail |
+| ---------------------------------------------------------------- | --------- |
+| Clear definition in first paragraph?                             |           |
+| Self-contained answer blocks (work without surrounding context)? |           |
+| Statistics with sources cited?                                   |           |
+| Comparison tables for "[X] vs [Y]" queries?                      |           |
+| FAQ section with natural-language questions?                     |           |
+| Schema markup (FAQ, HowTo, Article, Product)?                    |           |
+| Expert attribution (author name, credentials)?                   |           |
+| Recently updated (within 6 months)?                              |           |
+| Heading structure matches query patterns?                        |           |
+| AI bots allowed in robots.txt?                                   |           |
 
 ### Step 4: AI Bot Access Check
 
@@ -184,6 +196,7 @@ See [references/platform-ranking-factors.md](references/platform-ranking-factors
 AI systems extract passages, not pages. Every key claim should work as a standalone statement.
 
 **Content block patterns:**
+
 - **Definition blocks** for "What is X?" queries
 - **Step-by-step blocks** for "How to X" queries
 - **Comparison tables** for "X vs Y" queries
@@ -194,6 +207,7 @@ AI systems extract passages, not pages. Every key claim should work as a standal
 For detailed templates for each block type, see [references/content-patterns.md](references/content-patterns.md).
 
 **Structural rules:**
+
 - Lead every section with a direct answer (don't bury it)
 - Keep key answer passages to 40-60 words (optimal for snippet extraction)
 - Use H2/H3 headings that match how people phrase queries
@@ -207,39 +221,43 @@ AI systems prefer sources they can trust. Build citation-worthiness.
 
 **The Princeton GEO research** (KDD 2024, studied across Perplexity.ai) ranked 9 optimization methods:
 
-| Method | Visibility Boost | How to Apply |
-|--------|:---------------:|--------------|
-| **Cite sources** | +40% | Add authoritative references with links |
-| **Add statistics** | +37% | Include specific numbers with sources |
-| **Add quotations** | +30% | Expert quotes with name and title |
-| **Authoritative tone** | +25% | Write with demonstrated expertise |
-| **Improve clarity** | +20% | Simplify complex concepts |
-| **Technical terms** | +18% | Use domain-specific terminology |
-| **Unique vocabulary** | +15% | Increase word diversity |
-| **Fluency optimization** | +15-30% | Improve readability and flow |
-| ~~Keyword stuffing~~ | **-10%** | **Actively hurts AI visibility** |
+| Method                   | Visibility Boost | How to Apply                            |
+| ------------------------ | :--------------: | --------------------------------------- |
+| **Cite sources**         |       +40%       | Add authoritative references with links |
+| **Add statistics**       |       +37%       | Include specific numbers with sources   |
+| **Add quotations**       |       +30%       | Expert quotes with name and title       |
+| **Authoritative tone**   |       +25%       | Write with demonstrated expertise       |
+| **Improve clarity**      |       +20%       | Simplify complex concepts               |
+| **Technical terms**      |       +18%       | Use domain-specific terminology         |
+| **Unique vocabulary**    |       +15%       | Increase word diversity                 |
+| **Fluency optimization** |     +15-30%      | Improve readability and flow            |
+| ~~Keyword stuffing~~     |     **-10%**     | **Actively hurts AI visibility**        |
 
 **Best combination:** Fluency + Statistics = maximum boost. Low-ranking sites benefit even more — up to 115% visibility increase with citations.
 
 **Statistics and data** (+37-40% citation boost)
+
 - Include specific numbers with sources
 - Cite original research, not summaries of research
 - Add dates to all statistics
 - Original data beats aggregated data
 
 **Expert attribution** (+25-30% citation boost)
+
 - Named authors with credentials
 - Expert quotes with titles and organizations
 - "According to [Source]" framing for claims
 - Author bios with relevant expertise
 
 **Freshness signals**
+
 - "Last updated: [date]" prominently displayed
 - Regular content refreshes (quarterly minimum for competitive topics)
 - Current year references and recent statistics
 - Remove or update outdated information
 
 **E-E-A-T alignment**
+
 - First-hand experience demonstrated
 - Specific, detailed information (not generic)
 - Transparent sourcing and methodology
@@ -250,6 +268,7 @@ AI systems prefer sources they can trust. Build citation-worthiness.
 AI systems don't just cite your website — they cite where you appear.
 
 **Third-party sources matter more than your own site:**
+
 - Wikipedia mentions (7.8% of all ChatGPT citations)
 - Reddit discussions (1.8% of ChatGPT citations)
 - Industry publications and guest posts
@@ -258,6 +277,7 @@ AI systems don't just cite your website — they cite where you appear.
 - Quora answers
 
 **Actions:**
+
 - Ensure your Wikipedia page is accurate and current
 - Participate authentically in Reddit communities
 - Get featured in industry roundups and comparison articles
@@ -281,28 +301,33 @@ Add these machine-readable files to your site root:
 # Pricing — [Your Product Name]
 
 ## Free
+
 - Price: $0/month
 - Limits: 100 emails/month, 1 user
 - Features: Basic templates, API access
 
 ## Pro
+
 - Price: $29/month (billed annually) | $35/month (billed monthly)
 - Limits: 10,000 emails/month, 5 users
 - Features: Custom domains, analytics, priority support
 
 ## Enterprise
+
 - Price: Custom — contact sales@example.com
 - Limits: Unlimited emails, unlimited users
 - Features: SSO, SLA, dedicated account manager
 ```
 
 **Why this matters now:**
+
 - AI agents increasingly compare products programmatically before a human ever visits your site
 - Opaque pricing gets filtered out of AI-mediated buying journeys
 - A simple markdown file is trivially parseable by any LLM — no rendering, no JavaScript, no login walls
 - Same principle as `robots.txt` (for crawlers), `llms.txt` (for AI context), and `AGENTS.md` (for agent capabilities)
 
 **Best practices:**
+
 - Use consistent units (monthly vs. annual, per-seat vs. flat)
 - Include specific limits and thresholds, not just feature names
 - List what's included at each tier, not just what's different
@@ -321,15 +346,15 @@ Google [introduced OKF](https://cloud.google.com/blog/products/data-analytics/ho
 
 Structured data helps AI systems understand your content. Key schemas:
 
-| Content Type | Schema | Why It Helps |
-|-------------|--------|-------------|
-| Articles/Blog posts | `Article`, `BlogPosting` | Author, date, topic identification |
-| How-to content | `HowTo` | Step extraction for process queries |
-| FAQs | `FAQPage` | Direct Q&A extraction |
-| Products | `Product` | Pricing, features, reviews |
-| Comparisons | `ItemList` | Structured comparison data |
-| Reviews | `Review`, `AggregateRating` | Trust signals |
-| Organization | `Organization` | Entity recognition |
+| Content Type        | Schema                      | Why It Helps                        |
+| ------------------- | --------------------------- | ----------------------------------- |
+| Articles/Blog posts | `Article`, `BlogPosting`    | Author, date, topic identification  |
+| How-to content      | `HowTo`                     | Step extraction for process queries |
+| FAQs                | `FAQPage`                   | Direct Q&A extraction               |
+| Products            | `Product`                   | Pricing, features, reviews          |
+| Comparisons         | `ItemList`                  | Structured comparison data          |
+| Reviews             | `Review`, `AggregateRating` | Trust signals                       |
+| Organization        | `Organization`              | Entity recognition                  |
 
 Content with proper schema shows 30-40% higher AI visibility on non-Google AI engines. **Google's note**: structured data is "not required for generative AI search" but is recommended for overall SEO strategy. For implementation, use the **schema** skill.
 
@@ -340,11 +365,13 @@ Content with proper schema shows 30-40% higher AI visibility on non-Google AI en
 Beyond AI search engines summarizing content, autonomous agents are starting to access sites directly — clicking, reading, comparing, even buying on behalf of users. Google's guide flags this as an emerging category to plan for.
 
 **How agents access your site:**
+
 - **Visual rendering** — they screenshot/read the page like a user would
 - **DOM inspection** — they parse the page's HTML structure
 - **Accessibility tree** — they rely on the same semantic information assistive tech uses (labels, roles, landmarks, headings)
 
 **What to do:**
+
 - **Render meaningful content without heavy JS gymnastics** — if the page is blank until 4 frameworks finish loading, agents see blank
 - **Semantic HTML** — use `<main>`, `<nav>`, `<article>`, `<button>`, proper heading hierarchy, `alt` text on images
 - **Clean accessibility tree** — every interactive element labelled; ARIA used correctly (or not at all when native HTML suffices)
@@ -355,6 +382,7 @@ Beyond AI search engines summarizing content, autonomous agents are starting to 
 Google references UCP as a forthcoming protocol that will give agents standardized hooks for commerce interactions (catalog discovery, pricing, checkout). Watch for adoption; for now, the structural recommendations above are the precursor.
 
 For ecom and local business specifically, Google highlights:
+
 - **Merchant Center feeds** + **Google Business Profile** for product/service visibility in AI Search
 - **Business Agent** for conversational customer engagement (where applicable)
 
@@ -364,17 +392,18 @@ For ecom and local business specifically, Google highlights:
 
 Not all content is equally citable. Prioritize these formats:
 
-| Content Type | Citation Share | Why AI Cites It |
-|-------------|:------------:|----------------|
-| **Comparison articles** | ~33% | Structured, balanced, high-intent |
-| **Definitive guides** | ~15% | Comprehensive, authoritative |
-| **Original research/data** | ~12% | Unique, citable statistics |
-| **Best-of/listicles** | ~10% | Clear structure, entity-rich |
-| **Product pages** | ~10% | Specific details AI can extract |
-| **How-to guides** | ~8% | Step-by-step structure |
-| **Opinion/analysis** | ~10% | Expert perspective, quotable |
+| Content Type               | Citation Share | Why AI Cites It                   |
+| -------------------------- | :------------: | --------------------------------- |
+| **Comparison articles**    |      ~33%      | Structured, balanced, high-intent |
+| **Definitive guides**      |      ~15%      | Comprehensive, authoritative      |
+| **Original research/data** |      ~12%      | Unique, citable statistics        |
+| **Best-of/listicles**      |      ~10%      | Clear structure, entity-rich      |
+| **Product pages**          |      ~10%      | Specific details AI can extract   |
+| **How-to guides**          |      ~8%       | Step-by-step structure            |
+| **Opinion/analysis**       |      ~10%      | Expert perspective, quotable      |
 
 **Underperformers for AI citation:**
+
 - Generic blog posts without structure
 - Thin product pages with marketing fluff
 - Gated content (AI can't access it)
@@ -387,26 +416,27 @@ Not all content is equally citable. Prioritize these formats:
 
 ### What to Track
 
-| Metric | What It Measures | How to Check |
-|--------|-----------------|-------------|
-| AI Overview presence | Do AI Overviews appear for your queries? | Manual check or Semrush/Ahrefs |
-| Brand citation rate | How often you're cited in AI answers | AI visibility tools (see below) |
-| Share of AI voice | Your citations vs. competitors | Peec AI, Otterly, ZipTie |
-| Citation sentiment | How AI describes your brand | Manual review + monitoring tools |
-| Source attribution | Which of your pages get cited | Track referral traffic from AI sources |
+| Metric               | What It Measures                         | How to Check                           |
+| -------------------- | ---------------------------------------- | -------------------------------------- |
+| AI Overview presence | Do AI Overviews appear for your queries? | Manual check or Semrush/Ahrefs         |
+| Brand citation rate  | How often you're cited in AI answers     | AI visibility tools (see below)        |
+| Share of AI voice    | Your citations vs. competitors           | Peec AI, Otterly, ZipTie               |
+| Citation sentiment   | How AI describes your brand              | Manual review + monitoring tools       |
+| Source attribution   | Which of your pages get cited            | Track referral traffic from AI sources |
 
 ### AI Visibility Monitoring Tools
 
-| Tool | Coverage | Best For |
-|------|----------|----------|
-| **Otterly AI** | ChatGPT, Perplexity, Google AI Overviews | Share of AI voice tracking |
-| **Peec AI** | ChatGPT, Gemini, Perplexity, Claude, Copilot+ | Multi-platform monitoring at scale |
-| **ZipTie** | Google AI Overviews, ChatGPT, Perplexity | Brand mention + sentiment tracking |
-| **LLMrefs** | ChatGPT, Perplexity, AI Overviews, Gemini | SEO keyword → AI visibility mapping |
+| Tool           | Coverage                                      | Best For                            |
+| -------------- | --------------------------------------------- | ----------------------------------- |
+| **Otterly AI** | ChatGPT, Perplexity, Google AI Overviews      | Share of AI voice tracking          |
+| **Peec AI**    | ChatGPT, Gemini, Perplexity, Claude, Copilot+ | Multi-platform monitoring at scale  |
+| **ZipTie**     | Google AI Overviews, ChatGPT, Perplexity      | Brand mention + sentiment tracking  |
+| **LLMrefs**    | ChatGPT, Perplexity, AI Overviews, Gemini     | SEO keyword → AI visibility mapping |
 
 ### DIY Monitoring (No Tools)
 
 Monthly manual check:
+
 1. Pick your top 20 queries
 2. Run each through ChatGPT, Perplexity, and Google
 3. Record: Are you cited? Who is? What page?
@@ -423,8 +453,8 @@ Google's guide is explicit: **there is no AI-specific Search Console reporting**
 Google's guide calls these out explicitly — they hurt across both traditional Search and AI features.
 
 1. **Write separate content "for AI"**. Same content should serve people and AI. Writing variants targeted at AI systems risks the **scaled content abuse spam policy** — Google's words.
-2. **Chunk pages into AI-bait fragments**. Google's guide is direct: *"Don't break your content into tiny pieces for AI to better understand it."* Use normal paragraph + heading structure.
-3. **Generate at scale for ranking manipulation**. AI-generated content is fine *if* it meets Search Essentials and spam policies. Mass-producing thin variations does not.
+2. **Chunk pages into AI-bait fragments**. Google's guide is direct: _"Don't break your content into tiny pieces for AI to better understand it."_ Use normal paragraph + heading structure.
+3. **Generate at scale for ranking manipulation**. AI-generated content is fine _if_ it meets Search Essentials and spam policies. Mass-producing thin variations does not.
 4. **Pursue inauthentic mentions**. Don't fabricate citations or bulk-spam Reddit/Wikipedia for AI visibility. Real participation only.
 5. **Block AI crawlers if you want citation**. Blocking GPTBot, PerplexityBot, ClaudeBot, Google-Extended means those engines literally cannot cite you. Block training-only crawlers (CCBot) if you must, not the search-and-cite ones.
 6. **Hide your main content behind JS that doesn't render**. Both core Search and AI agents need to see your content; JS-only rendering loses both audiences.
@@ -459,12 +489,12 @@ For tactical guidance on SaaS product pages, blog content, comparison/alternativ
 
 For implementation, see the [tools registry](../../tools/REGISTRY.md).
 
-| Tool | Use For |
-|------|---------|
+| Tool      | Use For                                                      |
+| --------- | ------------------------------------------------------------ |
 | `semrush` | AI Overview tracking, keyword research, content gap analysis |
-| `ahrefs` | Backlink analysis, content explorer, AI Overview data |
-| `gsc` | Search Console performance data, query tracking |
-| `ga4` | Referral traffic from AI sources |
+| `ahrefs`  | Backlink analysis, content explorer, AI Overview data        |
+| `gsc`     | Search Console performance data, query tracking              |
+| `ga4`     | Referral traffic from AI sources                             |
 
 ---
 

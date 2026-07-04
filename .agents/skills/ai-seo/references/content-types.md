@@ -11,6 +11,7 @@ For the cross-cutting strategy, see [SKILL.md](../SKILL.md).
 **Goal:** Get cited in "What is [category]?" and "Best [category]" queries.
 
 **Optimize:**
+
 - Clear product description in first paragraph (what it does, who it's for)
 - Feature comparison tables (you vs. category, not just competitors)
 - Specific metrics ("processes 10,000 transactions/sec" not "blazing fast")
@@ -25,6 +26,7 @@ For the cross-cutting strategy, see [SKILL.md](../SKILL.md).
 **Goal:** Get cited as an authoritative source on topics in your space.
 
 **Optimize:**
+
 - One clear target query per post (match heading to query)
 - Definition in first paragraph for "What is" queries
 - Original data, research, or expert quotes
@@ -39,6 +41,7 @@ For the cross-cutting strategy, see [SKILL.md](../SKILL.md).
 **Goal:** Get cited in "[X] vs [Y]" and "Best [X] alternatives" queries.
 
 **Optimize:**
+
 - Structured comparison tables (not just prose)
 - Fair and balanced (AI penalizes obviously biased comparisons)
 - Specific criteria with ratings or scores
@@ -52,6 +55,7 @@ For the cross-cutting strategy, see [SKILL.md](../SKILL.md).
 **Goal:** Get cited in "How to [X] with [your product]" queries.
 
 **Optimize:**
+
 - Step-by-step format with numbered lists
 - Code examples where relevant
 - HowTo schema markup

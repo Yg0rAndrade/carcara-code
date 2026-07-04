@@ -9,11 +9,11 @@
 const XLSX = require('xlsx');
 
 function decodeCsv(buf) {
-  if (buf.length >= 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
     return buf.toString('utf8', 3); // UTF-8 com BOM
   }
   const utf8 = buf.toString('utf8');
-  const REPLACEMENT = String.fromCharCode(0xFFFD);
+  const REPLACEMENT = String.fromCharCode(0xfffd);
   if (utf8.includes(REPLACEMENT)) return buf.toString('latin1');
   return utf8;
 }

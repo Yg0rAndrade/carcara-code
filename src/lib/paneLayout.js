@@ -17,7 +17,12 @@ export const isSplit = (n) => !!n && n.kind === 'split';
 
 export function makePane(tabs, active) {
   const t = Array.isArray(tabs) ? tabs.slice() : tabs == null ? [] : [tabs];
-  return { kind: 'pane', id: uid(), tabs: t, active: active != null && t.includes(active) ? active : (t[0] ?? null) };
+  return {
+    kind: 'pane',
+    id: uid(),
+    tabs: t,
+    active: active != null && t.includes(active) ? active : (t[0] ?? null),
+  };
 }
 
 export function firstPane(node) {
@@ -34,7 +39,10 @@ export function findPane(node, paneId) {
 
 export function allPanes(node, out = []) {
   if (!node) return out;
-  if (isPane(node)) { out.push(node); return out; }
+  if (isPane(node)) {
+    out.push(node);
+    return out;
+  }
   allPanes(node.children[0], out);
   allPanes(node.children[1], out);
   return out;
@@ -86,7 +94,13 @@ function replaceNode(node, id, replacement) {
   if (!node) return node;
   if (node.id === id) return replacement;
   if (isPane(node)) return node;
-  return { ...node, children: [replaceNode(node.children[0], id, replacement), replaceNode(node.children[1], id, replacement)] };
+  return {
+    ...node,
+    children: [
+      replaceNode(node.children[0], id, replacement),
+      replaceNode(node.children[1], id, replacement),
+    ],
+  };
 }
 
 // Aplica o "soltar" de uma aba sobre um pane.
@@ -161,7 +175,8 @@ export function reconcile(tree, sessionIds, fallbackActive) {
     if (p) for (const id of missing) p.tabs.push(id);
     else next = makePane(missing, fallbackActive);
   }
-  if (allSessionIds(next).length === 0 && sessionIds.length) next = makePane(sessionIds, fallbackActive);
+  if (allSessionIds(next).length === 0 && sessionIds.length)
+    next = makePane(sessionIds, fallbackActive);
   fixActive(next);
   return next;
 }

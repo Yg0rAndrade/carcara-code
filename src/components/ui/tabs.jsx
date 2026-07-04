@@ -58,7 +58,7 @@ const TabsList = React.forwardRef(({ className, children, ...props }, ref) => {
       ref={listRef}
       className={cn(
         'relative inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground',
-        className
+        className,
       )}
       {...props}
     >
@@ -90,7 +90,7 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
     className={cn(
       // relative + z-10 mantêm o texto/ícone acima da pílula que desliza por baixo.
       'relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:font-semibold data-[state=active]:text-primary [&_svg]:size-4',
-      className
+      className,
     )}
     {...props}
   />
@@ -98,7 +98,11 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
 TabsTrigger.displayName = 'TabsTrigger';
 
 const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content ref={ref} className={cn('mt-2 focus-visible:outline-none', className)} {...props} />
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn('mt-2 focus-visible:outline-none', className)}
+    {...props}
+  />
 ));
 TabsContent.displayName = 'TabsContent';
 

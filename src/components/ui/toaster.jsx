@@ -10,20 +10,19 @@ import { subscribe } from '@/lib/toast.js';
 // Success/erro/atenção usam ícones animados (lucide-animated) que tocam ao
 // APARECER (não no hover) — ver startAnimation no mount do ToastItem.
 const KINDS = {
-  success: { label: 'Concluído', Icon: CheckIcon,      accent: 'hsl(var(--success))' },
-  error:   { label: 'Erro',      Icon: BadgeAlertIcon, accent: 'hsl(var(--destructive))' },
-  warning: { label: 'Atenção',   Icon: BadgeAlertIcon, accent: 'hsl(var(--warning))' },
-  info:    { label: 'Aviso',     Icon: Info,           accent: 'hsl(var(--primary))' },
+  success: { label: 'Concluído', Icon: CheckIcon, accent: 'hsl(var(--success))' },
+  error: { label: 'Erro', Icon: BadgeAlertIcon, accent: 'hsl(var(--destructive))' },
+  warning: { label: 'Atenção', Icon: BadgeAlertIcon, accent: 'hsl(var(--warning))' },
+  info: { label: 'Aviso', Icon: Info, accent: 'hsl(var(--primary))' },
 };
 
 const prefersReduced = () =>
-  typeof window !== 'undefined' &&
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 function ToastItem({ t, onDone }) {
   const meta = KINDS[t.kind] || KINDS.info;
   const { Icon } = meta;
-  const [shown, setShown] = useState(false);   // entrada (desliza da direita)
+  const [shown, setShown] = useState(false); // entrada (desliza da direita)
   const [leaving, setLeaving] = useState(false); // saída
   const timer = useRef(null);
   const iconRef = useRef(null); // ícones animados expõem startAnimation() via ref
@@ -49,7 +48,11 @@ function ToastItem({ t, onDone }) {
     // Toca a animação do ícone quando o toast termina de entrar (não no hover).
     // Ícones estáticos (info) não têm startAnimation — o ?. ignora em silêncio.
     const a = prefersReduced() ? null : setTimeout(() => iconRef.current?.startAnimation?.(), 180);
-    return () => { cancelAnimationFrame(r); clearTimeout(timer.current); clearTimeout(a); };
+    return () => {
+      cancelAnimationFrame(r);
+      clearTimeout(timer.current);
+      clearTimeout(a);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -71,12 +74,19 @@ function ToastItem({ t, onDone }) {
       <div className="flex items-start gap-2.5 py-2.5 pl-3.5 pr-2">
         <Icon ref={iconRef} size={16} className="mt-0.5 shrink-0" style={{ color: meta.accent }} />
         <div className="min-w-0 flex-1">
-          <div className="eyebrow leading-none" style={{ color: meta.accent }}>{t.title || meta.label}</div>
-          <p className="mt-1 break-words text-[13px] leading-snug text-foreground/90">{t.message}</p>
+          <div className="eyebrow leading-none" style={{ color: meta.accent }}>
+            {t.title || meta.label}
+          </div>
+          <p className="mt-1 break-words text-[13px] leading-snug text-foreground/90">
+            {t.message}
+          </p>
           {t.action && (
             <button
               type="button"
-              onClick={() => { t.action.onClick?.(); close(); }}
+              onClick={() => {
+                t.action.onClick?.();
+                close();
+              }}
               className="mt-1.5 text-[12px] font-medium text-primary hover:underline"
             >
               {t.action.label}

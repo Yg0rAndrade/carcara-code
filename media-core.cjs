@@ -5,9 +5,18 @@ const AUDIO_EXT = new Set(['.mp3', '.wav', '.flac', '.ogg', '.oga', '.m4a', '.aa
 const UNSUPPORTED_MEDIA_EXT = new Set(['.avi', '.mkv', '.mov', '.wmv']);
 
 const MIME = {
-  '.mp4': 'video/mp4', '.webm': 'video/webm', '.ogv': 'video/ogg', '.m4v': 'video/mp4',
-  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.flac': 'audio/flac', '.ogg': 'audio/ogg',
-  '.oga': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.opus': 'audio/ogg',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.ogv': 'video/ogg',
+  '.m4v': 'video/mp4',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.flac': 'audio/flac',
+  '.ogg': 'audio/ogg',
+  '.oga': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.opus': 'audio/ogg',
 };
 
 function extOf(name) {
@@ -74,6 +83,12 @@ function parseRange(header, size) {
 }
 
 module.exports = {
-  VIDEO_EXT, AUDIO_EXT, UNSUPPORTED_MEDIA_EXT,
-  mediaKind, isUnsupportedMedia, mimeForMedia, isWithinRoots, parseRange,
+  VIDEO_EXT,
+  AUDIO_EXT,
+  UNSUPPORTED_MEDIA_EXT,
+  mediaKind,
+  isUnsupportedMedia,
+  mimeForMedia,
+  isWithinRoots,
+  parseRange,
 };

@@ -25,10 +25,13 @@ function encodeProjectDir(projectPath) {
 function projectDirCandidates(projectPath, base = projectsBase()) {
   const want = encodeProjectDir(projectPath).toLowerCase();
   try {
-    return fs.readdirSync(base)
+    return fs
+      .readdirSync(base)
       .filter((d) => d.toLowerCase() === want)
       .map((d) => path.join(base, d));
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 // Tem conversa de verdade? (pelo menos uma mensagem de usuário no começo do arquivo).
@@ -43,7 +46,9 @@ function transcriptHasUser(file) {
     fs.closeSync(fd);
     const head = buf.toString('utf8');
     return head.includes('"type":"user"') || head.includes('"role":"user"');
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // <id>.jsonl existe (com conversa) em QUALQUER projeto — o id pode ter migrado de
@@ -63,12 +68,16 @@ function transcriptPath(projectPath, claudeId, base = projectsBase()) {
   if (!claudeId) return null;
   for (const dir of projectDirCandidates(projectPath, base)) {
     const fp = path.join(dir, claudeId + '.jsonl');
-    try { if (fs.statSync(fp).isFile()) return fp; } catch {}
+    try {
+      if (fs.statSync(fp).isFile()) return fp;
+    } catch {}
   }
   try {
     for (const d of fs.readdirSync(base)) {
       const fp = path.join(base, d, claudeId + '.jsonl');
-      try { if (fs.statSync(fp).isFile()) return fp; } catch {}
+      try {
+        if (fs.statSync(fp).isFile()) return fp;
+      } catch {}
     }
   } catch {}
   return null;
@@ -93,7 +102,11 @@ function newTranscript(projectPath, snap, base = projectsBase()) {
   const fresh = [];
   for (const dir of projectDirCandidates(projectPath, base)) {
     let files;
-    try { files = fs.readdirSync(dir); } catch { continue; }
+    try {
+      files = fs.readdirSync(dir);
+    } catch {
+      continue;
+    }
     for (const f of files) {
       if (!f.endsWith('.jsonl')) continue;
       const id = f.slice(0, -6);
@@ -147,7 +160,8 @@ function cleanTitle(s) {
 function msgText(o) {
   const c = o && o.message && o.message.content;
   if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.map((p) => (typeof p === 'string' ? p : (p && p.text) || '')).join(' ');
+  if (Array.isArray(c))
+    return c.map((p) => (typeof p === 'string' ? p : (p && p.text) || '')).join(' ');
   return '';
 }
 
@@ -166,11 +180,20 @@ function firstPromptTitle(file) {
     const lines = buf.toString('utf8').split('\n');
     for (const ln of lines) {
       if (ln.indexOf('"last-prompt"') === -1) continue;
-      try { const o = JSON.parse(ln); if (o && o.type === 'last-prompt' && o.lastPrompt) { const t = cleanTitle(o.lastPrompt); if (t) return t; } } catch {}
+      try {
+        const o = JSON.parse(ln);
+        if (o && o.type === 'last-prompt' && o.lastPrompt) {
+          const t = cleanTitle(o.lastPrompt);
+          if (t) return t;
+        }
+      } catch {}
     }
     for (const ln of lines) {
       if (ln.indexOf('"type":"user"') === -1 && ln.indexOf('"role":"user"') === -1) continue;
-      try { const t = cleanTitle(msgText(JSON.parse(ln))); if (t) return t; } catch {}
+      try {
+        const t = cleanTitle(msgText(JSON.parse(ln)));
+        if (t) return t;
+      } catch {}
     }
   } catch {}
   return null;
@@ -184,7 +207,15 @@ function sessionTitle(file) {
 }
 
 module.exports = {
-  projectsBase, encodeProjectDir, projectDirCandidates, transcriptHasUser,
-  historyExists, transcriptPath, snapshot, newTranscript, latestAiTitle,
-  firstPromptTitle, sessionTitle,
+  projectsBase,
+  encodeProjectDir,
+  projectDirCandidates,
+  transcriptHasUser,
+  historyExists,
+  transcriptPath,
+  snapshot,
+  newTranscript,
+  latestAiTitle,
+  firstPromptTitle,
+  sessionTitle,
 };

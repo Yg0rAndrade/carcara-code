@@ -18,7 +18,9 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
   const [suggest, setSuggest] = useState({});
   const fetchSuggest = (k, v) => {
     if (!onComplete) return;
-    Promise.resolve(onComplete(k, v)).then((vals) => setSuggest((s) => ({ ...s, [k]: vals || [] }))).catch(() => {});
+    Promise.resolve(onComplete(k, v))
+      .then((vals) => setSuggest((s) => ({ ...s, [k]: vals || [] })))
+      .catch(() => {});
   };
 
   if (!names.length) {
@@ -34,7 +36,9 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
           <label className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium">
             <span className="font-mono">{k}</span>
             {isReq && <span className="text-primary">*</span>}
-            {p.description && <span className="font-normal text-muted-foreground">— {p.description}</span>}
+            {p.description && (
+              <span className="font-normal text-muted-foreground">— {p.description}</span>
+            )}
           </label>
         );
 
@@ -43,9 +47,15 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
             <div key={k}>
               {label}
               <Select value={value[k] ?? ''} onValueChange={(v) => set(k, v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('mcp.form.select_placeholder')} /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={t('mcp.form.select_placeholder')} />
+                </SelectTrigger>
                 <SelectContent>
-                  {p.enum.map((o) => <SelectItem key={String(o)} value={String(o)} className="text-xs">{String(o)}</SelectItem>)}
+                  {p.enum.map((o) => (
+                    <SelectItem key={String(o)} value={String(o)} className="text-xs">
+                      {String(o)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -55,8 +65,14 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
         if (p.type === 'boolean') {
           return (
             <label key={k} className="flex items-center gap-2 text-xs font-medium">
-              <input type="checkbox" checked={!!value[k]} onChange={(e) => set(k, e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
-              <span className="font-mono">{k}</span>{isReq && <span className="text-primary">*</span>}
+              <input
+                type="checkbox"
+                checked={!!value[k]}
+                onChange={(e) => set(k, e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              <span className="font-mono">{k}</span>
+              {isReq && <span className="text-primary">*</span>}
             </label>
           );
         }
@@ -71,7 +87,11 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
               type={isNum ? 'number' : 'text'}
               value={value[k] ?? ''}
               onChange={(e) => {
-                const v = isNum ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value;
+                const v = isNum
+                  ? e.target.value === ''
+                    ? ''
+                    : Number(e.target.value)
+                  : e.target.value;
                 set(k, v);
                 if (canComplete) fetchSuggest(k, e.target.value);
               }}
@@ -84,7 +104,9 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
             />
             {canComplete && (suggest[k] || []).length > 0 && (
               <datalist id={listId}>
-                {suggest[k].map((o) => <option key={String(o)} value={String(o)} />)}
+                {suggest[k].map((o) => (
+                  <option key={String(o)} value={String(o)} />
+                ))}
               </datalist>
             )}
           </div>

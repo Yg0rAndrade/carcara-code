@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
-  mediaKind, isUnsupportedMedia, mimeForMedia, isWithinRoots, parseRange,
+  mediaKind,
+  isUnsupportedMedia,
+  mimeForMedia,
+  isWithinRoots,
+  parseRange,
 } from './media-core.cjs';
 import path from 'path';
 

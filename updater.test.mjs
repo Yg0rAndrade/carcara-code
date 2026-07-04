@@ -44,10 +44,10 @@ describe('initUpdater (empacotado)', () => {
     const notify = vi.fn();
     const au = fakeAU();
     const u = initUpdater({ send: () => {}, notify, isPackaged: true, autoUpdater: au });
-    u.check();                         // manual
+    u.check(); // manual
     au.emit('update-available', { version: '0.1.3' });
     expect(notify).not.toHaveBeenCalled();
-    u.checkOnBoot();                   // boot
+    u.checkOnBoot(); // boot
     au.emit('update-available', { version: '0.1.3' });
     expect(notify).toHaveBeenCalledWith('0.1.3');
   });
@@ -55,7 +55,8 @@ describe('initUpdater (empacotado)', () => {
   it('download/install delegam pro autoUpdater', () => {
     const au = fakeAU();
     const u = initUpdater({ send: () => {}, isPackaged: true, autoUpdater: au });
-    u.download(); u.install();
+    u.download();
+    u.install();
     expect(au.downloadUpdate).toHaveBeenCalled();
     expect(au.quitAndInstall).toHaveBeenCalled();
   });

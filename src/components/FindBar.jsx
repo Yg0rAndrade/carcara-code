@@ -20,7 +20,10 @@ export function FindBar({ webview, nonce, onClose, t }) {
   // Foca + seleciona ao abrir e a cada Ctrl+F (nonce).
   useEffect(() => {
     const el = inputRef.current;
-    if (el) { el.focus(); el.select(); }
+    if (el) {
+      el.focus();
+      el.select();
+    }
   }, [nonce]);
 
   // Contador (posição/total) vem do evento nativo.
@@ -31,33 +34,52 @@ export function FindBar({ webview, nonce, onClose, t }) {
       setResult({ active: r.activeMatchOrdinal || 0, total: r.matches || 0 });
     };
     webview.addEventListener('found-in-page', onFound);
-    return () => { try { webview.removeEventListener('found-in-page', onFound); } catch {} };
+    return () => {
+      try {
+        webview.removeEventListener('found-in-page', onFound);
+      } catch {}
+    };
   }, [webview]);
 
   // Find-as-you-type: cada mudança re-busca; vazio limpa os destaques.
   useEffect(() => {
     if (!webview) return;
     if (!query) {
-      try { webview.stopFindInPage('clearSelection'); } catch {}
+      try {
+        webview.stopFindInPage('clearSelection');
+      } catch {}
       setResult({ active: 0, total: 0 });
       return;
     }
-    try { webview.findInPage(query); } catch {}
+    try {
+      webview.findInPage(query);
+    } catch {}
   }, [query, webview]);
 
   // Ao fechar/desmontar: apaga o realce que ficou no site.
   useEffect(() => {
-    return () => { try { webview && webview.stopFindInPage('clearSelection'); } catch {} };
+    return () => {
+      try {
+        webview && webview.stopFindInPage('clearSelection');
+      } catch {}
+    };
   }, [webview]);
 
   const step = (forward) => {
     if (!query || !webview) return;
-    try { webview.findInPage(query, { findNext: true, forward }); } catch {}
+    try {
+      webview.findInPage(query, { findNext: true, forward });
+    } catch {}
   };
 
   const onKeyDown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); step(!e.shiftKey); }
-    else if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      step(!e.shiftKey);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
   };
 
   const hasQuery = query.length > 0;
@@ -73,7 +95,12 @@ export function FindBar({ webview, nonce, onClose, t }) {
         placeholder={t('preview.find_placeholder')}
         className="h-6 w-40 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
       />
-      <span className={cn('min-w-[44px] text-right text-xs tabular-nums', result.total ? 'text-muted-foreground' : 'text-muted-foreground/60')}>
+      <span
+        className={cn(
+          'min-w-[44px] text-right text-xs tabular-nums',
+          result.total ? 'text-muted-foreground' : 'text-muted-foreground/60',
+        )}
+      >
         {hasQuery ? `${result.active}/${result.total}` : ''}
       </span>
       <div className="h-4 w-px bg-border" />

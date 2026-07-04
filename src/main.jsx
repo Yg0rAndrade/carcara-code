@@ -19,7 +19,7 @@ createRoot(document.getElementById('root')).render(
         </ErrorBoundary>
       </LayoutProvider>
     </LanguageProvider>
-  </ThemeProvider>
+  </ThemeProvider>,
 );
 
 function dismissSplash() {
