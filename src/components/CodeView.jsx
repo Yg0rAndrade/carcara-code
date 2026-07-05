@@ -733,6 +733,8 @@ export function CodeView({ active, openRequest }) {
       >
         {active ? (
           <>
+            {/* Busca de arquivos: escondida em projeto remoto (SFTP sem busca por ora). */}
+            {!active?.remote && (
             <div className="shrink-0 border-b p-1.5">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -742,7 +744,6 @@ export function CodeView({ active, openRequest }) {
                   onKeyDown={(e) => { if (e.key === 'Escape') setQuery(''); }}
                   placeholder={t('tree.search_placeholder')}
                   spellCheck={false}
-                  disabled={!!active?.remote}
                   className="h-7 w-full rounded-md border bg-background pl-7 pr-7 text-[13px] outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
                 />
                 {query && (
@@ -757,6 +758,7 @@ export function CodeView({ active, openRequest }) {
                 )}
               </div>
             </div>
+            )}
             <div
               className="min-h-0 flex-1 overflow-auto py-1.5"
               onContextMenu={(e) => {
