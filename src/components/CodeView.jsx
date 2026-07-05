@@ -576,23 +576,27 @@ export function CodeView({ active, openRequest }) {
     setAnchorPath(item.path);
     // Já aberto? só ativa a aba existente.
     if (tabs.some((t) => t.path === item.path)) { setActivePath(item.path); return; }
+    // Abre a guia NA HORA com estado de carregando (o readFile pode ter latência, ex.:
+    // SFTP remoto); o conteúdo entra quando chega, com o spinner no meio até lá.
+    setTabs((cur) => [...cur, { path: item.path, name: item.name, content: '', image: null, pdf: null, xlsx: null, video: null, audio: null, csv: false, csvLarge: false, csvMeta: null, notice: null, dirty: false, loading: true }]);
+    setActivePath(item.path);
     const r = await window.api.readFile(item.path);
-    const tab = { path: item.path, name: item.name, content: '', image: null, pdf: null, xlsx: null, video: null, audio: null, csv: false, csvLarge: false, csvMeta: null, notice: null, dirty: false };
-    if (r.image) tab.image = r.image;
-    else if (r.pdf) tab.pdf = r.pdf;
-    else if (r.video) tab.video = r.video;
-    else if (r.audio) tab.audio = r.audio;
-    else if (r.unsupportedMedia) tab.notice = t('code.media_unsupported');
+    const patch = { loading: false };
+    if (r.image) patch.image = r.image;
+    else if (r.pdf) patch.pdf = r.pdf;
+    else if (r.video) patch.video = r.video;
+    else if (r.audio) patch.audio = r.audio;
+    else if (r.unsupportedMedia) patch.notice = t('code.media_unsupported');
     // CSV grande: já vem como grade (read-only). Pequeno: texto editável + flag pra
     // mostrar o botão "Ver como planilha".
-    else if (r.csvLarge) { tab.csvLarge = true; tab.csvMeta = r.xlsx; }
-    else if (r.csv) { tab.csv = true; tab.content = r.content; }
-    else if (r.xlsx) tab.xlsx = r.xlsx;
-    else if (r.binary) tab.notice = t('code.binary_notice');
-    else if (r.error) tab.notice = t('code.error_notice') + ' ' + r.error;
-    else tab.content = r.content;
-    setTabs((cur) => [...cur, tab]);
-    setActivePath(item.path);
+    else if (r.csvLarge) { patch.csvLarge = true; patch.csvMeta = r.xlsx; }
+    else if (r.csv) { patch.csv = true; patch.content = r.content; }
+    else if (r.xlsx) patch.xlsx = r.xlsx;
+    else if (r.binary) patch.notice = t('code.binary_notice');
+    else if (r.error) patch.notice = t('code.error_notice') + ' ' + r.error;
+    else patch.content = r.content;
+    // Só aplica se a aba ainda existir (o usuário pode ter fechado durante o carregamento).
+    setTabs((cur) => cur.map((tb) => (tb.path === item.path ? { ...tb, ...patch } : tb)));
   };
 
   // Pedido externo de abrir arquivo (paleta de comandos). Usa ref pra chamar o
@@ -899,7 +903,11 @@ export function CodeView({ active, openRequest }) {
           )}
         </div>
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          {activeTab?.image ? (
+          {activeTab?.loading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activeTab?.image ? (
             <ImageViewer src={activeTab.image} name={activeTab.name} />
           ) : activeTab?.pdf ? (
             <PdfViewer src={activeTab.pdf} name={activeTab.name} />
