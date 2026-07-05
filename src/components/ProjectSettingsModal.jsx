@@ -24,6 +24,33 @@ export function ProjectSettingsModal({ project, onClose, onRename, onSetColor, o
 
   useEffect(() => { if (project) setName(project.name || ''); }, [project?.path]);
 
+  // Projeto remoto (SSH): seção de conexão. Carrega o perfil (sem segredo) pra mostrar o
+  // endereço (leitura) e deixar trocar as credenciais.
+  const [ssh, setSsh] = useState(null);          // { host, port, user, remoteDir } | null
+  const [sshAuth, setSshAuth] = useState('password');
+  const [sshKeyPath, setSshKeyPath] = useState('');
+  const [sshSecret, setSshSecret] = useState('');
+  const [sshBusy, setSshBusy] = useState(false);
+  const [sshMsg, setSshMsg] = useState(null);    // { ok, text } | null
+  useEffect(() => {
+    setSsh(null); setSshSecret(''); setSshMsg(null);
+    if (project?.remote) {
+      window.api.getRemote(project.path).then((r) => {
+        if (r && !r.error) { setSsh(r); setSshAuth(r.authType || 'password'); setSshKeyPath(r.keyPath || ''); }
+      }).catch(() => {});
+    }
+  }, [project?.path, project?.remote]);
+
+  const saveSsh = async () => {
+    setSshBusy(true);
+    const res = await window.api.updateRemoteAuth(project.path, sshAuth, sshKeyPath, sshSecret);
+    setSshBusy(false);
+    if (res?.error) { setSshMsg({ ok: false, text: res.error }); return; }
+    if (res?.secretSaved === false && sshSecret) { setSshMsg({ ok: false, text: t('remote.warn_secret') }); return; }
+    setSshMsg({ ok: true, text: t('rail.ssh_creds_saved') });
+    setSshSecret('');
+  };
+
   if (!project) return null;
   const p = project;
   const basename = p.path.split(/[\\/]/).filter(Boolean).pop() || p.path;
@@ -163,6 +190,53 @@ export function ProjectSettingsModal({ project, onClose, onRename, onSetColor, o
             <p className="mt-1 text-[11px] text-muted-foreground">{t('rail.image_hint')}</p>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onImageChosen} />
           </div>
+
+          {/* Conexão SSH (só projeto remoto): endereço em leitura + trocar credenciais. */}
+          {p.remote && (
+            <div className="border-t pt-4">
+              <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">{t('rail.ssh_section')}</div>
+              {ssh && (
+                <p className="mb-2 text-[12px] text-muted-foreground">{ssh.user}@{ssh.host}:{ssh.port} · {ssh.remoteDir}</p>
+              )}
+              {sshAuth !== 'key' ? (
+                <input
+                  type="password"
+                  className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                  placeholder={t('remote.ph_password')}
+                  value={sshSecret}
+                  onChange={(e) => { setSshSecret(e.target.value); setSshAuth('password'); }}
+                />
+              ) : (
+                <>
+                  <input
+                    className="mb-2 w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                    placeholder={t('remote.ph_keypath')}
+                    value={sshKeyPath}
+                    onChange={(e) => setSshKeyPath(e.target.value)}
+                  />
+                  <input
+                    type="password"
+                    className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                    placeholder={t('remote.ph_passphrase')}
+                    value={sshSecret}
+                    onChange={(e) => setSshSecret(e.target.value)}
+                  />
+                </>
+              )}
+              <div className="mt-1.5 flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                  onClick={() => setSshAuth(sshAuth === 'key' ? 'password' : 'key')}
+                >
+                  {sshAuth === 'key' ? t('remote.use_password') : t('remote.use_key')}
+                </button>
+                <Button size="sm" variant="secondary" className="ml-auto h-7" onClick={saveSsh} disabled={sshBusy}>{t('rail.ssh_save_creds')}</Button>
+              </div>
+              {sshMsg && <p className={`mt-1.5 text-[12px] ${sshMsg.ok ? 'text-green-600' : 'text-red-500'}`}>{sshMsg.text}</p>}
+              <p className="mt-1.5 text-[11px] text-muted-foreground">{t('rail.ssh_addr_hint')}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t px-4 py-3">

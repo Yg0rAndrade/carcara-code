@@ -85,6 +85,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // Projetos remotos (SSH)
   addRemote: (profile, secret) => ipcRenderer.invoke('remotes:add', { profile, secret }),
+  getRemote: (projectPath) => ipcRenderer.invoke('remotes:get', { projectPath }),
+  updateRemoteAuth: (projectPath, authType, keyPath, secret) => ipcRenderer.invoke('remotes:updateAuth', { projectPath, authType, keyPath, secret }),
   testRemote: (profile, secret) => ipcRenderer.invoke('remote:test', { profile, secret }),
   sshConfigHosts: () => ipcRenderer.invoke('ssh:configHosts'),
   reconnectRemote: (projectPath) => ipcRenderer.invoke('remote:reconnect', { projectPath }),

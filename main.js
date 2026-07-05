@@ -657,6 +657,37 @@ ipcMain.handle('remotes:add', async (evt, { profile, secret }) => {
   return { uri, hostKey: hk, secretSaved };
 });
 
+// Perfil salvo de um projeto remoto (sem o segredo) — pra pré-preencher o "Configurações
+// do projeto" de um projeto SSH.
+ipcMain.handle('remotes:get', (evt, { projectPath }) => {
+  const c = loadConfig();
+  const prof = c.remotes && c.remotes[hostKey(projectPath)];
+  if (!prof) return { error: 'perfil remoto não encontrado' };
+  return {
+    host: prof.host, port: prof.port, user: prof.user,
+    authType: prof.authType || 'password', keyPath: prof.keyPath || '',
+    remoteDir: prof.remoteDir || '/', label: prof.label || '',
+  };
+});
+
+// Atualiza só as CREDENCIAIS de um projeto remoto (senha/chave) — não muda o endereço,
+// então a URI/identidade do projeto continua a mesma. Reconecta com as novas credenciais.
+ipcMain.handle('remotes:updateAuth', (evt, { projectPath, authType, keyPath, secret }) => {
+  const hk = hostKey(projectPath);
+  const c = loadConfig();
+  if (!c.remotes || !c.remotes[hk]) return { error: 'perfil remoto não encontrado' };
+  c.remotes[hk].authType = authType;
+  if (authType === 'key') c.remotes[hk].keyPath = keyPath || '';
+  saveConfig(c);
+  let secretSaved = true;
+  if (secret && (authType === 'password' || authType === 'key')) {
+    try { secretSaved = secretStore.save(hk, secret); } catch { secretSaved = false; }
+  }
+  // Força reconectar com as credenciais novas (a próxima operação sobe uma sessão nova).
+  try { connections.reconnect(hk); } catch {}
+  return { ok: true, secretSaved };
+});
+
 ipcMain.handle('ssh:configHosts', () => {
   try {
     const txt = fs.readFileSync(path.join(os.homedir(), '.ssh', 'config'), 'utf8');
@@ -808,14 +839,16 @@ ipcMain.handle('projects:list', () => {
       const hk = hostKey(p);
       const prof = (cfg.remotes && cfg.remotes[hk]) || {};
       const parsed = parseSshUri(p) || {};
+      const mr = meta[p] || {};
       return {
-        name: prof.label || `${parsed.user}@${parsed.host}`,
+        // "Nome" das Configurações (projectMeta) vence o rótulo do perfil e o user@host.
+        name: mr.name || prof.label || `${parsed.user}@${parsed.host}`,
         path: p,
         hasPkg: false,
         running: false,
         previewType: null,
-        icon: null,
-        color: (cfg.projectMeta && cfg.projectMeta[p] && cfg.projectMeta[p].color) || null,
+        icon: mr.icon || null,
+        color: mr.color || null,
         remote: true,
         status: connections.status(hk),
       };
