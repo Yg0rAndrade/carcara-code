@@ -12,6 +12,7 @@ const mcpOauth = require('./mcp-oauth.cjs');
 const mediaCore = require('./media-core.cjs');
 const claudeSessions = require('./claude-sessions.cjs');
 const aiCli = require('./ai-cli.cjs');
+const todosCore = require('./claude-todos-core.cjs');
 const { initUpdater } = require('./updater.cjs');
 const phpRuntime = require('./php-runtime.cjs');
 const { reconcile: reconcileRail } = require('./rail-core.cjs');
@@ -1613,6 +1614,51 @@ ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
   if (title) applySessionTitle(projectPath, sessionId, title);
   return { ok: !!title, name: title || null };
 });
+
+// ---------- Painel de Tasks (todos do Claude ao vivo) ----------
+// Uma única assinatura (só existe um painel): o renderer assina a sessão da aba
+// de chat ativa e o main vigia o transcript por mtime no mesmo ritmo do
+// startClaudeWatcher (1,5s), re-parseando e empurrando 'todos:snapshot' SÓ
+// quando algo mudou no disco. Sem assinatura, custo zero.
+let todosSub = null; // { projectPath, sessionId, claudeId, timer, lastStamp, lastJson }
+
+function stopTodosWatcher() {
+  if (todosSub && todosSub.timer) clearInterval(todosSub.timer);
+  todosSub = null;
+}
+
+function todosTick() {
+  const sub = todosSub;
+  if (!sub) return;
+  try {
+    // O claudeId pode nascer DEPOIS da assinatura (aba nova sobe `claude` puro e
+    // o id só existe quando o transcript aparece) — re-resolve enquanto faltar.
+    if (!sub.claudeId) {
+      const e = terminals.get(sub.sessionId);
+      const meta = getSessionMeta(loadConfig(), sub.projectPath, sub.sessionId);
+      sub.claudeId = (e && e.claudeId) || (meta && meta.claudeId) || null;
+    }
+    const stamp = sub.claudeId ? todosCore.transcriptStamp(sub.projectPath, sub.claudeId) : null;
+    if (stamp !== null && stamp === sub.lastStamp) return; // nada mudou no disco
+    sub.lastStamp = stamp;
+    const snap = sub.claudeId ? todosCore.buildSnapshot(sub.projectPath, sub.claudeId) : null;
+    const json = JSON.stringify(snap);
+    if (json === sub.lastJson) return; // mtime mexeu mas o conteúdo relevante não
+    sub.lastJson = json;
+    safeSend('todos:snapshot', { sessionId: sub.sessionId, snapshot: snap });
+  } catch {}
+}
+
+ipcMain.handle('todos:subscribe', (evt, { projectPath, sessionId }) => {
+  stopTodosWatcher();
+  if (!projectPath || !sessionId) return { ok: false };
+  todosSub = { projectPath, sessionId, claudeId: null, timer: null, lastStamp: undefined, lastJson: undefined };
+  todosTick(); // primeiro snapshot sem esperar o intervalo
+  todosSub.timer = setInterval(todosTick, 1500);
+  return { ok: true };
+});
+
+ipcMain.handle('todos:unsubscribe', () => { stopTodosWatcher(); return { ok: true }; });
 
 ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
   const cfg = loadConfig();
