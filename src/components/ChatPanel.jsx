@@ -8,7 +8,7 @@ import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
 import {
-  isPane, firstPane, allPanes, paneCount,
+  isPane, firstPane, allPanes, paneCount, findPane,
   applyDrop, addSessionToPane, setActiveInPane, closeSessionInTree, reconcile,
 } from '@/lib/paneLayout.js';
 import { cn } from '@/lib/utils';
@@ -468,7 +468,7 @@ function SessionActivityDot({ state }) {
   );
 }
 
-export function ChatPanel({ activeProject, controlsRef }) {
+export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange }) {
   const t = useT();
   const { terminalTheme } = useTheme();
   const themeRef = useRef(terminalTheme);
@@ -594,6 +594,16 @@ export function ChatPanel({ activeProject, controlsRef }) {
     })();
     return () => { cancelled = true; };
   }, [activeProject]);
+
+  // Publica pro App qual sessão de chat está ativa (a do pane focado; senão a do
+  // primeiro pane), pra painéis fora do chat — como o de Tarefas — seguirem a aba
+  // em foco. Ref pro callback não forçar re-execução quando o App re-renderiza.
+  const onActiveSessionRef = useRef(onActiveSessionChange);
+  onActiveSessionRef.current = onActiveSessionChange;
+  useEffect(() => {
+    const pane = (focusedPane && findPane(layout, focusedPane)) || firstPane(layout);
+    onActiveSessionRef.current?.(pane?.active ?? null);
+  }, [layout, focusedPane]);
 
   // "Assumir" a sessão: dispensa SÓ a bolinha de "terminou" (attention). É o
   // clear-on-view — ao clicar na aba, clicar dentro ou digitar, você viu o

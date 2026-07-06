@@ -12,6 +12,7 @@ const mcpOauth = require('./mcp-oauth.cjs');
 const mediaCore = require('./media-core.cjs');
 const claudeSessions = require('./claude-sessions.cjs');
 const aiCli = require('./ai-cli.cjs');
+const todosCore = require('./claude-todos-core.cjs');
 const { initUpdater } = require('./updater.cjs');
 const phpRuntime = require('./php-runtime.cjs');
 const { reconcile: reconcileRail } = require('./rail-core.cjs');
@@ -158,6 +159,7 @@ function cleanup() {
   terminals.clear();
   for (const s of shells.values()) { try { s.pty.kill(); } catch {} }
   shells.clear();
+  stopTodosWatcher();
   try { mcpCore.mcpDisconnectAll(); } catch {}
   try { connections.endAll(); } catch {}
 }
@@ -1613,6 +1615,64 @@ ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
   if (title) applySessionTitle(projectPath, sessionId, title);
   return { ok: !!title, name: title || null };
 });
+
+// ---------- Painel de Tasks (todos do Claude ao vivo) ----------
+// Uma única assinatura (só existe um painel): o renderer assina a sessão da aba
+// de chat ativa e o main vigia o transcript por mtime no mesmo ritmo do
+// startClaudeWatcher (1,5s), re-parseando e empurrando 'todos:snapshot' SÓ
+// quando algo mudou no disco. Sem assinatura, custo zero.
+let todosSub = null; // { projectPath, sessionId, claudeId, timer, lastStamp, lastJson }
+
+function stopTodosWatcher() {
+  if (todosSub && todosSub.timer) clearInterval(todosSub.timer);
+  todosSub = null;
+}
+
+// Assinatura de conteúdo pro dedup: ignora os carimbos voláteis (`updatedAt` do
+// snapshot e de cada agente = Date.now()/mtime, que mudam a cada tick mesmo sem
+// mudança relevante) — senão o JSON difere sempre e o dedup nunca dispara.
+function todosContentKey(snap) {
+  return JSON.stringify(snap, (k, v) => (k === 'updatedAt' ? undefined : v));
+}
+
+function todosTick() {
+  const sub = todosSub;
+  if (!sub) return;
+  try {
+    // Re-resolve o claudeId TODO tick: além de nascer depois da assinatura (aba
+    // nova sobe `claude` puro e o id só existe quando o transcript aparece), ele
+    // MUDA quando a aba troca de conversa (/clear, novo --resume) — o sessionId do
+    // tab continua o mesmo, mas o transcript é outro. Se mudou, zera os caches pra
+    // empurrar o snapshot da conversa nova.
+    const e = terminals.get(sub.sessionId);
+    const meta = getSessionMeta(loadConfig(), sub.projectPath, sub.sessionId);
+    const claudeId = (e && e.claudeId) || (meta && meta.claudeId) || null;
+    if (claudeId !== sub.claudeId) {
+      sub.claudeId = claudeId;
+      sub.lastStamp = undefined;
+      sub.lastJson = undefined;
+    }
+    const stamp = sub.claudeId ? todosCore.transcriptStamp(sub.projectPath, sub.claudeId) : null;
+    if (stamp !== null && stamp === sub.lastStamp) return; // nada mudou no disco
+    sub.lastStamp = stamp;
+    const snap = sub.claudeId ? todosCore.buildSnapshot(sub.projectPath, sub.claudeId) : null;
+    const json = todosContentKey(snap);
+    if (json === sub.lastJson) return; // mtime mexeu mas o conteúdo relevante não
+    sub.lastJson = json;
+    safeSend('todos:snapshot', { sessionId: sub.sessionId, snapshot: snap });
+  } catch {}
+}
+
+ipcMain.handle('todos:subscribe', (evt, { projectPath, sessionId }) => {
+  stopTodosWatcher();
+  if (!projectPath || !sessionId) return { ok: false };
+  todosSub = { projectPath, sessionId, claudeId: null, timer: null, lastStamp: undefined, lastJson: undefined };
+  todosTick(); // primeiro snapshot sem esperar o intervalo
+  todosSub.timer = setInterval(todosTick, 1500);
+  return { ok: true };
+});
+
+ipcMain.handle('todos:unsubscribe', () => { stopTodosWatcher(); return { ok: true }; });
 
 ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
   const cfg = loadConfig();

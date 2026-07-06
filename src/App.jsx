@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, FolderPlus, Folder, Settings, SunMoon,
   RefreshCw, Square, MessageSquarePlus, PanelLeftClose, Eye, Code2,
-  GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw, GripVertical,
+  GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw, GripVertical, ListTodo,
 } from 'lucide-react';
 import { RefreshCCWIcon } from './components/ui/refresh-ccw.jsx';
 import { XIcon } from './components/ui/x.jsx';
@@ -70,6 +70,7 @@ export default function App() {
   // neste ref e reporta o `mode` pra habilitar/desabilitar os botões.
   const previewControls = useRef(null);
   const [serverMode, setServerMode] = useState('empty');
+  const [chatSession, setChatSession] = useState(null); // aba de chat ativa (painel de Tarefas segue ela)
   // O ícone animado (RefreshCCWIcon) só dispara no hover do svg pequeno. Como o
   // botão "Reiniciar" é largo (ícone + texto), guiamos a animação pelo hover do
   // botão inteiro via a API controlada (startAnimation/stopAnimation) do ícone.
@@ -308,6 +309,7 @@ export default function App() {
       { id: 'view:preview', group: t('app.cmd_group_panel'), label: t('app.cmd_view_preview'), hint: t('app.cmd_hint_tab'), icon: <Eye />, run: view('preview') },
       { id: 'view:code', group: t('app.cmd_group_panel'), label: t('app.cmd_view_code'), hint: t('app.cmd_hint_tab'), icon: <Code2 />, run: view('code') },
       { id: 'view:git', group: t('app.cmd_group_panel'), label: t('app.cmd_view_git'), hint: t('app.cmd_hint_tab'), icon: <GitBranch />, run: view('git') },
+      { id: 'view:todos', group: t('app.cmd_group_panel'), label: t('app.cmd_view_todos'), hint: t('app.cmd_hint_tab'), icon: <ListTodo />, run: view('todos') },
       { id: 'view:history', group: t('app.cmd_group_panel'), label: t('app.cmd_view_history'), hint: t('app.cmd_hint_tab'), icon: <History />, run: view('history') },
       { id: 'view:api', group: t('app.cmd_group_panel'), label: t('app.cmd_view_api'), hint: t('app.cmd_hint_tab'), icon: <Zap />, run: view('api') },
       { id: 'view:mcp', group: t('app.cmd_group_panel'), label: t('app.cmd_view_mcp'), hint: t('app.cmd_hint_tab'), icon: <Plug />, run: view('mcp') },
@@ -510,7 +512,7 @@ export default function App() {
         )}
       </div>
       <ErrorBoundary label="Chat">
-        <ChatPanel activeProject={active?.path || null} controlsRef={chatControls} />
+        <ChatPanel activeProject={active?.path || null} controlsRef={chatControls} onActiveSessionChange={setChatSession} />
       </ErrorBoundary>
     </ResizablePanel>
   );
@@ -534,7 +536,7 @@ export default function App() {
   const previewPanel = (
     <ResizablePanel key="preview" id="preview" order={claudeLeft ? 2 : 1} minSize={28} className="flex flex-col">
       <ErrorBoundary label="Preview">
-        <PreviewPanel active={active} onProjectsChanged={reload} controlsRef={previewControls} onModeChange={setServerMode} />
+        <PreviewPanel active={active} chatSession={chatSession} onProjectsChanged={reload} controlsRef={previewControls} onModeChange={setServerMode} />
       </ErrorBoundary>
     </ResizablePanel>
   );
