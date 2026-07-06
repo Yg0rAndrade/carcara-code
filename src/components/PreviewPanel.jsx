@@ -427,6 +427,8 @@ export function PreviewPanel({
   // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
   const inWebRef = useRef(false);
   inWebRef.current = view === 'preview' && mode === 'web';
+  // Marca que a aba Código já foi visitada (mantém o CodeView montado dali em diante).
+  const codeMountedRef = useRef(false);
   const bodyRowRef = useRef(null);
   // Abas por projeto. Cada projeto tem uma lista de abas (cada uma com o seu
   // <webview>) e a id da aba ativa. A aba "raiz" é o servidor de preview; as demais
@@ -1448,6 +1450,10 @@ export function PreviewPanel({
   const remote = !!active?.remote;
   const inPreview = !remote && view === 'preview';
   const inCode = remote || view === 'code';
+  // Uma vez aberto, o CodeView fica MONTADO (só escondido via CSS quando saímos da aba),
+  // pra não perder as abas de arquivos abertos ao alternar Código ↔ Preview. O ref garante
+  // que ele só monta na 1ª visita (respeitando o lazy-load do CodeMirror), nunca antes.
+  if (inCode) codeMountedRef.current = true;
   const inGit = !remote && view === 'git';
   const inApi = !remote && view === 'api';
   const inMcp = !remote && view === 'mcp';
@@ -1713,10 +1719,12 @@ export function PreviewPanel({
                 <EmptyState size="lg">{t('preview.select_project')}</EmptyState>
               </div>
             ))}
-          {inCode && (
-            <LazyPanel label="Código">
-              <CodeView active={active} openRequest={openRequest} />
-            </LazyPanel>
+          {(inCode || codeMountedRef.current) && (
+            <div className={cn('absolute inset-0', !inCode && 'hidden')}>
+              <LazyPanel label="Código">
+                <CodeView active={active} openRequest={openRequest} visible={inCode} />
+              </LazyPanel>
+            </div>
           )}
           {inHistory && (
             <LazyPanel label="Histórico">

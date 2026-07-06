@@ -250,7 +250,7 @@ function normPath(p) {
     .toLowerCase();
 }
 
-export function CodeView({ active, openRequest }) {
+export function CodeView({ active, openRequest, visible = true }) {
   const { theme } = useTheme();
   const t = useT();
   // Abas de arquivos abertos. Cada aba carrega o próprio estado (conteúdo, imagem,
@@ -812,7 +812,7 @@ export function CodeView({ active, openRequest }) {
   // atalhos copiam/colam o TEXTO, não o arquivo).
   useEffect(() => {
     const onKey = async (e) => {
-      if (!active) return;
+      if (!active || !visible) return;
       const el = document.activeElement;
       const tag = el?.tagName;
       if (
@@ -866,7 +866,7 @@ export function CodeView({ active, openRequest }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [active, tabs, clip]);
+  }, [active, tabs, clip, visible]);
 
   return (
     <div ref={codeRowRef} className="absolute inset-0 flex bg-background">
