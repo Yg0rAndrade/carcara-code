@@ -159,6 +159,7 @@ function cleanup() {
   terminals.clear();
   for (const s of shells.values()) { try { s.pty.kill(); } catch {} }
   shells.clear();
+  stopTodosWatcher();
   try { mcpCore.mcpDisconnectAll(); } catch {}
   try { connections.endAll(); } catch {}
 }
@@ -1627,22 +1628,35 @@ function stopTodosWatcher() {
   todosSub = null;
 }
 
+// Assinatura de conteúdo pro dedup: ignora os carimbos voláteis (`updatedAt` do
+// snapshot e de cada agente = Date.now()/mtime, que mudam a cada tick mesmo sem
+// mudança relevante) — senão o JSON difere sempre e o dedup nunca dispara.
+function todosContentKey(snap) {
+  return JSON.stringify(snap, (k, v) => (k === 'updatedAt' ? undefined : v));
+}
+
 function todosTick() {
   const sub = todosSub;
   if (!sub) return;
   try {
-    // O claudeId pode nascer DEPOIS da assinatura (aba nova sobe `claude` puro e
-    // o id só existe quando o transcript aparece) — re-resolve enquanto faltar.
-    if (!sub.claudeId) {
-      const e = terminals.get(sub.sessionId);
-      const meta = getSessionMeta(loadConfig(), sub.projectPath, sub.sessionId);
-      sub.claudeId = (e && e.claudeId) || (meta && meta.claudeId) || null;
+    // Re-resolve o claudeId TODO tick: além de nascer depois da assinatura (aba
+    // nova sobe `claude` puro e o id só existe quando o transcript aparece), ele
+    // MUDA quando a aba troca de conversa (/clear, novo --resume) — o sessionId do
+    // tab continua o mesmo, mas o transcript é outro. Se mudou, zera os caches pra
+    // empurrar o snapshot da conversa nova.
+    const e = terminals.get(sub.sessionId);
+    const meta = getSessionMeta(loadConfig(), sub.projectPath, sub.sessionId);
+    const claudeId = (e && e.claudeId) || (meta && meta.claudeId) || null;
+    if (claudeId !== sub.claudeId) {
+      sub.claudeId = claudeId;
+      sub.lastStamp = undefined;
+      sub.lastJson = undefined;
     }
     const stamp = sub.claudeId ? todosCore.transcriptStamp(sub.projectPath, sub.claudeId) : null;
     if (stamp !== null && stamp === sub.lastStamp) return; // nada mudou no disco
     sub.lastStamp = stamp;
     const snap = sub.claudeId ? todosCore.buildSnapshot(sub.projectPath, sub.claudeId) : null;
-    const json = JSON.stringify(snap);
+    const json = todosContentKey(snap);
     if (json === sub.lastJson) return; // mtime mexeu mas o conteúdo relevante não
     sub.lastJson = json;
     safeSend('todos:snapshot', { sessionId: sub.sessionId, snapshot: snap });
