@@ -594,7 +594,11 @@ export function CodeView({ active, openRequest, visible = true }) {
     dragItemsRef.current = items;
     setDragActive(true);
     try {
-      e.dataTransfer.effectAllowed = 'move';
+      // 'copyMove' (não só 'move'): mover pra pasta usa dropEffect='move' e
+      // soltar no terminal usa 'copy' (ChatPanel). Se a fonte só permitisse
+      // 'move', o Chromium anula o drop 'copy' (vira 'none') e o evento 'drop'
+      // nunca dispara — a borda de realce aparece, mas nada cola.
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData(MOVE_MIME, items.map((i) => i.path).join('\n'));
     } catch {}
   };
