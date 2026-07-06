@@ -1,5 +1,21 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { Terminal, X, Copy, Bug, Loader2, Crosshair, Camera, Crop, ExternalLink, Monitor, Tablet, Smartphone, Plus, Globe, ListTodo } from 'lucide-react';
+import {
+  Terminal,
+  X,
+  Copy,
+  Bug,
+  Loader2,
+  Crosshair,
+  Camera,
+  Crop,
+  ExternalLink,
+  Monitor,
+  Tablet,
+  Smartphone,
+  Plus,
+  Globe,
+  ListTodo,
+} from 'lucide-react';
 // Ícones animados (lucide-animated): animam no hover. Só os que têm versão no
 // registry; Crosshair/Bug seguem estáticos (não há equivalente animado).
 import { EarthIcon } from './ui/earth.jsx';
@@ -52,8 +68,12 @@ const GitPanel = lazy(() => import('./GitPanel.jsx').then((m) => ({ default: m.G
 const ApiPanel = lazy(() => import('./ApiPanel.jsx').then((m) => ({ default: m.ApiPanel })));
 const ShellView = lazy(() => import('./ShellView.jsx').then((m) => ({ default: m.ShellView })));
 const MCPPanel = lazy(() => import('./MCPPanel.jsx').then((m) => ({ default: m.MCPPanel })));
-const TldrawPanel = lazy(() => import('./TldrawPanel.jsx').then((m) => ({ default: m.TldrawPanel })));
-const CheckpointsPanel = lazy(() => import('./CheckpointsPanel.jsx').then((m) => ({ default: m.CheckpointsPanel })));
+const TldrawPanel = lazy(() =>
+  import('./TldrawPanel.jsx').then((m) => ({ default: m.TldrawPanel })),
+);
+const CheckpointsPanel = lazy(() =>
+  import('./CheckpointsPanel.jsx').then((m) => ({ default: m.CheckpointsPanel })),
+);
 const TodosPanel = lazy(() => import('./TodosPanel.jsx').then((m) => ({ default: m.TodosPanel })));
 
 // Fallback enquanto o chunk do painel carrega (costuma ser instantâneo no disco).
@@ -92,7 +112,9 @@ function MoreTools({ view, onPick }) {
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     window.addEventListener('mousedown', onDown);
     return () => window.removeEventListener('mousedown', onDown);
   }, [open]);
@@ -105,7 +127,7 @@ function MoreTools({ view, onPick }) {
         title={t('preview.more_tools')}
         className={cn(
           'flex h-7 items-center gap-0.5 rounded-md px-1.5 transition-colors [&_svg]:size-[15px]',
-          active ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          active ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         )}
       >
         {active && <HoverIcon as={active.Icon} />}
@@ -117,13 +139,17 @@ function MoreTools({ view, onPick }) {
             <button
               key={tool.value}
               type="button"
-              onClick={() => { onPick(tool.value); setOpen(false); }}
+              onClick={() => {
+                onPick(tool.value);
+                setOpen(false);
+              }}
               className={cn(
                 'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4',
-                view === tool.value && 'font-medium text-primary'
+                view === tool.value && 'font-medium text-primary',
               )}
             >
-              <HoverIcon as={tool.Icon} />{tool.label}
+              <HoverIcon as={tool.Icon} />
+              {tool.label}
             </button>
           ))}
         </div>
@@ -139,7 +165,9 @@ function tabLabel(tab, fallback) {
   try {
     const u = new URL(raw);
     return u.pathname && u.pathname !== '/' ? u.pathname : u.host;
-  } catch { return raw || fallback; }
+  } catch {
+    return raw || fallback;
+  }
 }
 
 // Uma "aba" no estilo VS Code / Claude Code: encostada na vizinha, com uma listrinha
@@ -149,13 +177,18 @@ function TabChip({ label, active, onSelect, onClose, closeTitle }) {
   return (
     <div
       onClick={onSelect}
-      onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); onClose(); } }}
+      onAuxClick={(e) => {
+        if (e.button === 1) {
+          e.preventDefault();
+          onClose();
+        }
+      }}
       title={label}
       className={cn(
         'group relative flex h-9 min-w-0 max-w-[210px] shrink-0 cursor-default select-none items-center gap-1.5 border-r border-border/60 pl-3 pr-1.5 text-[12.5px] transition-colors',
         active
           ? 'bg-background text-foreground'
-          : 'bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+          : 'bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground',
       )}
     >
       {/* Listrinha em cima = qual aba está selecionada (só na ativa). */}
@@ -164,11 +197,16 @@ function TabChip({ label, active, onSelect, onClose, closeTitle }) {
       <span className={cn('min-w-0 flex-1 truncate', active && 'font-medium')}>{label}</span>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         title={closeTitle}
         className={cn(
           'grid size-5 shrink-0 place-items-center rounded transition-opacity hover:bg-accent [&_svg]:size-3.5',
-          active ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover:opacity-70 hover:opacity-100'
+          active
+            ? 'opacity-70 hover:opacity-100'
+            : 'opacity-0 group-hover:opacity-70 hover:opacity-100',
         )}
       >
         <X />
@@ -189,7 +227,7 @@ function ToolButton({ active, className, children, ...props }) {
         '[&_svg]:size-[15px]',
         // Ativo = brasa, igual à aba selecionada (data-[state=active]:text-primary).
         active && 'bg-background text-primary shadow-sm hover:bg-background hover:text-primary',
-        className
+        className,
       )}
       {...props}
     >
@@ -215,7 +253,9 @@ function DevicePicker({ value, onChange, disabled }) {
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     window.addEventListener('mousedown', onDown);
     return () => window.removeEventListener('mousedown', onDown);
   }, [open]);
@@ -238,13 +278,17 @@ function DevicePicker({ value, onChange, disabled }) {
             <button
               key={d.value}
               type="button"
-              onClick={() => { onChange(d.value); setOpen(false); }}
+              onClick={() => {
+                onChange(d.value);
+                setOpen(false);
+              }}
               className={cn(
                 'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4',
-                value === d.value && 'font-medium text-primary'
+                value === d.value && 'font-medium text-primary',
               )}
             >
-              <d.Icon />{d.label}
+              <d.Icon />
+              {d.label}
             </button>
           ))}
         </div>
@@ -260,7 +304,9 @@ function ShotPicker({ onArea, onFull, active, disabled }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     window.addEventListener('mousedown', onDown);
     return () => window.removeEventListener('mousedown', onDown);
   }, [open]);
@@ -286,10 +332,14 @@ function ShotPicker({ onArea, onFull, active, disabled }) {
             <button
               key={o.key}
               type="button"
-              onClick={() => { setOpen(false); o.run(); }}
+              onClick={() => {
+                setOpen(false);
+                o.run();
+              }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4"
             >
-              <o.Icon />{o.label}
+              <o.Icon />
+              {o.label}
             </button>
           ))}
         </div>
@@ -334,7 +384,13 @@ function applyViewport(w, vp) {
   }
 }
 
-export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsRef, onModeChange }) {
+export function PreviewPanel({
+  active,
+  chatSession,
+  onProjectsChanged,
+  controlsRef,
+  onModeChange,
+}) {
   const t = useT();
   const [view, setView] = useState('preview');
   const [openRequest, setOpenRequest] = useState(null); // { path, name, seq } — abrir arquivo na aba Código (paleta)
@@ -345,22 +401,26 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   const [termHeight, setTermHeight] = useState(300);
   const [copied, setCopied] = useState(false);
   const [devtoolsOpen, setDevtoolsOpen] = useState(false);
-  const [devtoolsWidth, setDevtoolsWidth] = useState(() => Number(localStorage.getItem('devtoolsWidth')) || 520);
+  const [devtoolsWidth, setDevtoolsWidth] = useState(
+    () => Number(localStorage.getItem('devtoolsWidth')) || 520,
+  );
   const [dtDragging, setDtDragging] = useState(false);
   const [termDragging, setTermDragging] = useState(false);
-  const [grabbing, setGrabbing] = useState(false);   // modo "selecionar elemento" ativo
-  const [grabbed, setGrabbed] = useState(false);      // toast "Elemento copiado!"
-  const [findOpen, setFindOpen] = useState(false);    // barra "buscar na página" (Ctrl+F)
-  const [findNonce, setFindNonce] = useState(0);      // bump a cada Ctrl+F: re-foca o input da busca
-  const [shooting, setShooting] = useState(false);    // modo "print do preview" ativo
-  const [shot, setShot] = useState(false);            // toast "Print copiado!"
-  const [shotRect, setShotRect] = useState(null);     // rubber-band do arraste (coords do overlay), null quando não arrastando
-  const shootStartRef = useRef(null);                 // { cx, cy } início do arraste (coords de tela)
-  const overlayRef = useRef(null);                    // camada do print (pra medir e desenhar o retângulo)
-  const [canBack, setCanBack] = useState(false);      // navegação do preview (voltar/avançar)
+  const [grabbing, setGrabbing] = useState(false); // modo "selecionar elemento" ativo
+  const [grabbed, setGrabbed] = useState(false); // toast "Elemento copiado!"
+  const [findOpen, setFindOpen] = useState(false); // barra "buscar na página" (Ctrl+F)
+  const [findNonce, setFindNonce] = useState(0); // bump a cada Ctrl+F: re-foca o input da busca
+  const [shooting, setShooting] = useState(false); // modo "print do preview" ativo
+  const [shot, setShot] = useState(false); // toast "Print copiado!"
+  const [shotRect, setShotRect] = useState(null); // rubber-band do arraste (coords do overlay), null quando não arrastando
+  const shootStartRef = useRef(null); // { cx, cy } início do arraste (coords de tela)
+  const overlayRef = useRef(null); // camada do print (pra medir e desenhar o retângulo)
+  const [canBack, setCanBack] = useState(false); // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
   const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
-  const [viewport, setViewport] = useState(() => localStorage.getItem('previewViewport') || 'desktop'); // desktop | tablet | mobile
+  const [viewport, setViewport] = useState(
+    () => localStorage.getItem('previewViewport') || 'desktop',
+  ); // desktop | tablet | mobile
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
@@ -385,7 +445,10 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   // --- Helpers do modelo de abas ---
   const getProjTabs = (path) => {
     let p = projTabsRef.current.get(path);
-    if (!p) { p = { activeId: null, tabs: [] }; projTabsRef.current.set(path, p); }
+    if (!p) {
+      p = { activeId: null, tabs: [] };
+      projTabsRef.current.set(path, p);
+    }
     return p;
   };
   const activeTabOf = (path) => {
@@ -402,11 +465,17 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   // Reprojeta o estado das abas do projeto ATIVO pra tira (é o único que ela mostra).
   const refreshTabBar = useCallback(() => {
     const p = activePathRef.current && projTabsRef.current.get(activePathRef.current);
-    if (!p) { setTabBar({ activeId: null, tabs: [] }); return; }
-    setTabBar({ activeId: p.activeId, tabs: p.tabs.map((t) => ({ id: t.id, url: t.url, src: t.src, title: t.title })) });
+    if (!p) {
+      setTabBar({ activeId: null, tabs: [] });
+      return;
+    }
+    setTabBar({
+      activeId: p.activeId,
+      tabs: p.tabs.map((t) => ({ id: t.id, url: t.url, src: t.src, title: t.title })),
+    });
   }, []);
-  const devtoolsHostRef = useRef(null);  // div que segura o webview do DevTools
-  const devtoolsRef = useRef(null);      // o <webview> que hospeda o DevTools
+  const devtoolsHostRef = useRef(null); // div que segura o webview do DevTools
+  const devtoolsRef = useRef(null); // o <webview> que hospeda o DevTools
   const toggleDevtoolsRef = useRef(() => {});
 
   const appendLog = useCallback((projectPath, text) => {
@@ -421,90 +490,156 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   // Cria uma aba (um <webview>) no projeto e devolve o objeto-aba. Se `activate`,
   // ela vira a aba visível do projeto. As listeners atualizam a barra/nav só quando
   // ESTA aba é a ativa do projeto ativo — abas de fundo carregam sem mexer na UI.
-  const createTab = useCallback((projectPath, url, { activate = true } = {}) => {
-    const proj = getProjTabs(projectPath);
-    const id = ++tabIdRef.current;
-    const w = document.createElement('webview');
-    // Isola a sessão deste projeto (precisa ser definido ANTES de anexar/navegar).
-    w.setAttribute('partition', partitionFor(projectPath));
-    w.style.position = 'absolute';
-    w.style.inset = '0';
-    w.style.width = '100%';
-    w.style.height = '100%';
-    w.style.background = '#fff';
-    w.style.display = 'none';
-    w._retry = 0;
-    applyViewport(w, viewportRef.current); // respeita o modo escolhido já na criação
-    containerRef.current.appendChild(w);
-    const tab = { id, webview: w, src: url || '', url: url || '', title: '', canBack: false, canFwd: false };
-    proj.tabs.push(tab);
-    if (activate) proj.activeId = id;
+  const createTab = useCallback(
+    (projectPath, url, { activate = true } = {}) => {
+      const proj = getProjTabs(projectPath);
+      const id = ++tabIdRef.current;
+      const w = document.createElement('webview');
+      // Isola a sessão deste projeto (precisa ser definido ANTES de anexar/navegar).
+      w.setAttribute('partition', partitionFor(projectPath));
+      w.style.position = 'absolute';
+      w.style.inset = '0';
+      w.style.width = '100%';
+      w.style.height = '100%';
+      w.style.background = '#fff';
+      w.style.display = 'none';
+      w._retry = 0;
+      applyViewport(w, viewportRef.current); // respeita o modo escolhido já na criação
+      containerRef.current.appendChild(w);
+      const tab = {
+        id,
+        webview: w,
+        src: url || '',
+        url: url || '',
+        title: '',
+        canBack: false,
+        canFwd: false,
+      };
+      proj.tabs.push(tab);
+      if (activate) proj.activeId = id;
 
-    const isActiveTab = () => activePathRef.current === projectPath && proj.activeId === id;
-    // A tira só mostra o projeto ativo, então só vale re-projetar quando a navegação é
-    // deste projeto. Sem isso, uma aba de fundo (ou de OUTRO projeto) navegando/pollando
-    // disparava um setTabBar a cada evento → re-render do app inteiro à toa.
-    const isActiveProject = () => activePathRef.current === projectPath;
-    const syncNav = () => {
-      try { tab.canBack = w.canGoBack(); tab.canFwd = w.canGoForward(); } catch {}
-      if (isActiveTab()) { setCanBack(tab.canBack); setCanFwd(tab.canFwd); }
-    };
-    w.addEventListener('did-navigate', (e) => { if (e.url) { tab.url = e.url; if (isActiveTab()) setUrl(e.url); if (isActiveProject()) refreshTabBar(); } syncNav(); });
-    w.addEventListener('did-navigate-in-page', (e) => { if (e.isMainFrame && e.url) { tab.url = e.url; if (isActiveTab()) setUrl(e.url); if (isActiveProject()) refreshTabBar(); } syncNav(); });
-    w.addEventListener('page-title-updated', (e) => { tab.title = e.title || ''; if (isActiveProject()) refreshTabBar(); });
-    w.addEventListener('did-fail-load', (e) => {
-      if (e.errorCode === -3) return; // navegação abortada (outra começou), não é falha real
-      // Uma aba nova/de fundo que AINDA não carregou precisa re-tentar mesmo escondida
-      // (senão fica em branco pra sempre). Já uma aba que carregou e agora está offscreen
-      // não fica martelando reload.
-      if (w.style.display === 'none' && tab._loaded) return;
-      if (w._retry++ < 8) setTimeout(() => { try { w.reload(); } catch {} }, 1000);
-    });
-    w.addEventListener('did-finish-load', () => { w._retry = 0; tab._loaded = true; syncNav(); });
-    // Botões laterais do mouse → voltar/avançar (detecta no DOM da página).
-    w.addEventListener('dom-ready', () => { try { w.executeJavaScript(NAV_INJECT); } catch {} });
-    // Ponte do "selecionar elemento": o script injetado emite o pacote via console.
-    w.addEventListener('console-message', (e) => {
-      const msg = e.message || '';
-      if (msg.startsWith(GRAB_SENTINEL)) {
+      const isActiveTab = () => activePathRef.current === projectPath && proj.activeId === id;
+      // A tira só mostra o projeto ativo, então só vale re-projetar quando a navegação é
+      // deste projeto. Sem isso, uma aba de fundo (ou de OUTRO projeto) navegando/pollando
+      // disparava um setTabBar a cada evento → re-render do app inteiro à toa.
+      const isActiveProject = () => activePathRef.current === projectPath;
+      const syncNav = () => {
         try {
-          const { md } = JSON.parse(msg.slice(GRAB_SENTINEL.length));
-          window.api.copyText(md);
-          setGrabbed(true);
-          setTimeout(() => setGrabbed(false), 2200);
+          tab.canBack = w.canGoBack();
+          tab.canFwd = w.canGoForward();
         } catch {}
-        setGrabbing(false);
-      } else if (msg.startsWith(GRAB_CANCEL)) {
-        setGrabbing(false);
+        if (isActiveTab()) {
+          setCanBack(tab.canBack);
+          setCanFwd(tab.canFwd);
+        }
+      };
+      w.addEventListener('did-navigate', (e) => {
+        if (e.url) {
+          tab.url = e.url;
+          if (isActiveTab()) setUrl(e.url);
+          if (isActiveProject()) refreshTabBar();
+        }
+        syncNav();
+      });
+      w.addEventListener('did-navigate-in-page', (e) => {
+        if (e.isMainFrame && e.url) {
+          tab.url = e.url;
+          if (isActiveTab()) setUrl(e.url);
+          if (isActiveProject()) refreshTabBar();
+        }
+        syncNav();
+      });
+      w.addEventListener('page-title-updated', (e) => {
+        tab.title = e.title || '';
+        if (isActiveProject()) refreshTabBar();
+      });
+      w.addEventListener('did-fail-load', (e) => {
+        if (e.errorCode === -3) return; // navegação abortada (outra começou), não é falha real
+        // Uma aba nova/de fundo que AINDA não carregou precisa re-tentar mesmo escondida
+        // (senão fica em branco pra sempre). Já uma aba que carregou e agora está offscreen
+        // não fica martelando reload.
+        if (w.style.display === 'none' && tab._loaded) return;
+        if (w._retry++ < 8)
+          setTimeout(() => {
+            try {
+              w.reload();
+            } catch {}
+          }, 1000);
+      });
+      w.addEventListener('did-finish-load', () => {
+        w._retry = 0;
+        tab._loaded = true;
+        syncNav();
+      });
+      // Botões laterais do mouse → voltar/avançar (detecta no DOM da página).
+      w.addEventListener('dom-ready', () => {
+        try {
+          w.executeJavaScript(NAV_INJECT);
+        } catch {}
+      });
+      // Ponte do "selecionar elemento": o script injetado emite o pacote via console.
+      w.addEventListener('console-message', (e) => {
+        const msg = e.message || '';
+        if (msg.startsWith(GRAB_SENTINEL)) {
+          try {
+            const { md } = JSON.parse(msg.slice(GRAB_SENTINEL.length));
+            window.api.copyText(md);
+            setGrabbed(true);
+            setTimeout(() => setGrabbed(false), 2200);
+          } catch {}
+          setGrabbing(false);
+        } else if (msg.startsWith(GRAB_CANCEL)) {
+          setGrabbing(false);
+        }
+      });
+      if (url) {
+        try {
+          if (w.getAttribute('src') !== url) w.src = url;
+        } catch {}
       }
-    });
-    if (url) { try { if (w.getAttribute('src') !== url) w.src = url; } catch {} }
-    refreshTabBar();
-    return tab;
-  }, [refreshTabBar]);
+      refreshTabBar();
+      return tab;
+    },
+    [refreshTabBar],
+  );
 
   // Remove TODAS as abas de um projeto (servidor caiu/parado). Zera o webview de cada.
-  const removeAllTabs = useCallback((projectPath) => {
-    const proj = projTabsRef.current.get(projectPath);
-    if (proj) { for (const t of proj.tabs) { try { t.webview.remove(); } catch {} } }
-    projTabsRef.current.delete(projectPath);
-    refreshTabBar();
-  }, [refreshTabBar]);
+  const removeAllTabs = useCallback(
+    (projectPath) => {
+      const proj = projTabsRef.current.get(projectPath);
+      if (proj) {
+        for (const t of proj.tabs) {
+          try {
+            t.webview.remove();
+          } catch {}
+        }
+      }
+      projTabsRef.current.delete(projectPath);
+      refreshTabBar();
+    },
+    [refreshTabBar],
+  );
 
   // Foco do webview (vem do main): liga a borda só quando o id é o do projeto ativo.
   useEffect(() => {
     return window.api.on('webview:focus', ({ id, focused }) => {
       const w = activePathRef.current && activeWebviewOf(activePathRef.current);
       let activeId = null;
-      try { activeId = w && w.getWebContentsId(); } catch {}
+      try {
+        activeId = w && w.getWebContentsId();
+      } catch {}
       if (activeId != null && id === activeId) setWebFocused(focused);
     });
   }, []);
 
   // Some com a borda ao trocar de projeto ou sair do preview/site (o foco antigo
   // não vale mais; volta a aparecer quando clicarem no novo webview).
-  useEffect(() => { setWebFocused(false); }, [active?.path]);
-  useEffect(() => { if (!(view === 'preview' && mode === 'web')) setWebFocused(false); }, [view, mode]);
+  useEffect(() => {
+    setWebFocused(false);
+  }, [active?.path]);
+  useEffect(() => {
+    if (!(view === 'preview' && mode === 'web')) setWebFocused(false);
+  }, [view, mode]);
 
   // Navegação do preview (voltar/avançar), estilo navegador.
   const goBack = useCallback(() => {
@@ -530,10 +665,16 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   }, []);
 
   // Um modo por vez: "selecionar elemento" e "print" são mutuamente exclusivos.
-  const stopShoot = useCallback(() => { setShooting(false); setShotRect(null); shootStartRef.current = null; }, []);
+  const stopShoot = useCallback(() => {
+    setShooting(false);
+    setShotRect(null);
+    shootStartRef.current = null;
+  }, []);
   const stopGrab = useCallback(() => {
     const w = active && activeWebviewOf(active.path);
-    try { w && w.executeJavaScript(CLEANUP); } catch {}
+    try {
+      w && w.executeJavaScript(CLEANUP);
+    } catch {}
     setGrabbing(false);
   }, [active]);
 
@@ -543,18 +684,26 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     const w = activeWebviewOf(active.path);
     if (!w) return;
     if (grabbing) {
-      try { w.executeJavaScript(CLEANUP); } catch {}
+      try {
+        w.executeJavaScript(CLEANUP);
+      } catch {}
       setGrabbing(false);
     } else {
       stopShoot(); // entrar no seletor desliga o print
-      w.executeJavaScript(INJECT).then(() => setGrabbing(true)).catch(() => {});
+      w.executeJavaScript(INJECT)
+        .then(() => setGrabbing(true))
+        .catch(() => {});
     }
   }, [active, grabbing, stopShoot]);
 
   // Sai do modo "selecionar" se deixar o preview/site (troca de aba, para o servidor, etc.).
   useEffect(() => {
     if (grabbing && !(view === 'preview' && mode === 'web')) {
-      for (const w of allWebviews()) { try { w.executeJavaScript(CLEANUP); } catch {} }
+      for (const w of allWebviews()) {
+        try {
+          w.executeJavaScript(CLEANUP);
+        } catch {}
+      }
       setGrabbing(false);
     }
   }, [view, mode, grabbing]);
@@ -565,7 +714,13 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   // navegação de qualquer aba e faria este efeito rodar à toa).
   useEffect(() => {
     const w = active && activeWebviewOf(active.path);
-    try { setCanBack(!!w && w.canGoBack()); setCanFwd(!!w && w.canGoForward()); } catch { setCanBack(false); setCanFwd(false); }
+    try {
+      setCanBack(!!w && w.canGoBack());
+      setCanFwd(!!w && w.canGoForward());
+    } catch {
+      setCanBack(false);
+      setCanFwd(false);
+    }
   }, [active, mode, tabBar.activeId]);
 
   // Esc cancela o modo mesmo quando o foco está na janela do app (não no webview).
@@ -573,7 +728,11 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     if (!grabbing) return;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      for (const w of allWebviews()) { try { w.executeJavaScript(CLEANUP); } catch {} }
+      for (const w of allWebviews()) {
+        try {
+          w.executeJavaScript(CLEANUP);
+        } catch {}
+      }
       setGrabbing(false);
     };
     window.addEventListener('keydown', onKey, true);
@@ -592,7 +751,12 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   // Caminho 1 — foco na app (fora do webview): pega o Ctrl+F no window.
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        (e.key === 'f' || e.key === 'F')
+      ) {
         if (!inWebRef.current) return;
         e.preventDefault();
         openFind();
@@ -607,7 +771,10 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   useEffect(() => {
     return window.api.on('preview:find', ({ id }) => {
       const w = activePathRef.current && activeWebviewOf(activePathRef.current);
-      let cid = null; try { cid = w && w.getWebContentsId(); } catch {}
+      let cid = null;
+      try {
+        cid = w && w.getWebContentsId();
+      } catch {}
       if (cid != null && id === cid) openFind();
     });
   }, [openFind]);
@@ -617,35 +784,60 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     if (findOpen && !(view === 'preview' && mode === 'web')) setFindOpen(false);
   }, [view, mode, findOpen]);
   // Fecha ao trocar de aba ou de projeto (o webview alvo mudaria).
-  useEffect(() => { setFindOpen(false); }, [tabBar.activeId, active?.path]);
+  useEffect(() => {
+    setFindOpen(false);
+  }, [tabBar.activeId, active?.path]);
 
   // ---- Print do preview (tela toda ou recorte) ----
   // O overlay (camada do app) captura o gesto de recorte; a captura em si roda no main
   // via webContents.capturePage e cai no clipboard.
 
   // Captura o webview ativo (rect = null → tela toda) e mostra o toast no sucesso.
-  const doCapture = useCallback(async (rect) => {
-    const w = active && activeWebviewOf(active.path);
-    if (!w) return;
-    let id = null;
-    try { id = w.getWebContentsId(); } catch {}
-    if (id == null) return;
-    const res = await window.api.capturePreview(id, rect);
-    if (res && res.ok) { setShot(true); setTimeout(() => setShot(false), 2200); }
-  }, [active]);
+  const doCapture = useCallback(
+    async (rect) => {
+      const w = active && activeWebviewOf(active.path);
+      if (!w) return;
+      let id = null;
+      try {
+        id = w.getWebContentsId();
+      } catch {}
+      if (id == null) return;
+      const res = await window.api.capturePreview(id, rect);
+      if (res && res.ok) {
+        setShot(true);
+        setTimeout(() => setShot(false), 2200);
+      }
+    },
+    [active],
+  );
 
   // Menu da câmera: "Selecionar área" entra no modo recorte; "Tela toda" captura na hora.
   // Qualquer um desliga o seletor de elemento (um modo por vez).
-  const startCrop = useCallback(() => { if (!active) return; stopGrab(); setShooting(true); }, [active, stopGrab]);
-  const captureFull = useCallback(() => { if (!active) return; stopGrab(); setShooting(false); doCapture(null); }, [active, stopGrab, doCapture]);
+  const startCrop = useCallback(() => {
+    if (!active) return;
+    stopGrab();
+    setShooting(true);
+  }, [active, stopGrab]);
+  const captureFull = useCallback(() => {
+    if (!active) return;
+    stopGrab();
+    setShooting(false);
+    doCapture(null);
+  }, [active, stopGrab, doCapture]);
 
   // Borda externa laranja no webview enquanto o modo print (recorte) está ativo, pra
   // sinalizar "vou tirar foto" (não é a borda interna do foco; é a borda do elemento).
   useEffect(() => {
     const w = active && activeWebviewOf(active.path);
     if (!w) return;
-    try { w.style.boxShadow = shooting ? '0 0 0 3px hsl(var(--primary))' : ''; } catch {}
-    return () => { try { w.style.boxShadow = ''; } catch {} };
+    try {
+      w.style.boxShadow = shooting ? '0 0 0 3px hsl(var(--primary))' : '';
+    } catch {}
+    return () => {
+      try {
+        w.style.boxShadow = '';
+      } catch {}
+    };
   }, [shooting, active, mode]);
 
   // Início do arraste no overlay: registra o ponto e escuta mover/soltar na janela
@@ -659,9 +851,16 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     const onMove = (ev) => {
       const o = overlayRef.current?.getBoundingClientRect();
       if (!o) return;
-      const x1 = start.cx - o.left, y1 = start.cy - o.top;
-      const x2 = ev.clientX - o.left, y2 = ev.clientY - o.top;
-      setShotRect({ x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
+      const x1 = start.cx - o.left,
+        y1 = start.cy - o.top;
+      const x2 = ev.clientX - o.left,
+        y2 = ev.clientY - o.top;
+      setShotRect({
+        x: Math.min(x1, x2),
+        y: Math.min(y1, y2),
+        w: Math.abs(x2 - x1),
+        h: Math.abs(y2 - y1),
+      });
     };
     const onUp = (ev) => {
       window.removeEventListener('mousemove', onMove, true);
@@ -674,7 +873,13 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
       // Coords relativas ao WEBVIEW (não ao overlay): nos modos tablet/celular o
       // webview é centralizado, então o topo-esquerda dele difere do container.
       const wr = w.getBoundingClientRect();
-      const rect = rectFromDrag(start.cx - wr.left, start.cy - wr.top, ev.clientX - wr.left, ev.clientY - wr.top, { width: wr.width, height: wr.height });
+      const rect = rectFromDrag(
+        start.cx - wr.left,
+        start.cy - wr.top,
+        ev.clientX - wr.left,
+        ev.clientY - wr.top,
+        { width: wr.width, height: wr.height },
+      );
       doCapture(rect);
     };
     window.addEventListener('mousemove', onMove, true);
@@ -683,45 +888,70 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
 
   // Sai do modo print ao deixar o preview/site, ou ao trocar de projeto.
   useEffect(() => {
-    if (shooting && !(view === 'preview' && mode === 'web')) { setShooting(false); setShotRect(null); }
+    if (shooting && !(view === 'preview' && mode === 'web')) {
+      setShooting(false);
+      setShotRect(null);
+    }
   }, [view, mode, shooting]);
-  useEffect(() => { setShooting(false); setShotRect(null); shootStartRef.current = null; }, [active?.path]);
+  useEffect(() => {
+    setShooting(false);
+    setShotRect(null);
+    shootStartRef.current = null;
+  }, [active?.path]);
 
   // Esc cancela o modo print mesmo com o foco fora do webview.
   useEffect(() => {
     if (!shooting) return;
-    const onKey = (e) => { if (e.key === 'Escape') { setShooting(false); setShotRect(null); shootStartRef.current = null; } };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setShooting(false);
+        setShotRect(null);
+        shootStartRef.current = null;
+      }
+    };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [shooting]);
 
-  const showWebFor = useCallback((projectPath, u) => {
-    urlsRef.current.set(projectPath, u);
-    // A UI troca PRIMEIRO (barra de URL + modo); só DEPOIS mexemos no <webview>.
-    // Criar/navegar o <webview> pode lançar (o timing de attach difere no build
-    // empacotado vs. dev) e isto roda dentro do callback do IPC 'preview:ready' —
-    // que a ErrorBoundary não captura. Antes, uma exceção aqui abortava o callback
-    // e setUrl/setMode nunca rodavam: o preview ficava preso no log com o NOME do
-    // projeto na barra. Atualizando o estado antes, a virada acontece de qualquer jeito.
-    const proj = getProjTabs(projectPath);
-    if (activePathRef.current === projectPath) {
-      setMode('web');
-      // Já tem abas abertas (voltando pro projeto): reflete a aba ativa, não força a raiz.
-      setUrl(proj.tabs.length ? (activeTabOf(projectPath)?.url || u) : u);
-    }
-    // Sem nenhuma aba ainda → cria a aba "raiz" (servidor de preview).
-    if (proj.tabs.length === 0) {
-      const create = () => createTab(projectPath, u, { activate: true });
-      try { create(); }
-      catch { requestAnimationFrame(() => { try { create(); } catch {} }); }
-    }
-  }, [createTab]);
+  const showWebFor = useCallback(
+    (projectPath, u) => {
+      urlsRef.current.set(projectPath, u);
+      // A UI troca PRIMEIRO (barra de URL + modo); só DEPOIS mexemos no <webview>.
+      // Criar/navegar o <webview> pode lançar (o timing de attach difere no build
+      // empacotado vs. dev) e isto roda dentro do callback do IPC 'preview:ready' —
+      // que a ErrorBoundary não captura. Antes, uma exceção aqui abortava o callback
+      // e setUrl/setMode nunca rodavam: o preview ficava preso no log com o NOME do
+      // projeto na barra. Atualizando o estado antes, a virada acontece de qualquer jeito.
+      const proj = getProjTabs(projectPath);
+      if (activePathRef.current === projectPath) {
+        setMode('web');
+        // Já tem abas abertas (voltando pro projeto): reflete a aba ativa, não força a raiz.
+        setUrl(proj.tabs.length ? activeTabOf(projectPath)?.url || u : u);
+      }
+      // Sem nenhuma aba ainda → cria a aba "raiz" (servidor de preview).
+      if (proj.tabs.length === 0) {
+        const create = () => createTab(projectPath, u, { activate: true });
+        try {
+          create();
+        } catch {
+          requestAnimationFrame(() => {
+            try {
+              create();
+            } catch {}
+          });
+        }
+      }
+    },
+    [createTab],
+  );
 
   // DevTools encaixado (definido antes dos effects que o usam, pra não dar TDZ).
   const dockDevtools = useCallback(() => {
     const pv = active && activeWebviewOf(active.path);
     if (pv && devtoolsRef.current) {
-      try { window.api.dockDevTools(pv.getWebContentsId(), devtoolsRef.current.getWebContentsId()); } catch {}
+      try {
+        window.api.dockDevTools(pv.getWebContentsId(), devtoolsRef.current.getWebContentsId());
+      } catch {}
     }
   }, [active]);
 
@@ -729,7 +959,11 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     if (!active) return;
     const pv = activeWebviewOf(active.path);
     if (devtoolsOpen) {
-      if (pv) { try { window.api.undockDevTools(pv.getWebContentsId()); } catch {} }
+      if (pv) {
+        try {
+          window.api.undockDevTools(pv.getWebContentsId());
+        } catch {}
+      }
       setDevtoolsOpen(false);
     } else {
       setDevtoolsOpen(true);
@@ -753,7 +987,10 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
       window.removeEventListener('mouseup', onUp);
       document.body.style.cursor = '';
       setDtDragging(false);
-      setDevtoolsWidth((w) => { localStorage.setItem('devtoolsWidth', String(Math.round(w))); return w; });
+      setDevtoolsWidth((w) => {
+        localStorage.setItem('devtoolsWidth', String(Math.round(w)));
+        return w;
+      });
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -768,28 +1005,42 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   ipcRef.current = { appendLog, showWebFor, onProjectsChanged, t, removeAllTabs };
   useEffect(() => {
     const offs = [];
-    offs.push(window.api.on('preview:phase', ({ projectPath, text }) => ipcRef.current.appendLog(projectPath, '\n> ' + text + '\n')));
-    offs.push(window.api.on('preview:log', ({ projectPath, chunk }) => ipcRef.current.appendLog(projectPath, chunk)));
-    offs.push(window.api.on('preview:ready', ({ projectPath, url: u }) => {
-      ipcRef.current.showWebFor(projectPath, u);
-      ipcRef.current.onProjectsChanged?.();
-    }));
-    offs.push(window.api.on('preview:exit', ({ projectPath }) => {
-      const hadUrl = urlsRef.current.has(projectPath);
-      const wasManual = manualStopRef.current.delete(projectPath); // Set.delete devolve true se existia
-      urlsRef.current.delete(projectPath);
-      ipcRef.current.removeAllTabs(projectPath);
-      if (activePathRef.current === projectPath) {
-        if (wasManual || hadUrl) {
-          setMode('empty'); // parado pelo usuário, ou já tinha aberto e o servidor caiu
-        } else {
-          setMode('log'); // falhou ao subir: mantém o log à mostra pra ver o erro
-          ipcRef.current.appendLog(projectPath, ipcRef.current.t('preview.log_exited'));
+    offs.push(
+      window.api.on('preview:phase', ({ projectPath, text }) =>
+        ipcRef.current.appendLog(projectPath, '\n> ' + text + '\n'),
+      ),
+    );
+    offs.push(
+      window.api.on('preview:log', ({ projectPath, chunk }) =>
+        ipcRef.current.appendLog(projectPath, chunk),
+      ),
+    );
+    offs.push(
+      window.api.on('preview:ready', ({ projectPath, url: u }) => {
+        ipcRef.current.showWebFor(projectPath, u);
+        ipcRef.current.onProjectsChanged?.();
+      }),
+    );
+    offs.push(
+      window.api.on('preview:exit', ({ projectPath }) => {
+        const hadUrl = urlsRef.current.has(projectPath);
+        const wasManual = manualStopRef.current.delete(projectPath); // Set.delete devolve true se existia
+        urlsRef.current.delete(projectPath);
+        ipcRef.current.removeAllTabs(projectPath);
+        if (activePathRef.current === projectPath) {
+          if (wasManual || hadUrl) {
+            setMode('empty'); // parado pelo usuário, ou já tinha aberto e o servidor caiu
+          } else {
+            setMode('log'); // falhou ao subir: mantém o log à mostra pra ver o erro
+            ipcRef.current.appendLog(projectPath, ipcRef.current.t('preview.log_exited'));
+          }
         }
-      }
-      ipcRef.current.onProjectsChanged?.();
-    }));
-    return () => { for (const off of offs) off?.(); };
+        ipcRef.current.onProjectsChanged?.();
+      }),
+    );
+    return () => {
+      for (const off of offs) off?.();
+    };
   }, []);
 
   // Cria o webview que vai HOSPEDAR o DevTools (à direita). Existe sempre (escondido quando fechado).
@@ -800,7 +1051,12 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     w.style.height = '100%';
     devtoolsHostRef.current.appendChild(w);
     devtoolsRef.current = w;
-    return () => { try { w.remove(); } catch {} devtoolsRef.current = null; };
+    return () => {
+      try {
+        w.remove();
+      } catch {}
+      devtoolsRef.current = null;
+    };
   }, []);
 
   // F12 / "Inspecionar elemento" (vêm do processo principal) abrem/fecham o DevTools.
@@ -852,8 +1108,15 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
         // efeito rodava a cada evento de navegação e o re-aponte abortava o load em
         // curso (-3) e disparava outro → loop infinito de reload (a "piscada").
         if (show && tab.src) {
-          let cur = ''; try { cur = tab.webview.getURL(); } catch {}
-          if (!cur || cur === 'about:blank') { try { tab.webview.src = tab.src; } catch {} }
+          let cur = '';
+          try {
+            cur = tab.webview.getURL();
+          } catch {}
+          if (!cur || cur === 'about:blank') {
+            try {
+              tab.webview.src = tab.src;
+            } catch {}
+          }
         }
       }
     }
@@ -870,11 +1133,18 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
 
   // Troca de projeto: inicia/retoma o preview do projeto ativo.
   useEffect(() => {
-    if (active?.remote) { setView('code'); return; }
+    if (active?.remote) {
+      setView('code');
+      return;
+    }
     let cancelled = false; // efeito desmontou/trocou de projeto: corta o setTimeout e o poller
     activePathRef.current = active?.path || null;
     refreshTabBar(); // a tira reflete as abas do novo projeto ativo
-    if (!active) { setMode('empty'); setUrl(''); return; }
+    if (!active) {
+      setMode('empty');
+      setUrl('');
+      return;
+    }
     setUrl(activeTabOf(active.path)?.url || urlsRef.current.get(active.path) || active.name);
 
     // Rede de segurança: vira pro modo web consultando o status até a URL existir,
@@ -885,12 +1155,16 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
       if (pollingRef.current.has(path)) return; // já tem um loop pra este projeto
       pollingRef.current.add(path);
       try {
-        for (let i = 0; i < 600; i++) { // ~3 min (300ms cada): cobre instalar deps + subir
+        for (let i = 0; i < 600; i++) {
+          // ~3 min (300ms cada): cobre instalar deps + subir
           if (cancelled || activePathRef.current !== path) return;
           if (urlsRef.current.has(path)) return; // o evento já resolveu
           const st = await window.api.previewStatus(path);
           if (cancelled || activePathRef.current !== path) return;
-          if (st && st.url) { showWebFor(path, st.url); return; }
+          if (st && st.url) {
+            showWebFor(path, st.url);
+            return;
+          }
           if (st && !st.running) return; // morreu/parou: o preview:exit trata
           await new Promise((r) => setTimeout(r, 300));
         }
@@ -900,11 +1174,20 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
     };
 
     (async () => {
-      if (urlsRef.current.has(active.path)) { showWebFor(active.path, urlsRef.current.get(active.path)); return; }
+      if (urlsRef.current.has(active.path)) {
+        showWebFor(active.path, urlsRef.current.get(active.path));
+        return;
+      }
       const status = await window.api.previewStatus(active.path);
       if (cancelled || activePathRef.current !== active.path) return; // já trocou/desmontou
-      if (status.running && status.url) { showWebFor(active.path, status.url); return; }
-      if (active.previewType == null) { setMode('empty'); return; }
+      if (status.running && status.url) {
+        showWebFor(active.path, status.url);
+        return;
+      }
+      if (active.previewType == null) {
+        setMode('empty');
+        return;
+      }
 
       setMode('log');
       setTimeout(async () => {
@@ -920,32 +1203,46 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
         appendLog(active.path, t('preview.log_preparing'));
         const res = await window.api.startPreview(active.path);
         if (cancelled) return;
-        if (res && res.error) { appendLog(active.path, '\n[erro] ' + res.error + '\n'); return; }
+        if (res && res.error) {
+          appendLog(active.path, '\n[erro] ' + res.error + '\n');
+          return;
+        }
         onProjectsChanged?.();
         waitAndShow();
       }, 0);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [active, showWebFor, appendLog, onProjectsChanged, refreshTabBar]);
 
   // Navega o preview do projeto ativo até `v` (garante http://, troca pra aba
   // Preview e aponta o webview). Caminho único usado tanto pela barra de URL
   // quanto pelo Ctrl+clique num link do terminal.
-  const navigateTo = useCallback((v) => {
-    if (!active) return;
-    v = (v || '').trim();
-    if (!v) return;
-    if (!/^https?:\/\//i.test(v)) v = 'http://' + v;
-    setView('preview');
-    setMode('web');
-    setUrl(v);
-    // Navega a ABA ATIVA (barra de URL / link do terminal). Sem aba ainda → cria a raiz.
-    const tab = activeTabOf(active.path);
-    if (!tab) { createTab(active.path, v, { activate: true }); return; }
-    tab.src = v; tab.url = v;
-    try { tab.webview.src = v; } catch {}
-    refreshTabBar();
-  }, [active, createTab, refreshTabBar]);
+  const navigateTo = useCallback(
+    (v) => {
+      if (!active) return;
+      v = (v || '').trim();
+      if (!v) return;
+      if (!/^https?:\/\//i.test(v)) v = 'http://' + v;
+      setView('preview');
+      setMode('web');
+      setUrl(v);
+      // Navega a ABA ATIVA (barra de URL / link do terminal). Sem aba ainda → cria a raiz.
+      const tab = activeTabOf(active.path);
+      if (!tab) {
+        createTab(active.path, v, { activate: true });
+        return;
+      }
+      tab.src = v;
+      tab.url = v;
+      try {
+        tab.webview.src = v;
+      } catch {}
+      refreshTabBar();
+    },
+    [active, createTab, refreshTabBar],
+  );
 
   const onUrlKey = (e) => {
     if (e.key !== 'Enter') return;
@@ -954,35 +1251,59 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   };
 
   // --- Ações da tira de abas ---
-  const selectTab = useCallback((id) => {
-    const p = activePathRef.current; if (!p) return;
-    const proj = projTabsRef.current.get(p); if (!proj) return;
-    proj.activeId = id;
-    const tab = proj.tabs.find((t) => t.id === id);
-    if (tab) { setUrl(tab.url || tab.src || ''); setCanBack(tab.canBack); setCanFwd(tab.canFwd); }
-    refreshTabBar();
-  }, [refreshTabBar]);
+  const selectTab = useCallback(
+    (id) => {
+      const p = activePathRef.current;
+      if (!p) return;
+      const proj = projTabsRef.current.get(p);
+      if (!proj) return;
+      proj.activeId = id;
+      const tab = proj.tabs.find((t) => t.id === id);
+      if (tab) {
+        setUrl(tab.url || tab.src || '');
+        setCanBack(tab.canBack);
+        setCanFwd(tab.canFwd);
+      }
+      refreshTabBar();
+    },
+    [refreshTabBar],
+  );
 
-  const closeTab = useCallback((id) => {
-    const p = activePathRef.current; if (!p) return;
-    const proj = projTabsRef.current.get(p); if (!proj) return;
-    const idx = proj.tabs.findIndex((t) => t.id === id);
-    if (idx === -1 || proj.tabs.length <= 1) return; // nunca fecha a última (a tira some antes disso)
-    const [removed] = proj.tabs.splice(idx, 1);
-    try { removed.webview.remove(); } catch {}
-    if (proj.activeId === id) { // ativa a vizinha
-      const next = proj.tabs[idx] || proj.tabs[idx - 1] || null;
-      proj.activeId = next ? next.id : null;
-      if (next) { setUrl(next.url || next.src || ''); setCanBack(next.canBack); setCanFwd(next.canFwd); }
-    }
-    refreshTabBar();
-  }, [refreshTabBar]);
+  const closeTab = useCallback(
+    (id) => {
+      const p = activePathRef.current;
+      if (!p) return;
+      const proj = projTabsRef.current.get(p);
+      if (!proj) return;
+      const idx = proj.tabs.findIndex((t) => t.id === id);
+      if (idx === -1 || proj.tabs.length <= 1) return; // nunca fecha a última (a tira some antes disso)
+      const [removed] = proj.tabs.splice(idx, 1);
+      try {
+        removed.webview.remove();
+      } catch {}
+      if (proj.activeId === id) {
+        // ativa a vizinha
+        const next = proj.tabs[idx] || proj.tabs[idx - 1] || null;
+        proj.activeId = next ? next.id : null;
+        if (next) {
+          setUrl(next.url || next.src || '');
+          setCanBack(next.canBack);
+          setCanFwd(next.canFwd);
+        }
+      }
+      refreshTabBar();
+    },
+    [refreshTabBar],
+  );
 
   const newTab = useCallback(() => {
-    const p = activePathRef.current; if (!p) return;
+    const p = activePathRef.current;
+    if (!p) return;
     const home = urlsRef.current.get(p) || activeTabOf(p)?.url || 'about:blank';
     const tab = createTab(p, home, { activate: true });
-    setUrl(tab.url); setMode('web'); setView('preview');
+    setUrl(tab.url);
+    setMode('web');
+    setView('preview');
     refreshTabBar();
   }, [createTab, refreshTabBar]);
 
@@ -994,22 +1315,40 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
       let ownerPath = null;
       outer: for (const [p, proj] of projTabsRef.current) {
         for (const t of proj.tabs) {
-          let cid = null; try { cid = t.webview.getWebContentsId(); } catch {}
-          if (cid === sourceId) { ownerPath = p; break outer; }
+          let cid = null;
+          try {
+            cid = t.webview.getWebContentsId();
+          } catch {}
+          if (cid === sourceId) {
+            ownerPath = p;
+            break outer;
+          }
         }
       }
       if (!ownerPath) return;
       const foreground = disposition !== 'background-tab';
       createTab(ownerPath, url, { activate: foreground });
-      if (foreground && activePathRef.current === ownerPath) { setUrl(url); setMode('web'); setView('preview'); }
+      if (foreground && activePathRef.current === ownerPath) {
+        setUrl(url);
+        setMode('web');
+        setView('preview');
+      }
       refreshTabBar();
     });
   }, [createTab, refreshTabBar]);
 
-  const reload = () => { if (active) { try { activeWebviewOf(active.path)?.reload(); } catch {} } };
+  const reload = () => {
+    if (active) {
+      try {
+        activeWebviewOf(active.path)?.reload();
+      } catch {}
+    }
+  };
   // Abre o preview atual no navegador padrão do sistema. Sem lock-in: se a pessoa
   // preferir o navegador dela (DevTools próprio, extensões, etc.), é só um clique.
-  const openInBrowser = () => { if (mode === 'web' && url) window.api.openExternal(url); };
+  const openInBrowser = () => {
+    if (mode === 'web' && url) window.api.openExternal(url);
+  };
   // Trava contra clique repetido: parar/reiniciar mexem no mesmo servidor, então
   // enquanto uma operação está rodando, as outras são ignoradas. Por mais que
   // cliquem 10x num segundo, só a primeira vale; as demais voltam na hora. É um
@@ -1062,7 +1401,9 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   }, []);
 
   if (controlsRef) controlsRef.current = { stop, restart, setView, openFile };
-  useEffect(() => { onModeChange?.(mode); }, [mode, onModeChange]);
+  useEffect(() => {
+    onModeChange?.(mode);
+  }, [mode, onModeChange]);
 
   // Arrasta a borda superior do terminal pra redimensionar (estilo VS Code).
   const startResize = (e) => {
@@ -1117,78 +1458,131 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
   return (
     <>
       {active && (
-      <div className="relative z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
-        <Tabs value={remote ? 'code' : view} onValueChange={setView}>
-          <TabsList className="h-8 gap-0.5 p-0.5">
-            {!remote && <TabsTrigger value="preview" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={EarthIcon} />{t('preview.tab')}</TabsTrigger>}
-            <TabsTrigger value="code" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={ChevronsLeftRightIcon} />{t('preview.code')}</TabsTrigger>
-            {!remote && <TabsTrigger value="git" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><HoverIcon as={GitBranchIcon} />{t('preview.git')}</TabsTrigger>}
-            {!remote && <TabsTrigger value="todos" className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"><ListTodo />{t('preview.todos')}</TabsTrigger>}
-          </TabsList>
-        </Tabs>
-
-        {/* Ferramentas menos usadas (API, MCP) num menu com seta, pra enxugar a barra. */}
-        {!remote && <MoreTools view={view} onPick={setView} />}
-
-        {inPreview && (
-          <>
-            {/* Voltar/avançar, estilo navegador. */}
-            <div className="flex items-center gap-0.5">
-              <ToolButton onClick={goBack} disabled={!canBack} title={t('preview.back')}><ArrowLeftIcon /></ToolButton>
-              <ToolButton onClick={goFwd} disabled={!canFwd} title={t('preview.forward')}><ArrowRightIcon /></ToolButton>
-            </div>
-            {/* Tamanho de tela (computador/tablet/celular), colado na barra de URL. */}
-            <DevicePicker value={viewport} onChange={setViewport} disabled={mode !== 'web'} />
-            {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
-            <div className="relative flex-1">
-              <button
-                type="button"
-                onClick={reload}
-                disabled={mode !== 'web'}
-                title={t('preview.reload')}
-                className="absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]"
+        <div className="relative z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
+          <Tabs value={remote ? 'code' : view} onValueChange={setView}>
+            <TabsList className="h-8 gap-0.5 p-0.5">
+              {!remote && (
+                <TabsTrigger
+                  value="preview"
+                  className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
+                >
+                  <HoverIcon as={EarthIcon} />
+                  {t('preview.tab')}
+                </TabsTrigger>
+              )}
+              <TabsTrigger
+                value="code"
+                className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
               >
-                <RotateCWIcon />
-              </button>
-              <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={onUrlKey}
-                spellCheck={false}
-                placeholder={t('preview.url_placeholder')}
-                className="h-8 pl-8 pr-8 font-mono text-xs"
-              />
-              <button
-                type="button"
-                onClick={openInBrowser}
-                disabled={mode !== 'web'}
-                title={t('preview.open_browser')}
-                className="absolute right-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]"
-              >
-                <ExternalLink />
-              </button>
-            </div>
+                <HoverIcon as={ChevronsLeftRightIcon} />
+                {t('preview.code')}
+              </TabsTrigger>
+              {!remote && (
+                <TabsTrigger
+                  value="git"
+                  className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
+                >
+                  <HoverIcon as={GitBranchIcon} />
+                  {t('preview.git')}
+                </TabsTrigger>
+              )}
+              {!remote && (
+                <TabsTrigger
+                  value="todos"
+                  className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
+                >
+                  <ListTodo />
+                  {t('preview.todos')}
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </Tabs>
 
-            <div className="flex items-center gap-0.5">
-              <ToolButton onClick={toggleGrab} disabled={mode !== 'web'} active={grabbing} title={t('preview.grab_element')}><Crosshair /></ToolButton>
-              <ShotPicker onArea={startCrop} onFull={captureFull} active={shooting} disabled={mode !== 'web'} />
-              <ToolButton onClick={toggleDevtools} disabled={mode !== 'web'} active={devtoolsOpen} title={t('preview.devtools')}><Bug /></ToolButton>
-            </div>
-            <div className="h-5 w-px bg-border" />
-          </>
-        )}
+          {/* Ferramentas menos usadas (API, MCP) num menu com seta, pra enxugar a barra. */}
+          {!remote && <MoreTools view={view} onPick={setView} />}
 
-        {(inCode || inGit || inApi || inMcp || inBoard || inTodos) && <div className="flex-1" />}
+          {inPreview && (
+            <>
+              {/* Voltar/avançar, estilo navegador. */}
+              <div className="flex items-center gap-0.5">
+                <ToolButton onClick={goBack} disabled={!canBack} title={t('preview.back')}>
+                  <ArrowLeftIcon />
+                </ToolButton>
+                <ToolButton onClick={goFwd} disabled={!canFwd} title={t('preview.forward')}>
+                  <ArrowRightIcon />
+                </ToolButton>
+              </div>
+              {/* Tamanho de tela (computador/tablet/celular), colado na barra de URL. */}
+              <DevicePicker value={viewport} onChange={setViewport} disabled={mode !== 'web'} />
+              {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
+              <div className="relative flex-1">
+                <button
+                  type="button"
+                  onClick={reload}
+                  disabled={mode !== 'web'}
+                  title={t('preview.reload')}
+                  className="absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]"
+                >
+                  <RotateCWIcon />
+                </button>
+                <Input
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={onUrlKey}
+                  spellCheck={false}
+                  placeholder={t('preview.url_placeholder')}
+                  className="h-8 pl-8 pr-8 font-mono text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={openInBrowser}
+                  disabled={mode !== 'web'}
+                  title={t('preview.open_browser')}
+                  className="absolute right-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]"
+                >
+                  <ExternalLink />
+                </button>
+              </div>
 
-        <ToolButton
-          onClick={() => setTermOpen((o) => !o)}
-          disabled={!active}
-          active={termOpen}
-          title={termOpen ? t('preview.close_terminal') : t('preview.open_terminal')}
-        >
-          <TerminalIcon />
-        </ToolButton>
-      </div>
+              <div className="flex items-center gap-0.5">
+                <ToolButton
+                  onClick={toggleGrab}
+                  disabled={mode !== 'web'}
+                  active={grabbing}
+                  title={t('preview.grab_element')}
+                >
+                  <Crosshair />
+                </ToolButton>
+                <ShotPicker
+                  onArea={startCrop}
+                  onFull={captureFull}
+                  active={shooting}
+                  disabled={mode !== 'web'}
+                />
+                <ToolButton
+                  onClick={toggleDevtools}
+                  disabled={mode !== 'web'}
+                  active={devtoolsOpen}
+                  title={t('preview.devtools')}
+                >
+                  <Bug />
+                </ToolButton>
+              </div>
+              <div className="h-5 w-px bg-border" />
+            </>
+          )}
+
+          {(inCode || inGit || inApi || inMcp || inBoard || inTodos) && <div className="flex-1" />}
+
+          <ToolButton
+            onClick={() => setTermOpen((o) => !o)}
+            disabled={!active}
+            active={termOpen}
+            title={termOpen ? t('preview.close_terminal') : t('preview.open_terminal')}
+          >
+            <TerminalIcon />
+          </ToolButton>
+        </div>
       )}
 
       {/* Tira de abas discreta: só aparece quando o projeto tem MAIS DE UMA página
@@ -1225,14 +1619,28 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
 
       <div ref={bodyRowRef} className="relative flex min-h-0 min-w-0 flex-1">
         <div className="relative isolate min-h-0 min-w-0 flex-1">
-          <div ref={containerRef} className={cn('absolute inset-0', !inPreview && 'pointer-events-none', inPreview && mode === 'web' && viewport !== 'desktop' && 'bg-muted/40')} />
+          <div
+            ref={containerRef}
+            className={cn(
+              'absolute inset-0',
+              !inPreview && 'pointer-events-none',
+              inPreview && mode === 'web' && viewport !== 'desktop' && 'bg-muted/40',
+            )}
+          />
           {/* Borda discreta: foco está dentro do preview → Ctrl +/- zooma o site, não o app. */}
           {inPreview && mode === 'web' && webFocused && (
             <div className="pointer-events-none absolute inset-0 z-10 ring-2 ring-inset ring-primary/40" />
           )}
           {inPreview && (grabbing || grabbed) && (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center">
-              <div className={cn('rounded-full border px-3 py-1.5 text-xs font-medium shadow-md', grabbed ? 'border-primary/40 bg-primary text-primary-foreground' : 'bg-popover text-popover-foreground')}>
+              <div
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs font-medium shadow-md',
+                  grabbed
+                    ? 'border-primary/40 bg-primary text-primary-foreground'
+                    : 'bg-popover text-popover-foreground',
+                )}
+              >
                 {grabbed ? t('preview.grab_done') : t('preview.grab_active')}
               </div>
             </div>
@@ -1256,14 +1664,26 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
               {shotRect && (
                 <div
                   className="absolute border-2 border-primary bg-primary/20"
-                  style={{ left: shotRect.x, top: shotRect.y, width: shotRect.w, height: shotRect.h }}
+                  style={{
+                    left: shotRect.x,
+                    top: shotRect.y,
+                    width: shotRect.w,
+                    height: shotRect.h,
+                  }}
                 />
               )}
             </div>
           )}
           {inPreview && (shooting || shot) && (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-40 flex justify-center">
-              <div className={cn('rounded-full border px-3 py-1.5 text-xs font-medium shadow-md', shot ? 'border-primary/40 bg-primary text-primary-foreground' : 'bg-popover text-popover-foreground')}>
+              <div
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs font-medium shadow-md',
+                  shot
+                    ? 'border-primary/40 bg-primary text-primary-foreground'
+                    : 'bg-popover text-popover-foreground',
+                )}
+              >
                 {shot ? t('preview.shot_done') : t('preview.shot_active')}
               </div>
             </div>
@@ -1274,15 +1694,17 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
               className="absolute inset-0 m-0 overflow-auto whitespace-pre-wrap break-words bg-background p-3.5 font-mono text-xs leading-relaxed text-muted-foreground"
             />
           )}
-          {inPreview && mode === 'empty' && (
-            active ? (
+          {inPreview &&
+            mode === 'empty' &&
+            (active ? (
               <div className="absolute inset-0">
                 <EmptyState>
                   {active.previewType != null
                     ? t('preview.no_preview')
                     : t('preview.no_preview_server')}
                   <Button variant="secondary" size="sm" onClick={copyClaudePrompt} className="mt-1">
-                    <Copy className="mr-1" />{copied ? t('preview.prompt_copied') : t('preview.copy_prompt')}
+                    <Copy className="mr-1" />
+                    {copied ? t('preview.prompt_copied') : t('preview.copy_prompt')}
                   </Button>
                 </EmptyState>
               </div>
@@ -1290,15 +1712,42 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
               <div className="absolute inset-0">
                 <EmptyState size="lg">{t('preview.select_project')}</EmptyState>
               </div>
-            )
+            ))}
+          {inCode && (
+            <LazyPanel label="Código">
+              <CodeView active={active} openRequest={openRequest} />
+            </LazyPanel>
           )}
-          {inCode && <LazyPanel label="Código"><CodeView active={active} openRequest={openRequest} /></LazyPanel>}
-          {inHistory && <LazyPanel label="Histórico"><CheckpointsPanel active={active} visible={inHistory} /></LazyPanel>}
-          {inGit && <LazyPanel label="Git"><GitPanel active={active} visible={inGit} /></LazyPanel>}
-          {inApi && <LazyPanel label="API"><ApiPanel key={active?.path || 'none'} active={active} /></LazyPanel>}
-          {inMcp && <LazyPanel label="MCP"><MCPPanel active={active} /></LazyPanel>}
-          {inBoard && <LazyPanel label="Quadro"><TldrawPanel active={active} /></LazyPanel>}
-          {inTodos && <LazyPanel label="Tarefas"><TodosPanel active={active} chatSession={chatSession} /></LazyPanel>}
+          {inHistory && (
+            <LazyPanel label="Histórico">
+              <CheckpointsPanel active={active} visible={inHistory} />
+            </LazyPanel>
+          )}
+          {inGit && (
+            <LazyPanel label="Git">
+              <GitPanel active={active} visible={inGit} />
+            </LazyPanel>
+          )}
+          {inApi && (
+            <LazyPanel label="API">
+              <ApiPanel key={active?.path || 'none'} active={active} />
+            </LazyPanel>
+          )}
+          {inMcp && (
+            <LazyPanel label="MCP">
+              <MCPPanel active={active} />
+            </LazyPanel>
+          )}
+          {inBoard && (
+            <LazyPanel label="Quadro">
+              <TldrawPanel active={active} />
+            </LazyPanel>
+          )}
+          {inTodos && (
+            <LazyPanel label="Tarefas">
+              <TodosPanel active={active} chatSession={chatSession} />
+            </LazyPanel>
+          )}
         </div>
 
         {/* Alça pra redimensionar o painel de DevTools. */}
@@ -1306,7 +1755,10 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
 
         {/* Painel do DevTools (à direita). O webview vive sempre aqui; só fica escondido quando fechado. */}
         <div
-          className={cn('relative min-h-0 shrink-0', !(devtoolsOpen && inPreview) && 'w-0 overflow-hidden')}
+          className={cn(
+            'relative min-h-0 shrink-0',
+            !(devtoolsOpen && inPreview) && 'w-0 overflow-hidden',
+          )}
           style={devtoolsOpen && inPreview ? { width: devtoolsWidth } : undefined}
         >
           <div ref={devtoolsHostRef} className="absolute inset-0 bg-card" />
@@ -1321,15 +1773,29 @@ export function PreviewPanel({ active, chatSession, onProjectsChanged, controlsR
           <DragHandle onMouseDown={startResize} />
           <div className="flex h-8 shrink-0 items-center gap-2 border-b bg-card px-2.5 text-xs text-muted-foreground">
             <Terminal className="h-3.5 w-3.5" />
-            <span className="truncate font-medium">{active ? t('preview.terminal_label', { projectName: active.name }) : t('preview.terminal_bare')}</span>
+            <span className="truncate font-medium">
+              {active
+                ? t('preview.terminal_label', { projectName: active.name })
+                : t('preview.terminal_bare')}
+            </span>
             <div className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTermOpen(false)} title={t('preview.close_terminal')}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setTermOpen(false)}
+              title={t('preview.close_terminal')}
+            >
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>
           <div className="relative min-h-0 flex-1">
             <LazyPanel label="Terminal">
-              <ShellView activeProject={active?.path || null} visible={termOpen} onOpenUrl={navigateTo} />
+              <ShellView
+                activeProject={active?.path || null}
+                visible={termOpen}
+                onOpenUrl={navigateTo}
+              />
             </LazyPanel>
           </div>
         </div>

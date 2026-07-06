@@ -26,8 +26,14 @@ export function rectFromDrag(startX, startY, endX, endY, bounds) {
 
   // Clamp aos limites do webview (recorte sobre a calha cinza dos modos tablet/celular
   // é cortado pro dentro do site).
-  if (x < 0) { w += x; x = 0; }
-  if (y < 0) { h += y; y = 0; }
+  if (x < 0) {
+    w += x;
+    x = 0;
+  }
+  if (y < 0) {
+    h += y;
+    y = 0;
+  }
   if (bounds) {
     if (x + w > bounds.width) w = bounds.width - x;
     if (y + h > bounds.height) h = bounds.height - y;

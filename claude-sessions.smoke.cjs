@@ -7,10 +7,17 @@ const os = require('os');
 const path = require('path');
 const cs = require('./claude-sessions.cjs');
 
-let pass = 0, fail = 0;
+let pass = 0,
+  fail = 0;
 function t(name, fn) {
-  try { fn(); pass++; console.log('ok   -', name); }
-  catch (e) { fail++; console.log('FAIL -', name, '\n      ', e.message); }
+  try {
+    fn();
+    pass++;
+    console.log('ok   -', name);
+  } catch (e) {
+    fail++;
+    console.log('FAIL -', name, '\n      ', e.message);
+  }
 }
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-smoke-'));
@@ -24,12 +31,15 @@ const idA = '11111111-aaaa';
 const idB = '22222222-bbbb';
 const idEmpty = '33333333-cccc';
 
-fs.writeFileSync(path.join(encDir, idA + '.jsonl'), [
-  JSON.stringify({ type: 'user', message: { role: 'user', content: 'oi' } }),
-  JSON.stringify({ type: 'ai-title', aiTitle: 'Titulo velho' }),
-  JSON.stringify({ type: 'assistant' }),
-  JSON.stringify({ type: 'ai-title', aiTitle: 'Titulo novo' }),
-].join('\n') + '\n');
+fs.writeFileSync(
+  path.join(encDir, idA + '.jsonl'),
+  [
+    JSON.stringify({ type: 'user', message: { role: 'user', content: 'oi' } }),
+    JSON.stringify({ type: 'ai-title', aiTitle: 'Titulo velho' }),
+    JSON.stringify({ type: 'assistant' }),
+    JSON.stringify({ type: 'ai-title', aiTitle: 'Titulo novo' }),
+  ].join('\n') + '\n',
+);
 
 t('encodeProjectDir troca não-alfanumérico por hífen', () => {
   assert.strictEqual(cs.encodeProjectDir(projectPath), 'C--Users-a-b-Documents-proj');
@@ -50,13 +60,18 @@ t('historyExists acha por id; falso pra id inexistente', () => {
   assert.strictEqual(cs.historyExists('nao-existe', projBase), false);
 });
 t('transcriptPath resolve o caminho do id no projeto', () => {
-  assert.strictEqual(cs.transcriptPath(projectPath, idA, projBase), path.join(encDir, idA + '.jsonl'));
+  assert.strictEqual(
+    cs.transcriptPath(projectPath, idA, projBase),
+    path.join(encDir, idA + '.jsonl'),
+  );
 });
 t('snapshot + newTranscript detectam o transcript novo com user', () => {
   const snap = cs.snapshot(projectPath, projBase); // só idA
   assert.ok(snap.has(idA));
-  fs.writeFileSync(path.join(encDir, idB + '.jsonl'),
-    JSON.stringify({ type: 'user', message: { role: 'user', content: 'novo' } }) + '\n');
+  fs.writeFileSync(
+    path.join(encDir, idB + '.jsonl'),
+    JSON.stringify({ type: 'user', message: { role: 'user', content: 'novo' } }) + '\n',
+  );
   assert.strictEqual(cs.newTranscript(projectPath, snap, projBase), idB);
 });
 t('newTranscript NÃO captura quando há 2 novos (ambíguo)', () => {
@@ -64,30 +79,54 @@ t('newTranscript NÃO captura quando há 2 novos (ambíguo)', () => {
 });
 t('newTranscript ignora transcript novo SEM mensagem de usuário', () => {
   const snap = cs.snapshot(projectPath, projBase); // idA + idB
-  fs.writeFileSync(path.join(encDir, idEmpty + '.jsonl'),
-    JSON.stringify({ type: 'system' }) + '\n');
+  fs.writeFileSync(
+    path.join(encDir, idEmpty + '.jsonl'),
+    JSON.stringify({ type: 'system' }) + '\n',
+  );
   assert.strictEqual(cs.newTranscript(projectPath, snap, projBase), null);
 });
 
 // --- Título por fallback (sessão sem ai-title) ---
 const idSlash = '44444444-dddd';
-fs.writeFileSync(path.join(encDir, idSlash + '.jsonl'), [
-  JSON.stringify({ type: 'user', message: { role: 'user', content: '<command-message>opensquad</command-message>\n<command-name>/opensquad</command-name>\n<command-args>blog-seo-laroye</command-args>' } }),
-  JSON.stringify({ type: 'assistant' }),
-  JSON.stringify({ type: 'last-prompt', lastPrompt: '/opensquad blog-seo-laroye' }),
-].join('\n') + '\n');
+fs.writeFileSync(
+  path.join(encDir, idSlash + '.jsonl'),
+  [
+    JSON.stringify({
+      type: 'user',
+      message: {
+        role: 'user',
+        content:
+          '<command-message>opensquad</command-message>\n<command-name>/opensquad</command-name>\n<command-args>blog-seo-laroye</command-args>',
+      },
+    }),
+    JSON.stringify({ type: 'assistant' }),
+    JSON.stringify({ type: 'last-prompt', lastPrompt: '/opensquad blog-seo-laroye' }),
+  ].join('\n') + '\n',
+);
 const idMsg = '55555555-eeee';
-fs.writeFileSync(path.join(encDir, idMsg + '.jsonl'),
-  JSON.stringify({ type: 'user', message: { role: 'user', content: 'corrige o bug do login' } }) + '\n');
+fs.writeFileSync(
+  path.join(encDir, idMsg + '.jsonl'),
+  JSON.stringify({ type: 'user', message: { role: 'user', content: 'corrige o bug do login' } }) +
+    '\n',
+);
 
 t('firstPromptTitle pega o last-prompt já limpo', () => {
-  assert.strictEqual(cs.firstPromptTitle(path.join(encDir, idSlash + '.jsonl')), '/opensquad blog-seo-laroye');
+  assert.strictEqual(
+    cs.firstPromptTitle(path.join(encDir, idSlash + '.jsonl')),
+    '/opensquad blog-seo-laroye',
+  );
 });
 t('firstPromptTitle cai na 1a mensagem do usuário sem last-prompt', () => {
-  assert.strictEqual(cs.firstPromptTitle(path.join(encDir, idMsg + '.jsonl')), 'corrige o bug do login');
+  assert.strictEqual(
+    cs.firstPromptTitle(path.join(encDir, idMsg + '.jsonl')),
+    'corrige o bug do login',
+  );
 });
 t('sessionTitle usa o prompt quando NÃO há ai-title', () => {
-  assert.strictEqual(cs.sessionTitle(path.join(encDir, idSlash + '.jsonl')), '/opensquad blog-seo-laroye');
+  assert.strictEqual(
+    cs.sessionTitle(path.join(encDir, idSlash + '.jsonl')),
+    '/opensquad blog-seo-laroye',
+  );
 });
 t('sessionTitle PREFERE o ai-title quando existe', () => {
   assert.strictEqual(cs.sessionTitle(path.join(encDir, idA + '.jsonl')), 'Titulo novo');

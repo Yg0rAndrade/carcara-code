@@ -13,8 +13,9 @@ describe('formatDroppedPaths', () => {
   });
 
   it('vários caminhos (\\n): junta com espaço e espaço no fim', () => {
-    expect(formatDroppedPaths('C:\\proj\\a.js\nC:\\proj\\b.js'))
-      .toBe('C:\\proj\\a.js C:\\proj\\b.js ');
+    expect(formatDroppedPaths('C:\\proj\\a.js\nC:\\proj\\b.js')).toBe(
+      'C:\\proj\\a.js C:\\proj\\b.js ',
+    );
   });
 
   it('descarta linhas vazias e em branco', () => {

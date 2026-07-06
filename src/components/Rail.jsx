@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, RotateCcw, Square, GripHorizontal, Pencil, Undo2, ChevronDown, FolderPlus, Folder as FolderIcon, Settings2, Server } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  RotateCcw,
+  Square,
+  GripHorizontal,
+  Pencil,
+  Undo2,
+  ChevronDown,
+  FolderPlus,
+  Folder as FolderIcon,
+  Settings2,
+  Server,
+} from 'lucide-react';
 import { SettingsIcon } from './ui/settings.jsx';
 import { SearchIcon } from './ui/search.jsx';
 import { RailFolderIcon } from './RailFolder.jsx';
@@ -11,44 +24,94 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { hasPendingUpdate } from '@/lib/updateView';
 
-export function Rail({ projects, rail = [], projectByPath, active, activity = {}, onOpen, onAdd, onAddFolder, onAddRemote, onRemove, onRestart, onStop, onReorder, onToggleFolder, onApplyDrop, onRenameFolder, onDissolveFolder, onRename, onSetColor, onSetIcon, onResetCustom, onOpenSettings, onSearch, onRailGrab, width = 64, version = '', update, onOpenAbout }) {
+export function Rail({
+  projects,
+  rail = [],
+  projectByPath,
+  active,
+  activity = {},
+  onOpen,
+  onAdd,
+  onAddFolder,
+  onAddRemote,
+  onRemove,
+  onRestart,
+  onStop,
+  onReorder,
+  onToggleFolder,
+  onApplyDrop,
+  onRenameFolder,
+  onDissolveFolder,
+  onRename,
+  onSetColor,
+  onSetIcon,
+  onResetCustom,
+  onOpenSettings,
+  onSearch,
+  onRailGrab,
+  width = 64,
+  version = '',
+  update,
+  onOpenAbout,
+}) {
   const t = useT();
-  const [menu, setMenu] = useState(null);               // menu de projeto { x, y, project }
-  const [folderMenu, setFolderMenu] = useState(null);   // menu de pasta { x, y, folder }
-  const [addMenu, setAddMenu] = useState(null);         // popover do "+" { left, bottom } (fixed) | null
+  const [menu, setMenu] = useState(null); // menu de projeto { x, y, project }
+  const [folderMenu, setFolderMenu] = useState(null); // menu de pasta { x, y, folder }
+  const [addMenu, setAddMenu] = useState(null); // popover do "+" { left, bottom } (fixed) | null
   const [renamingFolder, setRenamingFolder] = useState(null); // pasta aberta no modal de renomear | null
-  const [tip, setTip] = useState(null);           // tooltip do nome (projeto/pasta) { name, x, y } | null
+  const [tip, setTip] = useState(null); // tooltip do nome (projeto/pasta) { name, x, y } | null
   // Personalização (nome/cor/imagem) do projeto vive no ProjectSettingsModal. Guardamos
   // só o PATH do projeto aberto e derivamos o objeto vivo da lista, pra o preview refletir
   // na hora as mudanças de cor/imagem já persistidas.
   const [settingsPath, setSettingsPath] = useState(null);
-  const settingsProject = settingsPath ? projects.find((p) => p.path === settingsPath) || null : null;
+  const settingsProject = settingsPath
+    ? projects.find((p) => p.path === settingsPath) || null
+    : null;
   const openProjectSettings = (p) => setSettingsPath(p.path);
 
   // --- drag (borda reordena, centro cria/entra pasta) ---
-  const [drag, setDrag] = useState(null);   // { path } | { folderId }
-  const [over, setOver] = useState(null);    // { key, zone: 'reorder'|'merge' }
-  const mergeRef = useRef(null);      // timer do merge (criar/entrar pasta) no centro
-  const reorderRef = useRef(null);    // timer do slide de reordenar (atraso curto estilo iOS)
+  const [drag, setDrag] = useState(null); // { path } | { folderId }
+  const [over, setOver] = useState(null); // { key, zone: 'reorder'|'merge' }
+  const mergeRef = useRef(null); // timer do merge (criar/entrar pasta) no centro
+  const reorderRef = useRef(null); // timer do slide de reordenar (atraso curto estilo iOS)
   const dwellKeyRef = useRef(null);
-  const hoverRef = useRef(null);      // alvo IMEDIATO { row, zone } pro drop (o `over` é só o visual, atrasado)
+  const hoverRef = useRef(null); // alvo IMEDIATO { row, zone } pro drop (o `over` é só o visual, atrasado)
   const clearTimers = () => {
-    if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
-    if (reorderRef.current) { clearTimeout(reorderRef.current); reorderRef.current = null; }
+    if (mergeRef.current) {
+      clearTimeout(mergeRef.current);
+      mergeRef.current = null;
+    }
+    if (reorderRef.current) {
+      clearTimeout(reorderRef.current);
+      reorderRef.current = null;
+    }
   };
-  const resetDrag = () => { clearTimers(); dwellKeyRef.current = null; hoverRef.current = null; setDrag(null); setOver(null); };
+  const resetDrag = () => {
+    clearTimers();
+    dwellKeyRef.current = null;
+    hoverRef.current = null;
+    setDrag(null);
+    setOver(null);
+  };
 
-  const dragKeyOf = () => (drag?.path ? drag.path : (drag?.folderId ? 'folder:' + drag.folderId : null));
+  const dragKeyOf = () =>
+    drag?.path ? drag.path : drag?.folderId ? 'folder:' + drag.folderId : null;
 
   const onRowDragOver = (e, row) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const dragKey = dragKeyOf();
-    if (!dragKey || row.key === dragKey) { clearTimers(); return; }
+    if (!dragKey || row.key === dragKey) {
+      clearTimers();
+      return;
+    }
     const r = e.currentTarget.getBoundingClientRect();
-    const cx = e.clientX - r.left, cy = e.clientY - r.top;
-    const inCenter = cx > r.width * 0.28 && cx < r.width * 0.72 && cy > r.height * 0.28 && cy < r.height * 0.72;
-    const canMerge = !drag?.folderId && (row.kind === 'project' || row.kind === 'folder' || row.kind === 'child');
+    const cx = e.clientX - r.left,
+      cy = e.clientY - r.top;
+    const inCenter =
+      cx > r.width * 0.28 && cx < r.width * 0.72 && cy > r.height * 0.28 && cy < r.height * 0.72;
+    const canMerge =
+      !drag?.folderId && (row.kind === 'project' || row.kind === 'folder' || row.kind === 'child');
 
     // Alvo imediato pro drop (não espera o atraso do visual): centro+mergeável = merge,
     // senão reorder. Assim um drop rápido sempre funciona.
@@ -75,8 +138,15 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         }, 420);
       }
     } else {
-      if (mergeRef.current) { clearTimeout(mergeRef.current); mergeRef.current = null; }
-      setOver((prev) => (prev && prev.key === row.key && prev.zone === 'merge' ? { key: row.key, zone: 'reorder', row } : prev));
+      if (mergeRef.current) {
+        clearTimeout(mergeRef.current);
+        mergeRef.current = null;
+      }
+      setOver((prev) =>
+        prev && prev.key === row.key && prev.zone === 'merge'
+          ? { key: row.key, zone: 'reorder', row }
+          : prev,
+      );
     }
   };
 
@@ -92,8 +162,9 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         onApplyDrop?.({
           dragPath: drag.path,
           targetKind: row.kind,
-          targetPath: (row.kind === 'project' || row.kind === 'child') ? row.project.path : undefined,
-          targetFolderId: row.kind === 'folder' ? row.folder.id : (row.kind === 'child' ? row.folderId : undefined),
+          targetPath: row.kind === 'project' || row.kind === 'child' ? row.project.path : undefined,
+          targetFolderId:
+            row.kind === 'folder' ? row.folder.id : row.kind === 'child' ? row.folderId : undefined,
           zone: hover.zone,
         });
       } else if (drag?.folderId) {
@@ -110,7 +181,10 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   };
 
   // Renomear pasta abre um modal central (nome não cabe no ícone; edição inline era ruim).
-  const openFolderRename = (f) => { setTip(null); setRenamingFolder(f); };
+  const openFolderRename = (f) => {
+    setTip(null);
+    setRenamingFolder(f);
+  };
 
   const openMenu = (e, p) => {
     e.preventDefault();
@@ -132,25 +206,47 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       <button
         draggable
         onDragStart={() => setDrag({ path: p.path })}
-        onDragOver={(e) => onRowDragOver(e, { key: p.path, kind: indented ? 'child' : 'project', project: p, folderId: p.__folderId })}
-        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
+        onDragOver={(e) =>
+          onRowDragOver(e, {
+            key: p.path,
+            kind: indented ? 'child' : 'project',
+            project: p,
+            folderId: p.__folderId,
+          })
+        }
+        onDrop={(e) => {
+          e.preventDefault();
+          commitDrop();
+        }}
         onDragEnd={resetDrag}
         onClick={() => onOpen(p)}
         onDoubleClick={() => openProjectSettings(p)}
         onContextMenu={(e) => openMenu(e, p)}
-        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setTip({ name: p.name, x: r.right + 8, y: r.top + r.height / 2 }); }}
+        onMouseEnter={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setTip({ name: p.name, x: r.right + 8, y: r.top + r.height / 2 });
+        }}
         onMouseLeave={() => setTip(null)}
         className={cn(
           'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border font-bold text-white transition-all hover:-translate-y-0.5 hover:rounded-2xl active:cursor-grabbing',
           active?.path === p.path && 'rounded-2xl ring-2 ring-primary',
           drag?.path === p.path && 'opacity-40',
-          isMergeTarget && 'scale-105 ring-2 ring-primary'
+          isMergeTarget && 'scale-105 ring-2 ring-primary',
         )}
-        style={p.icon ? { background: 'hsl(var(--secondary))' } : { background: p.color || colorFor(p.name) }}
+        style={
+          p.icon
+            ? { background: 'hsl(var(--secondary))' }
+            : { background: p.color || colorFor(p.name) }
+        }
       >
         <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-[inherit]">
           {p.icon ? (
-            <img src={p.icon} alt={p.name} draggable={false} className="h-full w-full object-contain p-1" />
+            <img
+              src={p.icon}
+              alt={p.name}
+              draggable={false}
+              className="h-full w-full object-contain p-1"
+            />
           ) : (
             <span>{initials(p.name)}</span>
           )}
@@ -162,7 +258,16 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
           <span
             title={t('rail.ssh_' + (p.status || 'idle'))}
             className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card"
-            style={{ background: p.status === 'connected' ? '#16a34a' : p.status === 'connecting' ? '#f59e0b' : (p.status === 'error' || p.status === 'disconnected') ? '#ef4444' : '#9ca3af' }}
+            style={{
+              background:
+                p.status === 'connected'
+                  ? '#16a34a'
+                  : p.status === 'connecting'
+                    ? '#f59e0b'
+                    : p.status === 'error' || p.status === 'disconnected'
+                      ? '#ef4444'
+                      : '#9ca3af',
+            }}
           />
         )}
         {activity[p.path] && (
@@ -172,13 +277,15 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
             )}
             <span
               title={
-                activity[p.path] === 'working' ? t('rail.claude_working')
-                : activity[p.path] === 'asking' ? t('rail.claude_asking')
-                : t('rail.claude_done')
+                activity[p.path] === 'working'
+                  ? t('rail.claude_working')
+                  : activity[p.path] === 'asking'
+                    ? t('rail.claude_asking')
+                    : t('rail.claude_done')
               }
               className={cn(
                 'relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500',
-                activity[p.path] === 'working' && 'animate-pulse'
+                activity[p.path] === 'working' && 'animate-pulse',
               )}
             />
           </span>
@@ -190,7 +297,9 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         <span className="h-[42px] w-px shrink-0 rounded bg-border" />
         {el}
       </div>
-    ) : el;
+    ) : (
+      el
+    );
   };
 
   // Ícone da pasta (fechada ou aberta). Nome vive no tooltip (hover) e no modal de renomear.
@@ -204,20 +313,31 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
         draggable
         onDragStart={() => setDrag({ folderId: f.id })}
         onDragOver={(e) => onRowDragOver(e, row)}
-        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          commitDrop();
+        }}
         onDragEnd={resetDrag}
         onClick={() => onToggleFolder?.(f.id)}
         onContextMenu={(e) => openFolderMenu(e, f)}
-        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setTip({ name: label, x: r.right + 8, y: r.top + r.height / 2 }); }}
+        onMouseEnter={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setTip({ name: label, x: r.right + 8, y: r.top + r.height / 2 });
+        }}
         onMouseLeave={() => setTip(null)}
         className={cn(
           'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 active:cursor-grabbing',
           open && 'ring-2 ring-primary/50',
           drag?.folderId === f.id && 'opacity-40',
-          isMergeTarget && 'scale-105 ring-2 ring-primary'
+          isMergeTarget && 'scale-105 ring-2 ring-primary',
         )}
       >
-        <RailFolderIcon previews={row.previews} count={row.count} open={open} moreLabel={t('rail.folder_more', { n: row.count - 3 })} />
+        <RailFolderIcon
+          previews={row.previews}
+          count={row.count}
+          open={open}
+          moreLabel={t('rail.folder_more', { n: row.count - 3 })}
+        />
         {open && <ChevronDown className="absolute -bottom-1 h-3 w-3 text-primary" />}
       </button>
     );
@@ -233,7 +353,9 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
   if (over && over.zone === 'reorder') {
     if (drag?.path) {
       // Move uma linha de projeto/filho pra posição do alvo.
-      const from = rows.findIndex((r) => (r.kind === 'project' || r.kind === 'child') && r.key === drag.path);
+      const from = rows.findIndex(
+        (r) => (r.kind === 'project' || r.kind === 'child') && r.key === drag.path,
+      );
       const to = rows.findIndex((r) => r.key === over.key);
       if (from !== -1 && to !== -1 && from !== to) {
         const copy = rows.slice();
@@ -248,7 +370,12 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       const start = rows.findIndex((r) => r.key === key);
       if (start !== -1) {
         let end = start + 1;
-        while (end < rows.length && rows[end].kind === 'child' && rows[end].folderId === drag.folderId) end++;
+        while (
+          end < rows.length &&
+          rows[end].kind === 'child' &&
+          rows[end].folderId === drag.folderId
+        )
+          end++;
         const block = rows.slice(start, end);
         const rest = [...rows.slice(0, start), ...rows.slice(end)];
         const to = rest.findIndex((r) => r.key === over.key);
@@ -284,13 +411,23 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       <div
         className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          commitDrop();
+        }}
       >
         <AnimatePresence initial={false}>
           {displayRows.map((row) => {
             if (row.kind === 'folder') {
               return (
-                <motion.div layout key={row.key} className="basis-full flex justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div
+                  layout
+                  key={row.key}
+                  className="basis-full flex justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
                   {renderFolder(row)}
                 </motion.div>
               );
@@ -301,8 +438,16 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
             // fade. Com `layout`, os itens de baixo são empurrados enquanto a pasta abre;
             // ao fechar, encolhe de volta pra dentro da pasta.
             const anim = indented
-              ? { initial: { opacity: 0, scale: 0.3, y: -18 }, animate: { opacity: 1, scale: 1, y: 0 }, exit: { opacity: 0, scale: 0.3, y: -18 } }
-              : { initial: { opacity: 0, scale: 0.6 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.6 } };
+              ? {
+                  initial: { opacity: 0, scale: 0.3, y: -18 },
+                  animate: { opacity: 1, scale: 1, y: 0 },
+                  exit: { opacity: 0, scale: 0.3, y: -18 },
+                }
+              : {
+                  initial: { opacity: 0, scale: 0.6 },
+                  animate: { opacity: 1, scale: 1 },
+                  exit: { opacity: 0, scale: 0.6 },
+                };
             return (
               <motion.div
                 layout
@@ -328,7 +473,9 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
               const r = e.currentTarget.getBoundingClientRect();
               // Abre pra DIREITA, fora do rail (fixed escapa o overflow-hidden do <nav>);
               // ancora a base do menu na base do botão pra crescer pra cima e não vazar embaixo.
-              setAddMenu((cur) => (cur ? null : { left: r.right + 8, bottom: window.innerHeight - r.bottom }));
+              setAddMenu((cur) =>
+                cur ? null : { left: r.right + 8, bottom: window.innerHeight - r.bottom },
+              );
             }}
             title={t('rail.add_open_tooltip')}
             className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-dashed text-muted-foreground transition-colors hover:text-foreground"
@@ -354,7 +501,10 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
             >
               <button
                 type="button"
-                onClick={() => { setAddMenu(null); onAdd?.(); }}
+                onClick={() => {
+                  setAddMenu(null);
+                  onAdd?.();
+                }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
               >
                 <FolderPlus className="h-3.5 w-3.5 shrink-0" />
@@ -362,7 +512,10 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
               </button>
               <button
                 type="button"
-                onClick={() => { setAddMenu(null); onAddFolder?.(); }}
+                onClick={() => {
+                  setAddMenu(null);
+                  onAddFolder?.();
+                }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
               >
                 <FolderIcon className="h-3.5 w-3.5 shrink-0" />
@@ -370,7 +523,10 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
               </button>
               <button
                 type="button"
-                onClick={() => { setAddMenu(null); onAddRemote?.(); }}
+                onClick={() => {
+                  setAddMenu(null);
+                  onAddRemote?.();
+                }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
               >
                 <Server className="h-3.5 w-3.5 shrink-0" />
@@ -387,8 +543,8 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
               title={t('rail.version_tooltip')}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
             >
-              {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}
-              v{version}
+              {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}v
+              {version}
             </button>
           </div>
         )}
@@ -397,17 +553,35 @@ export function Rail({ projects, rail = [], projectByPath, active, activity = {}
       <RailMenu
         menu={menu}
         onClose={() => setMenu(null)}
-        onOpenSettings={(p) => { setMenu(null); openProjectSettings(p); }}
-        onRestart={(p) => { setMenu(null); onRestart?.(p); }}
-        onStop={(p) => { setMenu(null); onStop?.(p); }}
-        onRemove={(p) => { setMenu(null); onRemove(p); }}
+        onOpenSettings={(p) => {
+          setMenu(null);
+          openProjectSettings(p);
+        }}
+        onRestart={(p) => {
+          setMenu(null);
+          onRestart?.(p);
+        }}
+        onStop={(p) => {
+          setMenu(null);
+          onStop?.(p);
+        }}
+        onRemove={(p) => {
+          setMenu(null);
+          onRemove(p);
+        }}
       />
 
       <FolderMenu
         menu={folderMenu}
         onClose={() => setFolderMenu(null)}
-        onRename={(f) => { setFolderMenu(null); openFolderRename(f); }}
-        onDissolve={(f) => { setFolderMenu(null); onDissolveFolder?.(f.id); }}
+        onRename={(f) => {
+          setFolderMenu(null);
+          openFolderRename(f);
+        }}
+        onDissolve={(f) => {
+          setFolderMenu(null);
+          onDissolveFolder?.(f.id);
+        }}
       />
 
       {/* Tooltip do nome da pasta (o nome não cabe no ícone). Fixed → escapa o overflow. */}
@@ -445,8 +619,12 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onClose);
@@ -464,25 +642,43 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
       className="fixed z-50 min-w-[190px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
       style={{ left: menu.x, top: menu.y }}
     >
-      <button type="button" onClick={() => onOpenSettings(p)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted">
+      <button
+        type="button"
+        onClick={() => onOpenSettings(p)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+      >
         <Settings2 className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_settings')}</span>
       </button>
 
       <div className="my-1 border-t" />
 
-      <button type="button" onClick={() => onRestart(p)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted">
+      <button
+        type="button"
+        onClick={() => onRestart(p)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+      >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{p.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}</span>
+        <span className="truncate">
+          {p.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}
+        </span>
       </button>
       {p.running && (
-        <button type="button" onClick={() => onStop(p)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted">
+        <button
+          type="button"
+          onClick={() => onStop(p)}
+          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+        >
           <Square className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{t('rail.menu_stop_server')}</span>
         </button>
       )}
       <div className="my-1 border-t" />
-      <button type="button" onClick={() => onRemove(p)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-muted">
+      <button
+        type="button"
+        onClick={() => onRemove(p)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-muted"
+      >
         <Trash2 className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_remove_project')}</span>
       </button>
@@ -496,8 +692,12 @@ function FolderMenu({ menu, onClose, onRename, onDissolve }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return;
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onClose);
@@ -510,12 +710,24 @@ function FolderMenu({ menu, onClose, onRename, onDissolve }) {
   if (!menu) return null;
   const f = menu.folder;
   return (
-    <div ref={ref} className="fixed z-50 min-w-[180px] overflow-hidden rounded-md border bg-background py-1 shadow-md" style={{ left: menu.x, top: menu.y }}>
-      <button type="button" onClick={() => onRename(f)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted">
+    <div
+      ref={ref}
+      className="fixed z-50 min-w-[180px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
+      style={{ left: menu.x, top: menu.y }}
+    >
+      <button
+        type="button"
+        onClick={() => onRename(f)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+      >
         <Pencil className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_folder_rename')}</span>
       </button>
-      <button type="button" onClick={() => onDissolve(f)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted">
+      <button
+        type="button"
+        onClick={() => onDissolve(f)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
+      >
         <Undo2 className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_folder_dissolve')}</span>
       </button>
@@ -529,19 +741,38 @@ function FolderRenameModal({ folder, onClose, onRename }) {
   const t = useT();
   const [name, setName] = useState('');
   const inputRef = useRef(null);
-  useEffect(() => { if (folder) setName(folder.name || ''); }, [folder?.id]);
+  useEffect(() => {
+    if (folder) setName(folder.name || '');
+  }, [folder?.id]);
   useEffect(() => {
     if (!folder) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
-    const id = setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 0);
-    return () => { window.removeEventListener('keydown', onKey); clearTimeout(id); };
+    const id = setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      clearTimeout(id);
+    };
   }, [folder, onClose]);
   if (!folder) return null;
-  const save = () => { onRename(folder.id, name.trim()); onClose(); };
+  const save = () => {
+    onRename(folder.id, name.trim());
+    onClose();
+  };
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40" onMouseDown={onClose}>
-      <div className="w-[320px] max-w-[90vw] rounded-xl border bg-background p-4 shadow-xl" onMouseDown={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40"
+      onMouseDown={onClose}
+    >
+      <div
+        className="w-[320px] max-w-[90vw] rounded-xl border bg-background p-4 shadow-xl"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
           <FolderIcon className="h-4 w-4 text-primary" />
           {t('rail.menu_folder_rename')}
@@ -550,14 +781,31 @@ function FolderRenameModal({ folder, onClose, onRename }) {
           ref={inputRef}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              save();
+            }
+          }}
           placeholder={t('rail.folder_default')}
           maxLength={64}
           className="mb-4 w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
         />
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-md px-3 py-1.5 text-[13px] text-muted-foreground hover:bg-muted">{t('rail.rename_cancel')}</button>
-          <button type="button" onClick={save} className="rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:opacity-90">{t('rail.rename_save')}</button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-3 py-1.5 text-[13px] text-muted-foreground hover:bg-muted"
+          >
+            {t('rail.rename_cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            className="rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:opacity-90"
+          >
+            {t('rail.rename_save')}
+          </button>
         </div>
       </div>
     </div>

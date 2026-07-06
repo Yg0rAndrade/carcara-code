@@ -15,7 +15,7 @@ const ResizableHandle = ({ withHandle, className, children, ...props }) => (
   <ResizablePrimitive.PanelResizeHandle
     className={cn(
       'relative flex w-px items-center justify-center bg-border transition-colors hover:bg-primary data-[resize-handle-state=drag]:bg-primary after:absolute after:inset-y-0 after:left-1/2 after:w-2 after:-translate-x-1/2 focus-visible:outline-none',
-      className
+      className,
     )}
     {...props}
   >

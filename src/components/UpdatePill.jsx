@@ -15,28 +15,47 @@ export function UpdatePill({ update, onDownload, onInstall, onRetry, onDismiss }
           <div className="text-[13px] font-medium text-foreground">{v.title}</div>
           {v.showProgress && (
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${v.percent}%` }} />
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${v.percent}%` }}
+              />
             </div>
           )}
           <div className="mt-2.5 flex gap-2">
             {v.action === 'download' && (
-              <button onClick={onDownload} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 [&_svg]:size-3.5">
-                <Download />{t('update.downloadBtn')}
+              <button
+                onClick={onDownload}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 [&_svg]:size-3.5"
+              >
+                <Download />
+                {t('update.downloadBtn')}
               </button>
             )}
             {v.action === 'install' && (
-              <button onClick={onInstall} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 [&_svg]:size-3.5">
-                <RefreshCw />{t('update.installBtn')}
+              <button
+                onClick={onInstall}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 [&_svg]:size-3.5"
+              >
+                <RefreshCw />
+                {t('update.installBtn')}
               </button>
             )}
             {v.action === 'retry' && (
-              <button onClick={onRetry} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted [&_svg]:size-3.5">
-                <RotateCcw />{t('update.retryBtn')}
+              <button
+                onClick={onRetry}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted [&_svg]:size-3.5"
+              >
+                <RotateCcw />
+                {t('update.retryBtn')}
               </button>
             )}
           </div>
         </div>
-        <button onClick={onDismiss} title={t('update.dismiss')} className="grid size-6 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5">
+        <button
+          onClick={onDismiss}
+          title={t('update.dismiss')}
+          className="grid size-6 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+        >
           <X />
         </button>
       </div>

@@ -1,8 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, FolderPlus, Folder, Settings, SunMoon,
-  RefreshCw, Square, MessageSquarePlus, PanelLeftClose, Eye, Code2,
-  GitBranch, Zap, Plug, PenTool, History, Wrench, RotateCw, GripVertical, ListTodo,
+  ChevronLeft,
+  ChevronRight,
+  FolderPlus,
+  Folder,
+  Settings,
+  SunMoon,
+  RefreshCw,
+  Square,
+  MessageSquarePlus,
+  PanelLeftClose,
+  Eye,
+  Code2,
+  GitBranch,
+  Zap,
+  Plug,
+  PenTool,
+  History,
+  Wrench,
+  RotateCw,
+  GripVertical,
+  ListTodo,
 } from 'lucide-react';
 import { RefreshCCWIcon } from './components/ui/refresh-ccw.jsx';
 import { XIcon } from './components/ui/x.jsx';
@@ -10,7 +28,11 @@ import { Rail } from './components/Rail.jsx';
 import { ChatPanel } from './components/ChatPanel.jsx';
 import { PreviewPanel } from './components/PreviewPanel.jsx';
 import { CommandPalette } from './components/CommandPalette.jsx';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable.jsx';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from './components/ui/resizable.jsx';
 import { Button } from './components/ui/button.jsx';
 import { ResizeBar } from './components/ui/resize-bar.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
@@ -53,7 +75,10 @@ export default function App() {
   const [setupOpen, setSetupOpen] = useState(false);
   // Modal de "adicionar projeto remoto (SSH)" — aberto pelo menu do botão "+" do Rail.
   const [remoteOpen, setRemoteOpen] = useState(false);
-  const closeSetup = () => { window.api.markSetupDone(); setSetupOpen(false); };
+  const closeSetup = () => {
+    window.api.markSetupDone();
+    setSetupOpen(false);
+  };
   const [railWidth, setRailWidth] = useState(() => Number(localStorage.getItem('railWidth')) || 64);
   const [railResizing, setRailResizing] = useState(false);
   // Coluna do chat: recolhe pra ganhar espaço no preview. O react-resizable-panels
@@ -87,7 +112,10 @@ export default function App() {
       window.removeEventListener('mouseup', onUp);
       document.body.style.cursor = '';
       setRailResizing(false);
-      setRailWidth((w) => { localStorage.setItem('railWidth', String(Math.round(w))); return w; });
+      setRailWidth((w) => {
+        localStorage.setItem('railWidth', String(Math.round(w)));
+        return w;
+      });
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -109,13 +137,27 @@ export default function App() {
     if (res?.rail) setRail(res.rail);
   }, []);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   // Versão do app (uma vez), pra exibir no rail e em Configurações > Sobre.
-  useEffect(() => { window.api.getAppVersion().then(setAppVersion).catch(() => {}); }, []);
+  useEffect(() => {
+    window.api
+      .getAppVersion()
+      .then(setAppVersion)
+      .catch(() => {});
+  }, []);
 
   // Status da auto-atualização (canal único). Reabre a pílula a cada estado novo.
-  useEffect(() => window.api.on('update:status', (s) => { setUpdate(s || { state: 'idle' }); setPillDismissed(false); }), []);
+  useEffect(
+    () =>
+      window.api.on('update:status', (s) => {
+        setUpdate(s || { state: 'idle' });
+        setPillDismissed(false);
+      }),
+    [],
+  );
 
   // Status de conexão SSH de projetos remotos (conectando/conectado/erro/etc.):
   // recarrega a lista pra refletir a bolinha de status no rail.
@@ -130,16 +172,27 @@ export default function App() {
         const done = await window.api.isSetupDone();
         if (!alive) return;
         if (done) return;
-        if (localStorage.getItem('setupDone') === '1') { window.api.markSetupDone(); return; }
+        if (localStorage.getItem('setupDone') === '1') {
+          window.api.markSetupDone();
+          return;
+        }
         setSetupOpen(true);
-      } catch { /* sem a ponte, não trava o app */ }
+      } catch {
+        /* sem a ponte, não trava o app */
+      }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Mantém refs em dia pros listeners de atividade lerem o estado atual.
-  useEffect(() => { activeRef.current = active; }, [active]);
-  useEffect(() => { projectsRef.current = projects; }, [projects]);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
 
   // Lado do Claude e do rail são GLOBAIS (valem pra todos os projetos). Arrastar o
   // painel ou o rail muda o padrão de todos — não há mais override por projeto.
@@ -157,8 +210,8 @@ export default function App() {
   // usamos eventos de mouse (mousedown → mousemove/mouseup) + overlay full-screen — o
   // MESMO padrão do startRailResize, que já arrasta a janela inteira sem problema. O
   // overlay cobre o webview pra o mousemove continuar caindo na janela host.
-  const [dragMode, setDragMode] = useState(null);   // null | 'panel' | 'rail'
-  const [dragZone, setDragZone] = useState(null);    // 'left' | 'right'
+  const [dragMode, setDragMode] = useState(null); // null | 'panel' | 'rail'
+  const [dragZone, setDragZone] = useState(null); // 'left' | 'right'
   const startLayoutDrag = (mode, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -168,7 +221,10 @@ export default function App() {
     document.body.style.cursor = 'grabbing';
     const onMove = (ev) => {
       const z = ev.clientX < window.innerWidth / 2 ? 'left' : 'right';
-      if (z !== zone) { zone = z; setDragZone(z); }
+      if (z !== zone) {
+        zone = z;
+        setDragZone(z);
+      }
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
@@ -181,7 +237,11 @@ export default function App() {
         const size = chatPanelRef.current?.getSize?.();
         setClaudeSideGlobal(zone);
         if (typeof size === 'number') {
-          requestAnimationFrame(() => { try { chatPanelRef.current?.resize?.(size); } catch {} });
+          requestAnimationFrame(() => {
+            try {
+              chatPanelRef.current?.resize?.(size);
+            } catch {}
+          });
         }
       } else if (mode === 'rail') {
         setRailSide(zone);
@@ -217,7 +277,10 @@ export default function App() {
       const p = projectsRef.current.find((x) => x.path === projectPath);
       if (p) setActive(p);
     });
-    return () => { offState?.(); offFocus?.(); };
+    return () => {
+      offState?.();
+      offFocus?.();
+    };
   }, []);
 
   // Avisa o main qual projeto está em foco e apaga o badge do rail (atenção/asking) ao
@@ -244,9 +307,13 @@ export default function App() {
     const onKey = (e) => {
       if ((!e.ctrlKey && !e.metaKey) || e.altKey) return;
       const dir =
-        e.key === '=' || e.key === '+' ? 'in' :
-        e.key === '-' || e.key === '_' ? 'out' :
-        e.key === '0' ? 'reset' : null;
+        e.key === '=' || e.key === '+'
+          ? 'in'
+          : e.key === '-' || e.key === '_'
+            ? 'out'
+            : e.key === '0'
+              ? 'reset'
+              : null;
       if (!dir) return;
       e.preventDefault();
       localStorage.setItem('appZoom', String(window.api.zoom(dir)));
@@ -283,7 +350,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const addProjects = async () => { await window.api.addProjects(); reload(); };
+  const addProjects = async () => {
+    await window.api.addProjects();
+    reload();
+  };
 
   // Abre um arquivo na aba "Código" do projeto ativo (vindo da paleta de comandos).
   const openFileFromPalette = (file) => previewControls.current?.openFile?.(file);
@@ -301,29 +371,156 @@ export default function App() {
         hint: active?.path === p.path ? t('app.cmd_hint_current') : t('app.cmd_hint_open_project'),
         // Ícone real do projeto (favicon/logo), igual ao rail; sem ícone, o MESMO
         // avatar de iniciais e cor do rail (a pessoa associa pelo ícone, não pelo texto).
-        icon: p.icon
-          ? <img src={p.icon} alt="" className="size-4 rounded-sm object-contain" />
-          : <span className="grid size-4 place-items-center rounded-sm text-[7px] font-bold leading-none text-white" style={{ background: colorFor(p.name) }}>{initials(p.name)}</span>,
+        icon: p.icon ? (
+          <img src={p.icon} alt="" className="size-4 rounded-sm object-contain" />
+        ) : (
+          <span
+            className="grid size-4 place-items-center rounded-sm text-[7px] font-bold leading-none text-white"
+            style={{ background: colorFor(p.name) }}
+          >
+            {initials(p.name)}
+          </span>
+        ),
         run: () => setActive(p),
       })),
-      { id: 'view:preview', group: t('app.cmd_group_panel'), label: t('app.cmd_view_preview'), hint: t('app.cmd_hint_tab'), icon: <Eye />, run: view('preview') },
-      { id: 'view:code', group: t('app.cmd_group_panel'), label: t('app.cmd_view_code'), hint: t('app.cmd_hint_tab'), icon: <Code2 />, run: view('code') },
-      { id: 'view:git', group: t('app.cmd_group_panel'), label: t('app.cmd_view_git'), hint: t('app.cmd_hint_tab'), icon: <GitBranch />, run: view('git') },
-      { id: 'view:todos', group: t('app.cmd_group_panel'), label: t('app.cmd_view_todos'), hint: t('app.cmd_hint_tab'), icon: <ListTodo />, run: view('todos') },
-      { id: 'view:history', group: t('app.cmd_group_panel'), label: t('app.cmd_view_history'), hint: t('app.cmd_hint_tab'), icon: <History />, run: view('history') },
-      { id: 'view:api', group: t('app.cmd_group_panel'), label: t('app.cmd_view_api'), hint: t('app.cmd_hint_tab'), icon: <Zap />, run: view('api') },
-      { id: 'view:mcp', group: t('app.cmd_group_panel'), label: t('app.cmd_view_mcp'), hint: t('app.cmd_hint_tab'), icon: <Plug />, run: view('mcp') },
-      { id: 'view:board', group: t('app.cmd_group_panel'), label: t('app.cmd_view_board'), hint: t('app.cmd_hint_tab'), icon: <PenTool />, run: view('board') },
-      { id: 'srv:restart', group: t('app.cmd_group_server'), label: t('app.cmd_restart_server'), hint: t('app.cmd_hint_preview'), icon: <RefreshCw />, run: () => previewControls.current?.restart?.() },
-      { id: 'srv:stop', group: t('app.cmd_group_server'), label: t('app.cmd_stop_server'), hint: t('app.cmd_hint_preview'), icon: <Square />, run: () => previewControls.current?.stop?.() },
-      { id: 'chat:new', group: t('app.cmd_group_chat'), label: t('app.cmd_new_chat_session'), hint: t('app.cmd_hint_tab'), icon: <MessageSquarePlus />, run: () => chatControls.current?.newSession?.() },
-      { id: 'chat:toggle', group: t('app.cmd_group_chat'), label: t('app.cmd_toggle_chat'), icon: <PanelLeftClose />, run: toggleChat },
-      { id: 'app:add', group: t('app.cmd_group_app'), label: t('app.cmd_add_project'), icon: <FolderPlus />, run: addProjects },
-      { id: 'app:add_folder', group: t('app.cmd_group_app'), label: t('app.cmd_add_folder'), icon: <Folder />, run: () => persistRail(addFolder(rail)) },
-      { id: 'app:theme', group: t('app.cmd_group_app'), label: t('app.cmd_toggle_theme'), icon: <SunMoon />, run: toggleTheme },
-      { id: 'app:settings', group: t('app.cmd_group_app'), label: t('app.cmd_settings'), icon: <Settings />, run: () => setSettingsOpen(true) },
-      { id: 'app:setup', group: t('app.cmd_group_app'), label: t('app.cmd_setup_tools'), icon: <Wrench />, run: () => setSetupOpen(true) },
-      { id: 'app:reload', group: t('app.cmd_group_app'), label: t('app.cmd_reload_app'), hint: 'Ctrl/Cmd+R', icon: <RotateCw />, run: () => window.location.reload() },
+      {
+        id: 'view:preview',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_preview'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <Eye />,
+        run: view('preview'),
+      },
+      {
+        id: 'view:code',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_code'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <Code2 />,
+        run: view('code'),
+      },
+      {
+        id: 'view:git',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_git'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <GitBranch />,
+        run: view('git'),
+      },
+      {
+        id: 'view:todos',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_todos'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <ListTodo />,
+        run: view('todos'),
+      },
+      {
+        id: 'view:history',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_history'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <History />,
+        run: view('history'),
+      },
+      {
+        id: 'view:api',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_api'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <Zap />,
+        run: view('api'),
+      },
+      {
+        id: 'view:mcp',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_mcp'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <Plug />,
+        run: view('mcp'),
+      },
+      {
+        id: 'view:board',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_board'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <PenTool />,
+        run: view('board'),
+      },
+      {
+        id: 'srv:restart',
+        group: t('app.cmd_group_server'),
+        label: t('app.cmd_restart_server'),
+        hint: t('app.cmd_hint_preview'),
+        icon: <RefreshCw />,
+        run: () => previewControls.current?.restart?.(),
+      },
+      {
+        id: 'srv:stop',
+        group: t('app.cmd_group_server'),
+        label: t('app.cmd_stop_server'),
+        hint: t('app.cmd_hint_preview'),
+        icon: <Square />,
+        run: () => previewControls.current?.stop?.(),
+      },
+      {
+        id: 'chat:new',
+        group: t('app.cmd_group_chat'),
+        label: t('app.cmd_new_chat_session'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <MessageSquarePlus />,
+        run: () => chatControls.current?.newSession?.(),
+      },
+      {
+        id: 'chat:toggle',
+        group: t('app.cmd_group_chat'),
+        label: t('app.cmd_toggle_chat'),
+        icon: <PanelLeftClose />,
+        run: toggleChat,
+      },
+      {
+        id: 'app:add',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_add_project'),
+        icon: <FolderPlus />,
+        run: addProjects,
+      },
+      {
+        id: 'app:add_folder',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_add_folder'),
+        icon: <Folder />,
+        run: () => persistRail(addFolder(rail)),
+      },
+      {
+        id: 'app:theme',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_toggle_theme'),
+        icon: <SunMoon />,
+        run: toggleTheme,
+      },
+      {
+        id: 'app:settings',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_settings'),
+        icon: <Settings />,
+        run: () => setSettingsOpen(true),
+      },
+      {
+        id: 'app:setup',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_setup_tools'),
+        icon: <Wrench />,
+        run: () => setSetupOpen(true),
+      },
+      {
+        id: 'app:reload',
+        group: t('app.cmd_group_app'),
+        label: t('app.cmd_reload_app'),
+        hint: 'Ctrl/Cmd+R',
+        icon: <RotateCw />,
+        run: () => window.location.reload(),
+      },
     ];
     // Sem projeto ativo, ações de painel/servidor/chat ficam inertes — filtra-as.
     const projectsGroup = t('app.cmd_group_projects');
@@ -346,14 +543,20 @@ export default function App() {
   // bolinha verde via reload().
   const restartProject = async (p) => {
     if (!p) return;
-    if (active?.path === p.path && previewControls.current?.restart) { previewControls.current.restart(); return; }
+    if (active?.path === p.path && previewControls.current?.restart) {
+      previewControls.current.restart();
+      return;
+    }
     await window.api.stopPreview(p.path);
     await window.api.startPreview(p.path);
     reload();
   };
   const stopProject = async (p) => {
     if (!p) return;
-    if (active?.path === p.path && previewControls.current?.stop) { previewControls.current.stop(); return; }
+    if (active?.path === p.path && previewControls.current?.stop) {
+      previewControls.current.stop();
+      return;
+    }
     await window.api.stopPreview(p.path);
     reload();
   };
@@ -387,8 +590,14 @@ export default function App() {
   const setProjectIcon = async (p, dataUrl) => {
     if (!p) return;
     const res = await window.api.setProjectIcon(p.path, dataUrl);
-    if (res && res.error === 'too_large') { toast.error(t('rail.image_too_large')); return; }
-    if (res && res.ok === false) { toast.error(t('rail.image_invalid')); return; }
+    if (res && res.error === 'too_large') {
+      toast.error(t('rail.image_too_large'));
+      return;
+    }
+    if (res && res.ok === false) {
+      toast.error(t('rail.image_invalid'));
+      return;
+    }
     if (dataUrl) toast.success(t('rail.image_updated')); // sucesso só ao definir (não ao remover)
     reload();
   };
@@ -408,9 +617,10 @@ export default function App() {
   let dropStyle = null;
   if (dragMode && dragZone) {
     if (dragMode === 'rail') {
-      dropStyle = dragZone === 'left'
-        ? { left: 0, top: 0, bottom: 0, width: railWidth }
-        : { right: 0, top: 0, bottom: 0, width: railWidth };
+      dropStyle =
+        dragZone === 'left'
+          ? { left: 0, top: 0, bottom: 0, width: railWidth }
+          : { right: 0, top: 0, bottom: 0, width: railWidth };
     } else {
       // Largura REAL do painel do Claude agora (respeita o resize do usuário): a API do
       // react-resizable-panels dá o tamanho em % do grupo; o grupo ocupa a janela menos
@@ -418,9 +628,10 @@ export default function App() {
       const pct = chatPanelRef.current?.getSize?.() || 34;
       const band = Math.round((pct / 100) * (window.innerWidth - railWidth));
       const railOnLeft = eff.railSide === 'left';
-      dropStyle = dragZone === 'left'
-        ? { left: railOnLeft ? railWidth : 0, top: 0, bottom: 0, width: band }
-        : { right: railOnLeft ? 0 : railWidth, top: 0, bottom: 0, width: band };
+      dropStyle =
+        dragZone === 'left'
+          ? { left: railOnLeft ? railWidth : 0, top: 0, bottom: 0, width: band }
+          : { right: railOnLeft ? 0 : railWidth, top: 0, bottom: 0, width: band };
     }
   }
 
@@ -440,7 +651,9 @@ export default function App() {
       onReorder={reorderProjects}
       onAddFolder={() => persistRail(addFolder(rail))}
       onToggleFolder={(id) => persistRail(toggleCollapse(rail, id))}
-      onApplyDrop={(ctx) => persistRail(applyDrop(rail, { ...ctx, newFolderName: t('rail.folder_default') }))}
+      onApplyDrop={(ctx) =>
+        persistRail(applyDrop(rail, { ...ctx, newFolderName: t('rail.folder_default') }))
+      }
       onRenameFolder={(id, name) => persistRail(renameFolder(rail, id, name))}
       onDissolveFolder={(id) => persistRail(dissolveFolder(rail, id))}
       onRename={renameProject}
@@ -453,7 +666,10 @@ export default function App() {
       width={railWidth}
       version={appVersion}
       update={update}
-      onOpenAbout={() => { setSettingsTab('about'); setSettingsOpen(true); }}
+      onOpenAbout={() => {
+        setSettingsTab('about');
+        setSettingsOpen(true);
+      }}
     />
   );
   const barEl = <ResizeBar onMouseDown={startRailResize} />;
@@ -495,7 +711,8 @@ export default function App() {
               title={t('app.restart_server_tooltip')}
               className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
             >
-              <RefreshCCWIcon ref={restartIcon} />{t('app.restart_server_btn')}
+              <RefreshCCWIcon ref={restartIcon} />
+              {t('app.restart_server_btn')}
             </button>
             <button
               type="button"
@@ -506,13 +723,18 @@ export default function App() {
               title={t('app.stop_server_tooltip')}
               className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
             >
-              <XIcon ref={stopIcon} />{t('app.stop_server_btn')}
+              <XIcon ref={stopIcon} />
+              {t('app.stop_server_btn')}
             </button>
           </div>
         )}
       </div>
       <ErrorBoundary label="Chat">
-        <ChatPanel activeProject={active?.path || null} controlsRef={chatControls} onActiveSessionChange={setChatSession} />
+        <ChatPanel
+          activeProject={active?.path || null}
+          controlsRef={chatControls}
+          onActiveSessionChange={setChatSession}
+        />
       </ErrorBoundary>
     </ResizablePanel>
   );
@@ -534,20 +756,54 @@ export default function App() {
   );
 
   const previewPanel = (
-    <ResizablePanel key="preview" id="preview" order={claudeLeft ? 2 : 1} minSize={28} className="flex flex-col">
+    <ResizablePanel
+      key="preview"
+      id="preview"
+      order={claudeLeft ? 2 : 1}
+      minSize={28}
+      className="flex flex-col"
+    >
       <ErrorBoundary label="Preview">
-        <PreviewPanel active={active} chatSession={chatSession} onProjectsChanged={reload} controlsRef={previewControls} onModeChange={setServerMode} />
+        <PreviewPanel
+          active={active}
+          chatSession={chatSession}
+          onProjectsChanged={reload}
+          controlsRef={previewControls}
+          onModeChange={setServerMode}
+        />
       </ErrorBoundary>
     </ResizablePanel>
   );
 
   return (
     <div className="relative flex h-screen bg-background text-foreground">
-      {railFirst && <>{railEl}{barEl}</>}
+      {railFirst && (
+        <>
+          {railEl}
+          {barEl}
+        </>
+      )}
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {claudeLeft ? <>{chatPanel}{handleEl}{previewPanel}</> : <>{previewPanel}{handleEl}{chatPanel}</>}
+        {claudeLeft ? (
+          <>
+            {chatPanel}
+            {handleEl}
+            {previewPanel}
+          </>
+        ) : (
+          <>
+            {previewPanel}
+            {handleEl}
+            {chatPanel}
+          </>
+        )}
       </ResizablePanelGroup>
-      {!railFirst && <>{barEl}{railEl}</>}
+      {!railFirst && (
+        <>
+          {barEl}
+          {railEl}
+        </>
+      )}
 
       {pendingRemove && (
         <div
@@ -563,8 +819,12 @@ export default function App() {
               {t('app.remove_project_message', { name: pendingRemove.name })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>{t('app.cancel_button')}</Button>
-              <Button variant="destructive" size="sm" onClick={confirmRemove}>{t('app.remove_button')}</Button>
+              <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>
+                {t('app.cancel_button')}
+              </Button>
+              <Button variant="destructive" size="sm" onClick={confirmRemove}>
+                {t('app.remove_button')}
+              </Button>
             </div>
           </div>
         </div>
@@ -603,7 +863,11 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
       />
       <SetupScreen open={setupOpen} onClose={closeSetup} />
-      <RemoteProjectModal open={remoteOpen} onClose={() => setRemoteOpen(false)} onAdded={() => reload()} />
+      <RemoteProjectModal
+        open={remoteOpen}
+        onClose={() => setRemoteOpen(false)}
+        onAdded={() => reload()}
+      />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

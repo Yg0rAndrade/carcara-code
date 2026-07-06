@@ -16,13 +16,24 @@ let fail = 0;
 function compare(label, a, b) {
   const ka = new Set(flatten(a));
   const kb = new Set(flatten(b));
-  for (const k of ka) if (!kb.has(k)) { console.error(`  FALTA no ${label} (en): ${k}`); fail++; }
-  for (const k of kb) if (!ka.has(k)) { console.error(`  FALTA no ${label} (pt): ${k}`); fail++; }
+  for (const k of ka)
+    if (!kb.has(k)) {
+      console.error(`  FALTA no ${label} (en): ${k}`);
+      fail++;
+    }
+  for (const k of kb)
+    if (!ka.has(k)) {
+      console.error(`  FALTA no ${label} (pt): ${k}`);
+      fail++;
+    }
 }
 
 compare('renderer', pt, en);
 const native = require('../main.i18n.cjs');
 compare('native', native.pt, native.en);
 
-if (fail) { console.error(`\n${fail} chave(s) divergente(s).`); process.exit(1); }
+if (fail) {
+  console.error(`\n${fail} chave(s) divergente(s).`);
+  process.exit(1);
+}
 console.log('i18n parity ok');

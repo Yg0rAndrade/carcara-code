@@ -10,7 +10,8 @@ import { UsageTable } from './todos/UsageTable.jsx';
 
 // Sub-agent "histórico": terminou e nunca teve todos — vale um divisor, não um card cheio.
 const isHistory = (a) => !a.isMain && a.status !== 'running' && a.todos.length === 0;
-const isFirstHistory = (agents, i) => isHistory(agents[i]) && (i === 0 || !isHistory(agents[i - 1]));
+const isFirstHistory = (agents, i) =>
+  isHistory(agents[i]) && (i === 0 || !isHistory(agents[i - 1]));
 
 export function TodosPanel({ active, chatSession }) {
   const t = useT();
@@ -27,12 +28,15 @@ export function TodosPanel({ active, chatSession }) {
       if (payload.sessionId === chatSession) setSnapshot(payload.snapshot);
     });
     window.api.todosSubscribe(projectPath, chatSession);
-    return () => { off(); window.api.todosUnsubscribe(); };
+    return () => {
+      off();
+      window.api.todosUnsubscribe();
+    };
   }, [projectPath, chatSession]);
 
   // Relógio de 1s pros tempos ao vivo — só gira se algo está rodando.
   const hasLive = !!snapshot?.agents?.some(
-    (a) => a.status === 'running' || a.todos.some((x) => x.status === 'in_progress')
+    (a) => a.status === 'running' || a.todos.some((x) => x.status === 'in_progress'),
   );
   useEffect(() => {
     if (!hasLive) return;
@@ -64,7 +68,12 @@ export function TodosPanel({ active, chatSession }) {
                   {t('todos.history_divider')}
                 </div>
               )}
-              <AgentSection agent={agent} defaultExpanded={agent.isMain} history={isHistory(agent)} now={now} />
+              <AgentSection
+                agent={agent}
+                defaultExpanded={agent.isMain}
+                history={isHistory(agent)}
+                now={now}
+              />
             </div>
           ))}
         </div>

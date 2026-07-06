@@ -1,8 +1,8 @@
-"use client";;
-import { motion, useAnimation } from "motion/react";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+'use client';
+import { motion, useAnimation } from 'motion/react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const PATH_VARIANTS = {
   normal: {
@@ -23,61 +23,72 @@ const PATH_VARIANTS = {
   },
 };
 
-const ZapIcon = forwardRef(({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
-  const controls = useAnimation();
-  const isControlledRef = useRef(false);
+const ZapIcon = forwardRef(
+  ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
+    const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
-  useImperativeHandle(ref, () => {
-    isControlledRef.current = true;
+    useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
 
-    return {
-      startAnimation: () => controls.start("animate"),
-      stopAnimation: () => controls.start("normal"),
-    };
-  });
+      return {
+        startAnimation: () => controls.start('animate'),
+        stopAnimation: () => controls.start('normal'),
+      };
+    });
 
-  const handleMouseEnter = useCallback((e) => {
-    if (isControlledRef.current) {
-      onMouseEnter?.(e);
-    } else {
-      controls.set("normal");
-      controls.start("animate");
-    }
-  }, [controls, onMouseEnter]);
+    const handleMouseEnter = useCallback(
+      (e) => {
+        if (isControlledRef.current) {
+          onMouseEnter?.(e);
+        } else {
+          controls.set('normal');
+          controls.start('animate');
+        }
+      },
+      [controls, onMouseEnter],
+    );
 
-  const handleMouseLeave = useCallback((e) => {
-    if (isControlledRef.current) {
-      onMouseLeave?.(e);
-    } else {
-      controls.start("normal");
-    }
-  }, [controls, onMouseLeave]);
+    const handleMouseLeave = useCallback(
+      (e) => {
+        if (isControlledRef.current) {
+          onMouseLeave?.(e);
+        } else {
+          controls.start('normal');
+        }
+      },
+      [controls, onMouseLeave],
+    );
 
-  return (
-    <div
-      className={cn(className)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      {...props}>
-      <svg
-        fill="none"
-        height={size}
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-        width={size}
-        xmlns="http://www.w3.org/2000/svg">
-        <motion.path
-          animate={controls}
-          d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
-          variants={PATH_VARIANTS} />
-      </svg>
-    </div>
-  );
-});
+    return (
+      <div
+        className={cn(className)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...props}
+      >
+        <svg
+          fill="none"
+          height={size}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          width={size}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <motion.path
+            animate={controls}
+            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+            variants={PATH_VARIANTS}
+          />
+        </svg>
+      </div>
+    );
+  },
+);
 
-ZapIcon.displayName = "ZapIcon";
+ZapIcon.displayName = 'ZapIcon';
 
 export { ZapIcon };

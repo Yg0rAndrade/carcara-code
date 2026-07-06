@@ -10,12 +10,21 @@ const fakeCrypto = {
   encryptString: (s) => Buffer.from('enc:' + s, 'utf8'),
   decryptString: (buf) => buf.toString('utf8').replace(/^enc:/, ''),
 };
-const unavailable = { isEncryptionAvailable: () => false, encryptString: () => Buffer.alloc(0), decryptString: () => '' };
+const unavailable = {
+  isEncryptionAvailable: () => false,
+  encryptString: () => Buffer.alloc(0),
+  decryptString: () => '',
+};
 
 let filePath;
 beforeEach(() => {
-  filePath = path.join(os.tmpdir(), `carcara-secrets-${process.pid}-${Math.round(performance.now())}.json`);
-  try { fs.unlinkSync(filePath); } catch {}
+  filePath = path.join(
+    os.tmpdir(),
+    `carcara-secrets-${process.pid}-${Math.round(performance.now())}.json`,
+  );
+  try {
+    fs.unlinkSync(filePath);
+  } catch {}
 });
 
 describe('makeSecretStore', () => {
@@ -27,7 +36,8 @@ describe('makeSecretStore', () => {
   });
   it('remove apaga o segredo', () => {
     const s = makeSecretStore({ crypto: fakeCrypto, filePath });
-    s.save('a@h:22', 'x'); s.remove('a@h:22');
+    s.save('a@h:22', 'x');
+    s.remove('a@h:22');
     expect(s.load('a@h:22')).toBe(null);
   });
   it('não persiste quando crypto indisponível', () => {
@@ -37,7 +47,10 @@ describe('makeSecretStore', () => {
     expect(fs.existsSync(filePath)).toBe(false);
   });
   it('save retorna false quando a escrita falha', () => {
-    const dirAsFile = path.join(os.tmpdir(), `carcara-secrets-dir-${process.pid}-${Math.round(performance.now())}`);
+    const dirAsFile = path.join(
+      os.tmpdir(),
+      `carcara-secrets-dir-${process.pid}-${Math.round(performance.now())}`,
+    );
     fs.mkdirSync(dirAsFile, { recursive: true }); // filePath = diretório → writeFileSync lança
     const s = makeSecretStore({ crypto: fakeCrypto, filePath: dirAsFile });
     expect(s.save('a@h:22', 'x')).toBe(false);

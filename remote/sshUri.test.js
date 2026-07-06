@@ -13,12 +13,18 @@ describe('isRemote', () => {
 describe('parseSshUri', () => {
   it('separa user/host/port/dir', () => {
     expect(parseSshUri('ssh://ygor@1.2.3.4:2222/home/ygor/app')).toEqual({
-      user: 'ygor', host: '1.2.3.4', port: 2222, remoteDir: '/home/ygor/app',
+      user: 'ygor',
+      host: '1.2.3.4',
+      port: 2222,
+      remoteDir: '/home/ygor/app',
     });
   });
   it('assume porta 22 quando ausente', () => {
     expect(parseSshUri('ssh://ygor@host/srv/app')).toEqual({
-      user: 'ygor', host: 'host', port: 22, remoteDir: '/srv/app',
+      user: 'ygor',
+      host: 'host',
+      port: 22,
+      remoteDir: '/srv/app',
     });
   });
   it('devolve null pra entrada inválida', () => {
@@ -33,7 +39,8 @@ describe('buildSshUri + hostKey', () => {
     expect(hostKey(uri)).toBe('ygor@1.2.3.4:2222');
   });
   it('normaliza remoteDir sem barra inicial', () => {
-    expect(buildSshUri({ user: 'a', host: 'h', port: 22, remoteDir: 'srv/app' }))
-      .toBe('ssh://a@h:22/srv/app');
+    expect(buildSshUri({ user: 'a', host: 'h', port: 22, remoteDir: 'srv/app' })).toBe(
+      'ssh://a@h:22/srv/app',
+    );
   });
 });

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 # Dá ao token do Actions permissão de escrita no repo, necessária para
 # o passo que cria a página de Release (sem isso, dá erro 403).
@@ -25,8 +25,8 @@ jobs:
       - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Instalar dependências
         run: npm ci

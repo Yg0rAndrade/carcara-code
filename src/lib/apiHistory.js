@@ -16,8 +16,11 @@ export function historyKey(projectPath) {
 }
 
 export function loadHistory(projectPath) {
-  try { return JSON.parse(localStorage.getItem(historyKey(projectPath)) || '[]') || []; }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(historyKey(projectPath)) || '[]') || [];
+  } catch {
+    return [];
+  }
 }
 
 // Grava a lista, aparando do fim (itens mais antigos) se a cota do localStorage estourar.
@@ -25,10 +28,16 @@ function persist(projectPath, list) {
   const key = historyKey(projectPath);
   let arr = list.slice(0, MAX_ENTRIES);
   while (arr.length) {
-    try { localStorage.setItem(key, JSON.stringify(arr)); return arr; }
-    catch { arr = arr.slice(0, arr.length - 1); }
+    try {
+      localStorage.setItem(key, JSON.stringify(arr));
+      return arr;
+    } catch {
+      arr = arr.slice(0, arr.length - 1);
+    }
   }
-  try { localStorage.removeItem(key); } catch {}
+  try {
+    localStorage.removeItem(key);
+  } catch {}
   return [];
 }
 
@@ -43,10 +52,15 @@ export function addEntry(projectPath, entry) {
 }
 
 export function deleteEntry(projectPath, id) {
-  return persist(projectPath, loadHistory(projectPath).filter((x) => x.id !== id));
+  return persist(
+    projectPath,
+    loadHistory(projectPath).filter((x) => x.id !== id),
+  );
 }
 
 export function clearHistory(projectPath) {
-  try { localStorage.removeItem(historyKey(projectPath)); } catch {}
+  try {
+    localStorage.removeItem(historyKey(projectPath));
+  } catch {}
   return [];
 }

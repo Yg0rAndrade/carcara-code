@@ -11,11 +11,17 @@ function fuzzyScore(query, text) {
   if (!query) return 0;
   const q = query.toLowerCase();
   const t = text.toLowerCase();
-  let qi = 0, score = 0, streak = 0, lastIdx = -1;
+  let qi = 0,
+    score = 0,
+    streak = 0,
+    lastIdx = -1;
   for (let ti = 0; ti < t.length && qi < q.length; ti++) {
     if (t[ti] !== q[qi]) continue;
     let s = 1;
-    if (lastIdx === ti - 1) { streak += 1; s += streak * 2; } else streak = 0;
+    if (lastIdx === ti - 1) {
+      streak += 1;
+      s += streak * 2;
+    } else streak = 0;
     if (ti === 0 || /[\s\-_/.\\]/.test(t[ti - 1])) s += 3; // começo de palavra
     score += s;
     lastIdx = ti;
@@ -48,14 +54,20 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
   // Busca de arquivos (debounce), só com query e projeto aberto.
   useEffect(() => {
     const q = query.trim();
-    if (!open || !activePath || !q) { setFiles([]); return; }
+    if (!open || !activePath || !q) {
+      setFiles([]);
+      return;
+    }
     let alive = true;
     const t = setTimeout(() => {
       window.api.searchFiles(activePath, q).then((r) => {
         if (alive) setFiles((r || []).slice(0, 20));
       });
     }, 120);
-    return () => { alive = false; clearTimeout(t); };
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
   }, [query, activePath, open]);
 
   // Comandos filtrados/ordenados pelo score fuzzy (sem query: ordem original).
@@ -77,7 +89,9 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
   }, [matchedCommands, files]);
 
   // Mantém a seleção dentro dos limites quando a lista muda.
-  useEffect(() => { setSel((s) => (items.length ? Math.min(s, items.length - 1) : 0)); }, [items.length]);
+  useEffect(() => {
+    setSel((s) => (items.length ? Math.min(s, items.length - 1) : 0));
+  }, [items.length]);
 
   // Rola o item selecionado pra dentro da janela visível.
   useEffect(() => {
@@ -94,10 +108,19 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
   };
 
   const onKeyDown = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => (items.length ? (s + 1) % items.length : 0)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => (items.length ? (s - 1 + items.length) % items.length : 0)); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (items[sel]) run(items[sel]); }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSel((s) => (items.length ? (s + 1) % items.length : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSel((s) => (items.length ? (s - 1 + items.length) % items.length : 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (items[sel]) run(items[sel]);
+    }
   };
 
   // Rótulo do grupo só aparece na primeira linha de cada bloco.
@@ -131,7 +154,10 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
             </div>
           )}
           {items.map((item, i) => {
-            const group = item.type === 'file' ? t('palette.group_files') : (item.data.group || t('palette.group_actions'));
+            const group =
+              item.type === 'file'
+                ? t('palette.group_files')
+                : item.data.group || t('palette.group_actions');
             const showGroup = group !== lastGroup;
             lastGroup = group;
             const selected = i === sel;
@@ -149,7 +175,7 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
                   onClick={() => run(item)}
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13.5px]',
-                    selected ? 'bg-primary/12 text-foreground' : 'text-foreground/90'
+                    selected ? 'bg-primary/12 text-foreground' : 'text-foreground/90',
                   )}
                 >
                   {item.type === 'file' ? (
@@ -165,7 +191,9 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
                   <span className="shrink-0 truncate text-[12px] text-muted-foreground">
                     {item.type === 'file' ? relDir(item.data, activePath) : item.data.hint}
                   </span>
-                  {selected && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
+                  {selected && (
+                    <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />
+                  )}
                 </button>
               </div>
             );

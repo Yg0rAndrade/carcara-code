@@ -6,8 +6,13 @@ import { makeKnownHosts } from './knownHosts.cjs';
 
 let filePath;
 beforeEach(() => {
-  filePath = path.join(os.tmpdir(), `carcara-kh-${process.pid}-${Math.round(performance.now())}.json`);
-  try { fs.unlinkSync(filePath); } catch {}
+  filePath = path.join(
+    os.tmpdir(),
+    `carcara-kh-${process.pid}-${Math.round(performance.now())}.json`,
+  );
+  try {
+    fs.unlinkSync(filePath);
+  } catch {}
 });
 
 describe('makeKnownHosts', () => {
@@ -27,7 +32,10 @@ describe('makeKnownHosts', () => {
     expect(kh.fingerprint(Buffer.from('x'))).toBe(fp);
   });
   it('trust retorna false quando a escrita falha', () => {
-    const dirAsFile = path.join(os.tmpdir(), `carcara-kh-dir-${process.pid}-${Math.round(performance.now())}`);
+    const dirAsFile = path.join(
+      os.tmpdir(),
+      `carcara-kh-dir-${process.pid}-${Math.round(performance.now())}`,
+    );
     fs.mkdirSync(dirAsFile, { recursive: true });
     const kh = makeKnownHosts({ filePath: dirAsFile });
     expect(kh.trust('h:22', Buffer.from('x'))).toBe(false);

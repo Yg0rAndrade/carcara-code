@@ -27,21 +27,26 @@ export function CheckpointsPanel({ active, visible }) {
   const projectPath = active?.path || null;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(null);      // hash em operação (restore)
+  const [busy, setBusy] = useState(null); // hash em operação (restore)
   const [creating, setCreating] = useState(false);
   const [autoOn, setAutoOn] = useState(true);
   const [confirm, setConfirm] = useState(null); // checkpoint aguardando confirmação de restore
-  const [titles, setTitles] = useState({});     // hash -> título antigo cacheado (legado)
+  const [titles, setTitles] = useState({}); // hash -> título antigo cacheado (legado)
 
   const refresh = useCallback(async () => {
-    if (!projectPath) { setItems([]); return; }
+    if (!projectPath) {
+      setItems([]);
+      return;
+    }
     setLoading(true);
     const r = await window.api.checkpointList(projectPath);
-    setItems(r.ok ? (r.items || []) : []);
+    setItems(r.ok ? r.items || [] : []);
     setLoading(false);
   }, [projectPath]);
 
-  useEffect(() => { if (visible) refresh(); }, [visible, refresh]);
+  useEffect(() => {
+    if (visible) refresh();
+  }, [visible, refresh]);
 
   useEffect(() => {
     window.api.checkpointGetEnabled().then((r) => setAutoOn(r?.enabled !== false));
@@ -70,10 +75,15 @@ export function CheckpointsPanel({ active, visible }) {
   const create = async () => {
     if (!projectPath || creating) return;
     setCreating(true);
-    const r = await window.api.checkpointCreate(projectPath, 'Checkpoint manual ' + new Date().toISOString());
+    const r = await window.api.checkpointCreate(
+      projectPath,
+      'Checkpoint manual ' + new Date().toISOString(),
+    );
     setCreating(false);
-    if (r.ok) { toast.success(t('checkpoint.created')); refresh(); }
-    else toast.error(t('checkpoint.create_error', { error: r.error || 'erro' }));
+    if (r.ok) {
+      toast.success(t('checkpoint.created'));
+      refresh();
+    } else toast.error(t('checkpoint.create_error', { error: r.error || 'erro' }));
   };
 
   const restore = async (cp) => {
@@ -82,8 +92,10 @@ export function CheckpointsPanel({ active, visible }) {
     setBusy(cp.hash);
     const r = await window.api.checkpointRestore(projectPath, cp.hash);
     setBusy(null);
-    if (r.ok) { toast.success(t('checkpoint.restored')); refresh(); }
-    else toast.error(t('checkpoint.restore_error', { error: r.error || 'erro' }));
+    if (r.ok) {
+      toast.success(t('checkpoint.restored'));
+      refresh();
+    } else toast.error(t('checkpoint.restore_error', { error: r.error || 'erro' }));
   };
 
   const toggleAuto = async () => {
@@ -104,17 +116,35 @@ export function CheckpointsPanel({ active, visible }) {
           title={t('checkpoint.auto_tooltip')}
           className={cn(
             'flex h-7 items-center gap-1.5 rounded px-2 text-[12px] font-medium transition-colors',
-            autoOn ? 'text-primary hover:bg-muted' : 'text-muted-foreground hover:bg-muted'
+            autoOn ? 'text-primary hover:bg-muted' : 'text-muted-foreground hover:bg-muted',
           )}
         >
-          <span className={cn('size-1.5 rounded-full', autoOn ? 'bg-primary' : 'bg-muted-foreground/50')} />
+          <span
+            className={cn(
+              'size-1.5 rounded-full',
+              autoOn ? 'bg-primary' : 'bg-muted-foreground/50',
+            )}
+          />
           {t('checkpoint.auto')}
         </button>
-        <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2" disabled={!projectPath || creating} onClick={create}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 px-2"
+          disabled={!projectPath || creating}
+          onClick={create}
+        >
           {creating ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
           {t('checkpoint.create')}
         </Button>
-        <Button variant="ghost" size="icon" className="size-7" disabled={loading || !projectPath} title={t('checkpoint.refresh')} onClick={refresh}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          disabled={loading || !projectPath}
+          title={t('checkpoint.refresh')}
+          onClick={refresh}
+        >
           <RefreshCCWIcon className={'size-4 ' + (loading ? 'animate-spin' : '')} />
         </Button>
       </div>
@@ -123,9 +153,7 @@ export function CheckpointsPanel({ active, visible }) {
         {items.length === 0 ? (
           <EmptyState>
             <div className="font-medium text-foreground">{t('checkpoint.none')}</div>
-            <p className="max-w-[260px] text-[13px] leading-relaxed">
-              {t('checkpoint.none_help')}
-            </p>
+            <p className="max-w-[260px] text-[13px] leading-relaxed">{t('checkpoint.none_help')}</p>
           </EmptyState>
         ) : (
           <ul className="py-1">
@@ -141,7 +169,9 @@ export function CheckpointsPanel({ active, visible }) {
                   <div className="truncate text-[13px] text-foreground">{labelOf(cp, titles)}</div>
                   <div className="text-[11px] text-muted-foreground">
                     {ago(cp.ts, t)}
-                    {i === 0 && <span className="ml-1.5 text-primary">{t('checkpoint.newest')}</span>}
+                    {i === 0 && (
+                      <span className="ml-1.5 text-primary">{t('checkpoint.newest')}</span>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -152,7 +182,11 @@ export function CheckpointsPanel({ active, visible }) {
                   onClick={() => setConfirm(cp)}
                   title={t('checkpoint.restore_tooltip')}
                 >
-                  {busy === cp.hash ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
+                  {busy === cp.hash ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="size-3.5" />
+                  )}
                   {t('checkpoint.restore')}
                 </Button>
               </li>
@@ -162,15 +196,25 @@ export function CheckpointsPanel({ active, visible }) {
       </div>
 
       {confirm && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40" onMouseDown={() => setConfirm(null)}>
-          <div className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black/40"
+          onMouseDown={() => setConfirm(null)}
+        >
+          <div
+            className="w-[360px] max-w-[90%] rounded-xl border bg-background p-5 shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <h2 className="text-[15px] font-semibold">{t('checkpoint.confirm_title')}</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
               {t('checkpoint.confirm_message', { ago: ago(confirm.ts, t) })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setConfirm(null)}>{t('checkpoint.cancel')}</Button>
-              <Button size="sm" onClick={() => restore(confirm)}>{t('checkpoint.confirm')}</Button>
+              <Button variant="secondary" size="sm" onClick={() => setConfirm(null)}>
+                {t('checkpoint.cancel')}
+              </Button>
+              <Button size="sm" onClick={() => restore(confirm)}>
+                {t('checkpoint.confirm')}
+              </Button>
             </div>
           </div>
         </div>

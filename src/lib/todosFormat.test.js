@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  formatCompact, formatDuration, completedTaskDurations,
-  summarizeTiming, shortModel, contextLevel, cacheLevel,
+  formatCompact,
+  formatDuration,
+  completedTaskDurations,
+  summarizeTiming,
+  shortModel,
+  contextLevel,
+  cacheLevel,
 } from './todosFormat.js';
 
 describe('formatCompact', () => {
@@ -42,12 +47,14 @@ describe('completedTaskDurations / summarizeTiming', () => {
       { content: 'C', activeForm: 'C', status: 'pending' },
     ];
     const s = summarizeTiming(todos, now);
-    expect(s.elapsedMs).toBe(100000);      // 60s da A + 40s ao vivo da B
+    expect(s.elapsedMs).toBe(100000); // 60s da A + 40s ao vivo da B
     expect(s.hasEstimate).toBe(true);
-    expect(s.estimateMs).toBe(80000);      // B: max(0, 60s-40s)=20s + C: 60s
+    expect(s.estimateMs).toBe(80000); // B: max(0, 60s-40s)=20s + C: 60s
   });
   it('sem concluída observada não estima', () => {
-    expect(summarizeTiming([{ content: 'A', activeForm: 'A', status: 'pending' }], 0).hasEstimate).toBe(false);
+    expect(
+      summarizeTiming([{ content: 'A', activeForm: 'A', status: 'pending' }], 0).hasEstimate,
+    ).toBe(false);
   });
 });
 

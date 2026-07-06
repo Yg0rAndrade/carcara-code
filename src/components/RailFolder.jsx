@@ -24,15 +24,21 @@ export function RailFolderIcon({ previews, count, moreLabel, open }) {
   const cells = count > 4 ? previews.slice(0, 3) : previews.slice(0, 4);
   const fillers = count <= 4 ? Math.max(0, 4 - cells.length) : 0;
   return (
-    <span className={cn('flex h-full w-full rounded-[inherit] bg-secondary p-1', open && 'opacity-80')}>
+    <span
+      className={cn('flex h-full w-full rounded-[inherit] bg-secondary p-1', open && 'opacity-80')}
+    >
       <span className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
-        {cells.map((p, i) => <Mini key={p?.path || i} p={p} />)}
+        {cells.map((p, i) => (
+          <Mini key={p?.path || i} p={p} />
+        ))}
         {count > 4 && (
           <span className="grid place-items-center rounded-[3px] bg-muted/60 text-[7px] font-bold leading-none text-muted-foreground">
             {moreLabel}
           </span>
         )}
-        {Array.from({ length: fillers }).map((_, i) => <Mini key={'e' + i} p={null} />)}
+        {Array.from({ length: fillers }).map((_, i) => (
+          <Mini key={'e' + i} p={null} />
+        ))}
       </span>
     </span>
   );

@@ -4,19 +4,39 @@ import { makeConnections } from './connections.cjs';
 function fakeClient() {
   const h = {};
   return {
-    on(ev, cb) { h[ev] = cb; return this; },
-    connect: vi.fn(function (cfg) { this._cfg = cfg; }),
+    on(ev, cb) {
+      h[ev] = cb;
+      return this;
+    },
+    connect: vi.fn(function (cfg) {
+      this._cfg = cfg;
+    }),
     end: vi.fn(),
-    _ready() { h.ready && h.ready(); },
-    _error(e) { h.error && h.error(e); },
-    _close() { h.close && h.close(); },
+    _ready() {
+      h.ready && h.ready();
+    },
+    _error(e) {
+      h.error && h.error(e);
+    },
+    _close() {
+      h.close && h.close();
+    },
     _cfg: null,
   };
 }
 
 const baseDeps = (client) => ({
-  Client: vi.fn(function () { return client; }),
-  getProfile: () => ({ host: 'h', port: 22, user: 'ygor', authType: 'password', keyPath: '', remoteDir: '/srv' }),
+  Client: vi.fn(function () {
+    return client;
+  }),
+  getProfile: () => ({
+    host: 'h',
+    port: 22,
+    user: 'ygor',
+    authType: 'password',
+    keyPath: '',
+    remoteDir: '/srv',
+  }),
   getSecret: () => 'senha',
   readKey: () => Buffer.from('KEY'),
   knownHosts: { check: () => 'trusted', trust: vi.fn(), fingerprint: () => 'SHA256:x' },
@@ -43,7 +63,9 @@ describe('makeConnections', () => {
     const client = fakeClient();
     const deps = baseDeps(client);
     const conns = makeConnections(deps);
-    const p = conns.connFor('ygor@h:22'); client._ready(); await p;
+    const p = conns.connFor('ygor@h:22');
+    client._ready();
+    await p;
     const again = await conns.connFor('ygor@h:22');
     expect(again).toBe(client);
     expect(deps.Client).toHaveBeenCalledTimes(1); // não recriou
@@ -61,11 +83,22 @@ describe('makeConnections', () => {
 
   it('monta auth por chave quando authType=key', async () => {
     const client = fakeClient();
-    const deps = { ...baseDeps(client),
-      getProfile: () => ({ host: 'h', port: 22, user: 'ygor', authType: 'key', keyPath: '/k/id', remoteDir: '/' }),
-      getSecret: () => 'frase' };
+    const deps = {
+      ...baseDeps(client),
+      getProfile: () => ({
+        host: 'h',
+        port: 22,
+        user: 'ygor',
+        authType: 'key',
+        keyPath: '/k/id',
+        remoteDir: '/',
+      }),
+      getSecret: () => 'frase',
+    };
     const conns = makeConnections(deps);
-    const p = conns.connFor('ygor@h:22'); client._ready(); await p;
+    const p = conns.connFor('ygor@h:22');
+    client._ready();
+    await p;
     expect(client._cfg).toMatchObject({ privateKey: Buffer.from('KEY'), passphrase: 'frase' });
   });
 
@@ -81,11 +114,20 @@ describe('makeConnections', () => {
     const client1 = fakeClient();
     const client2 = fakeClient();
     let n = 0;
-    const deps = { ...baseDeps(client1), Client: vi.fn(function () { return n++ === 0 ? client1 : client2; }) };
+    const deps = {
+      ...baseDeps(client1),
+      Client: vi.fn(function () {
+        return n++ === 0 ? client1 : client2;
+      }),
+    };
     const conns = makeConnections(deps);
-    const p1 = conns.connFor('ygor@h:22'); client1._ready(); await p1;
-    const p2 = conns.reconnect('ygor@h:22'); client2._ready(); await p2;
-    client1._close();                                  // close atrasado do antigo
+    const p1 = conns.connFor('ygor@h:22');
+    client1._ready();
+    await p1;
+    const p2 = conns.reconnect('ygor@h:22');
+    client2._ready();
+    await p2;
+    client1._close(); // close atrasado do antigo
     expect(conns.status('ygor@h:22')).toBe('connected'); // rec do client2 preservado
   });
 });
@@ -94,16 +136,25 @@ describe('connections.sftp', () => {
   function fakeDeps(sftpImpl) {
     const client = {
       _h: {},
-      on(ev, cb) { this._h[ev] = cb; return this; },
-      connect() { setTimeout(() => this._h.ready && this._h.ready(), 0); },
-      sftp(cb) { sftpImpl(cb); },
+      on(ev, cb) {
+        this._h[ev] = cb;
+        return this;
+      },
+      connect() {
+        setTimeout(() => this._h.ready && this._h.ready(), 0);
+      },
+      sftp(cb) {
+        sftpImpl(cb);
+      },
       end() {},
       removeAllListeners() {},
     };
     return {
       client,
       deps: {
-        Client: function () { return client; },
+        Client: function () {
+          return client;
+        },
         getProfile: () => ({ host: 'h', port: 22, user: 'root', authType: 'password' }),
         getSecret: () => 'pw',
         readKey: () => Buffer.from(''),
@@ -118,7 +169,10 @@ describe('connections.sftp', () => {
   it('abre a sessão SFTP e reusa a mesma na 2ª chamada', async () => {
     let opened = 0;
     const session = { on() {} };
-    const { deps } = fakeDeps((cb) => { opened++; cb(null, session); });
+    const { deps } = fakeDeps((cb) => {
+      opened++;
+      cb(null, session);
+    });
     const conns = makeConnections(deps);
     const s1 = await conns.sftp('root@h:22');
     const s2 = await conns.sftp('root@h:22');
@@ -136,7 +190,10 @@ describe('connections.sftp', () => {
   it('chamadas concorrentes abrem o canal só uma vez', async () => {
     let opened = 0;
     const session = { on() {} };
-    const { deps } = fakeDeps((cb) => { opened++; setTimeout(() => cb(null, session), 0); });
+    const { deps } = fakeDeps((cb) => {
+      opened++;
+      setTimeout(() => cb(null, session), 0);
+    });
     const conns = makeConnections(deps);
     await conns.connFor('root@h:22'); // conexão já estabelecida, como no uso real do file browser
     const [a, b] = await Promise.all([conns.sftp('root@h:22'), conns.sftp('root@h:22')]);

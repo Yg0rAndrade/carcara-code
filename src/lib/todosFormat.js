@@ -5,7 +5,10 @@
 export function formatCompact(n) {
   if (!Number.isFinite(n) || n <= 0) return '0';
   if (n < 1000) return String(Math.round(n));
-  for (const u of [{ v: 1000000, s: 'M' }, { v: 1000, s: 'k' }]) {
+  for (const u of [
+    { v: 1000000, s: 'M' },
+    { v: 1000, s: 'k' },
+  ]) {
     if (n >= u.v) {
       const rounded = Math.round((n / u.v) * 10) / 10;
       // Arredondamento pode estourar pra 1000k — nesse caso vira 1M.
@@ -36,8 +39,10 @@ function sequentialCompleted(todos) {
   let cursor;
   for (const t of todos) {
     if (t.status === 'completed' && t.completedAt !== undefined) {
-      if (t.startedAt !== undefined) out.push({ ms: Math.max(0, t.completedAt - t.startedAt), observed: true });
-      else if (cursor !== undefined) out.push({ ms: Math.max(0, t.completedAt - cursor), observed: false });
+      if (t.startedAt !== undefined)
+        out.push({ ms: Math.max(0, t.completedAt - t.startedAt), observed: true });
+      else if (cursor !== undefined)
+        out.push({ ms: Math.max(0, t.completedAt - cursor), observed: false });
       else out.push({ ms: 0, observed: false });
       cursor = t.completedAt;
     } else {
@@ -57,12 +62,18 @@ export function completedTaskDurations(todos) {
 // regressiva do restante (média das medidas; a ativa custa o que falta dela).
 export function summarizeTiming(todos, now) {
   const seq = sequentialCompleted(todos);
-  let elapsedMs = 0, observedSum = 0, observedCount = 0, unfinished = 0;
+  let elapsedMs = 0,
+    observedSum = 0,
+    observedCount = 0,
+    unfinished = 0;
   todos.forEach((t, i) => {
     const d = seq[i];
     if (d) {
       elapsedMs += d.ms;
-      if (d.observed) { observedSum += d.ms; observedCount++; }
+      if (d.observed) {
+        observedSum += d.ms;
+        observedCount++;
+      }
     } else if (t.status === 'in_progress' && t.startedAt !== undefined) {
       elapsedMs += Math.max(0, now - t.startedAt);
     }
@@ -91,13 +102,13 @@ export function shortModel(model) {
 // Semáforo do contexto: ok < 0.60 <= warn < 0.85 <= danger.
 export function contextLevel(pct) {
   if (pct >= 0.85) return 'danger';
-  if (pct >= 0.60) return 'warn';
+  if (pct >= 0.6) return 'warn';
   return 'ok';
 }
 
 // Semáforo do cache (invertido: reaproveitar mais é melhor): good >= 0.75 > mid >= 0.50 > low.
 export function cacheLevel(rate) {
   if (rate >= 0.75) return 'good';
-  if (rate >= 0.50) return 'mid';
+  if (rate >= 0.5) return 'mid';
   return 'low';
 }

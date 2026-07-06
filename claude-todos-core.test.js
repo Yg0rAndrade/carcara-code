@@ -6,10 +6,16 @@ import path from 'path';
 import core from './claude-todos-core.cjs';
 
 // Linha de transcript com um tool_use TodoWrite carregando o snapshot completo.
-const tw = (iso, todos, extra = {}) => JSON.stringify({
-  type: 'assistant', timestamp: iso, ...extra,
-  message: { role: 'assistant', content: [{ type: 'tool_use', id: 'x', name: 'TodoWrite', input: { todos } }] },
-});
+const tw = (iso, todos, extra = {}) =>
+  JSON.stringify({
+    type: 'assistant',
+    timestamp: iso,
+    ...extra,
+    message: {
+      role: 'assistant',
+      content: [{ type: 'tool_use', id: 'x', name: 'TodoWrite', input: { todos } }],
+    },
+  });
 const todo = (content, status, activeForm = content) => ({ content, activeForm, status });
 
 describe('parseTodos — schema TodoWrite', () => {
@@ -19,7 +25,10 @@ describe('parseTodos — schema TodoWrite', () => {
       tw('2026-07-03T12:01:00Z', [todo('A', 'completed'), todo('B', 'in_progress')]),
     ];
     const out = core.parseTodos(lines, true);
-    expect(out.map((t) => [t.content, t.status])).toEqual([['A', 'completed'], ['B', 'in_progress']]);
+    expect(out.map((t) => [t.content, t.status])).toEqual([
+      ['A', 'completed'],
+      ['B', 'in_progress'],
+    ]);
   });
 
   it('extrai timings first-write-wins por content', () => {
@@ -56,28 +65,56 @@ describe('parseTodos — schema TodoWrite', () => {
 
   it('linha malformada é pulada; sem eventos devolve null', () => {
     expect(core.parseTodos(['{lixo', ''], true)).toBeNull();
-    const lines = ['{nao é json "name":"TodoWrite"', tw('2026-07-03T12:00:00Z', [todo('A', 'pending')])];
+    const lines = [
+      '{nao é json "name":"TodoWrite"',
+      tw('2026-07-03T12:00:00Z', [todo('A', 'pending')]),
+    ];
     expect(core.parseTodos(lines, true).map((t) => t.content)).toEqual(['A']);
   });
 
   it('descarta itens sem content/activeForm/status válidos', () => {
-    const lines = [tw('2026-07-03T12:00:00Z', [todo('A', 'pending'), { content: 'B' }, { content: 'C', activeForm: 'C', status: 'weird' }])];
+    const lines = [
+      tw('2026-07-03T12:00:00Z', [
+        todo('A', 'pending'),
+        { content: 'B' },
+        { content: 'C', activeForm: 'C', status: 'weird' },
+      ]),
+    ];
     expect(core.parseTodos(lines, true).map((t) => t.content)).toEqual(['A']);
   });
 });
 
-const tc = (iso, toolUseId, subject, activeForm) => JSON.stringify({
-  type: 'assistant', timestamp: iso,
-  message: { content: [{ type: 'tool_use', id: toolUseId, name: 'TaskCreate', input: { subject, activeForm } }] },
-});
-const tcr = (toolUseId, taskId, text) => JSON.stringify({
-  type: 'user', toolUseResult: taskId ? { task: { id: taskId } } : undefined,
-  message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: text || 'ok' }] },
-});
-const tu = (iso, taskId, status) => JSON.stringify({
-  type: 'assistant', timestamp: iso,
-  message: { content: [{ type: 'tool_use', id: 'u-' + taskId + '-' + status, name: 'TaskUpdate', input: { taskId, status } }] },
-});
+const tc = (iso, toolUseId, subject, activeForm) =>
+  JSON.stringify({
+    type: 'assistant',
+    timestamp: iso,
+    message: {
+      content: [
+        { type: 'tool_use', id: toolUseId, name: 'TaskCreate', input: { subject, activeForm } },
+      ],
+    },
+  });
+const tcr = (toolUseId, taskId, text) =>
+  JSON.stringify({
+    type: 'user',
+    toolUseResult: taskId ? { task: { id: taskId } } : undefined,
+    message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: text || 'ok' }] },
+  });
+const tu = (iso, taskId, status) =>
+  JSON.stringify({
+    type: 'assistant',
+    timestamp: iso,
+    message: {
+      content: [
+        {
+          type: 'tool_use',
+          id: 'u-' + taskId + '-' + status,
+          name: 'TaskUpdate',
+          input: { taskId, status },
+        },
+      ],
+    },
+  });
 
 describe('parseTodos — schema TaskCreate/TaskUpdate', () => {
   it('cria via tool_result e muta por taskId, com timings', () => {
@@ -93,7 +130,13 @@ describe('parseTodos — schema TaskCreate/TaskUpdate', () => {
     ];
     const out = core.parseTodos(lines, true);
     expect(out).toEqual([
-      { content: 'Tarefa A', activeForm: 'Fazendo A', status: 'completed', startedAt: t1, completedAt: t2 },
+      {
+        content: 'Tarefa A',
+        activeForm: 'Fazendo A',
+        status: 'completed',
+        startedAt: t1,
+        completedAt: t2,
+      },
       { content: 'Tarefa B', activeForm: 'Fazendo B', status: 'pending' },
     ]);
   });
@@ -119,15 +162,19 @@ describe('parseTodos — schema TaskCreate/TaskUpdate', () => {
 });
 
 // Helpers para testes de sub-agents
-const agentUse = (toolUseId, input) => JSON.stringify({
-  type: 'assistant',
-  message: { content: [{ type: 'tool_use', id: toolUseId, name: 'Agent', input }] },
-});
-const agentResult = (toolUseId, agentId) => JSON.stringify({
-  type: 'user', toolUseResult: agentId ? { agentId } : {},
-  message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: 'done' }] },
-});
-const subFirstLine = (prompt) => JSON.stringify({ type: 'user', message: { role: 'user', content: prompt } });
+const agentUse = (toolUseId, input) =>
+  JSON.stringify({
+    type: 'assistant',
+    message: { content: [{ type: 'tool_use', id: toolUseId, name: 'Agent', input }] },
+  });
+const agentResult = (toolUseId, agentId) =>
+  JSON.stringify({
+    type: 'user',
+    toolUseResult: agentId ? { agentId } : {},
+    message: { content: [{ type: 'tool_result', tool_use_id: toolUseId, content: 'done' }] },
+  });
+const subFirstLine = (prompt) =>
+  JSON.stringify({ type: 'user', message: { role: 'user', content: prompt } });
 
 describe('readAgentInvocations', () => {
   it('usa name, cai pra description, e deriva status pelo tool_result', () => {
@@ -153,10 +200,10 @@ describe('listSubAgents', () => {
   it('casa agent-*.jsonl com a invocação por prompt idêntico e ordena por grupo', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'subagents-'));
     // done-1: concluído COM todos; run-2: rodando; hist-3: concluído sem todos (histórico)
-    fs.writeFileSync(path.join(dir, 'agent-done1.jsonl'), [
-      subFirstLine('P1'),
-      tw('2026-07-03T12:00:00Z', [todo('S1', 'completed')]),
-    ].join('\n'));
+    fs.writeFileSync(
+      path.join(dir, 'agent-done1.jsonl'),
+      [subFirstLine('P1'), tw('2026-07-03T12:00:00Z', [todo('S1', 'completed')])].join('\n'),
+    );
     fs.writeFileSync(path.join(dir, 'agent-run2.jsonl'), [subFirstLine('P2')].join('\n'));
     fs.writeFileSync(path.join(dir, 'agent-hist3.jsonl'), [subFirstLine('P3')].join('\n'));
     const mainLines = [
@@ -181,14 +228,22 @@ describe('listSubAgents', () => {
   });
 });
 
-const usageLine = (model, usage, extra = {}) => JSON.stringify({
-  type: 'assistant', ...extra, message: { model, usage },
-});
+const usageLine = (model, usage, extra = {}) =>
+  JSON.stringify({
+    type: 'assistant',
+    ...extra,
+    message: { model, usage },
+  });
 
 describe('uso de tokens', () => {
   it('agrega por modelo e soma o cache do arquivo', () => {
     const lines = [
-      usageLine('claude-opus-4-8', { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 50 }),
+      usageLine('claude-opus-4-8', {
+        input_tokens: 10,
+        output_tokens: 5,
+        cache_read_input_tokens: 100,
+        cache_creation_input_tokens: 50,
+      }),
       usageLine('claude-opus-4-8', { input_tokens: 2, output_tokens: 3 }),
       usageLine('claude-haiku-4-5', { input_tokens: 1, output_tokens: 1 }),
       usageLine('claude-opus-4-8', { input_tokens: 99, output_tokens: 99 }, { isSidechain: true }),
@@ -204,7 +259,11 @@ describe('uso de tokens', () => {
   it('contexto = input+cache da última mensagem com usage (sem sidechain)', () => {
     const lines = [
       usageLine('claude-opus-4-8', { input_tokens: 10, cache_read_input_tokens: 5 }),
-      usageLine('claude-opus-4-8', { input_tokens: 20, cache_read_input_tokens: 30, cache_creation_input_tokens: 1 }),
+      usageLine('claude-opus-4-8', {
+        input_tokens: 20,
+        cache_read_input_tokens: 30,
+        cache_creation_input_tokens: 1,
+      }),
     ];
     expect(core.contextForLines(lines)).toEqual({ tokens: 51, limit: 1000000 });
     expect(core.contextForLines(['{"type":"user"}'])).toBeNull();
@@ -237,22 +296,31 @@ describe('buildSnapshot / transcriptStamp', () => {
   it('monta o snapshot completo: main + sub-agent + usage', () => {
     fake = makeFakeClaudeDir(PROJ, 'sess1');
     process.env.CLAUDE_CONFIG_DIR = fake.base;
-    fs.writeFileSync(fake.transcript, [
-      tw('2026-07-03T12:00:00Z', [todo('A', 'in_progress')]),
-      usageLine('claude-opus-4-8', { input_tokens: 10, output_tokens: 5 }),
-      agentUse('a1', { name: 'sub', prompt: 'PS' }),
-      agentResult('a1', 'sub1'),
-    ].join('\n'));
+    fs.writeFileSync(
+      fake.transcript,
+      [
+        tw('2026-07-03T12:00:00Z', [todo('A', 'in_progress')]),
+        usageLine('claude-opus-4-8', { input_tokens: 10, output_tokens: 5 }),
+        agentUse('a1', { name: 'sub', prompt: 'PS' }),
+        agentResult('a1', 'sub1'),
+      ].join('\n'),
+    );
     const subDir = path.join(fake.projDir, 'sess1', 'subagents');
     fs.mkdirSync(subDir, { recursive: true });
-    fs.writeFileSync(path.join(subDir, 'agent-sub1.jsonl'), [
-      subFirstLine('PS'),
-      usageLine('claude-haiku-4-5', { input_tokens: 3, output_tokens: 2 }),
-    ].join('\n'));
+    fs.writeFileSync(
+      path.join(subDir, 'agent-sub1.jsonl'),
+      [
+        subFirstLine('PS'),
+        usageLine('claude-haiku-4-5', { input_tokens: 3, output_tokens: 2 }),
+      ].join('\n'),
+    );
 
     const snap = core.buildSnapshot(PROJ, 'sess1');
     expect(snap.claudeId).toBe('sess1');
-    expect(snap.agents.map((a) => [a.isMain, a.name])).toEqual([[true, 'main'], [false, 'sub']]);
+    expect(snap.agents.map((a) => [a.isMain, a.name])).toEqual([
+      [true, 'main'],
+      [false, 'sub'],
+    ]);
     expect(snap.usage.byAgent.map((a) => a.name)).toEqual(['main', 'sub']);
     expect(snap.usage.byModel.map((m) => m.model)).toEqual(['claude-opus-4-8', 'claude-haiku-4-5']);
     expect(snap.usage.context.tokens).toBe(10);
@@ -261,7 +329,10 @@ describe('buildSnapshot / transcriptStamp', () => {
   it('transcript sem eventos de todos → agents vazio (UI mostra "aguardando")', () => {
     fake = makeFakeClaudeDir(PROJ, 'sess2');
     process.env.CLAUDE_CONFIG_DIR = fake.base;
-    fs.writeFileSync(fake.transcript, usageLine('claude-opus-4-8', { input_tokens: 1, output_tokens: 1 }));
+    fs.writeFileSync(
+      fake.transcript,
+      usageLine('claude-opus-4-8', { input_tokens: 1, output_tokens: 1 }),
+    );
     const snap = core.buildSnapshot(PROJ, 'sess2');
     expect(snap.agents).toEqual([]);
     expect(snap.usage).not.toBeNull();
@@ -281,7 +352,10 @@ describe('buildSnapshot / transcriptStamp', () => {
     fs.writeFileSync(fake.transcript, tw('2026-07-03T12:00:00Z', [todo('A', 'pending')]));
     const s1 = core.transcriptStamp(PROJ, 'sess4');
     expect(typeof s1).toBe('string');
-    fs.writeFileSync(fake.transcript, tw('2026-07-03T12:01:00Z', [todo('A', 'completed')]) + '\nextra');
+    fs.writeFileSync(
+      fake.transcript,
+      tw('2026-07-03T12:01:00Z', [todo('A', 'completed')]) + '\nextra',
+    );
     const st = fs.statSync(fake.transcript);
     fs.utimesSync(fake.transcript, st.atime, new Date(st.mtimeMs + 2000)); // garante mtime distinto em FS de baixa resolução
     expect(core.transcriptStamp(PROJ, 'sess4')).not.toBe(s1);

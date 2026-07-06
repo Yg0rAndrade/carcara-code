@@ -5,14 +5,26 @@ const fs = require('fs');
 // Electron em produção (injetado pra ser testável sem Electron).
 function makeSecretStore({ crypto, filePath }) {
   function readAll() {
-    try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return {}; }
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch {
+      return {};
+    }
   }
   function writeAll(obj) {
-    try { fs.writeFileSync(filePath, JSON.stringify(obj)); return true; }
-    catch { return false; }
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(obj));
+      return true;
+    } catch {
+      return false;
+    }
   }
   const available = () => {
-    try { return !!crypto.isEncryptionAvailable(); } catch { return false; }
+    try {
+      return !!crypto.isEncryptionAvailable();
+    } catch {
+      return false;
+    }
   };
   return {
     available,
@@ -26,12 +38,18 @@ function makeSecretStore({ crypto, filePath }) {
       if (!available()) return null;
       const all = readAll();
       if (!all[hostKey]) return null;
-      try { return crypto.decryptString(Buffer.from(all[hostKey], 'base64')); }
-      catch { return null; }
+      try {
+        return crypto.decryptString(Buffer.from(all[hostKey], 'base64'));
+      } catch {
+        return null;
+      }
     },
     remove(hostKey) {
       const all = readAll();
-      if (all[hostKey]) { delete all[hostKey]; writeAll(all); }
+      if (all[hostKey]) {
+        delete all[hostKey];
+        writeAll(all);
+      }
     },
   };
 }

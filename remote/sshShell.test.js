@@ -4,11 +4,16 @@ import { SshShell } from './sshShell.cjs';
 function fakeStream() {
   const handlers = {};
   return {
-    on(ev, cb) { handlers[ev] = cb; return this; },
+    on(ev, cb) {
+      handlers[ev] = cb;
+      return this;
+    },
     write: vi.fn(),
     setWindow: vi.fn(),
     end: vi.fn(),
-    _emit(ev, ...a) { handlers[ev] && handlers[ev](...a); },
+    _emit(ev, ...a) {
+      handlers[ev] && handlers[ev](...a);
+    },
   };
 }
 
@@ -34,11 +39,15 @@ describe('SshShell', () => {
   it('bufferiza writes até o canal abrir', () => {
     let openCb;
     const stream = fakeStream();
-    const client = { shell: vi.fn((opts, cb) => { openCb = () => cb(null, stream); }) };
+    const client = {
+      shell: vi.fn((opts, cb) => {
+        openCb = () => cb(null, stream);
+      }),
+    };
     const t = new SshShell(client, { cols: 80, rows: 24, remoteDir: '/' });
-    t.write('echo oi\r');           // canal ainda não abriu
+    t.write('echo oi\r'); // canal ainda não abriu
     expect(stream.write).not.toHaveBeenCalledWith('echo oi\r');
-    openCb();                        // agora abre
+    openCb(); // agora abre
     expect(stream.write).toHaveBeenCalledWith('echo oi\r');
   });
 
@@ -57,11 +66,15 @@ describe('SshShell', () => {
   it('aplica o último resize pedido quando o canal abre depois', () => {
     let openCb;
     const stream = fakeStream();
-    const client = { shell: (opts, cb) => { openCb = () => cb(null, stream); } };
+    const client = {
+      shell: (opts, cb) => {
+        openCb = () => cb(null, stream);
+      },
+    };
     const t = new SshShell(client, { cols: 80, rows: 24, remoteDir: '/' });
-    t.resize(120, 40);                 // resize antes do canal abrir
+    t.resize(120, 40); // resize antes do canal abrir
     expect(stream.setWindow).not.toHaveBeenCalled();
-    openCb();                          // canal abre → aplica o último tamanho
+    openCb(); // canal abre → aplica o último tamanho
     expect(stream.setWindow).toHaveBeenCalledWith(40, 120, 0, 0);
   });
 });

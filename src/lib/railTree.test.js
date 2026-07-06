@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import {
-  nextFolderId, buildRows, toggleCollapse, renameFolder, dissolveFolder, applyDrop,
+  nextFolderId,
+  buildRows,
+  toggleCollapse,
+  renameFolder,
+  dissolveFolder,
+  applyDrop,
 } from './railTree.js';
 
 const P = (path) => ({ type: 'project', path });
-const F = (id, children, extra = {}) => ({ type: 'folder', id, name: 'P', collapsed: false, children, ...extra });
+const F = (id, children, extra = {}) => ({
+  type: 'folder',
+  id,
+  name: 'P',
+  collapsed: false,
+  children,
+  ...extra,
+});
 const mapOf = (...paths) => new Map(paths.map((p) => [p, { path: p, name: p }]));
 
 describe('nextFolderId', () => {
@@ -61,22 +73,45 @@ describe('dissolveFolder', () => {
 describe('applyDrop', () => {
   it('merge em projeto do topo cria pasta com [alvo, arrastado]', () => {
     const rail = [P('/a'), P('/b')];
-    const out = applyDrop(rail, { dragPath: '/a', targetKind: 'project', targetPath: '/b', zone: 'merge', newFolderName: 'Nova' });
-    expect(out).toEqual([{ type: 'folder', id: 'f1', name: 'Nova', collapsed: false, children: ['/b', '/a'] }]);
+    const out = applyDrop(rail, {
+      dragPath: '/a',
+      targetKind: 'project',
+      targetPath: '/b',
+      zone: 'merge',
+      newFolderName: 'Nova',
+    });
+    expect(out).toEqual([
+      { type: 'folder', id: 'f1', name: 'Nova', collapsed: false, children: ['/b', '/a'] },
+    ]);
   });
   it('merge em pasta move pra dentro dela', () => {
     const rail = [F('f1', ['/a']), P('/b')];
-    const out = applyDrop(rail, { dragPath: '/b', targetKind: 'folder', targetFolderId: 'f1', zone: 'merge' });
+    const out = applyDrop(rail, {
+      dragPath: '/b',
+      targetKind: 'folder',
+      targetFolderId: 'f1',
+      zone: 'merge',
+    });
     expect(out).toEqual([F('f1', ['/a', '/b'])]);
   });
   it('reorder no topo move o item para a posição do alvo', () => {
     const rail = [P('/a'), P('/b'), P('/c')];
-    const out = applyDrop(rail, { dragPath: '/c', targetKind: 'project', targetPath: '/a', zone: 'reorder' });
+    const out = applyDrop(rail, {
+      dragPath: '/c',
+      targetKind: 'project',
+      targetPath: '/a',
+      zone: 'reorder',
+    });
     expect(out.map((i) => i.path)).toEqual(['/c', '/a', '/b']);
   });
   it('arrastar filho pra fora (reorder no topo) esvazia e remove a pasta', () => {
     const rail = [F('f1', ['/a']), P('/b')];
-    const out = applyDrop(rail, { dragPath: '/a', targetKind: 'project', targetPath: '/b', zone: 'reorder' });
+    const out = applyDrop(rail, {
+      dragPath: '/a',
+      targetKind: 'project',
+      targetPath: '/b',
+      zone: 'reorder',
+    });
     expect(out).toEqual([P('/a'), P('/b')]); // pasta f1 sumiu ao esvaziar
   });
 });

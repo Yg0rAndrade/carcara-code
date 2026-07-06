@@ -2,10 +2,8 @@
 
 // Gerenciador de conexões ssh2, uma por hostKey, reusada entre canais.
 function makeConnections(deps) {
-  const {
-    Client, getProfile, getSecret, readKey, knownHosts,
-    confirmHostKey, onStatus, agentFor,
-  } = deps;
+  const { Client, getProfile, getSecret, readKey, knownHosts, confirmHostKey, onStatus, agentFor } =
+    deps;
   const conns = new Map(); // hostKey -> { client, status, endTimer }
 
   function buildConnectConfig(hostKey, profile) {
@@ -18,7 +16,10 @@ function makeConnections(deps) {
         const state = knownHosts.check(hostKey, keyBuf);
         if (state === 'trusted') return verify(true);
         Promise.resolve(confirmHostKey(hostKey, knownHosts.fingerprint(keyBuf), state))
-          .then((ok) => { if (ok) knownHosts.trust(hostKey, keyBuf); verify(!!ok); })
+          .then((ok) => {
+            if (ok) knownHosts.trust(hostKey, keyBuf);
+            verify(!!ok);
+          })
           .catch(() => verify(false));
       },
     };
@@ -37,7 +38,10 @@ function makeConnections(deps) {
   function connFor(hostKey) {
     const existing = conns.get(hostKey);
     if (existing && existing.status === 'connected') {
-      if (existing.endTimer) { clearTimeout(existing.endTimer); existing.endTimer = null; }
+      if (existing.endTimer) {
+        clearTimeout(existing.endTimer);
+        existing.endTimer = null;
+      }
       return Promise.resolve(existing.client);
     }
     const profile = getProfile(hostKey);
@@ -53,22 +57,38 @@ function makeConnections(deps) {
       client.on('ready', () => {
         rec.status = 'connected';
         onStatus(hostKey, 'connected');
-        settled = true; resolve(client);
+        settled = true;
+        resolve(client);
       });
       client.on('error', (err) => {
         rec.status = 'error';
         onStatus(hostKey, 'error');
-        if (!settled) { settled = true; reject(err); }
+        if (!settled) {
+          settled = true;
+          reject(err);
+        }
       });
       client.on('close', () => {
         if (conns.get(hostKey) === rec) {
-          if (rec.status === 'connected') { rec.status = 'disconnected'; onStatus(hostKey, 'disconnected'); }
+          if (rec.status === 'connected') {
+            rec.status = 'disconnected';
+            onStatus(hostKey, 'disconnected');
+          }
           conns.delete(hostKey);
         }
-        if (!settled) { settled = true; reject(new Error('conexão fechada antes de conectar')); }
+        if (!settled) {
+          settled = true;
+          reject(new Error('conexão fechada antes de conectar'));
+        }
       });
-      try { client.connect(buildConnectConfig(hostKey, profile)); }
-      catch (err) { if (!settled) { settled = true; reject(err); } }
+      try {
+        client.connect(buildConnectConfig(hostKey, profile));
+      } catch (err) {
+        if (!settled) {
+          settled = true;
+          reject(err);
+        }
+      }
     });
   }
 
@@ -82,30 +102,61 @@ function makeConnections(deps) {
 
       const promise = new Promise((resolve, reject) => {
         client.sftp((err, s) => (err ? reject(err) : resolve(s)));
-      }).then((session) => {
-        if (rec) {
-          rec.sftpSession = session;
-          rec.sftpPromise = null;
-          // Sessão morre junto com a conexão; limpa o cache pra reabrir na próxima.
-          try { session.on('close', () => { if (rec.sftpSession === session) rec.sftpSession = null; }); } catch {}
-        }
-        return session;
-      }, (err) => {
-        if (rec) rec.sftpPromise = null;
-        throw err;
-      });
+      }).then(
+        (session) => {
+          if (rec) {
+            rec.sftpSession = session;
+            rec.sftpPromise = null;
+            // Sessão morre junto com a conexão; limpa o cache pra reabrir na próxima.
+            try {
+              session.on('close', () => {
+                if (rec.sftpSession === session) rec.sftpSession = null;
+              });
+            } catch {}
+          }
+          return session;
+        },
+        (err) => {
+          if (rec) rec.sftpPromise = null;
+          throw err;
+        },
+      );
 
       if (rec) rec.sftpPromise = promise;
       return promise;
     },
     status: (hostKey) => (conns.get(hostKey) || {}).status || 'idle',
-    reconnect(hostKey) { const r = conns.get(hostKey); if (r) { try { r.client.removeAllListeners('close'); } catch {} try { r.client.end(); } catch {} conns.delete(hostKey); } return connFor(hostKey); },
+    reconnect(hostKey) {
+      const r = conns.get(hostKey);
+      if (r) {
+        try {
+          r.client.removeAllListeners('close');
+        } catch {}
+        try {
+          r.client.end();
+        } catch {}
+        conns.delete(hostKey);
+      }
+      return connFor(hostKey);
+    },
     end(hostKey) {
       const r = conns.get(hostKey);
       if (!r) return;
-      r.endTimer = setTimeout(() => { try { r.client.end(); } catch {} if (conns.get(hostKey) === r) conns.delete(hostKey); }, 3000);
+      r.endTimer = setTimeout(() => {
+        try {
+          r.client.end();
+        } catch {}
+        if (conns.get(hostKey) === r) conns.delete(hostKey);
+      }, 3000);
     },
-    endAll() { for (const [, r] of conns) { try { r.client.end(); } catch {} } conns.clear(); },
+    endAll() {
+      for (const [, r] of conns) {
+        try {
+          r.client.end();
+        } catch {}
+      }
+      conns.clear();
+    },
   };
 }
 

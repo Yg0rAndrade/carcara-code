@@ -5,13 +5,23 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const {
-  detectProjectType, resolvePhpDocroot, buildPhpServeArgs,
-  isVcRedistError, verifySha256,
-  PHP_VERSION, PHP_ZIP_NAME, PHP_DOWNLOAD_URLS, PHP_SHA256,
+  detectProjectType,
+  resolvePhpDocroot,
+  buildPhpServeArgs,
+  isVcRedistError,
+  verifySha256,
+  PHP_VERSION,
+  PHP_ZIP_NAME,
+  PHP_DOWNLOAD_URLS,
+  PHP_SHA256,
 } = require('../php-runtime.cjs');
 
-function assert(cond, msg) { if (!cond) throw new Error('ASSERT: ' + msg); }
-function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'carcara-php-')); }
+function assert(cond, msg) {
+  if (!cond) throw new Error('ASSERT: ' + msg);
+}
+function tmp() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'carcara-php-'));
+}
 function write(dir, rel, content) {
   const f = path.join(dir, rel);
   fs.mkdirSync(path.dirname(f), { recursive: true });
@@ -37,7 +47,10 @@ async function run() {
   const pkgNoScript = tmp();
   write(pkgNoScript, 'package.json', JSON.stringify({ scripts: { build: 'x' } }));
   write(pkgNoScript, 'app.php', '<?php');
-  assert(detectProjectType(pkgNoScript) === 'php', 'package.json sem dev/start/serve mas com .php -> php');
+  assert(
+    detectProjectType(pkgNoScript) === 'php',
+    'package.json sem dev/start/serve mas com .php -> php',
+  );
 
   const emptyDir = tmp();
   assert(detectProjectType(emptyDir) === null, 'pasta vazia -> null');
@@ -50,22 +63,36 @@ async function run() {
 
   const pubDoc = tmp();
   write(pubDoc, 'public/index.php', '<?php');
-  assert(resolvePhpDocroot(pubDoc) === path.join(pubDoc, 'public'), 'com public/index.php -> public/');
+  assert(
+    resolvePhpDocroot(pubDoc) === path.join(pubDoc, 'public'),
+    'com public/index.php -> public/',
+  );
   console.log('resolvePhpDocroot ok');
 
   // buildPhpServeArgs
   const args = buildPhpServeArgs({ port: 8123, docroot: 'C:\\proj\\public' });
-  assert(JSON.stringify(args) === JSON.stringify(['-S', '127.0.0.1:8123', '-t', 'C:\\proj\\public']),
-    'args do php -S corretos: ' + JSON.stringify(args));
+  assert(
+    JSON.stringify(args) === JSON.stringify(['-S', '127.0.0.1:8123', '-t', 'C:\\proj\\public']),
+    'args do php -S corretos: ' + JSON.stringify(args),
+  );
   console.log('buildPhpServeArgs ok');
 
   // isVcRedistError
-  assert(isVcRedistError({ log: 'The code execution cannot proceed VCRUNTIME140.dll was not found', elapsedMs: 200 }) === true,
-    'stderr com VCRUNTIME140.dll e saída rápida -> true');
-  assert(isVcRedistError({ log: 'PHP 8.5.8 Development Server started', elapsedMs: 200 }) === false,
-    'log normal -> false');
-  assert(isVcRedistError({ log: 'VCRUNTIME140.dll', elapsedMs: 9000 }) === false,
-    'saída tardia não é erro de VC redist');
+  assert(
+    isVcRedistError({
+      log: 'The code execution cannot proceed VCRUNTIME140.dll was not found',
+      elapsedMs: 200,
+    }) === true,
+    'stderr com VCRUNTIME140.dll e saída rápida -> true',
+  );
+  assert(
+    isVcRedistError({ log: 'PHP 8.5.8 Development Server started', elapsedMs: 200 }) === false,
+    'log normal -> false',
+  );
+  assert(
+    isVcRedistError({ log: 'VCRUNTIME140.dll', elapsedMs: 9000 }) === false,
+    'saída tardia não é erro de VC redist',
+  );
   console.log('isVcRedistError ok');
 
   // verifySha256
@@ -74,7 +101,10 @@ async function run() {
   const f = write(hashDir, 'blob.bin', buf);
   const expected = crypto.createHash('sha256').update(buf).digest('hex');
   assert((await verifySha256(f, expected)) === true, 'sha256 correto -> true');
-  assert((await verifySha256(f, expected.toUpperCase())) === true, 'sha256 case-insensitive -> true');
+  assert(
+    (await verifySha256(f, expected.toUpperCase())) === true,
+    'sha256 case-insensitive -> true',
+  );
   assert((await verifySha256(f, '00'.repeat(32))) === false, 'sha256 errado -> false');
   console.log('verifySha256 ok');
 
@@ -82,10 +112,17 @@ async function run() {
   assert(PHP_VERSION === '8.5.8', 'versão fixada 8.5.8');
   assert(PHP_ZIP_NAME === 'php-8.5.8-nts-Win32-vs17-x64.zip', 'nome do zip correto');
   assert(/^[a-f0-9]{64}$/i.test(PHP_SHA256), 'PHP_SHA256 é 64 hex');
-  assert(Array.isArray(PHP_DOWNLOAD_URLS) && PHP_DOWNLOAD_URLS.length >= 1
-    && PHP_DOWNLOAD_URLS.every((u) => u.endsWith(PHP_ZIP_NAME)), 'URLs terminam no zip fixado');
+  assert(
+    Array.isArray(PHP_DOWNLOAD_URLS) &&
+      PHP_DOWNLOAD_URLS.length >= 1 &&
+      PHP_DOWNLOAD_URLS.every((u) => u.endsWith(PHP_ZIP_NAME)),
+    'URLs terminam no zip fixado',
+  );
   console.log('constantes ok');
 
   console.log('\nphp-smoke OK');
 }
-run().catch((e) => { console.error('ERRO:', e.message); process.exit(1); });
+run().catch((e) => {
+  console.error('ERRO:', e.message);
+  process.exit(1);
+});

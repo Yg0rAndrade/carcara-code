@@ -12,7 +12,9 @@ function hasNodeDevScript(projectPath) {
     const pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
     const s = pkg.scripts || {};
     return Boolean(s.dev || s.start || s.serve);
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 function hasAnyPhpFile(projectPath) {
@@ -21,7 +23,9 @@ function hasAnyPhpFile(projectPath) {
   if (fs.existsSync(path.join(projectPath, 'public', 'index.php'))) return true;
   try {
     return fs.readdirSync(projectPath).some((f) => f.toLowerCase().endsWith('.php'));
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 function detectProjectType(projectPath) {
@@ -43,7 +47,7 @@ function buildPhpServeArgs({ port, docroot }) {
 
 // --- Classificador de erro de VC redist --------------------------------
 function isVcRedistError({ log, elapsedMs }) {
-  const quick = elapsedMs < 4000;                 // saiu quase na hora
+  const quick = elapsedMs < 4000; // saiu quase na hora
   const dll = /VCRUNTIME140|MSVCP140|vcruntime140/i.test(log || '');
   return quick && dll;
 }
@@ -55,7 +59,9 @@ function verifySha256(filePath, expectedHex) {
     const s = fs.createReadStream(filePath);
     s.on('error', () => resolve(false));
     s.on('data', (d) => hash.update(d));
-    s.on('end', () => resolve(hash.digest('hex').toLowerCase() === String(expectedHex).toLowerCase()));
+    s.on('end', () =>
+      resolve(hash.digest('hex').toLowerCase() === String(expectedHex).toLowerCase()),
+    );
   });
 }
 
@@ -78,10 +84,16 @@ function downloadTo(url, destPath, redirectsLeft = 5) {
         const next = new URL(headers.location, url).toString();
         return resolve(downloadTo(next, destPath, redirectsLeft - 1));
       }
-      if (statusCode !== 200) { res.resume(); return reject(new Error(`HTTP ${statusCode} ao baixar ${url}`)); }
+      if (statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${statusCode} ao baixar ${url}`));
+      }
       const out = fs.createWriteStream(destPath);
       res.pipe(out);
-      res.on('error', (e) => { out.destroy(); reject(e); });
+      res.on('error', (e) => {
+        out.destroy();
+        reject(e);
+      });
       out.on('finish', () => out.close(() => resolve()));
       out.on('error', reject);
     });
@@ -93,8 +105,12 @@ function downloadTo(url, destPath, redirectsLeft = 5) {
 async function downloadFirstAvailable(urls, destPath) {
   let lastErr;
   for (const u of urls) {
-    try { await downloadTo(u, destPath); return u; }
-    catch (e) { lastErr = e; }
+    try {
+      await downloadTo(u, destPath);
+      return u;
+    } catch (e) {
+      lastErr = e;
+    }
   }
   throw lastErr || new Error('nenhuma URL de download disponível');
 }
@@ -104,20 +120,30 @@ function extractZip(zipPath, destDir) {
   // Aspas simples dobradas = escape literal do PowerShell, evita quebra de
   // string se o caminho tiver aspas (ex.: userData com username "O'Connor").
   const psQuote = (p) => String(p).replace(/'/g, "''");
-  const r = spawnSync('powershell', [
-    '-NoProfile', '-NonInteractive', '-Command',
-    `Expand-Archive -LiteralPath '${psQuote(zipPath)}' -DestinationPath '${psQuote(destDir)}' -Force`,
-  ], { encoding: 'utf8' });
+  const r = spawnSync(
+    'powershell',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      `Expand-Archive -LiteralPath '${psQuote(zipPath)}' -DestinationPath '${psQuote(destDir)}' -Force`,
+    ],
+    { encoding: 'utf8' },
+  );
   if (r.status !== 0) {
-    throw new Error('falha ao extrair o PHP: ' + (r.stderr || r.error?.message || 'erro desconhecido'));
+    throw new Error(
+      'falha ao extrair o PHP: ' + (r.stderr || r.error?.message || 'erro desconhecido'),
+    );
   }
 }
 
 async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
-  const phase = (m) => { if (onPhase) onPhase(m); };
+  const phase = (m) => {
+    if (onPhase) onPhase(m);
+  };
   const versionDir = path.join(cacheBaseDir, PHP_VERSION);
   const phpExe = path.join(versionDir, 'php.exe');
-  if (fs.existsSync(phpExe)) return phpExe;                 // cache hit
+  if (fs.existsSync(phpExe)) return phpExe; // cache hit
 
   fs.mkdirSync(versionDir, { recursive: true });
   const zipPath = path.join(versionDir, PHP_ZIP_NAME);
@@ -126,14 +152,18 @@ async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
   try {
     await downloadFirstAvailable(PHP_DOWNLOAD_URLS, zipPath);
   } catch (e) {
-    try { fs.rmSync(zipPath, { force: true }); } catch {}
+    try {
+      fs.rmSync(zipPath, { force: true });
+    } catch {}
     throw new Error('Não foi possível baixar o PHP (verifique a conexão). ' + e.message);
   }
 
   phase('Verificando o download…');
   const ok = await verifySha256(zipPath, PHP_SHA256);
   if (!ok) {
-    try { fs.rmSync(zipPath, { force: true }); } catch {}
+    try {
+      fs.rmSync(zipPath, { force: true });
+    } catch {}
     throw new Error('Checksum do PHP não confere — download abortado por segurança.');
   }
 
@@ -141,10 +171,14 @@ async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
   try {
     extractZip(zipPath, versionDir);
   } catch (e) {
-    try { fs.rmSync(zipPath, { force: true }); } catch {}
+    try {
+      fs.rmSync(zipPath, { force: true });
+    } catch {}
     throw new Error('Falha ao extrair o PHP: ' + e.message);
   }
-  try { fs.rmSync(zipPath, { force: true }); } catch {}
+  try {
+    fs.rmSync(zipPath, { force: true });
+  } catch {}
 
   if (!fs.existsSync(phpExe)) {
     throw new Error('php.exe não encontrado após a extração.');
@@ -153,7 +187,14 @@ async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
 }
 
 module.exports = {
-  detectProjectType, resolvePhpDocroot, buildPhpServeArgs,
-  isVcRedistError, verifySha256,
-  PHP_VERSION, PHP_ZIP_NAME, PHP_DOWNLOAD_URLS, PHP_SHA256, ensurePhpRuntime,
+  detectProjectType,
+  resolvePhpDocroot,
+  buildPhpServeArgs,
+  isVcRedistError,
+  verifySha256,
+  PHP_VERSION,
+  PHP_ZIP_NAME,
+  PHP_DOWNLOAD_URLS,
+  PHP_SHA256,
+  ensurePhpRuntime,
 };

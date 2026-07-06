@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  resolveProjectAis, effectiveCli, buildResumeCommand, VALID_CLIS,
-} from './ai-cli.cjs';
+import { resolveProjectAis, effectiveCli, buildResumeCommand, VALID_CLIS } from './ai-cli.cjs';
 
 describe('resolveProjectAis', () => {
   it('usa o novo formato { ais, custom }', () => {
@@ -48,9 +46,15 @@ describe('buildResumeCommand', () => {
     expect(buildResumeCommand('codex', {}, '')).toBe('codex');
   });
   it('sobe o comando de resume quando há id salvo', () => {
-    expect(buildResumeCommand('opencode', { resume: { opencode: 'ses_ABC' } }, '')).toBe('opencode --session ses_ABC');
-    expect(buildResumeCommand('agy', { resume: { agy: 'abc123' } }, '')).toBe('agy --conversation=abc123');
-    expect(buildResumeCommand('codex', { resume: { codex: 'xy12' } }, '')).toBe('codex resume xy12');
+    expect(buildResumeCommand('opencode', { resume: { opencode: 'ses_ABC' } }, '')).toBe(
+      'opencode --session ses_ABC',
+    );
+    expect(buildResumeCommand('agy', { resume: { agy: 'abc123' } }, '')).toBe(
+      'agy --conversation=abc123',
+    );
+    expect(buildResumeCommand('codex', { resume: { codex: 'xy12' } }, '')).toBe(
+      'codex resume xy12',
+    );
   });
   it('custom usa a string do projeto (ou claude se vazia)', () => {
     expect(buildResumeCommand('custom', {}, 'gemini')).toBe('gemini');

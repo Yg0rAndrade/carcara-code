@@ -17,7 +17,7 @@ export function EmptyState({ children, size = 'sm', className }) {
       className={cn(
         'flex h-full flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground',
         lg ? 'text-[15px]' : 'text-sm',
-        className
+        className,
       )}
     >
       <img src={logoLight} alt="" aria-hidden="true" className={cn(imgCls, 'block dark:hidden')} />

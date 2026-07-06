@@ -11,8 +11,12 @@ function makeRemoteFs({ getSftp, isBinaryExt }) {
     const p = parseSshUri(uri);
     return buildSshUri({ user: p.user, host: p.host, port: p.port, remoteDir });
   }
-  function remotePathOf(uri) { return parseSshUri(uri).remoteDir; }
-  async function sftpOf(uri) { return getSftp(hostKey(uri)); }
+  function remotePathOf(uri) {
+    return parseSshUri(uri).remoteDir;
+  }
+  async function sftpOf(uri) {
+    return getSftp(hostKey(uri));
+  }
 
   async function listDir(uri) {
     const sftp = await sftpOf(uri);
@@ -48,11 +52,21 @@ function makeRemoteFs({ getSftp, isBinaryExt }) {
         sftp.readFile(p, (err, b) => (err ? reject(err) : resolve(b)));
       });
       return { content: buf.toString('utf8') };
-    } catch (err) { return { error: String((err && err.message) || err) }; }
+    } catch (err) {
+      return { error: String((err && err.message) || err) };
+    }
   }
 
-  function call(fn) { return new Promise((resolve, reject) => fn((err, v) => (err ? reject(err) : resolve(v)))); }
-  const wrap = async (fn) => { try { return await fn(); } catch (err) { return { error: String((err && err.message) || err) }; } };
+  function call(fn) {
+    return new Promise((resolve, reject) => fn((err, v) => (err ? reject(err) : resolve(v))));
+  }
+  const wrap = async (fn) => {
+    try {
+      return await fn();
+    } catch (err) {
+      return { error: String((err && err.message) || err) };
+    }
+  };
 
   function writeFile(uri, content) {
     return wrap(async () => {
@@ -79,7 +93,8 @@ function makeRemoteFs({ getSftp, isBinaryExt }) {
   }
   function rename(uri, newName) {
     const name = String(newName || '').trim();
-    if (!name || name.includes('/') || name.includes('\\')) return Promise.resolve({ error: 'nome inválido' });
+    if (!name || name.includes('/') || name.includes('\\'))
+      return Promise.resolve({ error: 'nome inválido' });
     return wrap(async () => {
       const sftp = await sftpOf(uri);
       const from = remotePathOf(uri);

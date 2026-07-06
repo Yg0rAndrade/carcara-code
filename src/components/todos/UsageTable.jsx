@@ -21,8 +21,12 @@ export function UsageTable({ usage }) {
   const cacheRate = cache && cacheTotal > 0 ? cache.read / cacheTotal : 0;
   const pctOf = (part) => (cacheTotal > 0 ? Math.round((part / cacheTotal) * 100) : 0);
   const totals = usage.byModel.reduce(
-    (acc, m) => ({ input: acc.input + m.input, output: acc.output + m.output, cache: acc.cache + m.cache }),
-    { input: 0, output: 0, cache: 0 }
+    (acc, m) => ({
+      input: acc.input + m.input,
+      output: acc.output + m.output,
+      cache: acc.cache + m.cache,
+    }),
+    { input: 0, output: 0, cache: 0 },
   );
   const num = 'px-2 py-1 text-right tabular-nums';
 
@@ -32,12 +36,21 @@ export function UsageTable({ usage }) {
         <span className="flex items-center gap-1.5 font-semibold">
           {t('todos.usage_tokens')}
           {ctx && (
-            <span className={cn('rounded-full px-1.5 py-px text-[10px] font-semibold text-white', CTX_COLORS[ctxLvl])}>
+            <span
+              className={cn(
+                'rounded-full px-1.5 py-px text-[10px] font-semibold text-white',
+                CTX_COLORS[ctxLvl],
+              )}
+            >
               {t('todos.usage_ctx_badge', { pct: Math.round(ctxPct * 100) })}
             </span>
           )}
         </span>
-        <button type="button" onClick={() => setByAgent((b) => !b)} className="text-muted-foreground transition-colors hover:text-foreground">
+        <button
+          type="button"
+          onClick={() => setByAgent((b) => !b)}
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
           {byAgent ? '◂ ' + t('todos.usage_by_model') : t('todos.usage_by_agent') + ' ▸'}
         </button>
       </div>
@@ -45,9 +58,14 @@ export function UsageTable({ usage }) {
       {ctx && (
         <div className="flex items-center gap-2 py-1">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-            <div className={cn('h-full rounded-full', CTX_COLORS[ctxLvl])} style={{ width: `${Math.round(ctxPct * 100)}%` }} />
+            <div
+              className={cn('h-full rounded-full', CTX_COLORS[ctxLvl])}
+              style={{ width: `${Math.round(ctxPct * 100)}%` }}
+            />
           </div>
-          <span className="shrink-0 tabular-nums text-muted-foreground">{formatCompact(ctx.tokens)}/{formatCompact(ctx.limit)}</span>
+          <span className="shrink-0 tabular-nums text-muted-foreground">
+            {formatCompact(ctx.tokens)}/{formatCompact(ctx.limit)}
+          </span>
         </div>
       )}
 
@@ -65,9 +83,18 @@ export function UsageTable({ usage }) {
             <div className="bg-muted-foreground/40" style={{ width: `${pctOf(cache.input)}%` }} />
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 pb-1 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" />{t('todos.usage_cache_read')} {formatCompact(cache.read)}</span>
-            <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-sky-500" />{t('todos.usage_cache_created')} {formatCompact(cache.creation)}</span>
-            <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-muted-foreground/40" />{t('todos.usage_cache_new')} {formatCompact(cache.input)}</span>
+            <span className="flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {t('todos.usage_cache_read')} {formatCompact(cache.read)}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-sky-500" />
+              {t('todos.usage_cache_created')} {formatCompact(cache.creation)}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+              {t('todos.usage_cache_new')} {formatCompact(cache.input)}
+            </span>
           </div>
         </>
       )}
@@ -75,7 +102,9 @@ export function UsageTable({ usage }) {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="px-2 py-1 text-left font-medium">{byAgent ? t('todos.usage_col_agent') : t('todos.usage_col_model')}</th>
+            <th className="px-2 py-1 text-left font-medium">
+              {byAgent ? t('todos.usage_col_agent') : t('todos.usage_col_model')}
+            </th>
             <th className={cn(num, 'font-medium')}>{t('todos.usage_col_input')}</th>
             <th className={cn(num, 'font-medium')}>{t('todos.usage_col_output')}</th>
             <th className={cn(num, 'font-medium')}>{t('todos.usage_cache')}</th>
@@ -84,24 +113,39 @@ export function UsageTable({ usage }) {
         <tbody>
           {byAgent
             ? usage.byAgent.flatMap((agent) => {
-              const agentName = agent.isMain ? t('todos.main_agent') : agent.name;
-              return agent.models.map((m, i) => (
-              <tr key={agent.agentId + m.model} title={`${agentName}\n${m.model}`}>
-                <td className="max-w-0 truncate px-2 py-1">{i === 0 ? agentName + ' ' : ''}<span className="text-muted-foreground">{shortModel(m.model)}</span></td>
-                <td className={num} title={String(m.input)}>{formatCompact(m.input)}</td>
-                <td className={num} title={String(m.output)}>{formatCompact(m.output)}</td>
-                <td className={num} title={String(m.cache)}>{formatCompact(m.cache)}</td>
-              </tr>
-              ));
-            })
+                const agentName = agent.isMain ? t('todos.main_agent') : agent.name;
+                return agent.models.map((m, i) => (
+                  <tr key={agent.agentId + m.model} title={`${agentName}\n${m.model}`}>
+                    <td className="max-w-0 truncate px-2 py-1">
+                      {i === 0 ? agentName + ' ' : ''}
+                      <span className="text-muted-foreground">{shortModel(m.model)}</span>
+                    </td>
+                    <td className={num} title={String(m.input)}>
+                      {formatCompact(m.input)}
+                    </td>
+                    <td className={num} title={String(m.output)}>
+                      {formatCompact(m.output)}
+                    </td>
+                    <td className={num} title={String(m.cache)}>
+                      {formatCompact(m.cache)}
+                    </td>
+                  </tr>
+                ));
+              })
             : usage.byModel.map((m) => (
-              <tr key={m.model} title={m.model}>
-                <td className="max-w-0 truncate px-2 py-1">{shortModel(m.model)}</td>
-                <td className={num} title={String(m.input)}>{formatCompact(m.input)}</td>
-                <td className={num} title={String(m.output)}>{formatCompact(m.output)}</td>
-                <td className={num} title={String(m.cache)}>{formatCompact(m.cache)}</td>
-              </tr>
-            ))}
+                <tr key={m.model} title={m.model}>
+                  <td className="max-w-0 truncate px-2 py-1">{shortModel(m.model)}</td>
+                  <td className={num} title={String(m.input)}>
+                    {formatCompact(m.input)}
+                  </td>
+                  <td className={num} title={String(m.output)}>
+                    {formatCompact(m.output)}
+                  </td>
+                  <td className={num} title={String(m.cache)}>
+                    {formatCompact(m.cache)}
+                  </td>
+                </tr>
+              ))}
         </tbody>
         <tfoot>
           <tr className="border-t font-semibold">

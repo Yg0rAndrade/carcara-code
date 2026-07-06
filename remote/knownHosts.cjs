@@ -4,11 +4,19 @@ const crypto = require('crypto');
 
 function makeKnownHosts({ filePath }) {
   function readAll() {
-    try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return {}; }
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch {
+      return {};
+    }
   }
   function writeAll(obj) {
-    try { fs.writeFileSync(filePath, JSON.stringify(obj)); return true; }
-    catch { return false; }
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(obj));
+      return true;
+    } catch {
+      return false;
+    }
   }
   const fingerprint = (keyBuf) =>
     'SHA256:' + crypto.createHash('sha256').update(keyBuf).digest('base64').replace(/=+$/, '');

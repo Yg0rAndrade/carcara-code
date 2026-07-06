@@ -12,11 +12,25 @@ class LocalPty {
       env,
     });
   }
-  write(data) { this.proc.write(data); }
-  resize(cols, rows) { try { this.proc.resize(cols, rows); } catch {} }
-  onData(cb) { this.proc.onData(cb); }
-  onExit(cb) { this.proc.onExit(cb); }
-  kill() { try { this.proc.kill(); } catch {} }
+  write(data) {
+    this.proc.write(data);
+  }
+  resize(cols, rows) {
+    try {
+      this.proc.resize(cols, rows);
+    } catch {}
+  }
+  onData(cb) {
+    this.proc.onData(cb);
+  }
+  onExit(cb) {
+    this.proc.onExit(cb);
+  }
+  kill() {
+    try {
+      this.proc.kill();
+    } catch {}
+  }
 }
 
 module.exports = { LocalPty };

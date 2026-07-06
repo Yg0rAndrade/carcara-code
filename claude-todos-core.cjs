@@ -22,10 +22,13 @@ function parseEpoch(ts) {
 }
 
 function isValidTodo(item) {
-  return !!item && typeof item === 'object'
-    && typeof item.content === 'string'
-    && typeof item.activeForm === 'string'
-    && VALID_STATUSES.includes(item.status);
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    typeof item.content === 'string' &&
+    typeof item.activeForm === 'string' &&
+    VALID_STATUSES.includes(item.status)
+  );
 }
 
 // Monta um Todo omitindo timings indefinidos — snapshot menor e serializável.
@@ -37,7 +40,11 @@ function makeTodo(content, activeForm, status, startedAt, completedAt) {
 }
 
 function parseLine(line) {
-  try { return JSON.parse(line); } catch { return null; }
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
 }
 
 // Qual schema vale: o do último evento de todos do transcript (um resume pode
@@ -47,7 +54,8 @@ function detectSchema(lines, skipSidechain) {
     const line = lines[i];
     if (!line) continue;
     const hasTodoWrite = line.indexOf('"name":"TodoWrite"') >= 0;
-    const hasTask = line.indexOf('"name":"TaskCreate"') >= 0 || line.indexOf('"name":"TaskUpdate"') >= 0;
+    const hasTask =
+      line.indexOf('"name":"TaskCreate"') >= 0 || line.indexOf('"name":"TaskUpdate"') >= 0;
     if (!hasTodoWrite && !hasTask) continue;
     const entry = parseLine(line);
     if (!entry || (skipSidechain && entry.isSidechain)) continue;
@@ -137,7 +145,9 @@ function parseTodos(lines, skipSidechain) {
     const timings = extractTodoWriteTimings(lines, skipSidechain);
     return todos.map((t) => {
       const tm = timings.get(t.content);
-      return tm ? makeTodo(t.content, t.activeForm, t.status, tm.startedAt, tm.completedAt) : makeTodo(t.content, t.activeForm, t.status);
+      return tm
+        ? makeTodo(t.content, t.activeForm, t.status, tm.startedAt, tm.completedAt)
+        : makeTodo(t.content, t.activeForm, t.status);
     });
   }
   if (schema === 'Task') return readTaskStream(lines, skipSidechain);
@@ -158,7 +168,7 @@ function resolveCreatedTaskId(entry, block) {
 }
 
 function readTaskStream(lines, skipSidechain) {
-  const tasks = new Map();          // taskId -> { content, activeForm, status, startedAt?, completedAt? }
+  const tasks = new Map(); // taskId -> { content, activeForm, status, startedAt?, completedAt? }
   const order = [];
   const pendingCreates = new Map(); // tool_use_id -> { content, activeForm }
 
@@ -175,7 +185,10 @@ function readTaskStream(lines, skipSidechain) {
           const subject = block.input && block.input.subject;
           const activeForm = block.input && block.input.activeForm;
           if (typeof subject === 'string') {
-            pendingCreates.set(block.id, { content: subject, activeForm: typeof activeForm === 'string' ? activeForm : subject });
+            pendingCreates.set(block.id, {
+              content: subject,
+              activeForm: typeof activeForm === 'string' ? activeForm : subject,
+            });
           }
         } else if (block.name === 'TaskUpdate') {
           const taskId = block.input && block.input.taskId;
@@ -216,7 +229,7 @@ function readTaskStream(lines, skipSidechain) {
 // rejeitada (não vira card); sem result ainda = está rodando.
 function readAgentInvocations(lines) {
   const invocations = new Map(); // tool_use_id -> { name, prompt }
-  const resultKind = new Map();  // tool_use_id -> 'completed' | 'rejected'
+  const resultKind = new Map(); // tool_use_id -> 'completed' | 'rejected'
   for (const line of lines) {
     if (!line) continue;
     const entry = parseLine(line);
@@ -224,10 +237,19 @@ function readAgentInvocations(lines) {
     const content = entry.message && entry.message.content;
     if (!Array.isArray(content)) continue;
     for (const block of content) {
-      if (block && block.type === 'tool_use' && block.name === 'Agent' && typeof block.id === 'string') {
+      if (
+        block &&
+        block.type === 'tool_use' &&
+        block.name === 'Agent' &&
+        typeof block.id === 'string'
+      ) {
         const input = block.input || {};
-        const label = typeof input.name === 'string' ? input.name
-          : typeof input.description === 'string' ? input.description : undefined;
+        const label =
+          typeof input.name === 'string'
+            ? input.name
+            : typeof input.description === 'string'
+              ? input.description
+              : undefined;
         if (typeof label === 'string' && typeof input.prompt === 'string') {
           invocations.set(block.id, { name: label, prompt: input.prompt });
         }
@@ -242,7 +264,11 @@ function readAgentInvocations(lines) {
   for (const [toolUseId, inv] of invocations) {
     const kind = resultKind.get(toolUseId);
     if (kind === 'rejected') continue;
-    out.push({ name: inv.name, prompt: inv.prompt, status: kind === 'completed' ? 'completed' : 'running' });
+    out.push({
+      name: inv.name,
+      prompt: inv.prompt,
+      status: kind === 'completed' ? 'completed' : 'running',
+    });
   }
   return out;
 }
@@ -262,7 +288,11 @@ function readSubAgentPrompt(lines) {
 }
 
 function readLines(fp) {
-  try { return fs.readFileSync(fp, 'utf-8').split('\n'); } catch { return null; }
+  try {
+    return fs.readFileSync(fp, 'utf-8').split('\n');
+  } catch {
+    return null;
+  }
 }
 
 // Grupo visual: rodando primeiro, depois concluídos com todos, histórico no fim.
@@ -277,8 +307,12 @@ function listSubAgents(mainLines, subagentsDir) {
   if (invocations.length === 0) return [];
   let files;
   try {
-    files = fs.readdirSync(subagentsDir).filter((f) => f.startsWith('agent-') && f.endsWith('.jsonl'));
-  } catch { return []; }
+    files = fs
+      .readdirSync(subagentsDir)
+      .filter((f) => f.startsWith('agent-') && f.endsWith('.jsonl'));
+  } catch {
+    return [];
+  }
 
   const byPrompt = new Map();
   for (const file of files) {
@@ -288,7 +322,9 @@ function listSubAgents(mainLines, subagentsDir) {
     const prompt = readSubAgentPrompt(lines);
     if (prompt === null) continue;
     let updatedAt = 0;
-    try { updatedAt = fs.statSync(fp).mtimeMs; } catch {}
+    try {
+      updatedAt = fs.statSync(fp).mtimeMs;
+    } catch {}
     byPrompt.set(prompt, {
       agentId: file.slice('agent-'.length, -'.jsonl'.length),
       todos: parseTodos(lines, false) || [],
@@ -302,10 +338,18 @@ function listSubAgents(mainLines, subagentsDir) {
     const match = byPrompt.get(inv.prompt);
     if (!match || seen.has(match.agentId)) continue;
     seen.add(match.agentId);
-    out.push({ agentId: match.agentId, name: inv.name, isMain: false, status: inv.status, todos: match.todos, updatedAt: match.updatedAt });
+    out.push({
+      agentId: match.agentId,
+      name: inv.name,
+      isMain: false,
+      status: inv.status,
+      todos: match.todos,
+      updatedAt: match.updatedAt,
+    });
   }
   out.sort((a, b) => {
-    const ga = subAgentGroup(a), gb = subAgentGroup(b);
+    const ga = subAgentGroup(a),
+      gb = subAgentGroup(b);
     if (ga !== gb) return ga - gb;
     return b.updatedAt - a.updatedAt;
   });
@@ -319,13 +363,15 @@ const ONE_MILLION = 1000000;
 // "claude-3-5-sonnet-20241022" de casar (o "sonnet-20" dele não é [4-9] nem 1\d).
 const ONE_M_FAMILY = /(?:opus|sonnet)-(?:[4-9]|1\d)(?!\d)/i;
 
-function num(v) { return typeof v === 'number' && Number.isFinite(v) ? v : 0; }
+function num(v) {
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0;
+}
 
 // Janela de contexto do modelo: 1M quando a família suporta (ou sufixo 1m
 // explícito) OU quando o observado já passou de 200k (prova de janela maior).
 // Sempre eleva, nunca abaixa.
 function contextLimitFor(model, observedTokens) {
-  const base = (/1m/i.test(model) || ONE_M_FAMILY.test(model)) ? ONE_MILLION : DEFAULT_CONTEXT_LIMIT;
+  const base = /1m/i.test(model) || ONE_M_FAMILY.test(model) ? ONE_MILLION : DEFAULT_CONTEXT_LIMIT;
   return (observedTokens || 0) > base ? ONE_MILLION : base;
 }
 
@@ -371,7 +417,8 @@ function contextForLines(lines) {
   }
   if (!last) return null;
   const u = last.usage;
-  const tokens = num(u.input_tokens) + num(u.cache_read_input_tokens) + num(u.cache_creation_input_tokens);
+  const tokens =
+    num(u.input_tokens) + num(u.cache_read_input_tokens) + num(u.cache_creation_input_tokens);
   return { tokens, limit: contextLimitFor(last.model, tokens) };
 }
 
@@ -393,12 +440,18 @@ function transcriptStamp(projectPath, claudeId) {
   const fp = claudeSessions.transcriptPath(projectPath, claudeId);
   if (!fp) return null;
   const parts = [];
-  try { parts.push('m:' + fs.statSync(fp).mtimeMs); } catch { return null; }
+  try {
+    parts.push('m:' + fs.statSync(fp).mtimeMs);
+  } catch {
+    return null;
+  }
   try {
     const dir = subagentsDirFor(fp, claudeId);
     for (const f of fs.readdirSync(dir)) {
       if (!f.startsWith('agent-') || !f.endsWith('.jsonl')) continue;
-      try { parts.push(f + ':' + fs.statSync(path.join(dir, f)).mtimeMs); } catch {}
+      try {
+        parts.push(f + ':' + fs.statSync(path.join(dir, f)).mtimeMs);
+      } catch {}
     }
   } catch {}
   return parts.join('|');
@@ -418,8 +471,16 @@ function buildSnapshot(projectPath, claudeId) {
   const mainTodos = parseTodos(mainLines, true);
   if (mainTodos) {
     let mtime = 0;
-    try { mtime = fs.statSync(fp).mtimeMs; } catch {}
-    agents.push({ agentId: claudeId, isMain: true, name: 'main', todos: mainTodos, updatedAt: mtime });
+    try {
+      mtime = fs.statSync(fp).mtimeMs;
+    } catch {}
+    agents.push({
+      agentId: claudeId,
+      isMain: true,
+      name: 'main',
+      todos: mainTodos,
+      updatedAt: mtime,
+    });
   }
   const subDir = subagentsDirFor(fp, claudeId);
   const subs = listSubAgents(mainLines, subDir);
@@ -433,7 +494,9 @@ function buildSnapshot(projectPath, claudeId) {
     ? agents
     : [{ agentId: claudeId, isMain: true, name: 'main' }, ...subs]; // usage do main aparece mesmo antes do 1º TodoWrite
   for (const a of usageAgents) {
-    const lines = a.isMain ? mainLines : readLines(path.join(subDir, 'agent-' + a.agentId + '.jsonl'));
+    const lines = a.isMain
+      ? mainLines
+      : readLines(path.join(subDir, 'agent-' + a.agentId + '.jsonl'));
     if (!lines) continue;
     const r = modelsAndCacheForLines(lines, a.isMain);
     if (r.models.length === 0) continue;
@@ -446,20 +509,33 @@ function buildSnapshot(projectPath, claudeId) {
   for (const a of byAgent) {
     for (const m of a.models) {
       const acc = byModel.get(m.model) || { model: m.model, input: 0, output: 0, cache: 0 };
-      acc.input += m.input; acc.output += m.output; acc.cache += m.cache;
+      acc.input += m.input;
+      acc.output += m.output;
+      acc.cache += m.cache;
       byModel.set(m.model, acc);
     }
   }
   const cacheTotal = cache.input + cache.read + cache.creation;
-  const usage = byAgent.length > 0
-    ? { byModel: [...byModel.values()], byAgent, context: contextForLines(mainLines), cache: cacheTotal > 0 ? cache : null }
-    : null;
+  const usage =
+    byAgent.length > 0
+      ? {
+          byModel: [...byModel.values()],
+          byAgent,
+          context: contextForLines(mainLines),
+          cache: cacheTotal > 0 ? cache : null,
+        }
+      : null;
 
   return { claudeId, agents, usage, updatedAt: Date.now() };
 }
 
 module.exports = {
-  parseTodos, readAgentInvocations, listSubAgents,
-  modelsAndCacheForLines, contextForLines, contextLimitFor,
-  buildSnapshot, transcriptStamp,
+  parseTodos,
+  readAgentInvocations,
+  listSubAgents,
+  modelsAndCacheForLines,
+  contextForLines,
+  contextLimitFor,
+  buildSnapshot,
+  transcriptStamp,
 };

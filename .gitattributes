@@ -1,0 +1,17 @@
+# Fim de linha LF no repositório E no working tree, em qualquer plataforma.
+# Sem isto, o autocrlf do Windows devolveria CRLF no checkout e o `prettier --check`
+# (que espera LF, igual ao CI no Linux) passaria a falhar localmente.
+* text=auto eol=lf
+
+# Binários: nunca normalizar fim de linha.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.icns  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.pdf   binary

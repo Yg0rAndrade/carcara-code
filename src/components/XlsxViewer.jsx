@@ -32,9 +32,20 @@ function styleOf(s) {
   if (s.i) css.fontStyle = 'italic';
   if (s.u) css.textDecoration = 'underline';
   if (s.fs) css.fontSize = `${s.fs}px`;
-  if (s.ta) css.textAlign = s.ta === 'center' ? 'center' : s.ta === 'right' ? 'right' : s.ta === 'justify' ? 'justify' : 'left';
+  if (s.ta)
+    css.textAlign =
+      s.ta === 'center'
+        ? 'center'
+        : s.ta === 'right'
+          ? 'right'
+          : s.ta === 'justify'
+            ? 'justify'
+            : 'left';
   if (s.va) css.verticalAlign = s.va === 'middle' ? 'middle' : s.va === 'bottom' ? 'bottom' : 'top';
-  if (s.wrap) { css.whiteSpace = 'normal'; css.wordBreak = 'break-word'; }
+  if (s.wrap) {
+    css.whiteSpace = 'normal';
+    css.wordBreak = 'break-word';
+  }
   return css;
 }
 
@@ -63,12 +74,13 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
       if (row.h) heights.set(row.r, row.h);
       for (const cell of row.cells || []) {
         byPos.set(row.r + ':' + cell.c, cell);
-        const cs = cell.cs || 1, rs = cell.rs || 1;
+        const cs = cell.cs || 1,
+          rs = cell.rs || 1;
         if (cs > 1 || rs > 1) {
           for (let dr = 0; dr < rs; dr++) {
             for (let dc = 0; dc < cs; dc++) {
               if (dr === 0 && dc === 0) continue;
-              covered.add((row.r + dr) + ':' + (cell.c + dc));
+              covered.add(row.r + dr + ':' + (cell.c + dc));
             }
           }
         }
@@ -93,14 +105,15 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
   };
 
   // Primeiro chunk ao montar (remonta a cada troca de aba via key no pai).
-  useEffect(() => { loadNext(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    loadNext();
+  }, []);
 
   // Se o conteúdo carregado ainda não preenche a viewport, busca mais — senão não há
   // scroll pra disparar o onScroll. Roda de novo a cada chunk até encher ou acabar.
   useEffect(() => {
     const el = scrollRef.current;
     if (el && loadedUpto < shownRows && el.scrollHeight <= el.clientHeight + 4) loadNext();
-    /* eslint-disable-line react-hooks/exhaustive-deps */
   }, [loadedUpto, shownRows]);
 
   // Carrega o próximo chunk ao chegar perto do fim (throttle por rAF).
@@ -115,7 +128,11 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
   };
 
   if (!nCols || !shownRows) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{t('xlsx.empty_sheet')}</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        {t('xlsx.empty_sheet')}
+      </div>
+    );
   }
 
   const rowNums = Array.from({ length: Math.min(loadedUpto, shownRows) }, (_, i) => i + 1);
@@ -152,7 +169,11 @@ function SheetGrid({ filePath, sheetIndex, meta }) {
         </thead>
         <tbody>
           {rowNums.map((r) => (
-            <tr key={r} className="ygc-xlsx-row" style={heights.has(r) ? { height: heights.get(r) } : undefined}>
+            <tr
+              key={r}
+              className="ygc-xlsx-row"
+              style={heights.has(r) ? { height: heights.get(r) } : undefined}
+            >
               <td className="sticky left-0 z-10 border-b border-r bg-muted px-1 text-center text-[11px] text-muted-foreground">
                 {r}
               </td>
@@ -190,7 +211,11 @@ function XlsxViewer({ data, name }) {
   const sheet = sheets[active] || sheets[0];
 
   if (!sheets.length || !filePath) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{t('xlsx.no_sheets')}</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        {t('xlsx.no_sheets')}
+      </div>
+    );
   }
 
   return (
@@ -202,10 +227,17 @@ function XlsxViewer({ data, name }) {
         <span className="opacity-50">·</span>
         <span>{t('xlsx.read_only')}</span>
         <span className="opacity-50">·</span>
-        <span>{sheet.totalRows} {t('xlsx.rows')}</span>
+        <span>
+          {sheet.totalRows} {t('xlsx.rows')}
+        </span>
         {sheet?.truncated && (
           <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
-            {t('xlsx.truncated', { shownRows: sheet.shownRows, shownCols: sheet.shownCols, totalRows: sheet.totalRows, totalCols: sheet.totalCols })}
+            {t('xlsx.truncated', {
+              shownRows: sheet.shownRows,
+              shownCols: sheet.shownCols,
+              totalRows: sheet.totalRows,
+              totalCols: sheet.totalCols,
+            })}
           </span>
         )}
       </div>
@@ -223,7 +255,9 @@ function XlsxViewer({ data, name }) {
               title={s.name}
               className={cn(
                 'flex h-6 shrink-0 items-center rounded px-2.5 text-[12px] transition-colors',
-                i === active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60'
+                i === active
+                  ? 'bg-muted font-medium text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/60',
               )}
             >
               <span className="max-w-[160px] truncate">{s.name}</span>

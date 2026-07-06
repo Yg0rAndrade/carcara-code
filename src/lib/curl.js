@@ -18,15 +18,39 @@ const emptyRow = () => ({ on: true, key: '', val: '' });
 // Flags que carregam um valor no token seguinte mas que não nos interessam.
 // Listadas pra que o valor delas não seja confundido com a URL.
 const NOISY_VALUE_FLAGS = new Set([
-  '-A', '--user-agent', '-e', '--referer', '-o', '--output', '-m', '--max-time',
-  '--connect-timeout', '-x', '--proxy', '-T', '--upload-file', '-w', '--write-out',
-  '--retry', '--cacert', '--cert', '--key', '-b', '--cookie', '-c', '--cookie-jar',
+  '-A',
+  '--user-agent',
+  '-e',
+  '--referer',
+  '-o',
+  '--output',
+  '-m',
+  '--max-time',
+  '--connect-timeout',
+  '-x',
+  '--proxy',
+  '-T',
+  '--upload-file',
+  '-w',
+  '--write-out',
+  '--retry',
+  '--cacert',
+  '--cert',
+  '--key',
+  '-b',
+  '--cookie',
+  '-c',
+  '--cookie-jar',
 ]);
 
 // Base64 que funciona tanto no renderer (btoa) quanto no Node (Buffer).
 function toBase64(s) {
-  try { return btoa(s); } catch {}
-  try { return Buffer.from(s, 'utf8').toString('base64'); } catch {}
+  try {
+    return btoa(s);
+  } catch {}
+  try {
+    return Buffer.from(s, 'utf8').toString('base64');
+  } catch {}
   return s;
 }
 
@@ -35,8 +59,8 @@ function toBase64(s) {
 function tokenize(input) {
   const s = String(input || '')
     .replace(/\r\n/g, '\n')
-    .replace(/\\\n/g, ' ')   // continuação de linha do bash
-    .replace(/\^\n/g, ' ');  // continuação de linha do cmd (Windows)
+    .replace(/\\\n/g, ' ') // continuação de linha do bash
+    .replace(/\^\n/g, ' '); // continuação de linha do cmd (Windows)
 
   const tokens = [];
   let cur = '';
@@ -48,19 +72,33 @@ function tokenize(input) {
     const c = s[i];
     if (c === '"' || c === "'") {
       const q = c;
-      i++; has = true;
+      i++;
+      has = true;
       while (i < n && s[i] !== q) {
-        if (q === '"' && s[i] === '\\' && i + 1 < n) { cur += s[i + 1]; i += 2; }
-        else { cur += s[i]; i++; }
+        if (q === '"' && s[i] === '\\' && i + 1 < n) {
+          cur += s[i + 1];
+          i += 2;
+        } else {
+          cur += s[i];
+          i++;
+        }
       }
       i++; // pula a aspa de fechamento
     } else if (/\s/.test(c)) {
-      if (has) { tokens.push(cur); cur = ''; has = false; }
+      if (has) {
+        tokens.push(cur);
+        cur = '';
+        has = false;
+      }
       i++;
     } else if (c === '\\' && i + 1 < n) {
-      cur += s[i + 1]; i += 2; has = true; // escape fora de aspas
+      cur += s[i + 1];
+      i += 2;
+      has = true; // escape fora de aspas
     } else {
-      cur += c; i++; has = true;
+      cur += c;
+      i++;
+      has = true;
     }
   }
   if (has) tokens.push(cur);
@@ -71,7 +109,10 @@ function pushHeader(arr, raw) {
   if (raw == null) return;
   const s = String(raw);
   const idx = s.indexOf(':');
-  if (idx < 0) { if (s.trim()) arr.push({ on: true, key: s.trim(), val: '' }); return; }
+  if (idx < 0) {
+    if (s.trim()) arr.push({ on: true, key: s.trim(), val: '' });
+    return;
+  }
   arr.push({ on: true, key: s.slice(0, idx).trim(), val: s.slice(idx + 1).trim() });
 }
 
@@ -87,8 +128,11 @@ export function splitUrlParams(rawUrl) {
     const eq = pair.indexOf('=');
     const k = eq >= 0 ? pair.slice(0, eq) : pair;
     const v = eq >= 0 ? pair.slice(eq + 1) : '';
-    try { params.push({ on: true, key: decodeURIComponent(k), val: decodeURIComponent(v) }); }
-    catch { params.push({ on: true, key: k, val: v }); }
+    try {
+      params.push({ on: true, key: decodeURIComponent(k), val: decodeURIComponent(v) });
+    } catch {
+      params.push({ on: true, key: k, val: v });
+    }
   }
   return { url, params };
 }
@@ -124,31 +168,34 @@ export function parseCurl(text) {
 
     if (t === '-X' || t === '--request') method = (next() || '').toUpperCase();
     else if (t.startsWith('--request=')) method = t.slice(10).toUpperCase();
-
     else if (t === '-H' || t === '--header') pushHeader(headers, next());
     else if (t.startsWith('--header=')) pushHeader(headers, t.slice(9));
     else if (t.startsWith('-H') && t.length > 2) pushHeader(headers, t.slice(2));
-
-    else if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary' || t === '--data-ascii') dataParts.push(next() || '');
+    else if (
+      t === '-d' ||
+      t === '--data' ||
+      t === '--data-raw' ||
+      t === '--data-binary' ||
+      t === '--data-ascii'
+    )
+      dataParts.push(next() || '');
     else if (t.startsWith('--data=')) dataParts.push(t.slice(7));
     else if (t.startsWith('-d') && t.length > 2) dataParts.push(t.slice(2));
-
-    else if (t === '--json') { dataParts.push(next() || ''); jsonFlag = true; }
-    else if (t.startsWith('--json=')) { dataParts.push(t.slice(7)); jsonFlag = true; }
-
-    else if (t === '-u' || t === '--user') user = next() || '';
+    else if (t === '--json') {
+      dataParts.push(next() || '');
+      jsonFlag = true;
+    } else if (t.startsWith('--json=')) {
+      dataParts.push(t.slice(7));
+      jsonFlag = true;
+    } else if (t === '-u' || t === '--user') user = next() || '';
     else if (t.startsWith('--user=')) user = t.slice(7);
     else if (t.startsWith('-u') && t.length > 2) user = t.slice(2);
-
-    else if (t === '--url') urlFromFlag = urlFromFlag || (next() || '');
-
+    else if (t === '--url') urlFromFlag = urlFromFlag || next() || '';
     else if (t.startsWith('-')) {
       // Flag desconhecida: se for uma das que levam valor, consome o valor pra
       // ele não virar "URL" por engano. Caso contrário, ignora só a flag.
       if (NOISY_VALUE_FLAGS.has(t)) i++;
-    }
-
-    else bare.push(t); // token solto → candidato a URL
+    } else bare.push(t); // token solto → candidato a URL
   }
 
   // Fallback pra bare[0] (ex.: "curl localhost:3000", sem ponto/TLD) só quando o

@@ -11,7 +11,8 @@ function parseSshConfig(text) {
     const val = sp === -1 ? '' : line.slice(sp + 1).trim();
     if (key === 'host') {
       if (cur) hosts.push(cur);
-      cur = val.includes('*') ? null
+      cur = val.includes('*')
+        ? null
         : { host: val, hostName: null, user: null, port: null, identityFile: null };
     } else if (cur) {
       if (key === 'hostname') cur.hostName = val;
