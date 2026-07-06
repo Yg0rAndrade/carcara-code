@@ -15,6 +15,7 @@
     "prepare": "husky",
     "pack:exe": "vite build && electron-builder --win nsis --publish never",
     "pack:appimage": "vite build && electron-builder --linux AppImage --publish never",
+    "pack:dmg": "vite build && electron-builder --mac dmg --universal --publish never",
     "test:i18n": "node scripts/i18n-parity.smoke.cjs",
     "test:csv": "node scripts/csv-smoke.cjs",
     "test:php": "node scripts/php-smoke.cjs",
@@ -70,6 +71,17 @@
       "icon": "build/icon.png",
       "category": "Development",
       "artifactName": "CarcaraCode-${version}.AppImage"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": false,
+      "identity": null,
+      "artifactName": "CarcaraCode-${version}-universal.dmg"
+    },
+    "dmg": {
+      "title": "Carcará Code ${version}"
     }
   },
   "devDependencies": {
