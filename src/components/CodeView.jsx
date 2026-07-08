@@ -674,12 +674,12 @@ export function CodeView({ active, openRequest, visible = true }) {
     setDragActive(false);
   };
 
-  const openMenu = (e, item, extra) => {
+  const openMenu = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
     const x = Math.min(e.clientX, window.innerWidth - 220);
     const y = Math.min(e.clientY, window.innerHeight - 300);
-    setMenu({ x, y, item, ...(extra || {}) });
+    setMenu({ x, y, item });
   };
 
   const actions = {
@@ -1052,11 +1052,9 @@ export function CodeView({ active, openRequest, visible = true }) {
                         onClick={() => openFile({ path: r.path, name: r.name })}
                         onContextMenu={(e) => {
                           e.preventDefault();
-                          openMenu(
-                            e,
-                            { path: r.path, name: r.name, isDir: false },
-                            { revealOnly: true },
-                          );
+                          // Menu completo (igual ao da árvore) — aditivo: "Abrir no
+                          // Explorador" entra junto das demais ações, sem tirar nada.
+                          openMenu(e, { path: r.path, name: r.name, isDir: false });
                         }}
                         title={r.rel}
                         className={cn(
@@ -1897,26 +1895,11 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
     };
   }, [menu, onClose]);
   if (!menu) return null;
-  const { x, y, item, revealOnly } = menu;
+  const { x, y, item } = menu;
   const run = (fn) => () => {
     onClose();
     fn(item);
   };
-  if (revealOnly) {
-    return (
-      <div
-        ref={ref}
-        className="fixed z-50 min-w-[200px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
-        style={{ left: x, top: y }}
-      >
-        <MenuItem
-          icon={ExternalLink}
-          label={t('contextMenu.reveal')}
-          onClick={run(actions.reveal)}
-        />
-      </div>
-    );
-  }
   // Quantos itens o "Delete" vai apagar (a seleção inteira se o item clicado fizer parte dela).
   const delCount = selItems?.has(item.path) && selItems.size > 1 ? selItems.size : 1;
   return (

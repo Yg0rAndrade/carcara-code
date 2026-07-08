@@ -23,6 +23,16 @@ export const INJECT = `(() => {
     + 'transform:translate(-50%,-50%);will-change:left,top;';
   document.documentElement.appendChild(dot);
 
+  // Esconde o cursor do SISTEMA em toda a página. Só trocar o cursor do
+  // documentElement não basta: elementos com cursor próprio (botão/link =
+  // cursor:pointer) ganham por especificidade e o "dedo" do SO aparece por cima
+  // da bolinha. Uma folha de estilo com '*' + !important cala todos eles — no
+  // celular real não há cursor pra mostrar.
+  var style = document.createElement('style');
+  style.className = '__carcara-touch-style';
+  style.textContent = '*, *::before, *::after { cursor: none !important; }';
+  document.documentElement.appendChild(style);
+
   var prevCursor = document.documentElement.style.cursor;
   document.documentElement.style.cursor = 'none';
 
@@ -76,6 +86,7 @@ export const INJECT = `(() => {
     document.removeEventListener('pointerdown', tap);
     document.removeEventListener('mouseleave', leave);
     document.documentElement.style.cursor = prevCursor;
+    try { style.remove(); } catch (e) {}
     for (var i = 0; i < ripples.length; i++) { try { ripples[i].remove(); } catch (e) {} }
     ripples = [];
     try { dot.remove(); } catch (e) {}
