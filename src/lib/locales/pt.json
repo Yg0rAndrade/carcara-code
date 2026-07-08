@@ -556,6 +556,7 @@
     "tabDeps": "Dependências",
     "tabLanguage": "Idioma",
     "tabAbout": "Sobre & créditos",
+    "tabWhatsNew": "Novidades",
     "close": "Fechar (Esc)",
     "aiIntroPre": "Escolha qual CLI de IA cada projeto usa. Vale para as ",
     "aiNewSessions": "novas sessões",

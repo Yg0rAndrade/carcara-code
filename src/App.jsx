@@ -48,6 +48,7 @@ import { useT } from './lib/i18n';
 import { useLayout } from './lib/layoutContext.jsx';
 import { resolveLayout } from './lib/layout.js';
 import { toggleCollapse, renameFolder, dissolveFolder, applyDrop, addFolder } from './lib/railTree';
+import { shouldShowChangelog } from './lib/changelog.js';
 
 export default function App() {
   const t = useT();
@@ -141,11 +142,21 @@ export default function App() {
     reload();
   }, [reload]);
 
-  // Versão do app (uma vez), pra exibir no rail e em Configurações > Sobre.
+  // Versão do app (uma vez), pra exibir no rail e em Configurações > Sobre. Também decide
+  // se abre a aba "Novidades" sozinha (só quando já havia uma versão salva e ela mudou —
+  // shouldShowChangelog trata o 1º uso sem incomodar). Grava lastSeenVersion sempre, pra
+  // não repetir o auto-abrir na próxima vez que a versão continuar a mesma.
   useEffect(() => {
     window.api
       .getAppVersion()
-      .then(setAppVersion)
+      .then((v) => {
+        setAppVersion(v);
+        if (shouldShowChangelog(v, localStorage.getItem('lastSeenVersion'))) {
+          setSettingsTab('whatsnew');
+          setSettingsOpen(true);
+        }
+        localStorage.setItem('lastSeenVersion', v);
+      })
       .catch(() => {});
   }, []);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   Sun,
   Moon,
@@ -39,6 +39,12 @@ import { useT, useLang } from '@/lib/i18n';
 import { updateView } from '@/lib/updateView';
 import { useLayout } from '@/lib/layoutContext.jsx';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
+// Notas de versão (aba "Novidades"): o CHANGELOG.md da raiz vira texto em build-time via
+// import ?raw do Vite — sem IPC, sem duplicar o arquivo. Markdown.jsx é lazy (mesmo padrão
+// do ChatPanel) pra não puxar react-markdown/highlight.js pro bundle inicial do app.
+import changelogText from '../../CHANGELOG.md?raw';
+
+const Markdown = lazy(() => import('./Markdown.jsx'));
 
 // Ícones de marca em SVG inline — o lucide removeu os logos de marca (questão de trademark),
 // então desenhamos aqui. Herdam currentColor e tamanho via className do <span> que os envolve.
@@ -319,6 +325,13 @@ export function SettingsModal({
         <TabButton active={tab === 'language'} onClick={() => setTab('language')} icon={<Globe />}>
           {t('settings.tabLanguage')}
         </TabButton>
+        <TabButton
+          active={tab === 'whatsnew'}
+          onClick={() => setTab('whatsnew')}
+          icon={<Sparkles />}
+        >
+          {t('settings.tabWhatsNew')}
+        </TabButton>
         <div className="my-1.5 border-t" />
         <TabButton active={tab === 'about'} onClick={() => setTab('about')} icon={<Heart />}>
           {t('settings.tabAbout')}
@@ -339,9 +352,11 @@ export function SettingsModal({
                     ? t('settings.tabDeps')
                     : tab === 'language'
                       ? t('settings.tabLanguage')
-                      : tab === 'about'
-                        ? t('settings.tabAbout')
-                        : t('settings.tabAppearance')}
+                      : tab === 'whatsnew'
+                        ? t('settings.tabWhatsNew')
+                        : tab === 'about'
+                          ? t('settings.tabAbout')
+                          : t('settings.tabAppearance')}
           </h1>
           <div className="flex-1" />
           <button
@@ -747,6 +762,20 @@ export function SettingsModal({
                   🇺🇸 {t('language.en')}
                 </button>
               </div>
+            </div>
+          )}
+
+          {tab === 'whatsnew' && (
+            <div className="mx-auto max-w-3xl">
+              <Suspense
+                fallback={
+                  <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                    {changelogText}
+                  </pre>
+                }
+              >
+                <Markdown text={changelogText} />
+              </Suspense>
             </div>
           )}
 
