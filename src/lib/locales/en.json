@@ -514,6 +514,8 @@
     "node_desc": "Makes Preview work — seeing the project run live is the heart of Carcará. No Node, no Preview.",
     "node_note": "Download the LTS version.",
     "git_desc": "Used by the Git tab (commits, branches, GitHub) and Claude's Bash tool. Without it, Claude falls back to PowerShell.",
+    "php_desc": "Runs the Preview for PHP projects (php -S). On Windows Carcará downloads it automatically; on Linux/macOS it uses the PHP installed on your system.",
+    "php_note": "sudo apt install php-cli   (Debian/Ubuntu/Mint) · brew install php (macOS)",
     "pill_checking": "checking…",
     "pill_installed": "Installed",
     "pill_not_found": "Not found",

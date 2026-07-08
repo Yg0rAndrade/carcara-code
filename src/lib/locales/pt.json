@@ -514,6 +514,8 @@
     "node_desc": "Faz o Preview funcionar — ver o projeto rodando ao vivo é o coração do Carcará. Sem Node, sem Preview.",
     "node_note": "Baixe a versão LTS.",
     "git_desc": "Usado pela aba Git (commits, branches, GitHub) e pela ferramenta Bash do Claude. Sem ele, o Claude cai no PowerShell.",
+    "php_desc": "Roda o Preview de projetos PHP (php -S). No Windows o Carcará baixa sozinho; no Linux/macOS ele usa o PHP instalado no sistema.",
+    "php_note": "sudo apt install php-cli   (Debian/Ubuntu/Mint) · brew install php (macOS)",
     "pill_checking": "verificando…",
     "pill_installed": "Instalado",
     "pill_not_found": "Não encontrado",

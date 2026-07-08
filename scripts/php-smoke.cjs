@@ -14,6 +14,7 @@ const {
   PHP_ZIP_NAME,
   PHP_DOWNLOAD_URLS,
   PHP_SHA256,
+  resolveSystemPhp,
 } = require('../php-runtime.cjs');
 
 function assert(cond, msg) {
@@ -119,6 +120,14 @@ async function run() {
     'URLs terminam no zip fixado',
   );
   console.log('constantes ok');
+
+  // resolveSystemPhp: ou null (sem php no PATH) ou caminho de um arquivo real.
+  const sysPhp = resolveSystemPhp();
+  assert(
+    sysPhp === null || (typeof sysPhp === 'string' && fs.existsSync(sysPhp)),
+    'resolveSystemPhp retorna null ou caminho existente: ' + sysPhp,
+  );
+  console.log('resolveSystemPhp ok' + (sysPhp ? ` (${sysPhp})` : ' (sem php no sistema)'));
 
   console.log('\nphp-smoke OK');
 }

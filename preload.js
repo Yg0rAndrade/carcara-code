@@ -1,6 +1,10 @@
 const { contextBridge, ipcRenderer, webUtils, webFrame } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  // Sistema operacional ('win32' | 'linux' | 'darwin'). Usado pra mostrar
+  // dependências específicas de plataforma (ex.: PHP só aparece fora do Windows).
+  platform: process.platform,
+
   getConfig: () => ipcRenderer.invoke('config:get'),
 
   // Versão do app, pra mostrar no rail e na tela Sobre.

@@ -3256,7 +3256,15 @@ ipcMain.handle('system:checkTools', () => {
       return false;
     }
   };
-  return { ok: true, git: has('git'), node: has('node'), npm: has('npm'), claude: has('claude') };
+  return {
+    ok: true,
+    git: has('git'),
+    node: has('node'),
+    npm: has('npm'),
+    claude: has('claude'),
+    // PHP: no Windows é baixado sob demanda; no Linux/macOS é o php do sistema.
+    php: has('php'),
+  };
 });
 
 function pickPackageManager(p) {

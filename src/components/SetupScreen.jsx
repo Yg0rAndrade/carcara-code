@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Download, RefreshCw, GitBranch, Hexagon, Loader2 } from 'lucide-react';
+import { Check, Download, RefreshCw, GitBranch, Hexagon, Loader2, FileCode } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { useT } from '@/lib/i18n';
 
@@ -33,7 +33,25 @@ export const DEPENDENCIES = [
     descKey: 'setup.git_desc',
     url: 'https://git-scm.com/download/win',
   },
+  {
+    // Só fora do Windows: no Windows o Carcará baixa o PHP sob demanda pro Preview.
+    // No Linux/macOS não há build portátil oficial, então usamos o php do sistema.
+    key: 'php',
+    name: 'PHP',
+    Icon: FileCode,
+    level: 'recommended',
+    descKey: 'setup.php_desc',
+    noteKey: 'setup.php_note',
+    url: 'https://www.php.net/manual/en/install.php',
+    platforms: ['linux', 'darwin'],
+  },
 ];
+
+// Dependências visíveis na plataforma atual (esconde as que não se aplicam, ex.: PHP no Windows).
+export function visibleDependencies() {
+  const plat = typeof window !== 'undefined' ? window.api?.platform : undefined;
+  return DEPENDENCIES.filter((d) => !d.platforms || d.platforms.includes(plat));
+}
 
 function StatusPill({ state }) {
   const t = useT();
@@ -80,7 +98,10 @@ export function useDependencyStatus(active) {
   }, [active, check]);
 
   const essentialsReady =
-    !!status && DEPENDENCIES.filter((t) => t.level === 'essential').every((t) => status[t.key]);
+    !!status &&
+    visibleDependencies()
+      .filter((t) => t.level === 'essential')
+      .every((t) => status[t.key]);
 
   return { status, loading, check, essentialsReady };
 }
@@ -91,7 +112,7 @@ export function DependencyCards({ status, loading }) {
   const stateOf = (key) => (loading && !status ? 'loading' : status ? !!status[key] : false);
   return (
     <div className="flex flex-col gap-3">
-      {DEPENDENCIES.map((dep) => {
+      {visibleDependencies().map((dep) => {
         const st = stateOf(dep.key);
         const installed = st === true;
         const lvl = LEVELS[dep.level];
