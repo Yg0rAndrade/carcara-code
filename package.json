@@ -79,7 +79,8 @@
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": false,
       "identity": null,
-      "artifactName": "CarcaraCode-${version}-universal.dmg"
+      "artifactName": "CarcaraCode-${version}-universal.dmg",
+      "x64ArchFiles": "**/cpu-features/**"
     },
     "dmg": {
       "title": "Carcará Code ${version}"
