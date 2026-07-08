@@ -2330,7 +2330,22 @@ ipcMain.handle('lang:set', (evt, { lang }) => {
 
 ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, theme }) => {
   if (terminals.has(sessionId)) {
-    return { existed: true, buffer: terminals.get(sessionId).buffer };
+    const e = terminals.get(sessionId);
+    // Renderer recriado (reload/janela nova) com o pane em OUTRO tamanho: sem
+    // adotar a grade do xterm novo, o PTY fica preso no tamanho antigo e a CLI
+    // desenha frames maiores que a tela — conteúdo empurrado pra baixo/cortado
+    // até o usuário redimensionar a janela na mão. O syncSize do renderer nunca
+    // corrige sozinho: o lastCols/lastRows dele já nascem na grade nova, então
+    // nenhum term:resize é disparado. Só redimensiona se mudou de fato (resize
+    // redundante faz o conpty reemitir a tela e duplicar conteúdo).
+    if (cols && rows && (cols !== e.cols || rows !== e.rows)) {
+      e.cols = cols;
+      e.rows = rows;
+      try {
+        e.pty.resize(cols, rows);
+      } catch {}
+    }
+    return { existed: true, buffer: e.buffer };
   }
   const remote = isRemote(projectPath);
   let proc;
@@ -2347,7 +2362,7 @@ ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, 
     launch = buildLaunchCommand(sessionId, projectPath);
     cli = launch.cli;
   }
-  const entry = { pty: proc, buffer: '', projectPath, sessionId, cli, remote };
+  const entry = { pty: proc, buffer: '', projectPath, sessionId, cli, remote, cols, rows };
   terminals.set(sessionId, entry);
 
   proc.onData((data) => {
@@ -2405,6 +2420,10 @@ ipcMain.on('term:input', (evt, { sessionId, data }) => {
 ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {
   const e = terminals.get(sessionId);
   if (e) {
+    // Guarda a grade corrente pro term:ensure de um renderer recriado saber se
+    // precisa readotar o tamanho (ver comentário lá).
+    e.cols = cols;
+    e.rows = rows;
     try {
       e.pty.resize(cols, rows);
     } catch {}
@@ -2415,7 +2434,17 @@ ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {
 // Igual ao do Claude Code, mas NÃO sobe o `claude` — abre só o shell no projeto.
 ipcMain.handle('shell:ensure', async (evt, { projectPath, cols, rows }) => {
   if (shells.has(projectPath)) {
-    return { existed: true, buffer: shells.get(projectPath).buffer };
+    const e = shells.get(projectPath);
+    // Mesmo caso do term:ensure: xterm recriado em outro tamanho precisa que o
+    // PTY adote a grade nova, senão a tela fica desenhada pro tamanho antigo.
+    if (cols && rows && (cols !== e.cols || rows !== e.rows)) {
+      e.cols = cols;
+      e.rows = rows;
+      try {
+        e.pty.resize(cols, rows);
+      } catch {}
+    }
+    return { existed: true, buffer: e.buffer };
   }
   let proc;
   try {
@@ -2423,7 +2452,7 @@ ipcMain.handle('shell:ensure', async (evt, { projectPath, cols, rows }) => {
   } catch (e) {
     return { error: e.message };
   }
-  const entry = { pty: proc, buffer: '' };
+  const entry = { pty: proc, buffer: '', cols, rows };
   shells.set(projectPath, entry);
 
   proc.onData((data) => {
@@ -2447,6 +2476,8 @@ ipcMain.on('shell:input', (evt, { projectPath, data }) => {
 ipcMain.on('shell:resize', (evt, { projectPath, cols, rows }) => {
   const e = shells.get(projectPath);
   if (e) {
+    e.cols = cols;
+    e.rows = rows;
     try {
       e.pty.resize(cols, rows);
     } catch {}
