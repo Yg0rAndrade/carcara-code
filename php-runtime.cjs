@@ -115,6 +115,26 @@ async function downloadFirstAvailable(urls, destPath) {
   throw lastErr || new Error('nenhuma URL de download disponível');
 }
 
+// Localiza o php já instalado no sistema (Linux/macOS via apt/brew).
+// Retorna o caminho absoluto do executável, ou null se não houver.
+function resolveSystemPhp() {
+  const [cmd, cmdArgs] =
+    process.platform === 'win32' ? ['where', ['php']] : ['sh', ['-c', 'command -v php']];
+  try {
+    const r = spawnSync(cmd, cmdArgs, { encoding: 'utf8' });
+    if (r.status === 0 && r.stdout) {
+      const first = r.stdout
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)[0];
+      if (first && fs.existsSync(first)) return first;
+    }
+  } catch {
+    /* php não encontrado */
+  }
+  return null;
+}
+
 function extractZip(zipPath, destDir) {
   // Windows: usa o Expand-Archive do PowerShell (sem dependência npm).
   // Aspas simples dobradas = escape literal do PowerShell, evita quebra de
@@ -141,6 +161,21 @@ async function ensurePhpRuntime({ cacheBaseDir, onPhase }) {
   const phase = (m) => {
     if (onPhase) onPhase(m);
   };
+
+  // Linux/macOS: não existe build portátil oficial de PHP como o do Windows
+  // (o zip de windows.php.net é php.exe e só roda no Windows). O caminho padrão
+  // nesses sistemas é usar o PHP instalado pelo gerenciador de pacotes.
+  if (process.platform !== 'win32') {
+    const sysPhp = resolveSystemPhp();
+    if (sysPhp) return sysPhp;
+    throw new Error(
+      'PHP não encontrado no sistema. Instale o PHP para usar o preview de projetos PHP:\n' +
+        '  • Debian/Ubuntu/Mint: sudo apt install php-cli\n' +
+        '  • Fedora: sudo dnf install php-cli\n' +
+        '  • macOS (Homebrew): brew install php',
+    );
+  }
+
   const versionDir = path.join(cacheBaseDir, PHP_VERSION);
   const phpExe = path.join(versionDir, 'php.exe');
   if (fs.existsSync(phpExe)) return phpExe; // cache hit
@@ -196,5 +231,6 @@ module.exports = {
   PHP_ZIP_NAME,
   PHP_DOWNLOAD_URLS,
   PHP_SHA256,
+  resolveSystemPhp,
   ensurePhpRuntime,
 };
