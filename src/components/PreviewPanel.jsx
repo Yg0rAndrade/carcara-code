@@ -430,6 +430,7 @@ export function PreviewPanel({
   const overlayRef = useRef(null); // camada do print (pra medir e desenhar o retângulo)
   const [canBack, setCanBack] = useState(false); // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
+  const [ctrlHeld, setCtrlHeld] = useState(false); // Ctrl/Cmd pressionado: feedback laranja no botão de recarregar (hard reload)
   const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
   const [viewport, setViewport] = useState(
     () => localStorage.getItem('previewViewport') || 'desktop',
@@ -1364,13 +1365,63 @@ export function PreviewPanel({
     });
   }, [createTab, refreshTabBar]);
 
-  const reload = () => {
+  // Recarregar normal; com Ctrl/Cmd (atalho ou clique) vira hard reload, ignorando cache.
+  const reload = (e) => {
     if (active) {
       try {
-        activeWebviewOf(active.path)?.reload();
+        const wv = activeWebviewOf(active.path);
+        const hard = e && (e.ctrlKey || e.metaKey);
+        if (hard) wv?.reloadIgnoringCache();
+        else wv?.reload();
       } catch {}
     }
   };
+  // Atalhos de hard reload (Ctrl+F5 / Ctrl+Shift+R / Cmd+Shift+R), só valem "olhando um
+  // site" (mesmo gate do Ctrl+F acima). Lê tudo por ref pra não precisar de deps e não
+  // correr risco de webview/path desatualizados. F5 puro continua sendo reload normal.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!inWebRef.current) return;
+      const key = e.key;
+      const hard =
+        (e.ctrlKey && key === 'F5') ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'R' || key === 'r'));
+      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
+      if (hard) {
+        e.preventDefault();
+        try {
+          w?.reloadIgnoringCache();
+        } catch {}
+      } else if (key === 'F5' && !e.ctrlKey) {
+        e.preventDefault();
+        try {
+          w?.reload();
+        } catch {}
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  // Feedback visual: segurar Ctrl/Cmd deixa a setinha de recarregar laranja (hard reload
+  // à mão). blur limpa o estado pra não travar "preso" laranja se a pessoa alt-tabar
+  // segurando a tecla.
+  useEffect(() => {
+    const onDown = (e) => {
+      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(true);
+    };
+    const onUp = (e) => {
+      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(false);
+    };
+    const onBlur = () => setCtrlHeld(false);
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
   // Abre o preview atual no navegador padrão do sistema. Sem lock-in: se a pessoa
   // preferir o navegador dela (DevTools próprio, extensões, etc.), é só um clique.
   const openInBrowser = () => {
@@ -1551,8 +1602,13 @@ export function PreviewPanel({
                   type="button"
                   onClick={reload}
                   disabled={mode !== 'web'}
-                  title={t('preview.reload')}
-                  className="absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]"
+                  title={
+                    ctrlHeld ? 'Recarregar ignorando cache (hard reload)' : t('preview.reload')
+                  }
+                  className={cn(
+                    'absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]',
+                    ctrlHeld ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                  )}
                 >
                   <RotateCWIcon />
                 </button>
