@@ -46,6 +46,13 @@ export default function AnnotatorModal({ dataURL, onCopy, onClose }) {
         selection: false,
         preserveObjectStacking: true,
       });
+      // Fabric v6+ trocou o origin padrão de 'left'/'top' pra 'center'/'center'. Este
+      // componente foi escrito na semântica canto-superior-esquerdo (left/top = canto do
+      // objeto), então o fundo entrava CENTRADO em (0,0): só o quadrante inferior-direito
+      // da captura aparecia no canto do canvas e o resto ficava em branco — o bug do
+      // "print recortado / imagem dobrada". Fixa o origin no canto (vale também pros
+      // objetos desenhados, senão caem deslocados por meia dimensão).
+      img.set({ originX: 'left', originY: 'top', left: 0, top: 0 });
       canvas.backgroundImage = img;
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
@@ -82,6 +89,8 @@ export default function AnnotatorModal({ dataURL, onCopy, onClose }) {
           const text = new fabric.IText(tRef.current('annotator.textPlaceholder'), {
             left: p.x,
             top: p.y,
+            originX: 'left',
+            originY: 'top',
             fill: colorRef.current,
             fontFamily: 'Hanken Grotesk, sans-serif',
             fontSize: 28,
@@ -97,6 +106,8 @@ export default function AnnotatorModal({ dataURL, onCopy, onClose }) {
           const rect = new fabric.Rect({
             left: p.x,
             top: p.y,
+            originX: 'left',
+            originY: 'top',
             width: 0,
             height: 0,
             fill: 'transparent',

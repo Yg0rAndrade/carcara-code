@@ -17,6 +17,10 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - Sobre: seção **"Contribuir"** com link pro repositório público, convidando a abrir Pull Requests
 - Erros: **copiar o erro** de forma consistente (código + mensagem + stack) — payload compartilhado no card de erro e ação "Copiar" nos avisos de erro
 
+### Correções
+
+- Preview → anotador do print: **o recorte aparecia dobrado no canto** — só ~1/4 da captura (o quadrante inferior-direito) era mostrado no canto superior-esquerdo do canvas, o resto em branco. Causa: o Fabric.js 6+ trocou o `origin` padrão dos objetos de canto (`left`/`top`) para centro (`center`), então a imagem de fundo entrava centrada em (0,0). Corrigido fixando o `origin` no canto (também alinha retângulo e texto ao cursor)
+
 ### Interno
 
 - Lógica pura extraída e testada (vitest): `errorReport`, `projectFilter`, `changelog`, `marquee`
