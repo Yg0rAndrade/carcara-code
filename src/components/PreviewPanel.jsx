@@ -328,8 +328,14 @@ function ShotPicker({ onArea, onFull, active, disabled }) {
     return () => window.removeEventListener('mousedown', onDown);
   }, [open]);
   const OPTS = [
-    { key: 'area', label: t('preview.shot_area'), Icon: Crop, run: onArea },
-    { key: 'full', label: t('preview.shot_full'), Icon: Monitor, run: onFull },
+    { key: 'area', label: t('preview.shot_area'), Icon: Crop, run: onArea, keys: ['Ctrl', 'P'] },
+    {
+      key: 'full',
+      label: t('preview.shot_full'),
+      Icon: Monitor,
+      run: onFull,
+      keys: ['Ctrl', 'Shift', 'P'],
+    },
   ];
   return (
     <div ref={ref} className="relative">
@@ -344,7 +350,7 @@ function ShotPicker({ onArea, onFull, active, disabled }) {
         <Camera />
       </ToolButton>
       {open && (
-        <div className="absolute right-0 top-9 z-50 min-w-[170px] overflow-hidden rounded-md border bg-popover py-1 shadow-md">
+        <div className="absolute right-0 top-9 z-50 min-w-[220px] overflow-hidden rounded-md border bg-popover py-1 shadow-md">
           {OPTS.map((o) => (
             <button
               key={o.key}
@@ -356,7 +362,17 @@ function ShotPicker({ onArea, onFull, active, disabled }) {
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4"
             >
               <o.Icon />
-              {o.label}
+              <span>{o.label}</span>
+              <span className="ml-auto flex items-center gap-0.5 text-muted-foreground">
+                {o.keys.map((k) => (
+                  <kbd
+                    key={k}
+                    className="rounded border bg-muted px-1 font-mono text-[10px] leading-normal"
+                  >
+                    {k}
+                  </kbd>
+                ))}
+              </span>
             </button>
           ))}
         </div>
@@ -880,6 +896,38 @@ export function PreviewPanel({
     setShooting(false);
     doCapture(null);
   }, [active, stopGrab, doCapture]);
+
+  // Atalhos de print (mesmo esquema do Ctrl+F): Ctrl/Cmd+P = "Selecionar área" (recorte);
+  // Ctrl/Cmd+Shift+P = "Tela toda" (abre o anotador na hora). Só valem olhando um site.
+  // Caminho 1 — foco na app (fora do webview): pega o atalho no window; preventDefault
+  // barra o "imprimir" do navegador.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.key.toLowerCase() !== 'p') return;
+      if (!inWebRef.current) return;
+      e.preventDefault();
+      if (e.shiftKey) captureFull();
+      else startCrop();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [startCrop, captureFull]);
+
+  // Caminho 2 — foco DENTRO do webview: o main intercepta o Ctrl+P (senão o site abriria o
+  // próprio diálogo de impressão) e manda 'preview:screenshot' com o id do webContents.
+  useEffect(() => {
+    return window.api.on('preview:screenshot', ({ id, full }) => {
+      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
+      let cid = null;
+      try {
+        cid = w && w.getWebContentsId();
+      } catch {}
+      if (cid == null || id !== cid) return;
+      if (full) captureFull();
+      else startCrop();
+    });
+  }, [startCrop, captureFull]);
 
   // Borda externa laranja no webview enquanto o modo print (recorte) está ativo, pra
   // sinalizar "vou tirar foto" (não é a borda interna do foco; é a borda do elemento).

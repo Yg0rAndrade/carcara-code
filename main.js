@@ -466,6 +466,14 @@ app.on('web-contents-created', (_event, contents) => {
       _e.preventDefault();
       return;
     }
+    // Ctrl/Cmd+P com o foco DENTRO do preview: o site abriria o diálogo de impressão do
+    // navegador. Barramos e avisamos o renderer pra abrir o print do preview — recorte, ou
+    // tela toda com Shift (mesmo esquema do Ctrl+F).
+    if ((input.control || input.meta) && !input.alt && input.key.toLowerCase() === 'p') {
+      safeSend('preview:screenshot', { id: contents.id, full: input.shift });
+      _e.preventDefault();
+      return;
+    }
     // Ctrl +/-/0 com o foco DENTRO do preview zoomam o SITE (estilo navegador),
     // não a janela do app. preventDefault impede o site de também reagir ao atalho.
     if ((input.control || input.meta) && !input.alt) {
