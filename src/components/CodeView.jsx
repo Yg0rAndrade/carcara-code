@@ -1544,6 +1544,16 @@ function serializeEnv(rows) {
     .join('\n');
 }
 
+// Normaliza uma chave pro formato aceito pelo .env (o mesmo que o parseEnv reconhece:
+// começa com letra/_ e segue com letra/dígito/_/.). Sem isto, colar algo com espaço no
+// campo da chave (ex.: "Token value") gerava "Token value=", que o parser trata como
+// linha crua e SOME do editor mascarado. Espaço/símbolo vira "_"; dígito/ponto no início
+// ganha "_" na frente. Vazio fica vazio (o usuário ainda está digitando).
+function sanitizeEnvKey(k) {
+  const cleaned = String(k).replace(/[^A-Za-z0-9_.]/g, '_');
+  return /^[0-9.]/.test(cleaned) ? '_' + cleaned : cleaned;
+}
+
 // Editor de .env com valores mascarados por padrão (•••). Revela por linha (olho) ou
 // tudo de uma vez; edita chave/valor, adiciona e remove variáveis. Escreve de volta no
 // `content` da aba — o botão Salvar (Ctrl+S) do CodeView segue funcionando igual.
@@ -1554,8 +1564,13 @@ function EnvEditor({ value, onChange }) {
   const [revealAll, setRevealAll] = useState(false);
 
   const commit = (next) => onChange(serializeEnv(next));
-  const setVal = (idx, v) => commit(rows.map((r, i) => (i === idx ? { ...r, value: v } : r)));
-  const setKey = (idx, k) => commit(rows.map((r, i) => (i === idx ? { ...r, key: k } : r)));
+  // Valor: tira quebras de linha (o input é de uma linha só, mas um paste multi-linha
+  // viraria linhas extras no arquivo e parte do valor sumiria do editor).
+  const setVal = (idx, v) =>
+    commit(rows.map((r, i) => (i === idx ? { ...r, value: v.replace(/[\r\n]+/g, ' ') } : r)));
+  // Chave: normaliza pro formato válido do .env, senão a linha vira crua e some.
+  const setKey = (idx, k) =>
+    commit(rows.map((r, i) => (i === idx ? { ...r, key: sanitizeEnvKey(k) } : r)));
   const removeRow = (idx) => commit(rows.filter((_, i) => i !== idx));
   const addRow = () => {
     const next = [...rows];

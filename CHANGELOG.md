@@ -21,6 +21,8 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 ### Correções
 
 - Preview → anotador do print: **o recorte aparecia dobrado no canto** — só ~1/4 da captura (o quadrante inferior-direito) era mostrado no canto superior-esquerdo do canvas, o resto em branco. Causa: o Fabric.js 6+ trocou o `origin` padrão dos objetos de canto (`left`/`top`) para centro (`center`), então a imagem de fundo entrava centrada em (0,0). Corrigido fixando o `origin` no canto (também alinha retângulo e texto ao cursor)
+- Código → editor de `.env`: **uma variável sumia ao colar uma chave com espaço/símbolo** (ex.: colar "Token value" no campo da chave virava `Token value=`, que o parser tratava como linha crua e escondia no editor mascarado). Agora a chave é normalizada pro formato válido (`Token_value`) e a linha continua visível; valores multilinha colados também não quebram mais em linhas extras
+- Git: `push`/`pull` falhavam com **"Use of GIT_ASKPASS is not permitted"** quando o app subia de um terminal que injeta `GIT_ASKPASS` (ex.: Claude Code) — o git 2.54+ passou a recusar. Removido do ambiente do git (como já era feito com `GIT_EDITOR`/`GIT_CONFIG_*`); o app usa o credential manager do sistema
 
 ### Interno
 
