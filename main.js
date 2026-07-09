@@ -2701,6 +2701,10 @@ let _sg = null;
 //  - Editores: o app sempre commita com -m (nunca abre editor) → "Use of GIT_EDITOR is not permitted".
 //  - Injeção de config: GIT_CONFIG_COUNT + GIT_CONFIG_KEY_<i>/VALUE_<i> e GIT_CONFIG_PARAMETERS →
 //    "Use of GIT_CONFIG_COUNT is not permitted without enabling allowUnsafeConfigEnvCount".
+//  - Askpass herdado: quando o app sobe de um terminal do Claude Code, ele herda GIT_ASKPASS
+//    (helper de credencial do Claude). O git 2.54+ recusa → "Use of GIT_ASKPASS is not permitted
+//    without enabling allowUnsafeAskPass". Tirar é o certo: o app usa o credential manager do
+//    sistema (como o VS Code), então o askpass do pai só atrapalharia push/pull.
 // Tirar essas vars é seguro: o app gerencia o próprio git e a config normal do usuário continua valendo.
 function gitEnv(extra) {
   const e = { ...process.env, ...(extra || {}) };
@@ -2708,6 +2712,8 @@ function gitEnv(extra) {
   delete e.VISUAL;
   delete e.GIT_EDITOR;
   delete e.GIT_SEQUENCE_EDITOR;
+  delete e.GIT_ASKPASS;
+  delete e.SSH_ASKPASS;
   const n = Number(e.GIT_CONFIG_COUNT);
   if (Number.isFinite(n) && n > 0) {
     for (let i = 0; i < n; i++) {
