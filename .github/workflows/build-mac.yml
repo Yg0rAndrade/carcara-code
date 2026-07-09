@@ -12,9 +12,24 @@ on:
 permissions:
   contents: write
 
+# Dois .dmg NATIVOS, um por arquitetura, cada um no runner certo — em vez de um
+# "universal" único. Com npmRebuild:false, o build universal não recompila os módulos
+# nativos por arch, então os .node ficam idênticos nas duas metades e o @electron/universal
+# quebra (node-pty, canvas, cpu-features… um por vez). Buildar por-arch no runner nativo
+# gera o binário correto de cada lado, sem merge e sem whitelist.
+#  - macos-13 = Intel (x64) · macos-14 = Apple Silicon (arm64) — ambos grátis em repo público.
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13
+            arch: x64
+          - runner: macos-14
+            arch: arm64
+    name: Build mac (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Baixar o código
@@ -29,7 +44,7 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Gerar o instalador (.dmg universal)
+      - name: Gerar o instalador (.dmg da arquitetura do runner)
         env:
           # App não-assinado por ora: impede o electron-builder de procurar cert.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -38,16 +53,19 @@ jobs:
       - name: Publicar o .dmg como artefato
         uses: actions/upload-artifact@v4
         with:
-          name: CarcaraCode-macOS
+          name: CarcaraCode-macOS-${{ matrix.arch }}
           path: release/*.dmg
           retention-days: 30
           if-no-files-found: error
 
+      # Só em tags: anexa o .dmg desta arch à MESMA página de Release (upsert). Os dois
+      # jobs somam CarcaraCode-<versão>-x64.dmg e -arm64.dmg. (Sem latest-mac.yml: os dois
+      # jobs gerariam o mesmo nome e um sobrescreveria o outro; auto-update do Mac não é
+      # usado por ora.)
       - name: Publicar Release (somente em tags)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             release/*.dmg
-            release/latest-mac.yml
           generate_release_notes: true

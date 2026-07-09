@@ -28,6 +28,7 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ### Interno
 
+- macOS: distribuição em **dois `.dmg` nativos** — Intel (`x64`) e Apple Silicon (`arm64`) — em vez de um "universal". Cada um builda no runner nativo da sua arquitetura; o universal com `npmRebuild:false` deixava os módulos nativos (node-pty/canvas/cpu-features) idênticos nas duas metades e o `@electron/universal` quebrava um a um
 - Robustez: se um painel lazy (Git/API/MCP/Quadro/Código) falha ao carregar o chunk porque o `dist/` foi reconstruído embaixo da janela aberta (hash mudou), o app **recarrega sozinho uma vez** (via `vite:preloadError`) em vez de mostrar "Failed to fetch dynamically imported module". Throttle evita loop
 - Lógica pura extraída e testada (vitest): `errorReport`, `projectFilter`, `changelog`, `marquee`
 - i18n em paridade (pt/en) para todos os textos novos, incluindo o fluxo de anotação
