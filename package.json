@@ -21,7 +21,8 @@
     "test:php": "node scripts/php-smoke.cjs",
     "test:rail": "node scripts/rail-smoke.cjs",
     "test:platform": "node scripts/platform-smoke.cjs",
-    "test:localpty": "node scripts/localpty-smoke.cjs"
+    "test:localpty": "node scripts/localpty-smoke.cjs",
+    "test:aicatalog": "node scripts/ai-catalog-smoke.cjs"
   },
   "lint-staged": {
     "*.{js,jsx,cjs,mjs}": [
