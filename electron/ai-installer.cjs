@@ -9,7 +9,6 @@ const path = require('node:path');
 const https = require('node:https');
 const { spawnSync } = require('node:child_process');
 const catalog = require('./ai-catalog.cjs');
-const platform = require('./platform.cjs');
 const { LocalPty } = require('./remote/localPty.cjs');
 
 const TTL_MS = 24 * 60 * 60 * 1000;
@@ -124,9 +123,23 @@ async function latestVersion(key, { userDataDir, nowMs = Date.now() }) {
   return version;
 }
 
+// Como rodar um comando de uma vez no interpretador do catálogo e deixá-lo SAIR
+// sozinho (dispara onExit em qualquer SO). Evita depender de escrever "exit" num
+// shell interativo — não portável (cmd.exe não separa por ';'). powershell roda o
+// comando .ps1 (irm|iex); sh roda os curl|bash/sh (Mac/Linux, e Win com bash do git).
+function spawnSpecFor(shellName, line) {
+  if (shellName === 'powershell') {
+    return {
+      shell: 'powershell.exe',
+      shellArgs: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', line],
+    };
+  }
+  return { shell: 'sh', shellArgs: ['-lc', line] };
+}
+
 // Roda o instalador/updater oficial num PTY real. `cleanEnv` vem do main (mesmo env
 // dos terminais). Marca o fim escrevendo um sentinela e detectando o exit do shell.
-function run(key, mode, opts) {
+function run(key, mode, opts = {}) {
   const { cwd, cols = 80, rows = 24, cleanEnv, onData, onDone } = opts;
   const spec = mode === 'update' ? catalog.updateSpec(key) : catalog.installSpec(key);
   if (!spec) {
@@ -140,28 +153,26 @@ function run(key, mode, opts) {
     onDone && onDone({ ok: false, version: null, error: 'node-pty: ' + e.message });
     return { write() {}, resize() {}, kill() {} };
   }
-  const proc = new LocalPty({
-    ptyLib,
-    shell: platform.shellFor(),
-    shellArgs: platform.loginArgsFor(),
-    env: cleanEnv,
-    cwd,
-    cols,
-    rows,
-  });
+  // Comando (+ postInstall só no install). Separador ';' funciona em powershell e sh
+  // (o '&&' NÃO existe no PowerShell 5.1). O interpretador vem do spec.shell.
+  const post = mode === 'install' && spec.postInstall ? ` ; ${spec.postInstall}` : '';
+  const line = `${spec.cmd}${post}`;
+  const { shell, shellArgs } = spawnSpecFor(spec.shell, line);
+  let proc;
+  try {
+    proc = new LocalPty({ ptyLib, shell, shellArgs, env: cleanEnv, cwd, cols, rows });
+  } catch (e) {
+    // Ex.: 'sh' ausente no Windows (opencode precisa do bash do git). Degrada.
+    onDone && onDone({ ok: false, version: null, error: 'shell indisponível: ' + e.message });
+    return { write() {}, resize() {}, kill() {} };
+  }
   proc.onData((d) => onData && onData(d));
   proc.onExit(() => {
     const det = detect(key);
     onDone && onDone({ ok: det.installed, version: det.version });
   });
-
-  // Monta a linha: comando + postInstall (só install) e depois `exit` pra o shell fechar
-  // e disparar onExit. Ecoa o comando pro usuário ver antes (segurança/transparência).
-  const post = mode === 'install' && spec.postInstall ? ` && ${spec.postInstall}` : '';
-  const line = `${spec.cmd}${post}`;
+  // Ecoa o comando pro usuário ver antes do output (transparência/segurança).
   onData && onData(`\r\n\x1b[2m$ ${line}\x1b[0m\r\n`);
-  proc.write(`${line}; exit\r`);
-
   return {
     write: (d) => proc.write(d),
     resize: (c, r) => proc.resize(c, r),
