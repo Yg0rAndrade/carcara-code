@@ -215,6 +215,13 @@ contextBridge.exposeInMainWorld('api', {
   previewStatus: (projectPath) => ipcRenderer.invoke('preview:status', { projectPath }),
   previewGetLog: (projectPath) => ipcRenderer.invoke('preview:log:get', { projectPath }),
 
+  // Onboarding (scaffold de projeto novo)
+  scaffoldStacks: () => ipcRenderer.invoke('scaffold:stacks'),
+  scaffoldProbe: (projectPath) => ipcRenderer.invoke('scaffold:probe', { projectPath }),
+  scaffoldStatus: (projectPath) => ipcRenderer.invoke('scaffold:status', { projectPath }),
+  scaffoldRun: (projectPath, stackId) =>
+    ipcRenderer.invoke('scaffold:run', { projectPath, stackId }),
+
   // Código
   listDir: (dirPath) => ipcRenderer.invoke('fs:dir', { dirPath }),
   watchDir: (dirPath) => ipcRenderer.invoke('fs:watch', { dirPath }),

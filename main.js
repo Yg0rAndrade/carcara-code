@@ -3622,6 +3622,110 @@ function cmdAvailable(cmd) {
   return ok;
 }
 
+// ---------- Onboarding: scaffold de projeto novo ----------
+const scaffoldCore = require('./electron/scaffold-core.cjs');
+const runningScaffolds = new Map(); // projectPath -> { phase }
+
+function readEntries(dir) {
+  try {
+    return fs.readdirSync(dir);
+  } catch {
+    return [];
+  }
+}
+
+function sendScaffold(projectPath, phase, line) {
+  safeSend('scaffold:progress', { projectPath, phase, line: line || '' });
+}
+
+// Move o que o create-* gerou (no tempdir) pro projeto. Arquivo do usuário que
+// colide vai pra _backup/ (nunca deleta); o gerado vence.
+function mergeScaffold(tempDir, projectPath, plan) {
+  const backupDir = path.join(projectPath, '_backup');
+  for (const name of plan.backup) {
+    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+    fs.renameSync(path.join(projectPath, name), path.join(backupDir, name));
+  }
+  for (const name of plan.move) {
+    fs.renameSync(path.join(tempDir, name), path.join(projectPath, name));
+  }
+}
+
+ipcMain.handle('scaffold:stacks', () => scaffoldCore.listStacks());
+
+ipcMain.handle('scaffold:probe', (_evt, { projectPath }) => {
+  const entries = readEntries(projectPath);
+  return {
+    scaffoldable: scaffoldCore.isScaffoldable(entries),
+    junk: scaffoldCore.junkPresent(entries),
+  };
+});
+
+ipcMain.handle('scaffold:status', (_evt, { projectPath }) => {
+  return runningScaffolds.get(projectPath) || null;
+});
+
+ipcMain.handle('scaffold:run', async (_evt, { projectPath, stackId }) => {
+  if (runningScaffolds.has(projectPath)) return { error: 'already-running' };
+  const command = scaffoldCore.commandFor(stackId);
+  if (!command) return { error: 'unknown-stack' };
+
+  // Re-checa na hora: a pasta pode ter deixado de ser scaffoldável por fora.
+  if (!scaffoldCore.isScaffoldable(readEntries(projectPath))) {
+    return { error: 'not-scaffoldable' };
+  }
+  if (!(cmdAvailable('node') && cmdAvailable('npm'))) {
+    return { error: 'missing-node' };
+  }
+
+  const state = { phase: 'scaffolding' };
+  runningScaffolds.set(projectPath, state);
+  sendScaffold(projectPath, 'scaffolding');
+
+  // tempdir SEMPRE vazio -> os create-* rodam sem prompt de "diretório não vazio".
+  const tempDir = path.join(projectPath, '.carcara-scaffold');
+  let log = '';
+  try {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    const code = await new Promise((resolve) => {
+      const proc = spawn(command[0], command.slice(1), {
+        cwd: tempDir,
+        shell: true,
+        env: { ...process.env, CI: '1' },
+      });
+      const onData = (d) => {
+        const s = d.toString();
+        log += s;
+        sendScaffold(projectPath, 'scaffolding', s);
+      };
+      proc.stdout.on('data', onData);
+      proc.stderr.on('data', onData);
+      proc.on('exit', (c) => resolve(c));
+      proc.on('error', (e) => {
+        log += '\n' + e.message + '\n';
+        resolve(1);
+      });
+    });
+    if (code !== 0) throw new Error(`create falhou (código ${code})`);
+
+    const generated = readEntries(tempDir);
+    const plan = scaffoldCore.mergePlan(readEntries(projectPath), generated);
+    mergeScaffold(tempDir, projectPath, plan);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    runningScaffolds.delete(projectPath);
+    safeSend('scaffold:done', { projectPath });
+    return { ok: true };
+  } catch (e) {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    runningScaffolds.delete(projectPath);
+    safeSend('scaffold:error', { projectPath, message: e.message, log });
+    return { error: 'scaffold-failed', message: e.message };
+  }
+});
+
 // Checa as ferramentas externas que o app depende (tela de preparo do 1º uso).
 // SEM cache: o usuário pode ter acabado de instalar algo e clicar em "verificar de novo".
 ipcMain.handle('system:checkTools', () => {
