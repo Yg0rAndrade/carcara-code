@@ -4,7 +4,7 @@
 // no main.js). Ver docs/superpowers/specs/2026-07-03-multiplas-ias-por-projeto-design.md.
 
 const AI_CLIS = { claude: 'claude', opencode: 'opencode', agy: 'agy', codex: 'codex' };
-const VALID_CLIS = ['claude', 'codex', 'opencode', 'agy', 'custom'];
+const VALID_CLIS = ['claude', 'codex', 'opencode', 'agy', 'custom', 'shell'];
 
 // { projectCli[path] } pode estar em 3 formatos: novo { ais, custom }, antigo por
 // projeto { cli, custom } e global legado (cfg.cli / cfg.cliCustom). Sempre devolve
@@ -36,6 +36,7 @@ function buildResumeCommand(cli, sessionMeta, custom) {
   if (cli === 'agy') return r.agy ? `agy --conversation=${r.agy}` : 'agy';
   if (cli === 'codex') return r.codex ? `codex resume ${r.codex}` : 'codex';
   if (cli === 'custom') return (custom || '').trim() || 'claude';
+  if (cli === 'shell') return ''; // terminal limpo: abre o shell sem subir IA
   return AI_CLIS[cli] || 'claude';
 }
 

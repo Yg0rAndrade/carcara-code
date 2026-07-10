@@ -588,6 +588,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI no terminal · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Open-source · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · substituiu o Gemini CLI.",
+    "aiShellDesc": "Um terminal comum, sem nenhuma IA — só o shell do sistema no projeto.",
     "aiCustomDesc": "Defina o comando manualmente.",
     "aiCustomLabel": "Personalizado",
     "aiMinOne": "Pelo menos uma IA precisa ficar marcada.",

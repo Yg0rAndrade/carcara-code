@@ -60,7 +60,14 @@ describe('buildResumeCommand', () => {
     expect(buildResumeCommand('custom', {}, 'gemini')).toBe('gemini');
     expect(buildResumeCommand('custom', {}, '  ')).toBe('claude');
   });
-  it('VALID_CLIS contém exatamente as 5 chaves', () => {
-    expect(VALID_CLIS).toEqual(['claude', 'codex', 'opencode', 'agy', 'custom']);
+  it('VALID_CLIS contém exatamente as 6 chaves', () => {
+    expect(VALID_CLIS).toEqual(['claude', 'codex', 'opencode', 'agy', 'custom', 'shell']);
+  });
+});
+
+describe('terminal limpo (shell)', () => {
+  it("'shell' é válido e não gera comando", () => {
+    expect(VALID_CLIS).toContain('shell');
+    expect(buildResumeCommand('shell', {}, '')).toBe('');
   });
 });

@@ -1,7 +1,7 @@
 // Fonte única das CLIs de IA suportadas + o badge de logo. Usado pelas Configurações
 // (SettingsModal) e pela tela de escolha (AiPicker). 'cmd' é o comando digitado no
 // terminal; 'desc' é uma CHAVE de i18n (resolvida com t(opt.desc) no render).
-import { Wrench } from 'lucide-react';
+import { Wrench, Terminal as TerminalIcon } from 'lucide-react';
 import { ClaudeCodeIcon, CodexIcon, OpenCodeIcon, AntigravityIcon } from '@/lib/cliIcons.jsx';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +41,14 @@ export const AI_OPTIONS = [
     Icon: AntigravityIcon,
     fullColor: true,
     desc: 'settings.aiAgyDesc',
+  },
+  {
+    key: 'shell',
+    label: 'Terminal limpo',
+    cmd: '',
+    color: '#10b981',
+    Icon: TerminalIcon,
+    desc: 'settings.aiShellDesc',
   },
   {
     key: 'custom',

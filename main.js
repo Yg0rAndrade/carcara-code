@@ -2741,7 +2741,8 @@ ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, 
       entry.claudeId = launch.claudeId || null;
       startClaudeWatcher(entry, launch.capture); // captura id (se nova) + título da aba
     }
-    proc.write(launch.cmd + '\r');
+    // Terminal limpo (cli 'shell') ⇒ cmd vazio ⇒ não escreve nada: só o shell do SO.
+    if (launch.cmd) proc.write(launch.cmd + '\r');
   }
   return { existed: false, buffer: '' };
 });
