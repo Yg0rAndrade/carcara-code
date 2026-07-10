@@ -19,6 +19,11 @@ describe('cache de versões', () => {
     fs.writeFileSync(path.join(dir, 'ai-versions.json'), '{corrompido');
     expect(readCache(dir)).toEqual({});
   });
+  it('readCache tolera JSON válido mas não-objeto (ex.: número) → {}', () => {
+    const dir = tmp();
+    fs.writeFileSync(path.join(dir, 'ai-versions.json'), '42');
+    expect(readCache(dir)).toEqual({});
+  });
   it('isFresh respeita a janela de 24h', () => {
     expect(isFresh({ version: '1', checkedAt: 1000 }, 1000 + 1000, 86400000)).toBe(true);
     expect(isFresh({ version: '1', checkedAt: 1000 }, 1000 + 86400001, 86400000)).toBe(false);

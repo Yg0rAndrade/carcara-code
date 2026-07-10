@@ -35,7 +35,8 @@ function cachePath(userDataDir) {
 
 function readCache(userDataDir) {
   try {
-    return JSON.parse(fs.readFileSync(cachePath(userDataDir), 'utf8')) || {};
+    const v = JSON.parse(fs.readFileSync(cachePath(userDataDir), 'utf8'));
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
   } catch {
     return {};
   }
@@ -61,10 +62,17 @@ function getJson(url, redirectsLeft = 3) {
       { headers: { 'User-Agent': 'carcara-code', Accept: 'application/json' } },
       (res) => {
         const { statusCode, headers } = res;
+        res.on('error', () => resolve(null));
         if (statusCode >= 300 && statusCode < 400 && headers.location) {
           res.resume();
           if (redirectsLeft <= 0) return resolve(null);
-          return resolve(getJson(new URL(headers.location, url).toString(), redirectsLeft - 1));
+          let redirectUrl;
+          try {
+            redirectUrl = new URL(headers.location, url).toString();
+          } catch {
+            return resolve(null);
+          }
+          return resolve(getJson(redirectUrl, redirectsLeft - 1));
         }
         if (statusCode !== 200) {
           res.resume();
