@@ -792,7 +792,8 @@ ipcMain.handle('session:setCli', (evt, { projectPath, sessionId, cli }) => {
 // ---- Catálogo/instalação de CLIs de IA (codex/opencode/agy) ----
 ipcMain.handle('ai:catalog', () => aiCatalog.catalogFor());
 
-ipcMain.handle('ai:status', async () => {
+ipcMain.handle('ai:status', async (evt, arg) => {
+  const force = !!(arg && arg.force);
   const userDataDir = app.getPath('userData');
   const now = Date.now();
   const out = [];
@@ -800,7 +801,7 @@ ipcMain.handle('ai:status', async () => {
     const det = aiInstaller.detect(entry.key);
     let latest = null;
     try {
-      latest = await aiInstaller.latestVersion(entry.key, { userDataDir, nowMs: now });
+      latest = await aiInstaller.latestVersion(entry.key, { userDataDir, nowMs: now, force });
     } catch {
       latest = null; // degradação
     }

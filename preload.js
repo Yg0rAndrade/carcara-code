@@ -47,7 +47,7 @@ contextBridge.exposeInMainWorld('api', {
   // Catálogo/instalação de CLIs de IA (codex/opencode/agy). Eventos 'aiInstall:data'/
   // 'aiInstall:done' chegam pelo on(...) genérico abaixo.
   aiCatalog: () => ipcRenderer.invoke('ai:catalog'),
-  aiStatus: () => ipcRenderer.invoke('ai:status'),
+  aiStatus: (force) => ipcRenderer.invoke('ai:status', { force }),
   aiInstallStart: (key, mode) => ipcRenderer.invoke('aiInstall:start', { key, mode }),
   aiInstallInput: (installId, data) => ipcRenderer.send('aiInstall:input', { installId, data }),
   aiInstallResize: (installId, cols, rows) =>

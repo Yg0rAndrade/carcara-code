@@ -110,11 +110,11 @@ async function fetchLatest(latest) {
   return null;
 }
 
-async function latestVersion(key, { userDataDir, nowMs = Date.now() }) {
+async function latestVersion(key, { userDataDir, nowMs = Date.now(), force = false }) {
   const entry = catalog.CATALOG[key];
   if (!entry || !entry.latest || entry.latest.type === 'builtin') return null;
   const cache = readCache(userDataDir);
-  if (isFresh(cache[key], nowMs)) return cache[key].version;
+  if (!force && isFresh(cache[key], nowMs)) return cache[key].version;
   const version = await fetchLatest(entry.latest);
   if (version) {
     cache[key] = { version, checkedAt: nowMs };

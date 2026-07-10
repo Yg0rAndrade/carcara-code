@@ -28,7 +28,7 @@ const CATALOG = {
     },
     update: { builtin: 'opencode upgrade' },
     postInstall: null,
-    latest: { type: 'builtin' },
+    latest: { type: 'npm', pkg: 'opencode-ai' },
   },
   agy: {
     key: 'agy',
@@ -48,7 +48,7 @@ const CATALOG = {
     install: null,
     update: { builtin: 'claude update' },
     postInstall: null,
-    latest: { type: 'builtin' },
+    latest: { type: 'npm', pkg: '@anthropic-ai/claude-code' },
   },
 };
 
