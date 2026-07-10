@@ -1183,7 +1183,7 @@ export function PreviewPanel({
     let alive = true;
     setScaffoldProbe(null);
     window.api.scaffoldProbe(active.path).then((r) => {
-      if (alive) setScaffoldProbe(r || null);
+      if (alive) setScaffoldProbe(r ? { ...r, path: active.path } : null);
     });
     return () => {
       alive = false;
@@ -1915,7 +1915,7 @@ export function PreviewPanel({
           {inPreview &&
             mode === 'empty' &&
             (active ? (
-              scaffoldProbe?.scaffoldable ? (
+              scaffoldProbe?.scaffoldable && scaffoldProbe.path === active.path ? (
                 <ScaffoldWizard projectPath={active.path} junk={scaffoldProbe.junk} />
               ) : (
                 <div className="absolute inset-0">
