@@ -1,4 +1,4 @@
-// Sub-aba "Instaladas": lista as CLIs de IA (instalada/versão/update) e roda
+// Aba "Gerenciar IAs": lista as CLIs de IA (instalada/versão/update) e roda
 // instalação/atualização pelo instalador oficial, com um xterm ao vivo à direita.
 // Reaproveita os canais aiInstall:* do main (PTY real). Ver
 // docs/superpowers/specs/2026-07-10-gestao-clis-ia-design.md.
@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { Loader2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { CliBadge, OPT } from '@/lib/aiOptions.jsx';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ export default function AiManager({ initialInstallKey = null }) {
   const t = useT();
   const [rows, setRows] = useState([]); // status por CLI
   const [busy, setBusy] = useState(null); // key em instalação/atualização
+  const [busyMode, setBusyMode] = useState(null); // 'install' | 'update' — só rótulo do botão
   const [installId, setInstallId] = useState(null);
   const termHostRef = useRef(null);
   const termRef = useRef(null);
@@ -27,7 +29,9 @@ export default function AiManager({ initialInstallKey = null }) {
 
   const refresh = useCallback(async () => {
     try {
-      const s = await window.api.aiStatus();
+      // force=true: fura o cache de 24h de versão no main pra a lista refletir o "latest" fresco
+      // ao (re)abrir a aba e logo após instalar/atualizar.
+      const s = await window.api.aiStatus(true);
       // custom/shell não entram nesta lista (não instaláveis).
       setRows(s.filter((r) => r.key !== 'custom' && r.key !== 'shell'));
     } catch {
@@ -93,12 +97,21 @@ export default function AiManager({ initialInstallKey = null }) {
     const offData = window.api.on('aiInstall:data', ({ data }) => {
       if (termRef.current) termRef.current.write(data);
     });
-    const offDone = window.api.on('aiInstall:done', ({ installId: id, ok, error }) => {
+    const offDone = window.api.on('aiInstall:done', ({ installId: id, ok, error, version }) => {
       if (id !== installId) return;
-      if (!ok && error && termRef.current) {
-        termRef.current.write(`\r\n\x1b[31m${error}\x1b[0m\r\n`);
+      const term = termRef.current;
+      if (term) {
+        if (!ok && error) {
+          term.write(`\r\n\x1b[31m${error}\x1b[0m\r\n`);
+        } else if (ok) {
+          // Confirmação verde "já está no latest agora" pedida no teste real.
+          const label = LABEL(busy);
+          const vtxt = version ? ` — agora na versão ${version}` : '';
+          term.write(`\r\n\x1b[32m✓ ${label}${vtxt}\x1b[0m\r\n`);
+        }
       }
       setBusy(null);
+      setBusyMode(null);
       setInstallId(null);
       refresh();
     });
@@ -106,12 +119,13 @@ export default function AiManager({ initialInstallKey = null }) {
       offData && offData();
       offDone && offDone();
     };
-  }, [installId, refresh]);
+  }, [installId, refresh, busy]);
 
   const start = useCallback(
     async (key, mode) => {
       if (busy) return;
       setBusy(key);
+      setBusyMode(mode);
       if (termRef.current) termRef.current.clear();
       const { installId: id } = await window.api.aiInstallStart(key, mode);
       setInstallId(id);
@@ -129,7 +143,7 @@ export default function AiManager({ initialInstallKey = null }) {
   }, [initialInstallKey]);
 
   return (
-    <div className="flex min-h-[360px] gap-4">
+    <div className="flex h-[300px] gap-4">
       {/* Lista */}
       <div className="w-[46%] shrink-0 space-y-2 overflow-auto">
         {rows.map((r) => {
@@ -148,7 +162,9 @@ export default function AiManager({ initialInstallKey = null }) {
                 <div className="text-sm font-medium">{LABEL(r.key)}</div>
                 <div className="text-xs text-muted-foreground">
                   {installing
-                    ? t('settings.aiInstalling')
+                    ? busyMode === 'update'
+                      ? t('settings.aiUpdating')
+                      : t('settings.aiInstalling')
                     : r.installed
                       ? r.updateAvailable
                         ? t('settings.aiUpdateAvailable', { v: r.latest })
@@ -156,19 +172,38 @@ export default function AiManager({ initialInstallKey = null }) {
                       : t('settings.aiNotInstalled')}
                 </div>
               </div>
-              {r.installed ? (
+              {installing ? (
+                // Ocupada: spinner + rótulo, desabilitada.
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] text-muted-foreground opacity-70"
+                >
+                  <Loader2 className="size-3.5 animate-spin" />
+                  {busyMode === 'update' ? t('settings.aiUpdating') : t('settings.aiInstalling')}
+                </button>
+              ) : r.installed && r.updateAvailable ? (
+                // Update disponível: botão em destaque (laranja/primary).
                 <button
                   type="button"
                   disabled={!!busy}
                   onClick={() => start(r.key, 'update')}
-                  className={cn(
-                    'rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted disabled:opacity-40',
-                    r.updateAvailable && 'border-primary text-primary',
-                  )}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-40"
                 >
                   {t('settings.aiUpdate')}
                 </button>
+              ) : r.installed ? (
+                // Em dia: sem "Atualizar" gritante — só um "Reinstalar" discreto (fantasma).
+                <button
+                  type="button"
+                  disabled={!!busy}
+                  onClick={() => start(r.key, 'install')}
+                  className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                >
+                  {t('settings.aiReinstall')}
+                </button>
               ) : (
+                // Não instalada: instalar.
                 <button
                   type="button"
                   disabled={!!busy || !r.installable}
@@ -182,8 +217,8 @@ export default function AiManager({ initialInstallKey = null }) {
           );
         })}
       </div>
-      {/* Terminal ao vivo */}
-      <div className="flex-1 overflow-hidden rounded-lg border bg-[#0d0f12]">
+      {/* Terminal ao vivo — altura fixa (~300px) pra não esticar o modal inteiro. */}
+      <div className="h-full flex-1 overflow-hidden rounded-lg border bg-[#0d0f12]">
         <div ref={termHostRef} className="h-full w-full p-2" />
       </div>
     </div>

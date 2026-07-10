@@ -82,10 +82,10 @@ export default function App() {
     window.api.markSetupDone();
     setSetupOpen(false);
   };
-  // Abre Configurações › IA na sub-aba "Instaladas" já instalando a CLI escolhida.
+  // Abre Configurações › "Gerenciar IAs" já instalando a CLI escolhida.
   // Usado pelo AiPicker (aba nova) quando a CLI clicada não está instalada.
   const openAiInstall = (key) => {
-    setSettingsTab('ai');
+    setSettingsTab('clis');
     setSettingsAiInstall(key);
     setSettingsOpen(true);
   };
@@ -876,7 +876,6 @@ export default function App() {
       <SettingsModal
         open={settingsOpen}
         initialTab={settingsTab}
-        initialSubTab={settingsAiInstall ? 'installed' : 'projects'}
         initialInstall={settingsAiInstall}
         appVersion={appVersion}
         update={update}

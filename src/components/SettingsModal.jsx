@@ -18,6 +18,7 @@ import {
   Mail,
   ExternalLink,
   Code2,
+  Download,
   Save,
   HardDrive,
   RefreshCw,
@@ -171,7 +172,6 @@ export function SettingsModal({
   open,
   onClose,
   initialTab = 'appearance',
-  initialSubTab = 'projects',
   initialInstall = null,
   appVersion = '',
   update = { state: 'idle' },
@@ -186,23 +186,21 @@ export function SettingsModal({
   const { chatMode, setChatMode } = useChatMode();
   const [tab, setTab] = useState(initialTab);
   // Quando reabre apontando pra uma aba específica (ex.: clique na versão do rail).
-  // Também posiciona a sub-aba de IA e o auto-install quando o App abre já pedindo
-  // "instalar a CLI X" (clique numa CLI ausente no AiPicker da aba nova).
+  // Também guarda o auto-install quando o App abre já pedindo "instalar a CLI X"
+  // (clique numa CLI ausente no AiPicker da aba nova) — o initialTab já é 'clis'.
   useEffect(() => {
     if (open) {
       setTab(initialTab);
-      setAiSubTab(initialSubTab);
       setPendingInstall(initialInstall);
       // Zera a confirmação de instalação pendente: sem isso, fechar (Esc/X) com o
       // overlay aberto e reabrir na aba de IA reexibe um confirm de uma sessão antiga.
       setConfirmInstall(null);
     }
-  }, [open, initialTab, initialSubTab, initialInstall]);
+  }, [open, initialTab, initialInstall]);
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [aiQuery, setAiQuery] = useState(''); // filtro de busca da lista "IA por projeto"
   const [aiSort, setAiSort] = useState('default'); // 'default' | 'asc' | 'desc'
-  const [aiSubTab, setAiSubTab] = useState('projects'); // 'projects' | 'installed'
   const [pendingInstall, setPendingInstall] = useState(null); // key a auto-instalar (Task 8)
   const [installedKeys, setInstalledKeys] = useState(null); // Set|null (null = ainda carregando)
   const [confirmInstall, setConfirmInstall] = useState(null); // key da CLI ausente a confirmar
@@ -342,6 +340,9 @@ export function SettingsModal({
         <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<Bot />}>
           {t('settings.tabAi')}
         </TabButton>
+        <TabButton active={tab === 'clis'} onClick={() => setTab('clis')} icon={<Download />}>
+          {t('settings.tabClis')}
+        </TabButton>
         <TabButton
           active={tab === 'appearance'}
           onClick={() => setTab('appearance')}
@@ -380,19 +381,21 @@ export function SettingsModal({
           <h1 className="text-[15px] font-semibold">
             {tab === 'ai'
               ? t('settings.tabAi')
-              : tab === 'code'
-                ? t('settings.tabCode')
-                : tab === 'notify'
-                  ? t('settings.tabNotify')
-                  : tab === 'deps'
-                    ? t('settings.tabDeps')
-                    : tab === 'language'
-                      ? t('settings.tabLanguage')
-                      : tab === 'whatsnew'
-                        ? t('settings.tabWhatsNew')
-                        : tab === 'about'
-                          ? t('settings.tabAbout')
-                          : t('settings.tabAppearance')}
+              : tab === 'clis'
+                ? t('settings.tabClis')
+                : tab === 'code'
+                  ? t('settings.tabCode')
+                  : tab === 'notify'
+                    ? t('settings.tabNotify')
+                    : tab === 'deps'
+                      ? t('settings.tabDeps')
+                      : tab === 'language'
+                        ? t('settings.tabLanguage')
+                        : tab === 'whatsnew'
+                          ? t('settings.tabWhatsNew')
+                          : tab === 'about'
+                            ? t('settings.tabAbout')
+                            : t('settings.tabAppearance')}
           </h1>
           <div className="flex-1" />
           <button
@@ -406,42 +409,11 @@ export function SettingsModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          {tab === 'ai' && (
-            <div
-              className={cn(
-                'relative mx-auto',
-                aiSubTab === 'installed' ? 'max-w-5xl' : 'max-w-3xl',
-              )}
-            >
-              <div className="mb-4 flex gap-1 rounded-lg bg-muted p-1 text-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiSubTab('projects');
-                    // Ao voltar pra "Por projeto", zera o auto-install pendente pra não
-                    // reinstalar caso o usuário volte pra "Instaladas" depois.
-                    setPendingInstall(null);
-                  }}
-                  className={cn(
-                    'flex-1 rounded-md px-3 py-1.5 transition-colors',
-                    aiSubTab === 'projects' ? 'bg-background shadow-sm' : 'text-muted-foreground',
-                  )}
-                >
-                  {t('settings.aiTabProjects')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAiSubTab('installed')}
-                  className={cn(
-                    'flex-1 rounded-md px-3 py-1.5 transition-colors',
-                    aiSubTab === 'installed' ? 'bg-background shadow-sm' : 'text-muted-foreground',
-                  )}
-                >
-                  {t('settings.aiTabInstalled')}
-                </button>
-              </div>
-
-              {aiSubTab === 'projects' && (
+          {/* Container compartilhado: largura ~80% da viewport (≈10% de margem branca de
+              cada lado), com teto pra telas gigantes. Vale pra TODAS as abas. */}
+          <div className="mx-auto w-[82vw] max-w-[1200px]">
+            {tab === 'ai' && (
+              <div className="relative mx-auto max-w-5xl">
                 <>
                   <p className="text-sm text-muted-foreground">
                     {t('settings.aiIntroPre')}
@@ -596,436 +568,436 @@ export function SettingsModal({
                     })}
                   </div>
                 </>
-              )}
 
-              {aiSubTab === 'installed' && <AiManager initialInstallKey={pendingInstall} />}
-
-              {/* Confirmação de instalação sob demanda: clicar numa CLI ausente ("Por projeto")
-                  abre este overlay; confirmar leva pra "Instaladas" já instalando. */}
-              {confirmInstall && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55">
-                  <div className="w-[330px] rounded-2xl border border-primary/30 bg-background p-5 text-center shadow-xl">
-                    <div className="mx-auto mb-3 w-fit">
-                      <CliBadge optKey={confirmInstall} />
-                    </div>
-                    <div className="text-sm font-semibold">
-                      {t('settings.aiInstallConfirmTitle', { name: OPT[confirmInstall]?.label })}
-                    </div>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                      {t('settings.aiInstallConfirmBody')}
-                    </p>
-                    <div className="mt-4 flex justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setConfirmInstall(null)}
-                        className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
-                      >
-                        {t('settings.aiInstallLater')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const key = confirmInstall;
-                          setConfirmInstall(null);
-                          setPendingInstall(key);
-                          setAiSubTab('installed');
-                        }}
-                        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-                      >
-                        {t('settings.aiInstall')}
-                      </button>
+                {/* Confirmação de instalação sob demanda: clicar numa CLI ausente ("Por projeto")
+                  abre este overlay; confirmar leva pra aba "Gerenciar IAs" já instalando. */}
+                {confirmInstall && (
+                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55">
+                    <div className="w-[330px] rounded-2xl border border-primary/30 bg-background p-5 text-center shadow-xl">
+                      <div className="mx-auto mb-3 w-fit">
+                        <CliBadge optKey={confirmInstall} />
+                      </div>
+                      <div className="text-sm font-semibold">
+                        {t('settings.aiInstallConfirmTitle', { name: OPT[confirmInstall]?.label })}
+                      </div>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                        {t('settings.aiInstallConfirmBody')}
+                      </p>
+                      <div className="mt-4 flex justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmInstall(null)}
+                          className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                          {t('settings.aiInstallLater')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const key = confirmInstall;
+                            setConfirmInstall(null);
+                            setPendingInstall(key);
+                            setTab('clis');
+                          }}
+                          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                        >
+                          {t('settings.aiInstall')}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {tab === 'appearance' && (
-            <div className="mx-auto max-w-3xl">
-              <div className="text-[13px] font-medium">{t('settings.appTheme')}</div>
-              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTheme('light')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    theme === 'light' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <Sun className="h-4 w-4" /> {t('settings.themeLight')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTheme('dark')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    theme === 'dark' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <Moon className="h-4 w-4" /> {t('settings.themeDark')}
-                </button>
-              </div>
+            {tab === 'clis' && <AiManager initialInstallKey={pendingInstall} />}
 
-              <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                <ZoomIn className="h-4 w-4" /> {t('settings.zoomTitle')}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t('settings.zoomHelp')}{' '}
-                <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +{' '}
-                <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd> /{' '}
-                <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd>{' '}
-                {t('settings.zoomFocusHint')}
-              </p>
-              <div className="mt-3 flex max-w-md items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyZoom('out')}
-                  disabled={zoom <= 0.5}
-                  title={t('settings.zoomOut')}
-                  className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
-                >
-                  <ZoomOut />
-                </button>
-                <div className="grid h-9 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
-                  {Math.round(zoom * 100)}%
-                </div>
-                <button
-                  type="button"
-                  onClick={() => applyZoom('in')}
-                  disabled={zoom >= 2}
-                  title={t('settings.zoomIn')}
-                  className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
-                >
-                  <ZoomIn />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyZoom('reset')}
-                  disabled={zoom === 1}
-                  title={t('settings.zoomReset')}
-                  className="flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5"
-                >
-                  <RotateCcw /> {t('settings.zoomResetLabel')}
-                </button>
-              </div>
-
-              <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                <Terminal className="h-4 w-4" /> {t('settings.termTitle')}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{t('settings.termHelp')}</p>
-              <div className="mt-3 grid max-w-md grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTerminalAppearance('auto')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    terminalAppearance === 'auto' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <Monitor className="h-4 w-4" /> {t('settings.termAuto')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTerminalAppearance('light')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    terminalAppearance === 'light' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <Sun className="h-4 w-4" /> {t('settings.themeLight')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTerminalAppearance('dark')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    terminalAppearance === 'dark' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <Moon className="h-4 w-4" /> {t('settings.themeDark')}
-                </button>
-              </div>
-
-              <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                <Monitor className="h-4 w-4" /> {t('settings.layoutTitle')}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{t('settings.layoutHelp')}</p>
-              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
-                {LAYOUT_PRESETS.map((preset) => {
-                  const active = railSide === preset.rail && claudeSide === preset.claude;
-                  return (
-                    <button
-                      key={preset.rail + preset.claude}
-                      type="button"
-                      onClick={() => setPreset(preset.rail, preset.claude)}
-                      title={t(preset.labelKey)}
-                      className={cn(
-                        'flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted',
-                        active && 'border-primary ring-1 ring-primary',
-                      )}
-                    >
-                      <LayoutThumb rail={preset.rail} claude={preset.claude} />
-                      <span className="text-[11px] text-muted-foreground">
-                        {t(preset.labelKey)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {tab === 'code' && (
-            <div className="mx-auto flex max-w-3xl flex-col gap-3">
-              <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                    <Save className="size-3.5 text-primary" /> {t('settings.codeAutosaveTitle')}
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {t('settings.codeAutosaveHelp')}{' '}
-                    <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +
-                    <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">S</kbd>{' '}
-                    {t('settings.codeAutosaveHelp2')}
-                  </p>
-                </div>
-                <Switch
-                  checked={autoSave}
-                  onCheckedChange={toggleAutoSave}
-                  title={autoSave ? t('settings.autosaveOn') : t('settings.autosaveOff')}
-                  className="mt-0.5"
-                />
-              </div>
-
-              <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                    <WrapText className="size-3.5 text-primary" /> {t('settings.codeWrapTitle')}
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {t('settings.codeWrapHelp')}
-                  </p>
-                </div>
-                <Switch
-                  checked={wordWrap}
-                  onCheckedChange={toggleWordWrap}
-                  title={wordWrap ? t('settings.wrapOn') : t('settings.wrapOff')}
-                  className="mt-0.5"
-                />
-              </div>
-            </div>
-          )}
-
-          {tab === 'notify' && (
-            <div className="mx-auto max-w-3xl">
-              <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium">{t('settings.notifyTitle')}</div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {t('settings.notifyHelp')}{' '}
-                    <span className="font-medium text-foreground">
-                      {t('settings.notifyHelpNotLooking')}
-                    </span>
-                    {t('settings.notifyHelp2')}
-                  </p>
-                </div>
-                <Switch
-                  checked={notify}
-                  onCheckedChange={toggleNotify}
-                  title={notify ? t('settings.notifyOn') : t('settings.notifyOff')}
-                  className="mt-0.5"
-                />
-              </div>
-            </div>
-          )}
-
-          {tab === 'deps' && (
-            <div className="mx-auto max-w-3xl">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {t('settings.depsIntro')}{' '}
-                <span className="font-medium text-foreground">{t('settings.depsTabRef')}</span>.
-              </p>
-
-              <div className="mt-5">
-                <DependencyCards status={deps.status} loading={deps.loading} />
-              </div>
-
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={deps.loading}
-                  onClick={deps.check}
-                >
-                  <RefreshCw className={'size-3.5 ' + (deps.loading ? 'animate-spin' : '')} />{' '}
-                  {t('settings.depsRecheck')}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {tab === 'language' && (
-            <div className="mx-auto max-w-3xl">
-              <div className="text-[13px] font-medium">{t('language.title')}</div>
-              <p className="mt-1 text-xs text-muted-foreground">{t('language.subtitle')}</p>
-              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setLang('pt')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    lang === 'pt' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  🇧🇷 {t('language.pt')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLang('en')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                    lang === 'en' && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  🇺🇸 {t('language.en')}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {tab === 'whatsnew' && (
-            <div className="mx-auto max-w-3xl">
-              <Suspense
-                fallback={
-                  <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
-                    {changelogText}
-                  </pre>
-                }
-              >
-                <Markdown text={changelogText} />
-              </Suspense>
-            </div>
-          )}
-
-          {tab === 'about' && (
-            <div className="mx-auto max-w-3xl">
-              {/* Versão atual — o "charme" de produto. */}
-              <div className="mb-5 flex items-baseline justify-between rounded-lg border bg-muted/30 px-4 py-3">
-                <span className="text-sm text-muted-foreground">
-                  {t('settings.aboutVersionLabel')}
-                </span>
-                <span className="font-mono text-sm font-semibold text-foreground">
-                  Carcará Code v{appVersion || '—'}
-                </span>
-              </div>
-              {/* Contribuir: link pro repo público (PR) */}
-              <div className="mb-5 rounded-lg border border-dashed p-4">
-                <p className="text-sm font-semibold text-foreground">
-                  {t('settings.contributeTitle')}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {t('settings.contributeBody')}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => openLink('https://github.com/Yg0rAndrade/carcara-code')}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-muted"
-                >
-                  <GithubIcon className="size-4" />
-                  {t('settings.contributeButton')}
-                </button>
-              </div>
-              {/* Atualização: checagem manual + status (espelha a pílula). */}
-              {(() => {
-                const v = updateView(update, t);
-                const isDev = update.state === 'dev';
-                const statusText = update.state === 'idle' ? t('update.upToDate') : v.title;
-                return (
-                  <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
-                    <span className="min-w-0 truncate text-sm text-muted-foreground">
-                      {statusText}
-                    </span>
-                    {v.action === 'download' ? (
-                      <button
-                        onClick={onUpdateDownload}
-                        className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-                      >
-                        {t('update.downloadBtn')}
-                      </button>
-                    ) : v.action === 'install' ? (
-                      <button
-                        onClick={onUpdateInstall}
-                        className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-                      >
-                        {t('update.installBtn')}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={onUpdateCheck}
-                        disabled={isDev || update.state === 'checking'}
-                        className="shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-40"
-                      >
-                        {t('settings.checkUpdates')}
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
-              {/* Cartão do autor */}
-              <div className="flex items-start gap-4 rounded-xl border bg-card p-5">
-                <img
-                  src={ygorPhoto}
-                  alt={AUTHOR.name}
-                  className="size-14 shrink-0 rounded-xl object-cover ring-1 ring-primary/20"
-                />
-                <div className="min-w-0">
-                  <div className="text-[15px] font-semibold text-foreground">{AUTHOR.name}</div>
-                  <div className="text-xs text-primary">{t(AUTHOR.role)}</div>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {t(AUTHOR.blurb)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Links / redes */}
-              <div className="mt-5 text-[13px] font-medium">{t('settings.aboutWhereToFind')}</div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {AUTHOR.links.map((l) => (
+            {tab === 'appearance' && (
+              <div className="mx-auto max-w-3xl">
+                <div className="text-[13px] font-medium">{t('settings.appTheme')}</div>
+                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
                   <button
-                    key={l.key}
                     type="button"
-                    onClick={() => openLink(l.href)}
-                    className="group flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-muted"
+                    onClick={() => setTheme('light')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      theme === 'light' && 'border-primary ring-1 ring-primary',
+                    )}
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4">
-                      <l.Icon />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {t(l.sub)}
-                      </span>
-                      <span className="block truncate text-[13px] font-medium text-foreground">
-                        {l.label}
-                      </span>
-                    </span>
-                    <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    <Sun className="h-4 w-4" /> {t('settings.themeLight')}
                   </button>
-                ))}
-              </div>
-
-              {/* Agradecimento */}
-              <div className="mt-5 rounded-lg border border-dashed p-4">
-                <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                  <Sparkles className="size-3.5 text-primary" /> {t('settings.aboutThanksTitle')}
+                  <button
+                    type="button"
+                    onClick={() => setTheme('dark')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      theme === 'dark' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    <Moon className="h-4 w-4" /> {t('settings.themeDark')}
+                  </button>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {t('settings.aboutThanksBody', { name: AUTHOR.name })}
+
+                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
+                  <ZoomIn className="h-4 w-4" /> {t('settings.zoomTitle')}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('settings.zoomHelp')}{' '}
+                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +{' '}
+                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd> /{' '}
+                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd>{' '}
+                  {t('settings.zoomFocusHint')}
                 </p>
+                <div className="mt-3 flex max-w-md items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyZoom('out')}
+                    disabled={zoom <= 0.5}
+                    title={t('settings.zoomOut')}
+                    className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
+                  >
+                    <ZoomOut />
+                  </button>
+                  <div className="grid h-9 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
+                    {Math.round(zoom * 100)}%
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => applyZoom('in')}
+                    disabled={zoom >= 2}
+                    title={t('settings.zoomIn')}
+                    className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
+                  >
+                    <ZoomIn />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyZoom('reset')}
+                    disabled={zoom === 1}
+                    title={t('settings.zoomReset')}
+                    className="flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5"
+                  >
+                    <RotateCcw /> {t('settings.zoomResetLabel')}
+                  </button>
+                </div>
+
+                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
+                  <Terminal className="h-4 w-4" /> {t('settings.termTitle')}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{t('settings.termHelp')}</p>
+                <div className="mt-3 grid max-w-md grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTerminalAppearance('auto')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      terminalAppearance === 'auto' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    <Monitor className="h-4 w-4" /> {t('settings.termAuto')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerminalAppearance('light')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      terminalAppearance === 'light' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    <Sun className="h-4 w-4" /> {t('settings.themeLight')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerminalAppearance('dark')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      terminalAppearance === 'dark' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    <Moon className="h-4 w-4" /> {t('settings.themeDark')}
+                  </button>
+                </div>
+
+                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
+                  <Monitor className="h-4 w-4" /> {t('settings.layoutTitle')}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{t('settings.layoutHelp')}</p>
+                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                  {LAYOUT_PRESETS.map((preset) => {
+                    const active = railSide === preset.rail && claudeSide === preset.claude;
+                    return (
+                      <button
+                        key={preset.rail + preset.claude}
+                        type="button"
+                        onClick={() => setPreset(preset.rail, preset.claude)}
+                        title={t(preset.labelKey)}
+                        className={cn(
+                          'flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted',
+                          active && 'border-primary ring-1 ring-primary',
+                        )}
+                      >
+                        <LayoutThumb rail={preset.rail} claude={preset.claude} />
+                        <span className="text-[11px] text-muted-foreground">
+                          {t(preset.labelKey)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {tab === 'code' && (
+              <div className="mx-auto flex max-w-3xl flex-col gap-3">
+                <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                      <Save className="size-3.5 text-primary" /> {t('settings.codeAutosaveTitle')}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('settings.codeAutosaveHelp')}{' '}
+                      <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd>{' '}
+                      +<kbd className="rounded border bg-muted px-1 font-mono text-[11px]">S</kbd>{' '}
+                      {t('settings.codeAutosaveHelp2')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={autoSave}
+                    onCheckedChange={toggleAutoSave}
+                    title={autoSave ? t('settings.autosaveOn') : t('settings.autosaveOff')}
+                    className="mt-0.5"
+                  />
+                </div>
+
+                <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                      <WrapText className="size-3.5 text-primary" /> {t('settings.codeWrapTitle')}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('settings.codeWrapHelp')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={wordWrap}
+                    onCheckedChange={toggleWordWrap}
+                    title={wordWrap ? t('settings.wrapOn') : t('settings.wrapOff')}
+                    className="mt-0.5"
+                  />
+                </div>
+              </div>
+            )}
+
+            {tab === 'notify' && (
+              <div className="mx-auto max-w-3xl">
+                <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium">{t('settings.notifyTitle')}</div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('settings.notifyHelp')}{' '}
+                      <span className="font-medium text-foreground">
+                        {t('settings.notifyHelpNotLooking')}
+                      </span>
+                      {t('settings.notifyHelp2')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notify}
+                    onCheckedChange={toggleNotify}
+                    title={notify ? t('settings.notifyOn') : t('settings.notifyOff')}
+                    className="mt-0.5"
+                  />
+                </div>
+              </div>
+            )}
+
+            {tab === 'deps' && (
+              <div className="mx-auto max-w-3xl">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {t('settings.depsIntro')}{' '}
+                  <span className="font-medium text-foreground">{t('settings.depsTabRef')}</span>.
+                </p>
+
+                <div className="mt-5">
+                  <DependencyCards status={deps.status} loading={deps.loading} />
+                </div>
+
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={deps.loading}
+                    onClick={deps.check}
+                  >
+                    <RefreshCw className={'size-3.5 ' + (deps.loading ? 'animate-spin' : '')} />{' '}
+                    {t('settings.depsRecheck')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {tab === 'language' && (
+              <div className="mx-auto max-w-3xl">
+                <div className="text-[13px] font-medium">{t('language.title')}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{t('language.subtitle')}</p>
+                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLang('pt')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      lang === 'pt' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    🇧🇷 {t('language.pt')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLang('en')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      lang === 'en' && 'border-primary ring-1 ring-primary',
+                    )}
+                  >
+                    🇺🇸 {t('language.en')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tab === 'whatsnew' && (
+              <div className="mx-auto max-w-3xl">
+                <Suspense
+                  fallback={
+                    <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                      {changelogText}
+                    </pre>
+                  }
+                >
+                  <Markdown text={changelogText} />
+                </Suspense>
+              </div>
+            )}
+
+            {tab === 'about' && (
+              <div className="mx-auto max-w-3xl">
+                {/* Versão atual — o "charme" de produto. */}
+                <div className="mb-5 flex items-baseline justify-between rounded-lg border bg-muted/30 px-4 py-3">
+                  <span className="text-sm text-muted-foreground">
+                    {t('settings.aboutVersionLabel')}
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-foreground">
+                    Carcará Code v{appVersion || '—'}
+                  </span>
+                </div>
+                {/* Contribuir: link pro repo público (PR) */}
+                <div className="mb-5 rounded-lg border border-dashed p-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    {t('settings.contributeTitle')}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {t('settings.contributeBody')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openLink('https://github.com/Yg0rAndrade/carcara-code')}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-muted"
+                  >
+                    <GithubIcon className="size-4" />
+                    {t('settings.contributeButton')}
+                  </button>
+                </div>
+                {/* Atualização: checagem manual + status (espelha a pílula). */}
+                {(() => {
+                  const v = updateView(update, t);
+                  const isDev = update.state === 'dev';
+                  const statusText = update.state === 'idle' ? t('update.upToDate') : v.title;
+                  return (
+                    <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                      <span className="min-w-0 truncate text-sm text-muted-foreground">
+                        {statusText}
+                      </span>
+                      {v.action === 'download' ? (
+                        <button
+                          onClick={onUpdateDownload}
+                          className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                        >
+                          {t('update.downloadBtn')}
+                        </button>
+                      ) : v.action === 'install' ? (
+                        <button
+                          onClick={onUpdateInstall}
+                          className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                        >
+                          {t('update.installBtn')}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={onUpdateCheck}
+                          disabled={isDev || update.state === 'checking'}
+                          className="shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-40"
+                        >
+                          {t('settings.checkUpdates')}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* Cartão do autor */}
+                <div className="flex items-start gap-4 rounded-xl border bg-card p-5">
+                  <img
+                    src={ygorPhoto}
+                    alt={AUTHOR.name}
+                    className="size-14 shrink-0 rounded-xl object-cover ring-1 ring-primary/20"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[15px] font-semibold text-foreground">{AUTHOR.name}</div>
+                    <div className="text-xs text-primary">{t(AUTHOR.role)}</div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      {t(AUTHOR.blurb)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Links / redes */}
+                <div className="mt-5 text-[13px] font-medium">{t('settings.aboutWhereToFind')}</div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {AUTHOR.links.map((l) => (
+                    <button
+                      key={l.key}
+                      type="button"
+                      onClick={() => openLink(l.href)}
+                      className="group flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-muted"
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4">
+                        <l.Icon />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t(l.sub)}
+                        </span>
+                        <span className="block truncate text-[13px] font-medium text-foreground">
+                          {l.label}
+                        </span>
+                      </span>
+                      <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Agradecimento */}
+                <div className="mt-5 rounded-lg border border-dashed p-4">
+                  <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                    <Sparkles className="size-3.5 text-primary" /> {t('settings.aboutThanksTitle')}
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {t('settings.aboutThanksBody', { name: AUTHOR.name })}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
