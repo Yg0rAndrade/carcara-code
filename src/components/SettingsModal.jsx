@@ -31,6 +31,7 @@ import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
 import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
+import AiManager from './AiManager.jsx';
 import { cn } from '@/lib/utils';
 import { AI_OPTIONS, CliBadge } from '@/lib/aiOptions.jsx';
 import { filterAndSortProjects } from '@/lib/projectFilter.js';
@@ -190,6 +191,8 @@ export function SettingsModal({
   const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [aiQuery, setAiQuery] = useState(''); // filtro de busca da lista "IA por projeto"
   const [aiSort, setAiSort] = useState('default'); // 'default' | 'asc' | 'desc'
+  const [aiSubTab, setAiSubTab] = useState('projects'); // 'projects' | 'installed'
+  const [pendingInstall, setPendingInstall] = useState(null); // key a auto-instalar (Task 8)
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
@@ -371,143 +374,181 @@ export function SettingsModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {tab === 'ai' && (
-            <div className="mx-auto max-w-3xl">
-              <p className="text-sm text-muted-foreground">
-                {t('settings.aiIntroPre')}
-                <span className="font-medium text-foreground">{t('settings.aiNewSessions')}</span>
-                {t('settings.aiIntroPost')}
-              </p>
-
-              {/* Modo de chat (beta): terminal cru vs UI assistant-ui. Aditivo — o padrão é o
-                  terminal; ligar só troca o painel esquerdo, o resto do app não muda. */}
-              <div className="mt-5 flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[13px] font-medium">
-                    Chat em vez do terminal
-                    <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                      beta
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Mostra um painel de chat em HTML/CSS no lugar do terminal do Claude Code. Ainda
-                    em construção — o terminal continua sendo o modo completo e volta a um clique.
-                  </p>
-                </div>
-                <Switch
-                  checked={chatMode === 'chat'}
-                  onCheckedChange={toggleChatMode}
-                  title={chatMode === 'chat' ? 'Usando chat' : 'Usando terminal'}
-                  className="mt-0.5"
-                />
+            <div className={cn('mx-auto', aiSubTab === 'installed' ? 'max-w-5xl' : 'max-w-3xl')}>
+              <div className="mb-4 flex gap-1 rounded-lg bg-muted p-1 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setAiSubTab('projects')}
+                  className={cn(
+                    'flex-1 rounded-md px-3 py-1.5 transition-colors',
+                    aiSubTab === 'projects' ? 'bg-background shadow-sm' : 'text-muted-foreground',
+                  )}
+                >
+                  {t('settings.aiTabProjects')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiSubTab('installed')}
+                  className={cn(
+                    'flex-1 rounded-md px-3 py-1.5 transition-colors',
+                    aiSubTab === 'installed' ? 'bg-background shadow-sm' : 'text-muted-foreground',
+                  )}
+                >
+                  {t('settings.aiTabInstalled')}
+                </button>
               </div>
 
-              <div className="mt-5 flex flex-col gap-3">
-                {projects.length === 0 && (
-                  <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                    {t('settings.aiEmpty')}
-                  </div>
-                )}
-                {projects.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        value={aiQuery}
-                        onChange={(e) => setAiQuery(e.target.value)}
-                        placeholder={t('settings.aiSearchPlaceholder')}
-                        className="w-full rounded-md border bg-background py-1.5 pl-8 pr-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAiSort((s) => (s === 'asc' ? 'desc' : s === 'desc' ? 'default' : 'asc'))
-                      }
-                      title={t(
-                        aiSort === 'asc'
-                          ? 'settings.aiSortAsc'
-                          : aiSort === 'desc'
-                            ? 'settings.aiSortDesc'
-                            : 'settings.aiSortDefault',
-                      )}
-                      className={cn(
-                        'grid size-8 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted',
-                        aiSort !== 'default' && 'border-primary text-primary',
-                      )}
-                    >
-                      {aiSort === 'desc' ? (
-                        <ArrowUpAZ className="size-4" />
-                      ) : (
-                        <ArrowDownAZ className="size-4" />
-                      )}
-                    </button>
-                  </div>
-                )}
-                {visibleProjects.length === 0 && projects.length > 0 && (
-                  <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                    {t('settings.aiNoResults')}
-                  </div>
-                )}
-                {visibleProjects.map((p) => {
-                  const cur = sel[p.path] || { ais: ['claude'], custom: '' };
-                  return (
-                    <div key={p.path} className="rounded-lg border p-3">
-                      <div className="mb-2.5 flex items-center gap-2">
-                        {p.icon ? (
-                          <img src={p.icon} alt="" className="size-8 rounded-md object-contain" />
-                        ) : (
-                          <span className="grid size-8 place-items-center rounded-md bg-muted text-sm font-semibold uppercase">
-                            {p.name?.[0] || '?'}
-                          </span>
-                        )}
-                        <span
-                          className="min-w-0 flex-1 truncate text-sm font-medium"
-                          title={p.name}
-                        >
-                          {p.name}
-                        </span>
-                        <span className="ml-1 flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                          {cur.ais.map((k) => (
-                            <CliBadge key={k} optKey={k} small />
-                          ))}
+              {aiSubTab === 'projects' && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.aiIntroPre')}
+                    <span className="font-medium text-foreground">
+                      {t('settings.aiNewSessions')}
+                    </span>
+                    {t('settings.aiIntroPost')}
+                  </p>
+
+                  {/* Modo de chat (beta): terminal cru vs UI assistant-ui. Aditivo — o padrão é o
+                      terminal; ligar só troca o painel esquerdo, o resto do app não muda. */}
+                  <div className="mt-5 flex items-start justify-between gap-4 rounded-lg border p-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-[13px] font-medium">
+                        Chat em vez do terminal
+                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                          beta
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {AI_OPTIONS.map((opt) => {
-                          const active = cur.ais.includes(opt.key);
-                          return (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              onClick={() => toggle(p.path, opt.key)}
-                              title={t(opt.desc)}
-                              className={cn(
-                                'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
-                                active && 'border-primary bg-muted ring-1 ring-primary',
-                              )}
-                            >
-                              <CliBadge optKey={opt.key} />
-                              {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
-                              {active && <Check className="size-3.5 text-primary" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {cur.ais.includes('custom') && (
-                        <Input
-                          value={cur.custom || ''}
-                          onChange={(e) => onCustom(p.path, e.target.value)}
-                          placeholder={t('settings.aiCustomPlaceholder')}
-                          className="mt-2.5 h-8 font-mono text-xs"
-                        />
-                      )}
-                      <p className="mt-2 text-[11px] text-muted-foreground">
-                        {t('settings.aiMinOne')}
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        Mostra um painel de chat em HTML/CSS no lugar do terminal do Claude Code.
+                        Ainda em construção — o terminal continua sendo o modo completo e volta a um
+                        clique.
                       </p>
                     </div>
-                  );
-                })}
-              </div>
+                    <Switch
+                      checked={chatMode === 'chat'}
+                      onCheckedChange={toggleChatMode}
+                      title={chatMode === 'chat' ? 'Usando chat' : 'Usando terminal'}
+                      className="mt-0.5"
+                    />
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3">
+                    {projects.length === 0 && (
+                      <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                        {t('settings.aiEmpty')}
+                      </div>
+                    )}
+                    {projects.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            value={aiQuery}
+                            onChange={(e) => setAiQuery(e.target.value)}
+                            placeholder={t('settings.aiSearchPlaceholder')}
+                            className="w-full rounded-md border bg-background py-1.5 pl-8 pr-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAiSort((s) =>
+                              s === 'asc' ? 'desc' : s === 'desc' ? 'default' : 'asc',
+                            )
+                          }
+                          title={t(
+                            aiSort === 'asc'
+                              ? 'settings.aiSortAsc'
+                              : aiSort === 'desc'
+                                ? 'settings.aiSortDesc'
+                                : 'settings.aiSortDefault',
+                          )}
+                          className={cn(
+                            'grid size-8 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted',
+                            aiSort !== 'default' && 'border-primary text-primary',
+                          )}
+                        >
+                          {aiSort === 'desc' ? (
+                            <ArrowUpAZ className="size-4" />
+                          ) : (
+                            <ArrowDownAZ className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    {visibleProjects.length === 0 && projects.length > 0 && (
+                      <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                        {t('settings.aiNoResults')}
+                      </div>
+                    )}
+                    {visibleProjects.map((p) => {
+                      const cur = sel[p.path] || { ais: ['claude'], custom: '' };
+                      return (
+                        <div key={p.path} className="rounded-lg border p-3">
+                          <div className="mb-2.5 flex items-center gap-2">
+                            {p.icon ? (
+                              <img
+                                src={p.icon}
+                                alt=""
+                                className="size-8 rounded-md object-contain"
+                              />
+                            ) : (
+                              <span className="grid size-8 place-items-center rounded-md bg-muted text-sm font-semibold uppercase">
+                                {p.name?.[0] || '?'}
+                              </span>
+                            )}
+                            <span
+                              className="min-w-0 flex-1 truncate text-sm font-medium"
+                              title={p.name}
+                            >
+                              {p.name}
+                            </span>
+                            <span className="ml-1 flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                              {cur.ais.map((k) => (
+                                <CliBadge key={k} optKey={k} small />
+                              ))}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {AI_OPTIONS.map((opt) => {
+                              const active = cur.ais.includes(opt.key);
+                              return (
+                                <button
+                                  key={opt.key}
+                                  type="button"
+                                  onClick={() => toggle(p.path, opt.key)}
+                                  title={t(opt.desc)}
+                                  className={cn(
+                                    'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
+                                    active && 'border-primary bg-muted ring-1 ring-primary',
+                                  )}
+                                >
+                                  <CliBadge optKey={opt.key} />
+                                  {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
+                                  {active && <Check className="size-3.5 text-primary" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {cur.ais.includes('custom') && (
+                            <Input
+                              value={cur.custom || ''}
+                              onChange={(e) => onCustom(p.path, e.target.value)}
+                              placeholder={t('settings.aiCustomPlaceholder')}
+                              className="mt-2.5 h-8 font-mono text-xs"
+                            />
+                          )}
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            {t('settings.aiMinOne')}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {aiSubTab === 'installed' && <AiManager initialInstallKey={pendingInstall} />}
             </div>
           )}
 
