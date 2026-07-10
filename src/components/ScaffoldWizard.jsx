@@ -176,7 +176,10 @@ export function ScaffoldWizard({ projectPath, junk }) {
               className="group relative flex w-44 flex-col items-center gap-3 rounded-xl border border-border bg-card px-4 py-6 text-center transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
             >
               {infoKey && (
-                <span className="group/info absolute right-2.5 top-2.5">
+                <span
+                  className="group/info absolute right-2.5 top-2.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Info
                     className="h-4 w-4 text-muted-foreground/50 transition-colors group-hover/info:text-foreground"
                     aria-label={t('scaffold.info')}

@@ -126,6 +126,27 @@ assert(sc.sanitizePackageName('.hidden') === 'hidden', 'sanitize: tira ponto do 
 assert(sc.sanitizePackageName('_x_') === 'x', 'sanitize: tira _ das pontas');
 assert(sc.sanitizePackageName('a  b') === 'a-b', 'sanitize: colapsa separadores');
 assert(sc.sanitizePackageName('') === 'app', 'sanitize: vazio -> app');
+// placeholderFiles: substitui a demo por placeholder mínimo, com o nome do projeto
+const phReact = sc.placeholderFiles('vite-react', 'teste');
+assert(
+  'src/App.jsx' in phReact && 'src/index.css' in phReact,
+  'placeholder react: App.jsx + index.css',
+);
+assert(phReact['src/App.jsx'].includes('"teste"'), 'placeholder react: inclui o nome do projeto');
+assert('src/app/page.tsx' in sc.placeholderFiles('next', 'x'), 'placeholder next: page.tsx');
+assert(
+  'src/pages/index.astro' in sc.placeholderFiles('astro', 'x'),
+  'placeholder astro: index.astro',
+);
+const phAstroEsc = sc.placeholderFiles('astro', '<b>')['src/pages/index.astro'];
+assert(
+  !phAstroEsc.includes('<b>') && phAstroEsc.includes('&lt;b&gt;'),
+  'placeholder astro: escapa HTML do nome',
+);
+assert(
+  Object.keys(sc.placeholderFiles('inexistente', 'x')).length === 0,
+  'placeholder: stack desconhecido -> {}',
+);
 console.log('scaffold-core OK');
 
 // fixLoginPath é no-op seguro fora de darwin/linux (não lança, retorna false)

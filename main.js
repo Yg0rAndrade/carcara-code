@@ -3682,6 +3682,19 @@ function fixPackageName(projectPath) {
   } catch {}
 }
 
+// Substitui a tela de demo do template por um placeholder mínimo e limpo.
+// Best-effort: só sobrescreve arquivos que já existem; se o template mudou e o
+// caminho não bate, a demo original permanece (não quebra o scaffold).
+function writePlaceholder(projectPath, stackId) {
+  const files = scaffoldCore.placeholderFiles(stackId, path.basename(projectPath));
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(projectPath, rel);
+    try {
+      if (fs.existsSync(abs)) fs.writeFileSync(abs, content);
+    } catch {}
+  }
+}
+
 ipcMain.handle('scaffold:stacks', () => scaffoldCore.listStacks());
 
 ipcMain.handle('scaffold:probe', (_evt, { projectPath }) => {
@@ -3749,6 +3762,8 @@ ipcMain.handle('scaffold:run', async (_evt, { projectPath, stackId }) => {
     // Os create-* derivam o "name" do package.json do basename do tempdir
     // (carcara-scaffold-tmp). Reescreve com o nome real da pasta do projeto.
     fixPackageName(projectPath);
+    // Troca a tela de demo do template por um placeholder mínimo e limpo.
+    writePlaceholder(projectPath, stackId);
 
     runningScaffolds.delete(projectPath);
     safeSend('scaffold:done', { projectPath });

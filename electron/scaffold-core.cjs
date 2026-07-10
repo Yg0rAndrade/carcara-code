@@ -106,6 +106,84 @@ function sanitizePackageName(name) {
   return s || 'app';
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Arquivos de "placeholder mínimo" que substituem a tela de demo de cada stack,
+// deixando um ponto de partida limpo e VISÍVEL (título = nome do projeto). O motor
+// só sobrescreve os que já existem (best-effort); nada de criar arquivo novo.
+// `projectName` = nome da pasta do projeto (só pra exibir).
+function placeholderFiles(stackId, projectName) {
+  const name = String(projectName || 'App');
+  const js = JSON.stringify(name); // seguro em JSX/TSX
+  const html = escapeHtml(name); // seguro em .astro/HTML
+  const center =
+    'min-height:100vh;display:grid;place-items:center;text-align:center;font-family:system-ui,-apple-system,sans-serif;';
+
+  if (stackId === 'vite-react') {
+    const app =
+      `export default function App() {\n` +
+      `  return (\n` +
+      `    <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>\n` +
+      `      <div>\n` +
+      `        <h1 style={{ margin: 0, fontSize: '2rem' }}>{${js}}</h1>\n` +
+      `        <p style={{ color: '#888' }}>\n` +
+      `          Comece a editar <code>src/App.jsx</code>\n` +
+      `        </p>\n` +
+      `      </div>\n` +
+      `    </main>\n` +
+      `  );\n` +
+      `}\n`;
+    return {
+      'src/App.jsx': app,
+      'src/App.css': '',
+      'src/index.css':
+        `:root { color-scheme: light dark; }\n` +
+        `* { box-sizing: border-box; }\n` +
+        `body { margin: 0; }\n`,
+    };
+  }
+
+  if (stackId === 'next') {
+    const page =
+      `export default function Home() {\n` +
+      `  return (\n` +
+      `    <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>\n` +
+      `      <div>\n` +
+      `        <h1 style={{ margin: 0, fontSize: '2rem' }}>{${js}}</h1>\n` +
+      `        <p style={{ color: '#888' }}>\n` +
+      `          Comece a editar <code>src/app/page.tsx</code>\n` +
+      `        </p>\n` +
+      `      </div>\n` +
+      `    </main>\n` +
+      `  );\n` +
+      `}\n`;
+    return { 'src/app/page.tsx': page };
+  }
+
+  if (stackId === 'astro') {
+    const index =
+      `---\n---\n` +
+      `<html lang="pt-br">\n` +
+      `  <head>\n` +
+      `    <meta charset="utf-8" />\n` +
+      `    <meta name="viewport" content="width=device-width" />\n` +
+      `    <title>${html}</title>\n` +
+      `  </head>\n` +
+      `  <body style="${center}">\n` +
+      `    <div>\n` +
+      `      <h1 style="margin:0;font-size:2rem;">${html}</h1>\n` +
+      `      <p style="color:#888;">Comece a editar <code>src/pages/index.astro</code></p>\n` +
+      `    </div>\n` +
+      `  </body>\n` +
+      `</html>\n`;
+    return { 'src/pages/index.astro': index };
+  }
+
+  return {};
+}
+
 // Plano de merge do tempdir -> projeto. `existing`/`generated` = nomes de topo.
 // backup: arquivos do usuário que colidem (vão pra _backup/, e o gerado vence).
 // move: tudo que o scaffold gerou.
@@ -125,4 +203,5 @@ module.exports = {
   junkPresent,
   mergePlan,
   sanitizePackageName,
+  placeholderFiles,
 };
