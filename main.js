@@ -818,18 +818,34 @@ ipcMain.handle('ai:status', async () => {
 
 ipcMain.handle('aiInstall:start', (evt, { key, mode }) => {
   const installId = `ai-${++aiInstallSeq}`;
+  let registered = false;
+  let pendingDone = null; // set se onDone disparar SÍNCRONO durante run() (falha imediata)
   const handle = aiInstaller.run(key, mode === 'update' ? 'update' : 'install', {
     cwd: app.getPath('home'),
     cols: 80,
     rows: 24,
     cleanEnv: cleanEnv(),
     onData: (data) => safeSend('aiInstall:data', { installId, data }),
-    onDone: ({ ok, version }) => {
+    onDone: (res) => {
+      // Falha síncrona dentro de run() (sem spec / node-pty / spawn): ainda não
+      // registramos nem retornamos o installId. Guarda p/ tratar depois do return.
+      if (!registered) {
+        pendingDone = res;
+        return;
+      }
       aiInstalls.delete(installId);
-      safeSend('aiInstall:done', { installId, ok, version });
+      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version });
     },
   });
-  aiInstalls.set(installId, handle);
+  if (pendingDone) {
+    // run() já terminou (falhou) de forma síncrona: NÃO entra no map (nada a cancelar)
+    // e o done vai no próximo tick, pra o renderer já ter recebido o installId.
+    const res = pendingDone;
+    setImmediate(() => safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version }));
+  } else {
+    aiInstalls.set(installId, handle);
+    registered = true;
+  }
   return { installId };
 });
 
