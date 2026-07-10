@@ -3683,10 +3683,10 @@ ipcMain.handle('scaffold:run', async (_evt, { projectPath, stackId }) => {
   sendScaffold(projectPath, 'scaffolding');
 
   // tempdir SEMPRE vazio -> os create-* rodam sem prompt de "diretório não vazio".
-  const tempDir = path.join(projectPath, '.carcara-scaffold');
+  const tempDir = path.join(projectPath, scaffoldCore.SCAFFOLD_TEMP_DIR);
   let log = '';
   try {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
     fs.mkdirSync(tempDir, { recursive: true });
 
     const code = await new Promise((resolve) => {
@@ -3713,13 +3713,15 @@ ipcMain.handle('scaffold:run', async (_evt, { projectPath, stackId }) => {
     const generated = readEntries(tempDir);
     const plan = scaffoldCore.mergePlan(readEntries(projectPath), generated);
     mergeScaffold(tempDir, projectPath, plan);
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
 
     runningScaffolds.delete(projectPath);
     safeSend('scaffold:done', { projectPath });
     return { ok: true };
   } catch (e) {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    } catch {}
     runningScaffolds.delete(projectPath);
     safeSend('scaffold:error', { projectPath, message: e.message, log });
     return { error: 'scaffold-failed', message: e.message };

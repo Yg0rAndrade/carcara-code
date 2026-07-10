@@ -63,6 +63,24 @@ assert(sc.isScaffoldable(['package.json']) === false, 'package.json não é scaf
 assert(sc.isScaffoldable(['src']) === false, 'src não é scaffoldável');
 assert(sc.isScaffoldable(['index.html']) === false, 'index.html não é scaffoldável');
 assert(sc.isScaffoldable(['meus-pdfs']) === false, 'pasta com conteúdo não é scaffoldável');
+assert(sc.isScaffoldable(['.carcara-scaffold']) === true, 'nosso tempdir sozinho é scaffoldável');
+assert(
+  sc.isScaffoldable(['.git', '.carcara-scaffold']) === true,
+  '.git + nosso tempdir é scaffoldável',
+);
+assert(
+  sc.isScaffoldable(['.carcara-scaffold', 'package.json']) === false,
+  'tempdir + conteúdo real ainda bloqueia',
+);
+assert(
+  JSON.stringify(sc.junkPresent(['.carcara-scaffold', 'README.md'])) ===
+    JSON.stringify(['README.md']),
+  'junkPresent não conta o nosso tempdir',
+);
+assert(
+  typeof sc.SCAFFOLD_TEMP_DIR === 'string' && sc.SCAFFOLD_TEMP_DIR === '.carcara-scaffold',
+  'SCAFFOLD_TEMP_DIR exportado = .carcara-scaffold',
+);
 assert(
   sc.commandFor('vite-react')[0] === 'npm' && sc.commandFor('vite-react').includes('react'),
   'vite-react argv',

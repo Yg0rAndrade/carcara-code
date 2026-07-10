@@ -6,6 +6,15 @@
 // Nomes tolerados numa pasta "vazia ou só-lixo" (case-insensitive).
 const SCAFFOLD_JUNK = new Set(['.git', '.gitignore', 'readme.md', 'license']);
 
+// Tempdir da própria ferramenta (criado durante o scaffold). Nome canônico:
+// main.js usa SCAFFOLD_TEMP_DIR pra montar o caminho, então nunca diverge.
+const SCAFFOLD_TEMP_DIR = '.carcara-scaffold';
+
+// isScaffoldable tolera o nosso tempdir (senão o re-probe durante o scaffold
+// desmontaria o wizard e um tempdir órfão de crash bloquearia pra sempre).
+// junkPresent continua em SCAFFOLD_JUNK -> o tempdir nunca aparece pro usuário.
+const SCAFFOLD_IGNORE = new Set([...SCAFFOLD_JUNK, SCAFFOLD_TEMP_DIR.toLowerCase()]);
+
 // Catálogo fixo (v1: só web). Ordem = ordem dos cards.
 // Todos 'cli': rodam o create-* oficial SEM instalar (o install roda depois,
 // no preview:start, no diretório final — DRY).
@@ -79,7 +88,7 @@ function commandFor(stackId) {
 
 function isScaffoldable(entries) {
   if (!Array.isArray(entries)) return false;
-  return entries.every((name) => SCAFFOLD_JUNK.has(String(name).toLowerCase()));
+  return entries.every((name) => SCAFFOLD_IGNORE.has(String(name).toLowerCase()));
 }
 
 function junkPresent(entries) {
@@ -98,6 +107,7 @@ function mergePlan(existing, generated) {
 
 module.exports = {
   SCAFFOLD_JUNK,
+  SCAFFOLD_TEMP_DIR,
   CATALOG,
   listStacks,
   commandFor,
