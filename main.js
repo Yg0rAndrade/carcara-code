@@ -834,14 +834,16 @@ ipcMain.handle('aiInstall:start', (evt, { key, mode }) => {
         return;
       }
       aiInstalls.delete(installId);
-      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version });
+      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version, error: res.error });
     },
   });
   if (pendingDone) {
     // run() já terminou (falhou) de forma síncrona: NÃO entra no map (nada a cancelar)
     // e o done vai no próximo tick, pra o renderer já ter recebido o installId.
     const res = pendingDone;
-    setImmediate(() => safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version }));
+    setImmediate(() =>
+      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version, error: res.error }),
+    );
   } else {
     aiInstalls.set(installId, handle);
     registered = true;

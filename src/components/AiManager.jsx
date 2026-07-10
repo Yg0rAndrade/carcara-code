@@ -87,11 +87,17 @@ export default function AiManager({ initialInstallKey = null }) {
 
   // eventos de stream/fim
   useEffect(() => {
-    const offData = window.api.on('aiInstall:data', ({ installId: id, data }) => {
-      if (id === installId && termRef.current) termRef.current.write(data);
+    // Só roda uma instalação por vez (guard do `busy`), então não há stream concorrente
+    // a diferenciar aqui. Filtrar por `installId` deixaria de fora o eco "$ <comando>" —
+    // ele chega antes de setInstallId(id) commitar, com installId ainda null.
+    const offData = window.api.on('aiInstall:data', ({ data }) => {
+      if (termRef.current) termRef.current.write(data);
     });
-    const offDone = window.api.on('aiInstall:done', ({ installId: id }) => {
+    const offDone = window.api.on('aiInstall:done', ({ installId: id, ok, error }) => {
       if (id !== installId) return;
+      if (!ok && error && termRef.current) {
+        termRef.current.write(`\r\n\x1b[31m${error}\x1b[0m\r\n`);
+      }
       setBusy(null);
       setInstallId(null);
       refresh();

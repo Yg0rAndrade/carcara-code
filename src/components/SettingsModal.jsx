@@ -193,6 +193,9 @@ export function SettingsModal({
       setTab(initialTab);
       setAiSubTab(initialSubTab);
       setPendingInstall(initialInstall);
+      // Zera a confirmação de instalação pendente: sem isso, fechar (Esc/X) com o
+      // overlay aberto e reabrir na aba de IA reexibe um confirm de uma sessão antiga.
+      setConfirmInstall(null);
     }
   }, [open, initialTab, initialSubTab, initialInstall]);
   const [projects, setProjects] = useState([]);
@@ -286,8 +289,11 @@ export function SettingsModal({
   }, [open, onClose]);
 
   // Status de instalação das CLIs — pra pintar de cinza as ausentes na aba "Por projeto".
-  // Carrega uma vez; enquanto for null não pinta nada (evita flicker no primeiro render).
+  // Recarrega toda vez que o modal abre (o SettingsModal nunca desmonta, então sem isso
+  // ficaria preso no status do início do app, ignorando instalações feitas na sessão).
+  // Enquanto for null não pinta nada (evita flicker no primeiro render).
   useEffect(() => {
+    if (!open) return;
     let alive = true;
     window.api
       .aiStatus()
@@ -298,7 +304,7 @@ export function SettingsModal({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [open]);
   const isInstalled = (key) =>
     key === 'custom' || key === 'shell' || !installedKeys || installedKeys.has(key);
 
