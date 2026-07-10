@@ -71,6 +71,8 @@ export default function App() {
   const [update, setUpdate] = useState({ state: 'idle' });
   const [pillDismissed, setPillDismissed] = useState(false);
   const [settingsTab, setSettingsTab] = useState('appearance');
+  // CLI que o Configurações deve auto-instalar ao abrir (clique numa CLI ausente no AiPicker).
+  const [settingsAiInstall, setSettingsAiInstall] = useState(null);
   // Tela de preparo do 1º uso: aparece só até concluir uma vez. A flag mora no config.json
   // (via main), não no localStorage — começa fechada e abre só se o main disser que falta.
   const [setupOpen, setSetupOpen] = useState(false);
@@ -79,6 +81,13 @@ export default function App() {
   const closeSetup = () => {
     window.api.markSetupDone();
     setSetupOpen(false);
+  };
+  // Abre Configurações › IA na sub-aba "Instaladas" já instalando a CLI escolhida.
+  // Usado pelo AiPicker (aba nova) quando a CLI clicada não está instalada.
+  const openAiInstall = (key) => {
+    setSettingsTab('ai');
+    setSettingsAiInstall(key);
+    setSettingsOpen(true);
   };
   const [railWidth, setRailWidth] = useState(() => Number(localStorage.getItem('railWidth')) || 64);
   const [railResizing, setRailResizing] = useState(false);
@@ -745,6 +754,7 @@ export default function App() {
           activeProject={active?.path || null}
           controlsRef={chatControls}
           onActiveSessionChange={setChatSession}
+          onOpenAiInstall={openAiInstall}
         />
       </ErrorBoundary>
     </ResizablePanel>
@@ -866,12 +876,17 @@ export default function App() {
       <SettingsModal
         open={settingsOpen}
         initialTab={settingsTab}
+        initialSubTab={settingsAiInstall ? 'installed' : 'projects'}
+        initialInstall={settingsAiInstall}
         appVersion={appVersion}
         update={update}
         onUpdateCheck={() => window.api.updateCheck()}
         onUpdateDownload={() => window.api.updateDownload()}
         onUpdateInstall={() => window.api.updateInstall()}
-        onClose={() => setSettingsOpen(false)}
+        onClose={() => {
+          setSettingsOpen(false);
+          setSettingsAiInstall(null);
+        }}
       />
       <SetupScreen open={setupOpen} onClose={closeSetup} />
       <RemoteProjectModal

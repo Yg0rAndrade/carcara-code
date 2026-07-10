@@ -33,7 +33,7 @@ import { Button } from './ui/button.jsx';
 import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
 import AiManager from './AiManager.jsx';
 import { cn } from '@/lib/utils';
-import { AI_OPTIONS, CliBadge } from '@/lib/aiOptions.jsx';
+import { AI_OPTIONS, OPT, CliBadge } from '@/lib/aiOptions.jsx';
 import { filterAndSortProjects } from '@/lib/projectFilter.js';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
 import { useT, useLang } from '@/lib/i18n';
@@ -171,6 +171,8 @@ export function SettingsModal({
   open,
   onClose,
   initialTab = 'appearance',
+  initialSubTab = 'projects',
+  initialInstall = null,
   appVersion = '',
   update = { state: 'idle' },
   onUpdateCheck,
@@ -184,15 +186,23 @@ export function SettingsModal({
   const { chatMode, setChatMode } = useChatMode();
   const [tab, setTab] = useState(initialTab);
   // Quando reabre apontando pra uma aba específica (ex.: clique na versão do rail).
+  // Também posiciona a sub-aba de IA e o auto-install quando o App abre já pedindo
+  // "instalar a CLI X" (clique numa CLI ausente no AiPicker da aba nova).
   useEffect(() => {
-    if (open) setTab(initialTab);
-  }, [open, initialTab]);
+    if (open) {
+      setTab(initialTab);
+      setAiSubTab(initialSubTab);
+      setPendingInstall(initialInstall);
+    }
+  }, [open, initialTab, initialSubTab, initialInstall]);
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [aiQuery, setAiQuery] = useState(''); // filtro de busca da lista "IA por projeto"
   const [aiSort, setAiSort] = useState('default'); // 'default' | 'asc' | 'desc'
   const [aiSubTab, setAiSubTab] = useState('projects'); // 'projects' | 'installed'
   const [pendingInstall, setPendingInstall] = useState(null); // key a auto-instalar (Task 8)
+  const [installedKeys, setInstalledKeys] = useState(null); // Set|null (null = ainda carregando)
+  const [confirmInstall, setConfirmInstall] = useState(null); // key da CLI ausente a confirmar
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
@@ -274,6 +284,23 @@ export function SettingsModal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Status de instalação das CLIs — pra pintar de cinza as ausentes na aba "Por projeto".
+  // Carrega uma vez; enquanto for null não pinta nada (evita flicker no primeiro render).
+  useEffect(() => {
+    let alive = true;
+    window.api
+      .aiStatus()
+      .then(
+        (s) => alive && setInstalledKeys(new Set(s.filter((r) => r.installed).map((r) => r.key))),
+      )
+      .catch(() => alive && setInstalledKeys(new Set()));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const isInstalled = (key) =>
+    key === 'custom' || key === 'shell' || !installedKeys || installedKeys.has(key);
 
   if (!open) return null;
 
@@ -374,11 +401,21 @@ export function SettingsModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {tab === 'ai' && (
-            <div className={cn('mx-auto', aiSubTab === 'installed' ? 'max-w-5xl' : 'max-w-3xl')}>
+            <div
+              className={cn(
+                'relative mx-auto',
+                aiSubTab === 'installed' ? 'max-w-5xl' : 'max-w-3xl',
+              )}
+            >
               <div className="mb-4 flex gap-1 rounded-lg bg-muted p-1 text-sm">
                 <button
                   type="button"
-                  onClick={() => setAiSubTab('projects')}
+                  onClick={() => {
+                    setAiSubTab('projects');
+                    // Ao voltar pra "Por projeto", zera o auto-install pendente pra não
+                    // reinstalar caso o usuário volte pra "Instaladas" depois.
+                    setPendingInstall(null);
+                  }}
                   className={cn(
                     'flex-1 rounded-md px-3 py-1.5 transition-colors',
                     aiSubTab === 'projects' ? 'bg-background shadow-sm' : 'text-muted-foreground',
@@ -512,20 +549,27 @@ export function SettingsModal({
                           <div className="flex flex-wrap gap-2">
                             {AI_OPTIONS.map((opt) => {
                               const active = cur.ais.includes(opt.key);
+                              const missing = !isInstalled(opt.key);
                               return (
                                 <button
                                   key={opt.key}
                                   type="button"
-                                  onClick={() => toggle(p.path, opt.key)}
-                                  title={t(opt.desc)}
+                                  onClick={() =>
+                                    missing ? setConfirmInstall(opt.key) : toggle(p.path, opt.key)
+                                  }
+                                  title={missing ? t('settings.aiClickToInstall') : t(opt.desc)}
                                   className={cn(
                                     'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
                                     active && 'border-primary bg-muted ring-1 ring-primary',
+                                    missing && 'border-dashed opacity-60 grayscale',
                                   )}
                                 >
                                   <CliBadge optKey={opt.key} />
                                   {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
-                                  {active && <Check className="size-3.5 text-primary" />}
+                                  {missing && <span className="text-[11px]">⬇</span>}
+                                  {active && !missing && (
+                                    <Check className="size-3.5 text-primary" />
+                                  )}
                                 </button>
                               );
                             })}
@@ -549,6 +593,45 @@ export function SettingsModal({
               )}
 
               {aiSubTab === 'installed' && <AiManager initialInstallKey={pendingInstall} />}
+
+              {/* Confirmação de instalação sob demanda: clicar numa CLI ausente ("Por projeto")
+                  abre este overlay; confirmar leva pra "Instaladas" já instalando. */}
+              {confirmInstall && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55">
+                  <div className="w-[330px] rounded-2xl border border-primary/30 bg-background p-5 text-center shadow-xl">
+                    <div className="mx-auto mb-3 w-fit">
+                      <CliBadge optKey={confirmInstall} />
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {t('settings.aiInstallConfirmTitle', { name: OPT[confirmInstall]?.label })}
+                    </div>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                      {t('settings.aiInstallConfirmBody')}
+                    </p>
+                    <div className="mt-4 flex justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmInstall(null)}
+                        className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        {t('settings.aiInstallLater')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const key = confirmInstall;
+                          setConfirmInstall(null);
+                          setPendingInstall(key);
+                          setAiSubTab('installed');
+                        }}
+                        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                      >
+                        {t('settings.aiInstall')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

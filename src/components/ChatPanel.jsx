@@ -738,7 +738,7 @@ function SessionActivityDot({ state }) {
   );
 }
 
-export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange }) {
+export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, onOpenAiInstall }) {
   const t = useT();
   const { chatMode } = useChatMode();
   const { terminalTheme } = useTheme();
@@ -1394,7 +1394,13 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange })
             const meta = sessions.find((s) => s.id === p.active);
             const ais = projectAis?.ais || [];
             if (meta && !meta.cli && ais.length >= 2) {
-              return <AiPicker ais={ais} onPick={(key) => pickCli(p.active, key)} />;
+              return (
+                <AiPicker
+                  ais={ais}
+                  onPick={(key) => pickCli(p.active, key)}
+                  onOpenAiInstall={onOpenAiInstall}
+                />
+              );
             }
             return null;
           })()}
