@@ -63,24 +63,28 @@ assert(sc.isScaffoldable(['package.json']) === false, 'package.json não é scaf
 assert(sc.isScaffoldable(['src']) === false, 'src não é scaffoldável');
 assert(sc.isScaffoldable(['index.html']) === false, 'index.html não é scaffoldável');
 assert(sc.isScaffoldable(['meus-pdfs']) === false, 'pasta com conteúdo não é scaffoldável');
-assert(sc.isScaffoldable(['.carcara-scaffold']) === true, 'nosso tempdir sozinho é scaffoldável');
 assert(
-  sc.isScaffoldable(['.git', '.carcara-scaffold']) === true,
+  sc.isScaffoldable(['carcara-scaffold-tmp']) === true,
+  'nosso tempdir sozinho é scaffoldável',
+);
+assert(
+  sc.isScaffoldable(['.git', 'carcara-scaffold-tmp']) === true,
   '.git + nosso tempdir é scaffoldável',
 );
 assert(
-  sc.isScaffoldable(['.carcara-scaffold', 'package.json']) === false,
+  sc.isScaffoldable(['carcara-scaffold-tmp', 'package.json']) === false,
   'tempdir + conteúdo real ainda bloqueia',
 );
 assert(
-  JSON.stringify(sc.junkPresent(['.carcara-scaffold', 'README.md'])) ===
+  JSON.stringify(sc.junkPresent(['carcara-scaffold-tmp', 'README.md'])) ===
     JSON.stringify(['README.md']),
   'junkPresent não conta o nosso tempdir',
 );
 assert(
-  typeof sc.SCAFFOLD_TEMP_DIR === 'string' && sc.SCAFFOLD_TEMP_DIR === '.carcara-scaffold',
-  'SCAFFOLD_TEMP_DIR exportado = .carcara-scaffold',
+  typeof sc.SCAFFOLD_TEMP_DIR === 'string' && sc.SCAFFOLD_TEMP_DIR === 'carcara-scaffold-tmp',
+  'SCAFFOLD_TEMP_DIR exportado = carcara-scaffold-tmp (nome npm-válido, não começa com ponto)',
 );
+assert(!/^[._]/.test(sc.SCAFFOLD_TEMP_DIR), 'SCAFFOLD_TEMP_DIR não começa com . ou _ (regra npm)');
 assert(
   sc.commandFor('vite-react')[0] === 'npm' && sc.commandFor('vite-react').includes('react'),
   'vite-react argv',
@@ -95,9 +99,16 @@ assert(
     sc.commandFor('astro').includes('--skip-houston'),
   'astro no-install + skip-houston',
 );
-assert(sc.commandFor('html').includes('vanilla'), 'html = vite vanilla');
+assert(sc.commandFor('html') === null, 'html removido do catálogo -> null');
 assert(sc.commandFor('inexistente') === null, 'id desconhecido -> null');
-assert(sc.listStacks().length === 4, '4 cards');
+assert(sc.listStacks().length === 3, '3 cards (react, next, astro; html removido)');
+assert(
+  sc
+    .listStacks()
+    .map((s) => s.id)
+    .join(',') === 'vite-react,next,astro',
+  'ordem e ids dos cards',
+);
 assert(
   sc.listStacks().every((s) => !('command' in s)),
   'listStacks não vaza argv',
@@ -108,6 +119,13 @@ assert(
   'merge: README colide -> backup',
 );
 assert(mp.move.length === 3, 'merge: move tudo que foi gerado');
+// sanitizePackageName: nome de pasta -> nome de pacote npm válido
+assert(sc.sanitizePackageName('teste') === 'teste', 'sanitize: simples');
+assert(sc.sanitizePackageName('Meu Site') === 'meu-site', 'sanitize: espaço/maiúscula');
+assert(sc.sanitizePackageName('.hidden') === 'hidden', 'sanitize: tira ponto do início');
+assert(sc.sanitizePackageName('_x_') === 'x', 'sanitize: tira _ das pontas');
+assert(sc.sanitizePackageName('a  b') === 'a-b', 'sanitize: colapsa separadores');
+assert(sc.sanitizePackageName('') === 'app', 'sanitize: vazio -> app');
 console.log('scaffold-core OK');
 
 // fixLoginPath é no-op seguro fora de darwin/linux (não lança, retorna false)

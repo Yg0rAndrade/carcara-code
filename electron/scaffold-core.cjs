@@ -8,7 +8,10 @@ const SCAFFOLD_JUNK = new Set(['.git', '.gitignore', 'readme.md', 'license']);
 
 // Tempdir da própria ferramenta (criado durante o scaffold). Nome canônico:
 // main.js usa SCAFFOLD_TEMP_DIR pra montar o caminho, então nunca diverge.
-const SCAFFOLD_TEMP_DIR = '.carcara-scaffold';
+// NÃO pode começar com ponto: o create-next-app deriva o nome do pacote npm do
+// basename da pasta e o npm rejeita nome começando com '.' (o create-vite/astro
+// não validam, por isso só o Next quebrava).
+const SCAFFOLD_TEMP_DIR = 'carcara-scaffold-tmp';
 
 // isScaffoldable tolera o nosso tempdir (senão o re-probe durante o scaffold
 // desmontaria o wizard e um tempdir órfão de crash bloquearia pra sempre).
@@ -22,14 +25,14 @@ const CATALOG = [
   {
     id: 'vite-react',
     label: 'React',
-    sub: 'Vite',
+    sub: 'Aplicativos web',
     icon: 'Atom',
     command: ['npm', 'create', 'vite@latest', '.', '--', '--template', 'react'],
   },
   {
     id: 'next',
     label: 'Next.js',
-    sub: 'App Router + Tailwind',
+    sub: 'Aplicativos web com SEO',
     icon: 'Triangle',
     command: [
       'npx',
@@ -50,7 +53,7 @@ const CATALOG = [
   {
     id: 'astro',
     label: 'Astro',
-    sub: 'Sites de conteúdo',
+    sub: 'Sites de conteúdo (landing, blog)',
     icon: 'Rocket',
     command: [
       'npm',
@@ -65,13 +68,6 @@ const CATALOG = [
       '--skip-houston',
       '-y',
     ],
-  },
-  {
-    id: 'html',
-    label: 'HTML/CSS/JS',
-    sub: 'Vite vanilla',
-    icon: 'FileCode',
-    command: ['npm', 'create', 'vite@latest', '.', '--', '--template', 'vanilla'],
   },
 ];
 
@@ -96,6 +92,20 @@ function junkPresent(entries) {
   return entries.filter((name) => SCAFFOLD_JUNK.has(String(name).toLowerCase()));
 }
 
+// Nome de pacote npm válido a partir do nome da pasta do projeto. Os create-*
+// derivam o "name" do package.json do basename do tempdir (não do projeto), então
+// o motor reescreve o name pós-merge com isto. Regras npm: minúsculo, sem espaço,
+// não começa com '.'/'_'.
+function sanitizePackageName(name) {
+  let s = String(name || '')
+    .toLowerCase()
+    .trim();
+  s = s.replace(/[^a-z0-9._-]+/g, '-'); // espaço/acento/inválido -> '-'
+  s = s.replace(/^[._-]+|[._-]+$/g, ''); // sem '.'/'_'/'-' nas pontas
+  s = s.replace(/-{2,}/g, '-'); // colapsa hifens repetidos
+  return s || 'app';
+}
+
 // Plano de merge do tempdir -> projeto. `existing`/`generated` = nomes de topo.
 // backup: arquivos do usuário que colidem (vão pra _backup/, e o gerado vence).
 // move: tudo que o scaffold gerou.
@@ -114,4 +124,5 @@ module.exports = {
   isScaffoldable,
   junkPresent,
   mergePlan,
+  sanitizePackageName,
 };

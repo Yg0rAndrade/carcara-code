@@ -3652,6 +3652,21 @@ function mergeScaffold(tempDir, projectPath, plan) {
   }
 }
 
+// Reescreve o "name" do package.json com o nome real da pasta do projeto
+// (os create-* usam o basename do tempdir). Best-effort: sem package.json ou
+// JSON inválido, não faz nada (não é fatal pro scaffold).
+function fixPackageName(projectPath) {
+  const pkgPath = path.join(projectPath, 'package.json');
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    const desired = scaffoldCore.sanitizePackageName(path.basename(projectPath));
+    if (pkg.name !== desired) {
+      pkg.name = desired;
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+    }
+  } catch {}
+}
+
 ipcMain.handle('scaffold:stacks', () => scaffoldCore.listStacks());
 
 ipcMain.handle('scaffold:probe', (_evt, { projectPath }) => {
@@ -3715,6 +3730,10 @@ ipcMain.handle('scaffold:run', async (_evt, { projectPath, stackId }) => {
     const plan = scaffoldCore.mergePlan(readEntries(projectPath), generated);
     mergeScaffold(tempDir, projectPath, plan);
     fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+
+    // Os create-* derivam o "name" do package.json do basename do tempdir
+    // (carcara-scaffold-tmp). Reescreve com o nome real da pasta do projeto.
+    fixPackageName(projectPath);
 
     runningScaffolds.delete(projectPath);
     safeSend('scaffold:done', { projectPath });
