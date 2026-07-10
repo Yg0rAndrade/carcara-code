@@ -328,6 +328,20 @@
     "time_hour_ago": "há {n} h",
     "time_day_ago": "há {n} d"
   },
+  "scaffold": {
+    "title": "Começar um projeto novo",
+    "subtitle": "Escolha uma tecnologia. O Carcará cria tudo e abre o preview.",
+    "junk_notice": "Esta pasta tem {count} arquivo(s). Vou mantê-los e criar o projeto ao redor.",
+    "confirm": "Criar projeto",
+    "cancel": "Voltar",
+    "creating": "Criando projeto…",
+    "starting": "Instalando e iniciando o preview…",
+    "error_title": "Não consegui criar o projeto",
+    "error_details": "Ver detalhes",
+    "retry": "Tentar de novo",
+    "missing_node": "Para criar um projeto, instale o Node.js primeiro.",
+    "not_scaffoldable": "Esta pasta deixou de estar vazia. Recarregue para continuar."
+  },
   "preview": {
     "tab": "Preview",
     "code": "Código",
