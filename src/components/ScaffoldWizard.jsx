@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Atom,
-  Triangle,
-  Rocket,
-  FileCode,
-  Loader2,
-  AlertTriangle,
-  ChevronRight,
-  Info,
-} from 'lucide-react';
+import { Loader2, AlertTriangle, ChevronRight, Info } from 'lucide-react';
 import { Button } from './ui/button.jsx';
+import { ReactLogo, NextLogo, AstroLogo } from './scaffoldLogos.jsx';
 import { useT } from '@/lib/i18n';
 
-const ICONS = { Atom, Triangle, Rocket, FileCode };
+// Logo oficial por stack (fallback: ChevronRight se surgir id novo sem logo).
+const STACK_LOGOS = { 'vite-react': ReactLogo, next: NextLogo, astro: AstroLogo };
 // Texto do "i" de informação por stack (linguagem simples, sem jargão).
 const INFO_KEY = { 'vite-react': 'info_react', next: 'info_next', astro: 'info_astro' };
 
@@ -164,35 +157,43 @@ export function ScaffoldWizard({ projectPath, junk }) {
 
   // view === 'pick'
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 p-6">
-      <div className="text-center">
-        <div className="text-lg font-semibold">{t('scaffold.title')}</div>
-        <div className="mt-1 text-sm text-muted-foreground">{t('scaffold.subtitle')}</div>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 overflow-auto p-6">
+      <div className="max-w-md text-center">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          {t('scaffold.eyebrow')}
+        </div>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('scaffold.title')}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t('scaffold.subtitle')}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-wrap items-stretch justify-center gap-4">
         {stacks.map((s) => {
-          const Icon = ICONS[s.icon] || ChevronRight;
+          const Logo = STACK_LOGOS[s.id] || ChevronRight;
           const infoKey = INFO_KEY[s.id];
           return (
             <button
               key={s.id}
               onClick={() => choose(s.id)}
-              className="relative flex w-44 items-center gap-3 rounded-lg border border-border bg-card p-3 pr-8 text-left transition-colors hover:border-primary hover:bg-accent"
+              className="group relative flex w-44 flex-col items-center gap-3 rounded-xl border border-border bg-card px-4 py-6 text-center transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
             >
-              <Icon className="shrink-0 text-primary" />
-              <div className="min-w-0">
-                <div className="truncate font-medium">{s.label}</div>
-                <div className="truncate text-xs text-muted-foreground">{s.sub}</div>
-              </div>
               {infoKey && (
-                <span
-                  className="absolute right-2 top-2 text-muted-foreground/60 hover:text-foreground"
-                  title={`${s.label} — ${t(`scaffold.${infoKey}`)}`}
-                  aria-label={t('scaffold.info')}
-                >
-                  <Info className="h-3.5 w-3.5" />
+                <span className="group/info absolute right-2.5 top-2.5">
+                  <Info
+                    className="h-4 w-4 text-muted-foreground/50 transition-colors group-hover/info:text-foreground"
+                    aria-label={t('scaffold.info')}
+                  />
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden w-56 rounded-lg border border-border bg-popover p-2.5 text-left text-xs leading-relaxed text-popover-foreground shadow-xl group-hover/info:block"
+                  >
+                    {t(`scaffold.${infoKey}`)}
+                  </span>
                 </span>
               )}
+              <Logo className="h-10 w-10 shrink-0" />
+              <div className="min-w-0">
+                <div className="font-semibold">{s.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{s.sub}</div>
+              </div>
             </button>
           );
         })}

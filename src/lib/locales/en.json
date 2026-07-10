@@ -329,6 +329,7 @@
     "time_day_ago": "{n}d ago"
   },
   "scaffold": {
+    "eyebrow": "New project",
     "title": "Start a new project",
     "subtitle": "Pick a technology. Carcará sets everything up and opens the preview.",
     "junk_notice": "This folder has {count} file(s). I'll keep them and build the project around them.",

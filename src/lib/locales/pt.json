@@ -329,6 +329,7 @@
     "time_day_ago": "há {n} d"
   },
   "scaffold": {
+    "eyebrow": "Novo projeto",
     "title": "Começar um projeto novo",
     "subtitle": "Escolha uma tecnologia. O Carcará cria tudo e abre o preview.",
     "junk_notice": "Esta pasta tem {count} arquivo(s). Vou mantê-los e criar o projeto ao redor.",
