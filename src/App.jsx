@@ -317,6 +317,22 @@ export default function App() {
     }
   }, [active]);
 
+  // Mantém o `active` em sincronia com a lista `projects`: `active` é estado à
+  // parte e não é derivado da lista, então quando algo muda no disco (ex.: um
+  // scaffold acabou de criar o package.json) o reload() atualiza `projects` com o
+  // previewType/running novos, mas o `active` ficaria preso no objeto antigo
+  // (previewType: null) — escondendo os botões Parar/Reiniciar até reabrir o app.
+  // Aqui adotamos o objeto fresco do mesmo path (só quando algo mudou de fato,
+  // pra não re-renderizar à toa a cada reload).
+  useEffect(() => {
+    setActive((cur) => {
+      if (!cur) return cur;
+      const fresh = projects.find((p) => p.path === cur.path);
+      if (!fresh) return cur;
+      return JSON.stringify(fresh) === JSON.stringify(cur) ? cur : fresh;
+    });
+  }, [projects]);
+
   // Ctrl +/-/0 dão zoom na JANELA do app (rail, chat, abas…). O listener só dispara
   // quando o foco está no app: se estiver DENTRO do preview (webview), o keydown vai
   // pro site e o atalho ali zooma a página (tratado no main). A borda em volta do
