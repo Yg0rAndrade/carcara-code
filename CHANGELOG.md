@@ -18,6 +18,7 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - Configurações → IA por projeto: **barra de busca**, **ordenação por nome** (padrão/A→Z/Z→A) e ícone dos projetos maior, pra achar o projeto rápido numa lista longa
 - Sobre: seção **"Contribuir"** com link pro repositório público, convidando a abrir Pull Requests
 - Erros: **copiar o erro** de forma consistente (código + mensagem + stack) — payload compartilhado no card de erro e ação "Copiar" nos avisos de erro
+- Idiomas: **16 novos idiomas na interface** além de português e inglês — espanhol, francês, alemão, italiano, chinês, japonês, coreano, tailandês, russo, árabe, hindi, indonésio, turco, vietnamita, holandês e polonês. Seletor em Configurações → Idioma com bandeira e nome nativo; o idioma inicial segue o do sistema. Fonte única em `src/lib/languages.js` — adicionar idioma = uma entrada + um `locales/<code>.json` (carregados via glob) + o bloco nativo do processo main
 
 ### Correções
 
