@@ -12,6 +12,7 @@ const TABLE = {
     loginArgs: [],
     exeExt: '.exe',
     openCmd: 'start',
+    opencodeBin: 'opencode.cmd',
   },
   darwin: {
     shellDefault: 'zsh',
@@ -19,6 +20,7 @@ const TABLE = {
     loginArgs: ['-l'],
     exeExt: '',
     openCmd: 'open',
+    opencodeBin: 'opencode',
   },
   linux: {
     shellDefault: 'bash',
@@ -26,6 +28,7 @@ const TABLE = {
     loginArgs: [],
     exeExt: '',
     openCmd: 'xdg-open',
+    opencodeBin: 'opencode',
   },
 };
 

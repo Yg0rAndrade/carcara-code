@@ -24,6 +24,11 @@ for (const os of ['win32', 'darwin', 'linux']) {
 assert(tableFor('sunos') === TABLE.linux, 'SO desconhecido cai em linux');
 assert(tableFor('win32') === TABLE.win32, 'tableFor win32');
 
+// opencodeBin: coluna por SO (usada por electron/carcara/binary.cjs)
+assert(tableFor('win32').opencodeBin === 'opencode.cmd', 'opencodeBin win32');
+assert(tableFor('linux').opencodeBin === 'opencode', 'opencodeBin linux');
+assert(tableFor('darwin').opencodeBin === 'opencode', 'opencodeBin darwin');
+
 // shellFor preserva o comportamento do antigo shellForOS
 assert(shellFor('win32', {}) === 'powershell.exe', 'win sem COMSPEC -> powershell');
 assert(shellFor('win32', { COMSPEC: 'cmd.exe' }) === 'cmd.exe', 'win respeita COMSPEC');
