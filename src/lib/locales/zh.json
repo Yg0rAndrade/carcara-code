@@ -610,6 +610,7 @@
     "aiCodexDesc": "终端中的 ChatGPT/OpenAI · npm i -g @openai/codex。",
     "aiOpencodeDesc": "开源 · npm i -g opencode-ai。",
     "aiAgyDesc": "Google · 取代了 Gemini CLI。",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "纯终端，完全没有 AI — 只是项目中的系统 shell。",
     "aiCustomDesc": "手动设置命令。",
     "aiCustomLabel": "自定义",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "选择此标签页的 AI",
     "subtitle": "此项目有多个 AI。点击其中一个以在此标签页中打开它。"
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "新建远程项目（SSH）",

@@ -43,6 +43,15 @@ export const AI_OPTIONS = [
     desc: 'settings.aiAgyDesc',
   },
   {
+    key: 'carcara',
+    label: 'Carcará Code AI',
+    cmd: '',
+    color: '#e8590c',
+    Icon: OpenCodeIcon,
+    fullColor: true,
+    desc: 'settings.aiCarcaraDesc',
+  },
+  {
     key: 'shell',
     label: 'Terminal limpo',
     cmd: '',

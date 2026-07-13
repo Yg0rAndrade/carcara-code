@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI trong terminal · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Mã nguồn mở · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · thay thế Gemini CLI.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Một terminal thuần, hoàn toàn không có AI — chỉ là shell hệ thống trong dự án.",
     "aiCustomDesc": "Đặt lệnh thủ công.",
     "aiCustomLabel": "Tùy chỉnh",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "Chọn AI cho thẻ này",
     "subtitle": "Dự án này có nhiều hơn một AI. Nhấp vào một cái để mở nó trong thẻ này."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "Dự án từ xa mới (SSH)",

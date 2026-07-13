@@ -610,6 +610,7 @@
     "aiCodexDesc": "터미널의 ChatGPT/OpenAI · npm i -g @openai/codex.",
     "aiOpencodeDesc": "오픈 소스 · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · Gemini CLI를 대체했습니다.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "AI가 전혀 없는 일반 터미널 — 프로젝트 안의 시스템 셸입니다.",
     "aiCustomDesc": "명령을 직접 설정하세요.",
     "aiCustomLabel": "사용자 지정",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "이 탭의 AI 선택",
     "subtitle": "이 프로젝트에는 AI가 여러 개 있습니다. 하나를 클릭하면 이 탭에서 열립니다."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "새 원격 프로젝트 (SSH)",

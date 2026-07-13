@@ -35,6 +35,7 @@ import { AiPicker } from './AiPicker.jsx';
 import { MOVE_MIME, hasExternalFiles, dropPathsText } from '@/lib/dragPaths.js';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
+import { CarcaraChat } from '@/components/CarcaraChat.jsx';
 
 // IAs com adapter de chat na ponte (chat-cli.cjs). As demais seguem no terminal xterm.
 const CHAT_CLIS = ['claude', 'codex', 'agy'];
@@ -756,6 +757,7 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   // seletor de IA e layout ficam.
   const cliOf = (sid) => sessions.find((s) => s.id === sid)?.cli;
   const isChatSession = (sid) => chatMode === 'chat' && CHAT_CLIS.includes(cliOf(sid));
+  const isCarcaraSession = (sid) => chatMode === 'chat' && cliOf(sid) === 'carcara';
   // Atividade do Claude POR SESSÃO: sessionId -> 'working' | 'asking' | 'attention'.
   // É o detalhe fino (qual aba) que o rail (agregado por projeto) não mostra.
   const [sessionActivity, setSessionActivity] = useState({});
@@ -1416,6 +1418,11 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
                 projectPath={activeProject}
                 cli={cliOf(p.active)}
               />
+            </div>
+          )}
+          {isCarcaraSession(p.active) && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-background">
+              <CarcaraChat sessionId={p.active} projectPath={activeProject} />
             </div>
           )}
           {dragSid && (

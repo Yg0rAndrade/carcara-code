@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI nel terminale · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Open-source · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · ha sostituito la Gemini CLI.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Un terminale semplice, senza alcuna AI — solo la shell di sistema nel progetto.",
     "aiCustomDesc": "Imposta il comando manualmente.",
     "aiCustomLabel": "Personalizzato",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "Scegli l'AI di questa scheda",
     "subtitle": "Questo progetto ha più di un'AI. Cliccane una per aprirla in questa scheda."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "Nuovo progetto remoto (SSH)",

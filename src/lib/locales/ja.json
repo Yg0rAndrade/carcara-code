@@ -610,6 +610,7 @@
     "aiCodexDesc": "ターミナルの ChatGPT/OpenAI · npm i -g @openai/codex。",
     "aiOpencodeDesc": "オープンソース · npm i -g opencode-ai。",
     "aiAgyDesc": "Google · Gemini CLI を置き換えました。",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "AI のない素のターミナル — プロジェクト内のシステムシェルだけです。",
     "aiCustomDesc": "コマンドを手動で設定します。",
     "aiCustomLabel": "カスタム",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "このタブの AI を選択",
     "subtitle": "このプロジェクトには複数の AI があります。1 つをクリックしてこのタブで開いてください。"
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "新しいリモートプロジェクト（SSH）",

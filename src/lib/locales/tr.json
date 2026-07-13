@@ -610,6 +610,7 @@
     "aiCodexDesc": "Terminalde ChatGPT/OpenAI · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Açık kaynak · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · Gemini CLI'nin yerini aldı.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Hiç yapay zeka olmayan sade bir terminal — sadece projedeki sistem kabuğu.",
     "aiCustomDesc": "Komutu elle ayarla.",
     "aiCustomLabel": "Özel",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "Bu sekmenin yapay zekasını seç",
     "subtitle": "Bu projenin birden fazla yapay zekası var. Bu sekmede açmak için birine tıkla."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "Yeni uzak proje (SSH)",

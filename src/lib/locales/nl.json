@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI in de terminal · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Open-source · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · verving de Gemini CLI.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Een gewone terminal, helemaal geen AI — gewoon de systeemshell in het project.",
     "aiCustomDesc": "Stel de opdracht handmatig in.",
     "aiCustomLabel": "Aangepast",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "Kies de AI van dit tabblad",
     "subtitle": "Dit project heeft meer dan één AI. Klik op één om het in dit tabblad te openen."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "Nieuw project op afstand (SSH)",

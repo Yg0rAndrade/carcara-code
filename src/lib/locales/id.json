@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI di terminal · npm i -g @openai/codex.",
     "aiOpencodeDesc": "Sumber terbuka · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · menggantikan Gemini CLI.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Terminal biasa, tanpa AI sama sekali — hanya shell sistem di proyek.",
     "aiCustomDesc": "Atur perintah secara manual.",
     "aiCustomLabel": "Kustom",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "Pilih AI untuk tab ini",
     "subtitle": "Proyek ini punya lebih dari satu AI. Klik salah satu untuk membukanya di tab ini."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "Proyek jarak jauh baru (SSH)",

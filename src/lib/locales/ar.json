@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI في الطرفية · npm i -g @openai/codex.",
     "aiOpencodeDesc": "مفتوح المصدر · npm i -g opencode-ai.",
     "aiAgyDesc": "Google · حلّ محل واجهة أوامر Gemini.",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "طرفية عادية بلا أي ذكاء اصطناعي — مجرد صدفة النظام داخل المشروع.",
     "aiCustomDesc": "عيّن الأمر يدويًا.",
     "aiCustomLabel": "مخصص",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "اختر الذكاء الاصطناعي لهذا التبويب",
     "subtitle": "يحتوي هذا المشروع على أكثر من ذكاء اصطناعي. انقر على أحدها لفتحه في هذا التبويب."
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "مشروع بعيد جديد (SSH)",

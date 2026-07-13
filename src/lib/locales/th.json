@@ -610,6 +610,7 @@
     "aiCodexDesc": "ChatGPT/OpenAI ในเทอร์มินัล · npm i -g @openai/codex",
     "aiOpencodeDesc": "โอเพนซอร์ส · npm i -g opencode-ai",
     "aiAgyDesc": "Google · แทนที่ Gemini CLI",
+    "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "เทอร์มินัลธรรมดา ไม่มี AI เลย — แค่เชลล์ของระบบในโปรเจกต์",
     "aiCustomDesc": "ตั้งค่าคำสั่งด้วยตนเอง",
     "aiCustomLabel": "กำหนดเอง",
@@ -712,6 +713,19 @@
   "aiPicker": {
     "title": "เลือก AI ของแท็บนี้",
     "subtitle": "โปรเจกต์นี้มี AI มากกว่าหนึ่งตัว คลิกหนึ่งตัวเพื่อเปิดในแท็บนี้"
+  },
+  "carcara": {
+    "starting": "Starting the engine…",
+    "composerPlaceholder": "Ask Carcará to build or change something…",
+    "selectProject": "Select a project to start.",
+    "working": "Working…",
+    "approveTitle": "Approve this action?",
+    "accept": "Accept",
+    "reject": "Reject",
+    "send": "Send",
+    "stop": "Stop",
+    "error": "Error: {error}",
+    "emptyState": "Ask Carcará to build or change something in your project."
   },
   "remote": {
     "title": "โปรเจกต์รีโมตใหม่ (SSH)",
