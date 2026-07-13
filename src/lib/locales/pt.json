@@ -112,9 +112,7 @@
   },
   "language": {
     "title": "Idioma",
-    "subtitle": "Escolha o idioma da interface. A mudança vale na hora.",
-    "pt": "Português (Brasil)",
-    "en": "English"
+    "subtitle": "Escolha o idioma da interface. A mudança vale na hora."
   },
   "prompts": {
     "library_title": "Biblioteca de prompts",

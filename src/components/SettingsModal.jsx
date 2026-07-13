@@ -38,6 +38,7 @@ import { AI_OPTIONS, OPT, CliBadge } from '@/lib/aiOptions.jsx';
 import { filterAndSortProjects } from '@/lib/projectFilter.js';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
 import { useT, useLang } from '@/lib/i18n';
+import { LANGUAGES } from '@/lib/languages';
 import { updateView } from '@/lib/updateView';
 import { useLayout } from '@/lib/layoutContext.jsx';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
@@ -954,27 +955,20 @@ export function SettingsModal({
               <div className="mx-auto max-w-3xl">
                 <div className="text-[13px] font-medium">{t('language.title')}</div>
                 <p className="mt-1 text-xs text-muted-foreground">{t('language.subtitle')}</p>
-                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLang('pt')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      lang === 'pt' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    🇧🇷 {t('language.pt')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLang('en')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      lang === 'en' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    🇺🇸 {t('language.en')}
-                  </button>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={() => setLang(l.code)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                        lang === l.code && 'border-primary ring-1 ring-primary',
+                      )}
+                    >
+                      <span className="text-base leading-none">{l.flag}</span> {l.native}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

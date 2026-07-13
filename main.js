@@ -149,12 +149,17 @@ function confirmHostKey(hk, fingerprint, state) {
 }
 
 const NATIVE_STRINGS = require('./electron/main.i18n.cjs');
+// Idiomas suportados = os que têm bloco nativo traduzido (fonte única no main).
+const SUPPORTED_LANGS = new Set(Object.keys(NATIVE_STRINGS));
 
-// Idioma do processo main: config.json > idioma do sistema > 'pt'.
+// Idioma do processo main: config.json > idioma do sistema > 'en' (pt tem match dedicado).
 function currentLang() {
   const cfg = loadConfig();
-  if (cfg.language === 'pt' || cfg.language === 'en') return cfg.language;
-  return (app.getLocale() || '').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+  if (cfg.language && SUPPORTED_LANGS.has(cfg.language)) return cfg.language;
+  const sys = (app.getLocale() || '').toLowerCase();
+  if (sys.startsWith('pt')) return 'pt';
+  const two = sys.slice(0, 2);
+  return SUPPORTED_LANGS.has(two) ? two : 'en';
 }
 // Traduz uma chave nativa no idioma atual, com interpolação de {tokens}.
 function tn(key, vars) {
@@ -2717,7 +2722,7 @@ ipcMain.handle('notify:set', (evt, { enabled }) => {
 });
 ipcMain.handle('lang:get', () => ({ lang: currentLang() }));
 ipcMain.handle('lang:set', (evt, { lang }) => {
-  if (lang !== 'pt' && lang !== 'en') return { ok: false };
+  if (!SUPPORTED_LANGS.has(lang)) return { ok: false };
   const c = loadConfig();
   c.language = lang;
   saveConfig(c);
