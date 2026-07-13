@@ -8,28 +8,29 @@
 // O par pt/en é sempre a base de fallback — nunca remover.
 //
 // `native`  = nome do idioma na própria língua (mostrado no seletor, não traduzido).
-// `flag`    = emoji de bandeira (convenção de país; idioma ≠ país, mas é o padrão de picker).
 // `htmlLang`= valor de <html lang="…"> (BCP-47).
 // `rtl`     = escrita da direita p/ esquerda (só semântico por ora; ver nota no i18n.jsx).
+// A bandeira NÃO fica aqui: é um SVG indexado por `code` em src/lib/flags.jsx (emoji de
+// bandeira não renderiza no Windows — vira as letras do país).
 export const LANGUAGES = [
-  { code: 'pt', native: 'Português (Brasil)', flag: '🇧🇷', htmlLang: 'pt-BR' },
-  { code: 'en', native: 'English', flag: '🇺🇸', htmlLang: 'en' },
-  { code: 'es', native: 'Español', flag: '🇪🇸', htmlLang: 'es' },
-  { code: 'fr', native: 'Français', flag: '🇫🇷', htmlLang: 'fr' },
-  { code: 'de', native: 'Deutsch', flag: '🇩🇪', htmlLang: 'de' },
-  { code: 'it', native: 'Italiano', flag: '🇮🇹', htmlLang: 'it' },
-  { code: 'zh', native: '中文', flag: '🇨🇳', htmlLang: 'zh' },
-  { code: 'ja', native: '日本語', flag: '🇯🇵', htmlLang: 'ja' },
-  { code: 'ko', native: '한국어', flag: '🇰🇷', htmlLang: 'ko' },
-  { code: 'th', native: 'ไทย', flag: '🇹🇭', htmlLang: 'th' },
-  { code: 'ru', native: 'Русский', flag: '🇷🇺', htmlLang: 'ru' },
-  { code: 'ar', native: 'العربية', flag: '🇸🇦', htmlLang: 'ar', rtl: true },
-  { code: 'hi', native: 'हिन्दी', flag: '🇮🇳', htmlLang: 'hi' },
-  { code: 'id', native: 'Bahasa Indonesia', flag: '🇮🇩', htmlLang: 'id' },
-  { code: 'tr', native: 'Türkçe', flag: '🇹🇷', htmlLang: 'tr' },
-  { code: 'vi', native: 'Tiếng Việt', flag: '🇻🇳', htmlLang: 'vi' },
-  { code: 'nl', native: 'Nederlands', flag: '🇳🇱', htmlLang: 'nl' },
-  { code: 'pl', native: 'Polski', flag: '🇵🇱', htmlLang: 'pl' },
+  { code: 'pt', native: 'Português (Brasil)', htmlLang: 'pt-BR' },
+  { code: 'en', native: 'English', htmlLang: 'en' },
+  { code: 'es', native: 'Español', htmlLang: 'es' },
+  { code: 'fr', native: 'Français', htmlLang: 'fr' },
+  { code: 'de', native: 'Deutsch', htmlLang: 'de' },
+  { code: 'it', native: 'Italiano', htmlLang: 'it' },
+  { code: 'zh', native: '中文', htmlLang: 'zh' },
+  { code: 'ja', native: '日本語', htmlLang: 'ja' },
+  { code: 'ko', native: '한국어', htmlLang: 'ko' },
+  { code: 'th', native: 'ไทย', htmlLang: 'th' },
+  { code: 'ru', native: 'Русский', htmlLang: 'ru' },
+  { code: 'ar', native: 'العربية', htmlLang: 'ar', rtl: true },
+  { code: 'hi', native: 'हिन्दी', htmlLang: 'hi' },
+  { code: 'id', native: 'Bahasa Indonesia', htmlLang: 'id' },
+  { code: 'tr', native: 'Türkçe', htmlLang: 'tr' },
+  { code: 'vi', native: 'Tiếng Việt', htmlLang: 'vi' },
+  { code: 'nl', native: 'Nederlands', htmlLang: 'nl' },
+  { code: 'pl', native: 'Polski', htmlLang: 'pl' },
 ];
 
 export const LANG_CODES = LANGUAGES.map((l) => l.code);

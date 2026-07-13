@@ -32,13 +32,13 @@ import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
 import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
-import AiManager from './AiManager.jsx';
 import { cn } from '@/lib/utils';
 import { AI_OPTIONS, OPT, CliBadge } from '@/lib/aiOptions.jsx';
 import { filterAndSortProjects } from '@/lib/projectFilter.js';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
 import { useT, useLang } from '@/lib/i18n';
 import { LANGUAGES } from '@/lib/languages';
+import { Flag } from '@/lib/flags.jsx';
 import { updateView } from '@/lib/updateView';
 import { useLayout } from '@/lib/layoutContext.jsx';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
@@ -48,6 +48,9 @@ import { useChatMode } from '@/lib/chatModeContext.jsx';
 import changelogText from '../../CHANGELOG.md?raw';
 
 const Markdown = lazy(() => import('./Markdown.jsx'));
+// AiManager só aparece na aba "Gerenciar IAs" — lazy pra não pesar o boot do app
+// (o SettingsModal é importado no caminho inicial). Mesmo padrão do Markdown.
+const AiManager = lazy(() => import('./AiManager.jsx'));
 
 // Ícones de marca em SVG inline — o lucide removeu os logos de marca (questão de trademark),
 // então desenhamos aqui. Herdam currentColor e tamanho via className do <span> que os envolve.
@@ -724,7 +727,13 @@ export function SettingsModal({
               </div>
             )}
 
-            {tab === 'clis' && <AiManager initialInstallKey={pendingInstall} />}
+            {tab === 'clis' && (
+              <Suspense
+                fallback={<div className="p-8 text-center text-sm text-muted-foreground">…</div>}
+              >
+                <AiManager initialInstallKey={pendingInstall} />
+              </Suspense>
+            )}
 
             {tab === 'appearance' && (
               <div className="mx-auto max-w-3xl">
@@ -966,7 +975,7 @@ export function SettingsModal({
                         lang === l.code && 'border-primary ring-1 ring-primary',
                       )}
                     >
-                      <span className="text-base leading-none">{l.flag}</span> {l.native}
+                      <Flag code={l.code} /> {l.native}
                     </button>
                   ))}
                 </div>

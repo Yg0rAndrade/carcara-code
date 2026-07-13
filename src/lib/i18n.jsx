@@ -1,15 +1,19 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { isSupportedLang, langMeta } from './languages';
+import pt from './locales/pt.json';
+import en from './locales/en.json';
 
-// Carrega TODOS os dicionários de ./locales/*.json de uma vez (eager) e os indexa
-// por código de idioma (o basename do arquivo). Assim, adicionar um idioma é só
-// soltar o <code>.json na pasta — nenhum import manual aqui. São strings curtas,
-// então o custo no bundle inicial é pequeno e mantém t() síncrono (sem flash de chave).
-const modules = import.meta.glob('./locales/*.json', { eager: true, import: 'default' });
-const DICTS = {};
-for (const [filePath, dict] of Object.entries(modules)) {
-  const code = filePath.slice(filePath.lastIndexOf('/') + 1, -'.json'.length);
-  DICTS[code] = dict;
+// pt e en entram EAGER: são a base de fallback e cobrem a maioria dos usuários, então
+// o t() nunca cai numa chave crua enquanto um idioma extra ainda carrega. Os outros 16
+// locales viram chunks separados (import.meta.glob SEM eager = imports dinâmicos) e são
+// buscados sob demanda — só o idioma ativo. Isso mantém o bundle de boot enxuto: em vez
+// de ~800KB de dicionários no caminho do boot, só pt+en. Trocar de idioma no seletor faz
+// um carregamento rápido (disco local) e re-renderiza quando o dicionário chega.
+const DICTS = { pt, en };
+const loaders = import.meta.glob('./locales/*.json', { import: 'default' });
+
+function loaderFor(code) {
+  return loaders[`./locales/${code}.json`];
 }
 
 // Idioma inicial: localStorage > idioma do sistema > 'en' (pt tem match dedicado).
@@ -37,20 +41,34 @@ const I18nCtx = createContext({ lang: 'pt', setLang: () => {}, t: (k) => k });
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(detectInitial);
+  const [, bump] = useState(0); // força re-render quando um dicionário lazy termina de chegar
 
   useEffect(() => {
+    let alive = true;
+    // Carrega o dicionário do idioma ativo se ainda não estiver em memória (pt/en já estão).
+    if (!DICTS[lang]) {
+      const load = loaderFor(lang);
+      if (load)
+        load().then((dict) => {
+          if (!alive) return;
+          DICTS[lang] = dict;
+          bump((n) => n + 1);
+        });
+    }
     localStorage.setItem('lang', lang);
     const meta = langMeta(lang);
     document.documentElement.lang = meta.htmlLang;
-    // NOTA RTL: mantemos dir=ltr mesmo em árabe. O layout do app usa classes físicas
-    // (left/right) e não está espelhado; forçar dir=rtl quebraria o layout. O texto
-    // árabe já renderiza corretamente (bidi) dentro de rótulos curtos. Espelhamento
-    // completo de RTL fica como trabalho futuro.
+    // NOTA RTL: mantemos dir=ltr mesmo em árabe. O layout usa classes físicas (left/right)
+    // e não está espelhado; forçar dir=rtl quebraria o layout. Texto árabe em rótulos curtos
+    // já renderiza correto (bidi). Espelhamento completo de RTL fica como trabalho futuro.
     document.documentElement.dir = 'ltr';
     // Mantém o processo main em sincronia (menus/notificações nativas), inclusive no boot.
     try {
       window.api?.setLang?.(lang);
     } catch {}
+    return () => {
+      alive = false;
+    };
   }, [lang]);
 
   // Fallback em cascata: idioma ativo → en → pt → a própria chave. Nunca lança.
@@ -71,7 +89,8 @@ export function useLang() {
 }
 
 // Helper para componentes de classe (ex.: ErrorBoundary) onde hooks não funcionam.
-// Lê localStorage diretamente; o idioma do componente muda na próxima renderização.
+// Lê localStorage diretamente e usa só os dicionários já em memória (pt/en sempre; os
+// demais, se o idioma ativo já tiver sido carregado) — cai em en/pt caso ainda não.
 export function tStatic(key, vars) {
   const saved = localStorage.getItem('lang');
   const lang = saved && isSupportedLang(saved) ? saved : 'en';
