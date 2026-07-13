@@ -43,48 +43,74 @@ async function waitReady(port, auth) {
 
 async function ensure({ sessionId, projectPath, prefixDir, provider, emit, onPhase }) {
   if (state.get(sessionId)) return; // já no ar
-  const bin = await resolveOpencode({ prefixDir, onPhase });
-  const port = await freePort();
-  const password = 'carcara-' + Math.abs(port) + '-' + sessionId.slice(0, 6);
-  const auth = 'Basic ' + Buffer.from('opencode:' + password).toString('base64');
+  const entry = {
+    proc: null,
+    port: null,
+    auth: null,
+    ocSessionId: null,
+    aborter: new AbortController(),
+    disposed: false,
+  };
+  state.set(sessionId, entry); // registra CEDO pra dispose poder sinalizar
+  try {
+    const bin = await resolveOpencode({ prefixDir, onPhase });
+    if (entry.disposed) return;
+    const port = await freePort();
+    if (entry.disposed) return;
+    const password = 'carcara-' + Math.abs(port) + '-' + sessionId.slice(0, 6);
+    const auth = 'Basic ' + Buffer.from('opencode:' + password).toString('base64');
 
-  const config = buildOpencodeConfig({
-    providerBaseUrl: provider.baseUrl,
-    apiKey: provider.apiKey,
-    model: provider.model,
-  });
+    const config = buildOpencodeConfig({
+      providerBaseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      model: provider.model,
+    });
 
-  if (onPhase) onPhase('Subindo o motor…');
-  const proc = spawn(bin, ['serve', '--hostname', HOST, '--port', String(port)], {
-    cwd: projectPath,
-    env: { ...cleanEnv(password), OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
-    shell: process.platform === 'win32',
-    stdio: ['ignore', 'ignore', 'pipe'],
-    windowsHide: true,
-  });
-  proc.stderr.on('data', (d) => {
-    /* opcional: logar */ void d;
-  });
+    if (onPhase) onPhase('Subindo o motor…');
+    const proc = spawn(bin, ['serve', '--hostname', HOST, '--port', String(port)], {
+      cwd: projectPath,
+      env: { ...cleanEnv(password), OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
+      shell: process.platform === 'win32',
+      stdio: ['ignore', 'ignore', 'pipe'],
+      windowsHide: true,
+    });
+    proc.stderr.on('data', (d) => {
+      void d;
+    });
+    entry.proc = proc;
+    entry.port = port;
+    entry.auth = auth;
+    if (entry.disposed) {
+      try {
+        proc.kill();
+      } catch {
+        /* noop */
+      }
+      return;
+    }
 
-  const entry = { proc, port, auth, ocSessionId: null, aborter: new AbortController() };
-  state.set(sessionId, entry);
+    await waitReady(port, auth);
+    if (entry.disposed) return;
 
-  await waitReady(port, auth);
+    const headers = { 'Content-Type': 'application/json', Authorization: auth };
+    const s = await (
+      await fetch(`http://${HOST}:${port}/session`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title: 'Carcará' }),
+      })
+    ).json();
+    if (entry.disposed) return;
+    entry.ocSessionId = s.id;
 
-  const headers = { 'Content-Type': 'application/json', Authorization: auth };
-  const s = await (
-    await fetch(`http://${HOST}:${port}/session`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ title: 'Carcará' }),
-    })
-  ).json();
-  entry.ocSessionId = s.id;
-
-  // Loop SSE: /event → normaliza → emit
-  streamEvents(sessionId, entry, emit).catch(() => {
-    /* fim do stream */
-  });
+    // Loop SSE: /event → normaliza → emit
+    streamEvents(sessionId, entry, emit).catch(() => {
+      /* fim do stream */
+    });
+  } catch (err) {
+    dispose({ sessionId });
+    throw err;
+  }
 }
 
 async function streamEvents(sessionId, entry, emit) {
@@ -92,6 +118,10 @@ async function streamEvents(sessionId, entry, emit) {
     headers: { Authorization: entry.auth },
     signal: entry.aborter.signal,
   });
+  if (!res.ok || !res.body) {
+    emit(sessionId, { kind: 'error', message: 'stream /event HTTP ' + res.status });
+    return;
+  }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -140,13 +170,14 @@ async function approve({ sessionId, permissionId, ok }) {
 function dispose({ sessionId }) {
   const e = state.get(sessionId);
   if (!e) return;
+  e.disposed = true;
   try {
     e.aborter.abort();
   } catch {
     /* noop */
   }
   try {
-    e.proc.kill();
+    if (e.proc) e.proc.kill();
   } catch {
     /* noop */
   }
