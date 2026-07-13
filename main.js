@@ -776,6 +776,37 @@ ipcMain.handle('ai:set', (evt, { projectPath, ais, custom }) => {
   safeSend('ai:changed', { projectPath });
   return { ok: true };
 });
+// Porta FIXA por projeto (opcional). Guardada em cfg.projectPorts[path] = número, no
+// mesmo padrão do projectCli. Espelha ai:get/ai:set.
+ipcMain.handle('port:get', (evt, { projectPath }) => {
+  const c = loadConfig();
+  const staticPort = Number(c.projectPorts?.[projectPath]) || null;
+  const running = runningServers.get(projectPath);
+  return { staticPort, currentPort: running?.chosenPort || running?.port || null };
+});
+// Portas muito conhecidas (avisa, não bloqueia). As privilegiadas (<1024) já caem na
+// validação de faixa.
+const WELL_KNOWN_PORTS = [3306, 5432, 6379, 27017, 5173, 3000, 8080];
+ipcMain.handle('port:set', (evt, { projectPath, port }) => {
+  const c = loadConfig();
+  c.projectPorts = c.projectPorts || {};
+  // port null/0/'' → desliga a porta fixa (volta pro aleatório).
+  if (!port) {
+    delete c.projectPorts[projectPath];
+    saveConfig(c);
+    return { ok: true, staticPort: null };
+  }
+  const n = Number(port);
+  if (!Number.isInteger(n) || n < 1024 || n > 65535) return { ok: false, error: 'range' };
+  // Unicidade: dois projetos não podem fixar a mesma porta.
+  const clash = Object.entries(c.projectPorts).find(
+    ([p, v]) => p !== projectPath && Number(v) === n,
+  );
+  if (clash) return { ok: false, error: 'duplicate', otherPath: clash[0] };
+  c.projectPorts[projectPath] = n;
+  saveConfig(c);
+  return { ok: true, staticPort: n, warnWellKnown: WELL_KNOWN_PORTS.includes(n) };
+});
 ipcMain.handle('session:setCli', (evt, { projectPath, sessionId, cli }) => {
   const c = loadConfig();
   const s = getSessionMeta(c, projectPath, sessionId);
@@ -1997,6 +2028,17 @@ ipcMain.handle('shell:openExternal', async (evt, { url }) => {
     return { ok: true };
   } catch (err) {
     return { error: String(err) };
+  }
+});
+
+// Traz a janela pra frente. Usado quando um arquivo externo (Chrome/Explorador) é
+// arrastado pro app: o renderer avisa no primeiro dragenter e a janela sobe/foca,
+// pra o usuário conseguir soltar mesmo que ela estivesse minimizada/atrás.
+ipcMain.on('window:focus', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
   }
 });
 
@@ -3848,11 +3890,24 @@ function needsInstall(p, pkg) {
 
 // ---- A gente CONTROLA a porta (não adivinha): escolhe uma livre, força no dev server
 // e espera ELA subir. Vínculo em memória, vale enquanto o projeto roda.
-async function pickFreePort() {
-  // Portas que ESTE Carcará já reservou (mesmo processo).
+// Todas as portas fixas cadastradas (de QUALQUER projeto, rodando ou não). Um projeto
+// sem porta fixa nunca deve "roubar" a porta que outro reservou pra si.
+function registeredStaticPorts() {
+  const ports = loadConfig().projectPorts || {};
+  return Object.values(ports)
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n >= 1024 && n <= 65535);
+}
+
+// Escolhe uma porta livre a partir de 8080. `exceptStatic` = a porta fixa DESTE projeto
+// (não deve se auto-excluir quando estamos justamente caindo no aleatório pra ele).
+async function pickFreePort({ exceptStatic = 0 } = {}) {
+  // Portas que ESTE Carcará já reservou (mesmo processo) + todas as fixas cadastradas.
   const used = new Set(
     [...runningServers.values()].map((e) => Number(e.chosenPort)).filter(Boolean),
   );
+  for (const p of registeredStaticPorts()) used.add(p);
+  if (exceptStatic) used.delete(Number(exceptStatic));
   let base = 8080;
   // O detect-port só faz bind check TCP (0.0.0.0/127.0.0.1) e não enxerga o
   // runningServers de OUTRO Carcará — e ainda erra quando o dev server escuta só
@@ -3879,6 +3934,55 @@ async function pickFreePort() {
     return candidate;
   }
   return base;
+}
+
+// Encerra o processo que estiver ESCUTANDO numa porta (opção "Encerrar o que está lá"
+// do modal de conflito de porta fixa). Só é chamado quando o usuário decide de propósito
+// — nunca automaticamente. Windows: acha o PID via netstat e mata com taskkill; POSIX:
+// lsof + kill. Resolve true/false sem lançar.
+function killPortOccupant(port) {
+  const { exec } = require('child_process');
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      exec('netstat -ano', { windowsHide: true }, (err, stdout) => {
+        if (err || !stdout) return resolve(false);
+        const pids = new Set();
+        for (const line of stdout.split('\n')) {
+          const m = line.trim().match(/^TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)/i);
+          if (m && Number(m[1]) === Number(port)) pids.add(m[2]);
+        }
+        if (!pids.size) return resolve(false);
+        let pending = pids.size;
+        for (const pid of pids) {
+          exec(`taskkill /F /PID ${pid}`, { windowsHide: true }, () => {
+            if (--pending === 0) resolve(true);
+          });
+        }
+      });
+    } else {
+      exec(`lsof -ti tcp:${port} | xargs -r kill -9`, () => resolve(true));
+    }
+  });
+}
+
+// Resolve a porta pra subir o preview de um projeto, respeitando a porta FIXA (se houver).
+// Retorna { port } pronto pra subir, ou { conflict, port } quando a fixa está ocupada por
+// processo externo e o usuário ainda não decidiu. `decision`:
+//   - 'random' → ignora a fixa desta vez (sem apagar a preferência), pega uma aleatória.
+//   - 'kill'   → encerra quem está na fixa e reusa; se não liberar, cai no aleatório.
+async function resolveStartPort(projectPath, decision) {
+  const staticPort = Number(loadConfig().projectPorts?.[projectPath]) || 0;
+  if (!staticPort) return { port: await pickFreePort() };
+  if (decision === 'random') return { port: await pickFreePort({ exceptStatic: staticPort }) };
+  // Livre? (probe HTTP v4+v6 — vale tanto pra processo externo quanto outro Carcará.)
+  if (!(await probePort(staticPort))) return { port: staticPort };
+  if (decision === 'kill') {
+    await killPortOccupant(staticPort);
+    await new Promise((r) => setTimeout(r, 500));
+    if (!(await probePort(staticPort))) return { port: staticPort };
+    return { port: await pickFreePort({ exceptStatic: staticPort }) };
+  }
+  return { conflict: true, port: staticPort };
 }
 
 // Como forçar a porta em cada framework (detecta pelas deps do package.json).
@@ -3947,7 +4051,14 @@ function runInstall(projectPath, manager) {
   });
 }
 
-async function startPhpPreview(projectPath) {
+async function startPhpPreview(projectPath, decision) {
+  // Resolve a porta ANTES de reservar/baixar: se a fixa está ocupada por processo
+  // externo e o usuário não decidiu, devolve o conflito pro renderer (modal) sem
+  // mexer no estado — o renderer reabre com a decisão.
+  const resolved = await resolveStartPort(projectPath, decision);
+  if (resolved.conflict) return { portConflict: true, port: resolved.port };
+  const port = resolved.port;
+
   const entry = { proc: null, url: null, port: null, log: '' };
   runningServers.set(projectPath, entry);
 
@@ -3968,8 +4079,7 @@ async function startPhpPreview(projectPath) {
   // Se o projeto foi parado/trocado durante o download, aborta sem subir (evita php órfão).
   if (runningServers.get(projectPath) !== entry) return { stopped: true };
 
-  // 2) Porta livre + php -S no docroot certo.
-  const port = await pickFreePort();
+  // 2) php -S na porta já resolvida (fixa ou livre), no docroot certo.
   entry.chosenPort = port;
   const docroot = phpRuntime.resolvePhpDocroot(projectPath);
   const args = phpRuntime.buildPhpServeArgs({ port, docroot });
@@ -4036,7 +4146,7 @@ async function startPhpPreview(projectPath) {
   return { running: true, starting: true, cmd: `php ${args.join(' ')}` };
 }
 
-ipcMain.handle('preview:start', async (evt, { projectPath }) => {
+ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
   if (runningServers.has(projectPath)) {
     const e = runningServers.get(projectPath);
     if (e.url) safeSend('preview:ready', { projectPath, url: e.url });
@@ -4045,10 +4155,17 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
   // Ramifica por tipo de projeto. Node é o fluxo de sempre (abaixo, INTOCADO).
   const projectType = phpRuntime.detectProjectType(projectPath);
   if (projectType === 'php') {
-    return startPhpPreview(projectPath);
+    return startPhpPreview(projectPath, decision);
   }
   const cmd = detectDevCommand(projectPath);
   if (!cmd) return { error: 'Nenhum script dev/start/serve no package.json' };
+
+  // Resolve a porta ANTES de reservar/instalar: se a porta fixa está ocupada por
+  // processo externo e o usuário não decidiu, devolve o conflito pro renderer (modal)
+  // sem tocar no estado — evita instalar/reservar à toa e deixa o retry limpo.
+  const resolved = await resolveStartPort(projectPath, decision);
+  if (resolved.conflict) return { portConflict: true, port: resolved.port };
+  const port = resolved.port;
 
   // Reserva a entrada já, pra não tentar abrir duas vezes enquanto instala.
   const entry = { proc: null, url: null, port: null, log: '' };
@@ -4067,8 +4184,7 @@ ipcMain.handle('preview:start', async (evt, { projectPath }) => {
     }
   }
 
-  // 2) Escolhe uma porta LIVRE, força o dev server nela e espera ELA subir.
-  const port = await pickFreePort();
+  // 2) Força o dev server na porta já resolvida (fixa ou livre) e espera ELA subir.
   entry.chosenPort = port;
   const flags = devPortFlags(cmd.pkg, port);
   const args =

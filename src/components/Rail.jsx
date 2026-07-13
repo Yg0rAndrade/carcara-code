@@ -19,6 +19,7 @@ import { SearchIcon } from './ui/search.jsx';
 import { RailFolderIcon } from './RailFolder.jsx';
 import { ProjectSettingsModal } from './ProjectSettingsModal.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
+import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { buildRows } from '@/lib/railTree';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
@@ -97,7 +98,74 @@ export function Rail({
   const dragKeyOf = () =>
     drag?.path ? drag.path : drag?.folderId ? 'folder:' + drag.folderId : null;
 
+  // --- Arrasto de arquivo EXTERNO (de fora do app) sobre a barra ---
+  // Parar ~0,7s em cima de OUTRO projeto durante um arrasto externo abre aquele projeto
+  // (dwell / spring-loaded), pra o usuário soltar o arquivo lá. Medimos o tempo pelos
+  // ticks do próprio 'dragover' (o HTML dispara ~a cada 350ms mesmo parado), então não
+  // há timer pra vazar: sair da linha para de tickar e o dwell nunca completa; entrar
+  // noutra troca a chave e reinicia. `springKey` é só o feedback visual ("vou abrir").
+  const extDwellRef = useRef({ key: null, since: 0, fired: false });
+  const [springKey, setSpringKey] = useState(null);
+  const clearExtDwell = () => {
+    extDwellRef.current = { key: null, since: 0, fired: false };
+    setSpringKey(null);
+  };
+  useEffect(() => {
+    // Rede de segurança: qualquer fim de arrasto (soltou, ou saiu da janela) zera o
+    // feedback. dragend NÃO dispara pra arrasto externo, então cobrimos drop + dragleave
+    // pras bordas da janela.
+    const onDocLeave = (e) => {
+      if (
+        e.clientX <= 0 ||
+        e.clientY <= 0 ||
+        e.clientX >= window.innerWidth ||
+        e.clientY >= window.innerHeight
+      )
+        clearExtDwell();
+    };
+    window.addEventListener('drop', clearExtDwell, true);
+    window.addEventListener('dragend', clearExtDwell, true);
+    document.addEventListener('dragleave', onDocLeave);
+    return () => {
+      window.removeEventListener('drop', clearExtDwell, true);
+      window.removeEventListener('dragend', clearExtDwell, true);
+      document.removeEventListener('dragleave', onDocLeave);
+    };
+  }, []);
+  const onExternalRowDragOver = (e, project) => {
+    e.preventDefault();
+    try {
+      e.dataTransfer.dropEffect = 'copy';
+    } catch {}
+    const key = project.path;
+    if (active?.path === key) {
+      if (extDwellRef.current.key) clearExtDwell(); // já é o ativo: nada a abrir
+      return;
+    }
+    const d = extDwellRef.current;
+    const now = Date.now();
+    if (d.key !== key) {
+      extDwellRef.current = { key, since: now, fired: false };
+      setSpringKey(key);
+    } else if (!d.fired && now - d.since >= 600) {
+      extDwellRef.current = { key, since: d.since, fired: true };
+      setSpringKey(null);
+      onOpen?.(project); // troca pro projeto; o usuário solta lá (preview/terminal)
+    }
+  };
+
   const onRowDragOver = (e, row) => {
+    // Arquivo de fora do app: não é reordenar/mesclar — é o dwell que troca de projeto.
+    if (hasExternalFiles(e.dataTransfer)) {
+      if (row.kind === 'project' || row.kind === 'child') onExternalRowDragOver(e, row.project);
+      else {
+        e.preventDefault();
+        try {
+          e.dataTransfer.dropEffect = 'none';
+        } catch {}
+      }
+      return;
+    }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const dragKey = dragKeyOf();
@@ -232,6 +300,9 @@ export function Rail({
           active?.path === p.path && 'rounded-2xl ring-2 ring-primary',
           drag?.path === p.path && 'opacity-40',
           isMergeTarget && 'scale-105 ring-2 ring-primary',
+          // Dwell do arrasto externo: "segura que eu abro este projeto".
+          springKey === p.path &&
+            'scale-110 rounded-2xl ring-2 ring-primary ring-offset-2 ring-offset-background',
         )}
         style={
           p.icon

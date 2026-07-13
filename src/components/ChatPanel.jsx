@@ -32,7 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
 import { AiPicker } from './AiPicker.jsx';
-import { MOVE_MIME, formatDroppedPaths } from '@/lib/dragPaths.js';
+import { MOVE_MIME, hasExternalFiles, dropPathsText } from '@/lib/dragPaths.js';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
 
@@ -1245,7 +1245,9 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   }, []);
 
   const onFilePathDragOver = (paneId, e) => {
-    if (!e.dataTransfer.types.includes(MOVE_MIME)) return;
+    // Aceita tanto o arrasto interno da árvore (MOVE_MIME) quanto arquivo(s) de FORA
+    // do app (Chrome/Explorador/Finder), que chegam como 'Files' no dataTransfer.
+    if (!e.dataTransfer.types.includes(MOVE_MIME) && !hasExternalFiles(e.dataTransfer)) return;
     e.preventDefault();
     try {
       e.dataTransfer.dropEffect = 'copy';
@@ -1260,13 +1262,14 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   };
 
   const onFilePathDrop = (pane, e) => {
-    const raw = e.dataTransfer.getData(MOVE_MIME);
-    if (!raw) return; // não é arrasto de arquivo da árvore
+    // Interno (árvore) ou externo (arquivo do SO): o contrato único resolve os dois.
+    // No externo o caminho absoluto vem do webUtils.getPathForFile (via preload).
+    const text = dropPathsText(e.dataTransfer, window.api?.getDroppedPath);
+    if (!text) return; // não é um arrasto de arquivo
     e.preventDefault();
     e.stopPropagation();
     setFileDropPane(null);
-    const text = formatDroppedPaths(raw);
-    if (text && pane.active) insertText(pane.active, text);
+    if (pane.active) insertText(pane.active, text);
   };
 
   const onSplitLayout = (node, sizes) => {

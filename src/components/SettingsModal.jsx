@@ -199,6 +199,7 @@ export function SettingsModal({
   }, [open, initialTab, initialInstall]);
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { ais, custom }
+  const [ports, setPorts] = useState({}); // path -> { staticPort, currentPort, draft, error }
   const [aiQuery, setAiQuery] = useState(''); // filtro de busca da lista "IA por projeto"
   const [aiSort, setAiSort] = useState('default'); // 'default' | 'asc' | 'desc'
   const [pendingInstall, setPendingInstall] = useState(null); // key a auto-instalar (Task 8)
@@ -274,6 +275,22 @@ export function SettingsModal({
         list.map(async (p) => [p.path, await window.api.getAi(p.path)]),
       );
       setSel(Object.fromEntries(entries));
+      const portEntries = await Promise.all(
+        list.map(async (p) => {
+          const r = (await window.api.getPort(p.path)) || {};
+          return [
+            p.path,
+            {
+              on: !!r.staticPort,
+              staticPort: r.staticPort || null,
+              currentPort: r.currentPort || null,
+              draft: r.staticPort ? String(r.staticPort) : '',
+              error: '',
+            },
+          ];
+        }),
+      );
+      setPorts(Object.fromEntries(portEntries));
     })();
   }, [open]);
 
@@ -326,6 +343,57 @@ export function SettingsModal({
       if (cur.ais.includes('custom')) window.api.setAi(path, cur.ais, val);
       return next;
     });
+  };
+
+  // --- Porta fixa por projeto ---
+  const portEntry = (path) =>
+    ports[path] || { on: false, staticPort: null, currentPort: null, draft: '', error: '' };
+  // Liga/desliga o campo. Desligar limpa a preferência no main na hora; ligar só abre o
+  // campo (o valor é salvo quando o usuário confirma um número válido).
+  const togglePort = (path) => {
+    setPorts((s) => {
+      const cur = s[path] || {};
+      if (cur.on) {
+        window.api.setPort(path, null);
+        return { ...s, [path]: { ...cur, on: false, staticPort: null, draft: '', error: '' } };
+      }
+      return { ...s, [path]: { ...cur, on: true, error: '' } };
+    });
+  };
+  const onPortDraft = (path, val) => {
+    const clean = val.replace(/[^0-9]/g, '').slice(0, 5);
+    setPorts((s) => ({ ...s, [path]: { ...portEntry(path), draft: clean, error: '' } }));
+  };
+  // Confirma (blur/Enter): valida faixa localmente e persiste via main (unicidade lá).
+  const commitPort = async (path) => {
+    const cur = portEntry(path);
+    const raw = cur.draft.trim();
+    if (!raw) {
+      // Campo vazio com toggle ligado: apaga a preferência (equivale a desligar o valor).
+      window.api.setPort(path, null);
+      setPorts((s) => ({ ...s, [path]: { ...cur, staticPort: null, error: '' } }));
+      return;
+    }
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1024 || n > 65535) {
+      setPorts((s) => ({ ...s, [path]: { ...cur, error: t('settings.portRange') } }));
+      return;
+    }
+    const res = (await window.api.setPort(path, n)) || {};
+    if (!res.ok) {
+      const msg = res.error === 'duplicate' ? t('settings.portDuplicate') : t('settings.portRange');
+      setPorts((s) => ({ ...s, [path]: { ...portEntry(path), error: msg } }));
+      return;
+    }
+    setPorts((s) => ({
+      ...s,
+      [path]: {
+        ...portEntry(path),
+        staticPort: res.staticPort,
+        draft: String(res.staticPort),
+        error: res.warnWellKnown ? t('settings.portWellKnown') : '',
+      },
+    }));
   };
 
   // Lista visível da aba "IA por projeto": filtro por busca + ordenação por nome (pura, testada
@@ -563,6 +631,51 @@ export function SettingsModal({
                           <p className="mt-2 text-[11px] text-muted-foreground">
                             {t('settings.aiMinOne')}
                           </p>
+                          {/* Porta fixa opcional deste projeto. */}
+                          {(() => {
+                            const pe = portEntry(p.path);
+                            return (
+                              <div className="mt-3 border-t pt-3">
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={pe.on}
+                                    onCheckedChange={() => togglePort(p.path)}
+                                  />
+                                  <span className="flex-1 text-[13px] font-medium">
+                                    {t('settings.portFixed')}
+                                  </span>
+                                  {pe.currentPort && (
+                                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                      {t('settings.portCurrent', { port: pe.currentPort })}
+                                    </span>
+                                  )}
+                                </div>
+                                {pe.on && (
+                                  <>
+                                    <Input
+                                      value={pe.draft}
+                                      inputMode="numeric"
+                                      onChange={(e) => onPortDraft(p.path, e.target.value)}
+                                      onBlur={() => commitPort(p.path)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') commitPort(p.path);
+                                      }}
+                                      placeholder={t('settings.portPlaceholder')}
+                                      className="mt-2 h-8 w-28 font-mono text-xs"
+                                    />
+                                    <p
+                                      className={cn(
+                                        'mt-1.5 text-[11px]',
+                                        pe.error ? 'text-destructive' : 'text-muted-foreground',
+                                      )}
+                                    >
+                                      {pe.error || t('settings.portHint')}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}

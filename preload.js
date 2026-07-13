@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('api', {
   // CLI de IA por projeto (qual ferramenta sobe nas sessões daquele projeto)
   getAi: (projectPath) => ipcRenderer.invoke('ai:get', { projectPath }),
   setAi: (projectPath, ais, custom) => ipcRenderer.invoke('ai:set', { projectPath, ais, custom }),
+  // Porta fixa por projeto (opcional).
+  getPort: (projectPath) => ipcRenderer.invoke('port:get', { projectPath }),
+  setPort: (projectPath, port) => ipcRenderer.invoke('port:set', { projectPath, port }),
 
   // Catálogo/instalação de CLIs de IA (codex/opencode/agy). Eventos 'aiInstall:data'/
   // 'aiInstall:done' chegam pelo on(...) genérico abaixo.
@@ -213,7 +216,8 @@ contextBridge.exposeInMainWorld('api', {
   checkpointSetEnabled: (enabled) => ipcRenderer.invoke('checkpoint:setEnabled', { enabled }),
 
   // Preview
-  startPreview: (projectPath) => ipcRenderer.invoke('preview:start', { projectPath }),
+  startPreview: (projectPath, decision) =>
+    ipcRenderer.invoke('preview:start', { projectPath, decision }),
   stopPreview: (projectPath) => ipcRenderer.invoke('preview:stop', { projectPath }),
   previewStatus: (projectPath) => ipcRenderer.invoke('preview:status', { projectPath }),
   previewGetLog: (projectPath) => ipcRenderer.invoke('preview:log:get', { projectPath }),
@@ -262,6 +266,8 @@ contextBridge.exposeInMainWorld('api', {
     }
   },
   startDrag: (filePath) => ipcRenderer.send('drag:start', filePath),
+  // Traz a janela pra frente (arrasto de arquivo externo pro app/ícone).
+  focusWindow: () => ipcRenderer.send('window:focus'),
   dockDevTools: (previewId, devtoolsId) =>
     ipcRenderer.send('devtools:dock', { previewId, devtoolsId }),
   undockDevTools: (previewId) => ipcRenderer.send('devtools:undock', { previewId }),

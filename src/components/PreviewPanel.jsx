@@ -44,6 +44,7 @@ import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { INJECT as TOUCH_INJECT, CLEANUP as TOUCH_CLEANUP } from '@/lib/touchCursorScript';
 import { rectFromDrag } from '@/lib/screenshot';
+import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 
@@ -462,6 +463,21 @@ export function PreviewPanel({
   ); // desktop | tablet | mobile
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
+  // A "camada de toque" do modo celular/tablet (bolinha de dedo + ripple) só vale quando
+  // a tela está LIVRE: viewport de toque e nenhum overlay na frente — nem o print (foto),
+  // nem o anotador da captura (imagem), nem o seletor de elementos (grabber), que têm o
+  // seu próprio ponteiro/crosshair e brigariam com a bolinha. Além disso a bolinha some
+  // sozinha quando o mouse sai do webview (mouseleave, no touchCursorScript).
+  const touchCursorActive = viewport !== 'desktop' && !shooting && !shot && !grabbing;
+  const touchCursorActiveRef = useRef(touchCursorActive); // leitura síncrona no dom-ready
+  touchCursorActiveRef.current = touchCursorActive;
+  // Emulação de toque (mata o :hover, converte mouse→touch) fica ligada nos modos de
+  // toque, MAS desliga enquanto o grabber está ativo: com ela o Electron converte
+  // mouse→touch e o seletor (que ouve mousemove) não pegaria o elemento sob o ponteiro.
+  // Desligar deixa o grab funcionar igual ao desktop mesmo no modo celular.
+  const emulateTouch = viewport !== 'desktop' && !grabbing;
+  const emulateTouchRef = useRef(emulateTouch);
+  emulateTouchRef.current = emulateTouch;
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
   // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
   const inWebRef = useRef(false);
@@ -623,6 +639,11 @@ export function PreviewPanel({
         w._retry = 0;
         tab._loaded = true;
         syncNav();
+        // Uma página recém-carregada (aba de fundo, nova navegação) pode dar autoplay:
+        // re-afirma o mute pra só a aba à mostra tocar som. Ver applyMuting.
+        try {
+          applyMutingRef.current();
+        } catch {}
       });
       // Botões laterais do mouse → voltar/avançar (detecta no DOM da página).
       w.addEventListener('dom-ready', () => {
@@ -630,13 +651,15 @@ export function PreviewPanel({
           w.executeJavaScript(NAV_INJECT);
         } catch {}
         // Modo celular: a navegação/reload apaga o DOM injetado, então re-injeta o
-        // cursor de "toque" (bolinha + ripple) a cada dom-ready enquanto estiver no
-        // celular. Fora do celular, não faz nada.
-        if (viewportRef.current !== 'desktop') {
+        // cursor de "toque" (bolinha + ripple) a cada dom-ready — mas só quando a tela
+        // está livre (sem foto/imagem/grabber na frente). Fora disso, não faz nada.
+        if (touchCursorActiveRef.current) {
           try {
             w.executeJavaScript(TOUCH_INJECT);
           } catch {}
-          // Re-afirma a emulação de toque (persiste no debugger, mas garante após navegar).
+        }
+        // Re-afirma a emulação de toque (persiste no debugger, mas garante após navegar).
+        if (emulateTouchRef.current) {
           try {
             window.api.previewEmulateTouch(w.getWebContentsId(), true);
           } catch {}
@@ -755,6 +778,12 @@ export function PreviewPanel({
       setGrabbing(false);
     } else {
       stopShoot(); // entrar no seletor desliga o print
+      // No modo celular/tablet a camada de toque estaria injetada; tira ela ANTES do
+      // grab pra não brigar (bolinha vs. crosshair) nem sobrescrever o cursor depois.
+      // O efeito de touchCursorActive/emulateTouch cuida do resto (e da volta ao sair).
+      try {
+        w.executeJavaScript(TOUCH_CLEANUP);
+      } catch {}
       w.executeJavaScript(INJECT)
         .then(() => setGrabbing(true))
         .catch(() => {});
@@ -1253,27 +1282,59 @@ export function PreviewPanel({
     }
   }, [view, mode, active, tabBar.activeId]);
 
-  // Troca o modo de visualização (desktop/tablet/celular): re-aplica em todos os
-  // webviews (os escondidos não atrapalham) e guarda a preferência. Nos modos
-  // TOUCH (celular e tablet — os dois são telas de toque), injeta o cursor de
-  // "toque" na página (bolinha + ripple, mecânica do seletor de elementos); no
-  // desktop roda o CLEANUP (idempotente, sem vazar).
+  // Troca o modo de visualização (desktop/tablet/celular): re-aplica o viewport em
+  // todos os webviews (os escondidos não atrapalham) e guarda a preferência.
   useEffect(() => {
     localStorage.setItem('previewViewport', viewport);
-    const script = viewport !== 'desktop' ? TOUCH_INJECT : TOUCH_CLEANUP;
+    for (const w of allWebviews()) applyViewport(w, viewport);
+  }, [viewport]);
+
+  // Emulação de toque (mata o :hover, converte mouse→touch): liga nos modos de toque,
+  // desliga no desktop e enquanto o grabber está ativo. Ver `emulateTouch` acima.
+  useEffect(() => {
     for (const w of allWebviews()) {
-      applyViewport(w, viewport);
-      // Emulação de toque (mata o :hover) nos modos celular/tablet; desliga no desktop.
       let id = null;
       try {
         id = w.getWebContentsId();
       } catch {}
-      if (id != null) window.api.previewEmulateTouch(id, viewport !== 'desktop');
+      if (id != null) window.api.previewEmulateTouch(id, emulateTouch);
+    }
+  }, [emulateTouch]);
+
+  // Camada de "toque" (bolinha + ripple, mecânica do seletor de elementos): injeta
+  // enquanto a tela estiver livre no modo de toque; senão roda o CLEANUP (idempotente,
+  // sem vazar). Assim ela some ao abrir foto/imagem/grabber e volta quando fecham.
+  // Ver `touchCursorActive` acima.
+  useEffect(() => {
+    const script = touchCursorActive ? TOUCH_INJECT : TOUCH_CLEANUP;
+    for (const w of allWebviews()) {
       try {
         w.executeJavaScript(script);
       } catch {}
     }
-  }, [viewport]);
+  }, [touchCursorActive]);
+
+  // Silencia a mídia do preview que não está à mostra. Só toca som o webview da aba
+  // ATIVA do projeto ATIVO com o Preview aberto (mode 'web'); qualquer outro — aba de
+  // fundo, projeto trocado, ou quando saímos pra tela de Código — é mutado. Sem isso,
+  // um vídeo/áudio (ou trilha de fundo) seguia tocando depois de trocar de tela. O mute
+  // é reversível: ao voltar pra aba/projeto, o efeito re-roda e devolve o som.
+  const shouldPlayAudio = useCallback(
+    (w) => view === 'preview' && mode === 'web' && !!active && activeWebviewOf(active.path) === w,
+    [view, mode, active],
+  );
+  const applyMuting = useCallback(() => {
+    for (const w of allWebviews()) {
+      try {
+        w.setAudioMuted(!shouldPlayAudio(w));
+      } catch {}
+    }
+  }, [shouldPlayAudio]);
+  const applyMutingRef = useRef(applyMuting);
+  applyMutingRef.current = applyMuting;
+  useEffect(() => {
+    applyMuting();
+  }, [applyMuting, tabBar.activeId]);
 
   const pollingRef = useRef(new Set()); // paths com um waitAndShow em curso (evita loops duplicados)
 
@@ -1347,8 +1408,12 @@ export function PreviewPanel({
           return;
         }
         appendLog(active.path, t('preview.log_preparing'));
-        const res = await window.api.startPreview(active.path);
+        const res = await startPreviewResolved(active.path);
         if (cancelled) return;
+        if (res && res.cancelled) {
+          setMode('empty'); // usuário cancelou no conflito de porta
+          return;
+        }
         if (res && res.error) {
           appendLog(active.path, '\n[erro] ' + res.error + '\n');
           return;
@@ -1564,6 +1629,43 @@ export function PreviewPanel({
       serverBusyRef.current = false;
     }
   };
+  // --- Conflito de porta fixa ---
+  // A porta reservada do projeto está ocupada por processo externo: o main devolve
+  // { portConflict } e aqui perguntamos o que fazer (Encerrar o que está lá / Usar
+  // porta aleatória desta vez / Cancelar), re-tentando com a decisão. Um único ponto,
+  // usado tanto pelo start inicial quanto pelo reiniciar.
+  const [portPrompt, setPortPrompt] = useState(null); // { port } | null
+  const portPromptResolveRef = useRef(null);
+  const askPortDecision = useCallback(
+    (port) =>
+      new Promise((resolve) => {
+        portPromptResolveRef.current = resolve;
+        setPortPrompt({ port });
+      }),
+    [],
+  );
+  const resolvePortPrompt = useCallback((decision) => {
+    setPortPrompt(null);
+    const r = portPromptResolveRef.current;
+    portPromptResolveRef.current = null;
+    if (r) r(decision);
+  }, []);
+  const startPreviewResolved = useCallback(
+    async (projectPath) => {
+      let decision;
+      for (;;) {
+        const res = await window.api.startPreview(projectPath, decision);
+        if (res && res.portConflict) {
+          decision = await askPortDecision(res.port);
+          if (decision === 'cancel') return { cancelled: true };
+          continue; // 'kill' | 'random' → re-tenta
+        }
+        return res;
+      }
+    },
+    [askPortDecision],
+  );
+
   const restart = async () => {
     if (!active || serverBusyRef.current) return;
     serverBusyRef.current = true;
@@ -1576,7 +1678,11 @@ export function PreviewPanel({
       try {
         if (logRef.current) logRef.current.textContent = '';
         appendLog(active.path, t('preview.log_restarting'));
-        const res = await window.api.startPreview(active.path);
+        const res = await startPreviewResolved(active.path);
+        if (res && res.cancelled) {
+          setMode('empty'); // usuário cancelou no conflito de porta
+          return;
+        }
         if (res && res.error) appendLog(active.path, '\n[erro] ' + res.error + '\n');
         onProjectsChanged?.();
       } finally {
@@ -1642,6 +1748,29 @@ export function PreviewPanel({
     } catch {}
   };
 
+  // Spring-loaded nas abas Código/Preview: um arrasto de arquivo EXTERNO parado sobre a
+  // aba (~0,6s) troca a view antes de soltar. Mede pelos ticks do 'dragover' (~350ms
+  // mesmo parado), igual ao dwell da barra lateral — sem timer pra vazar.
+  const tabDwellRef = useRef({ key: null, since: 0, fired: false });
+  const onTabDragOver = (value) => (e) => {
+    if (!hasExternalFiles(e.dataTransfer)) return;
+    e.preventDefault();
+    try {
+      e.dataTransfer.dropEffect = 'copy';
+    } catch {}
+    if (view === value) {
+      tabDwellRef.current = { key: null, since: 0, fired: false };
+      return;
+    }
+    const d = tabDwellRef.current;
+    const now = Date.now();
+    if (d.key !== value) tabDwellRef.current = { key: value, since: now, fired: false };
+    else if (!d.fired && now - d.since >= 600) {
+      tabDwellRef.current = { key: value, since: d.since, fired: true };
+      setView(value);
+    }
+  };
+
   const inCode = remote || view === 'code';
   // Uma vez aberto, o CodeView fica MONTADO (só escondido via CSS quando saímos da aba),
   // pra não perder as abas de arquivos abertos ao alternar Código ↔ Preview. O ref garante
@@ -1663,6 +1792,7 @@ export function PreviewPanel({
               {!remote && (
                 <TabsTrigger
                   value="preview"
+                  onDragOver={onTabDragOver('preview')}
                   className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
                 >
                   <HoverIcon as={EarthIcon} />
@@ -1671,6 +1801,7 @@ export function PreviewPanel({
               )}
               <TabsTrigger
                 value="code"
+                onDragOver={onTabDragOver('code')}
                 className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
               >
                 <HoverIcon as={ChevronsLeftRightIcon} />
@@ -1908,6 +2039,31 @@ export function PreviewPanel({
                 }}
               />
             </Suspense>
+          )}
+          {/* Conflito de porta fixa: a porta reservada está ocupada por outro processo.
+              Não matamos cego — o usuário decide. */}
+          {portPrompt && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/55">
+              <div className="w-[360px] rounded-2xl border border-primary/30 bg-background p-5 shadow-xl">
+                <div className="text-sm font-semibold">
+                  {t('preview.port_conflict_title', { port: portPrompt.port })}
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  {t('preview.port_conflict_body', { port: portPrompt.port })}
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <Button size="sm" variant="destructive" onClick={() => resolvePortPrompt('kill')}>
+                    {t('preview.port_conflict_kill')}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => resolvePortPrompt('random')}>
+                    {t('preview.port_conflict_random')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => resolvePortPrompt('cancel')}>
+                    {t('preview.port_conflict_cancel')}
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
           {inPreview && mode === 'log' && (
             <pre

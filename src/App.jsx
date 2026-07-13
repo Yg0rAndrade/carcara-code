@@ -303,6 +303,46 @@ export default function App() {
     };
   }, []);
 
+  // Arrasto de arquivo vindo de FORA do app (Chrome/Explorador/Finder): duas coisas no
+  // nível da janela.
+  // 1) Rede de segurança contra a navegação padrão: se um arquivo externo for solto
+  //    numa área SEM handler, o Chromium "abre" o arquivo trocando a página inteira do
+  //    app. Um preventDefault global no dragover/drop mata isso; os alvos reais
+  //    (terminal, abas, barra) tratam o próprio drop com stopPropagation.
+  // 2) Traz a janela pra frente no primeiro dragenter externo (arrastar pro ícone),
+  //    uma vez por arrasto (rearmado ao fim).
+  useEffect(() => {
+    const isFileDrag = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+    let raised = false;
+    const onDragOver = (e) => {
+      if (isFileDrag(e)) e.preventDefault();
+    };
+    const onDragEnter = (e) => {
+      if (!isFileDrag(e)) return;
+      if (!raised) {
+        raised = true;
+        window.api.focusWindow?.();
+      }
+    };
+    const onDrop = (e) => {
+      if (isFileDrag(e)) e.preventDefault(); // handlers específicos já pararam a propagação
+      raised = false;
+    };
+    const onDragEnd = () => {
+      raised = false;
+    };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragenter', onDragEnter);
+    window.addEventListener('drop', onDrop);
+    window.addEventListener('dragend', onDragEnd);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragenter', onDragEnter);
+      window.removeEventListener('drop', onDrop);
+      window.removeEventListener('dragend', onDragEnd);
+    };
+  }, []);
+
   // Avisa o main qual projeto está em foco e apaga o badge do rail (atenção/asking) ao
   // abri-lo — o pulso de "trabalhando" continua, e o detalhe por sessão vai na aba.
   useEffect(() => {
