@@ -262,6 +262,8 @@ export function CodeView({ active, openRequest, visible = true }) {
   const activePathRef = useRef(null);
   activePathRef.current = activePath;
   const activeTab = tabs.find((t) => t.path === activePath) || null;
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
   const saveRef = useRef(() => {});
   // .env abertos como texto cru (CodeMirror) em vez do editor mascarado. Por path.
   const [rawEnv, setRawEnv] = useState(() => new Set());
@@ -494,7 +496,26 @@ export function CodeView({ active, openRequest, visible = true }) {
   useEffect(() => {
     if (!active) return;
     window.api.watchDir(active.path);
-    const off = window.api.on('fs:changed', () => bump());
+    const off = window.api.on('fs:changed', () => {
+      bump(); // recarrega a árvore
+      // Recarrega do disco as abas locais NÃO-sujas: o Claude/Carcará AI pode ter escrito
+      // o arquivo por fora. Abas com edição não salva (dirty) são preservadas.
+      if (active.remote) return;
+      for (const t of tabsRef.current) {
+        if (t.dirty || t.image || t.notice) continue;
+        window.api.readFile(t.path).then((r) => {
+          if (r && !r.error && typeof r.content === 'string') {
+            setTabs((cur) =>
+              cur.map((x) =>
+                x.path === t.path && !x.dirty && x.content !== r.content
+                  ? { ...x, content: r.content }
+                  : x,
+              ),
+            );
+          }
+        });
+      }
+    });
     return () => {
       off?.();
     };
