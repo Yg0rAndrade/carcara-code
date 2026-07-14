@@ -5,9 +5,20 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ## [Não lançado]
 
-### Features (em progresso — branch `feat/recursos-0.1.8`, não lançado)
+## [0.1.9] — 2026-07-14
 
-- **Carcará Code AI** — uma IA embutida, **isolada e aditiva**, com **visualização amigável (chat HTML, não-terminal)** por cima do motor **OpenCode** rodando headless (`opencode serve`, dirigido por HTTP/SSE). Entra como **mais uma opção na escolha de IA** (não altera o Claude Code nem o terminal). Núcleo da Fase 1 validado ponta a ponta: **chat com streaming**, **cards de ferramenta**, e **edição de arquivo com aprovação** (card "Editar &lt;arquivo&gt;" → Aceitar/Rejeitar) cravando um **checkpoint** antes de gravar. Skills/MCP são herdados da config do OpenCode. Config do modelo em `~/.carcara/provider.json` (não depende de variável de ambiente). _Pendente pra lançar:_ modelo real de fábrica (o teste usa um modelo local), diff visual no card, markdown no chat.
+### Features
+
+- **Carcará Code AI** — uma IA embutida, **isolada e aditiva**, com **visualização amigável (chat HTML, não-terminal)** por cima do motor **OpenCode** rodando headless (`opencode serve`, dirigido por HTTP/SSE). Entra como **mais uma opção na escolha de IA** (não altera o Claude Code nem o terminal). Fase 1 validada ponta a ponta no app:
+  - **Chat com streaming** (texto em tempo real, sem eco da pergunta) e **cards de ferramenta**;
+  - **Edição de arquivo com aprovação** — card "Editar &lt;arquivo&gt;" com **diff visual** (linhas verdes/vermelhas, rolável) → Aceitar/Rejeitar, cravando um **checkpoint** antes de gravar;
+  - Config do modelo em `~/.carcara/provider.json` (arquivo > env > default, **não depende de variável de ambiente herdada**);
+  - Skills/MCP herdados da config do OpenCode; registrada como CLI de 1ª classe (sem terminal Claude oculto), com ícone próprio e tratada como sempre disponível nas Configurações.
+  - _Ainda pendente (próximas fases):_ modelo real de fábrica (o teste usa um modelo local), **markdown no chat** (hoje texto puro), gateway da Fase 2.
+
+### Correções
+
+- Editor: abas locais **não-sujas recarregam do disco** quando o arquivo muda por fora (ex.: a Carcará grava um arquivo) — antes o editor mostrava o conteúdo em cache mesmo com o `dist` novo no disco (edições não salvas são preservadas).
 
 ## [0.1.8] — 2026-07-08
 

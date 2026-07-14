@@ -1,6 +1,6 @@
 {
   "name": "carcara-code",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "IDE minimalista para o Claude Code — cara de Lovable",
   "main": "main.js",
   "scripts": {
