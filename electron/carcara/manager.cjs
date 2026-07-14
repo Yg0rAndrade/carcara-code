@@ -74,8 +74,22 @@ async function ensure({ sessionId, projectPath, prefixDir, provider, emit, onPha
       stdio: ['ignore', 'ignore', 'pipe'],
       windowsHide: true,
     });
+    // NÃO engolir o stderr do serve: guarda um rabo e loga no console do main (dev),
+    // pra erros do OpenCode/DeepSeek pararem de ser invisíveis.
+    entry.stderrTail = '';
     proc.stderr.on('data', (d) => {
-      void d;
+      const s = d.toString();
+      entry.stderrTail = (entry.stderrTail + s).slice(-2000);
+      process.stderr.write('[opencode] ' + s);
+    });
+    proc.on('exit', (code) => {
+      if (!entry.disposed && code) {
+        const tail = entry.stderrTail ? ': ' + entry.stderrTail.trim().slice(-400) : '';
+        emit(sessionId, {
+          kind: 'error',
+          message: 'OpenCode encerrou (código ' + code + ')' + tail,
+        });
+      }
     });
     entry.proc = proc;
     entry.port = port;

@@ -18,64 +18,83 @@ let _id = 0;
 const nextId = () => 'm' + ++_id;
 
 // Aplica um evento normalizado ({kind}) no modelo de mensagens local.
-// Modelo interno: { id, role, parts:[{type:'text'|'reasoning'|'tool', ...}] }.
-function applyEvent(prev, event, assistantIdRef) {
+// Modelo interno: { id, ocId, role, parts:[{ pid, type:'text'|'reasoning'|'tool'|'permission', ... }] }.
+// Cada mensagem do assistente é indexada pelo messageId do OpenCode (ocId); cada parte
+// pelo partId (pid). delta ANEXA ao texto da parte; text/reasoning updated SUBSTITUI (é o
+// estado cheio). Partes de mensagens 'user' são filtradas (senão o eco da pergunta cai aqui).
+// `roleByMsg` é um objeto mutável { messageId: 'user'|'assistant' } (vive num ref).
+function applyEvent(prev, event, roleByMsg) {
+  // message.updated: só registra o papel da mensagem (sem mudar a timeline).
+  if (event.kind === 'message') {
+    if (event.messageId) roleByMsg[event.messageId] = event.role;
+    return prev;
+  }
+  const msgId = event.messageId;
+  if (msgId && roleByMsg[msgId] === 'user') return prev; // filtra eco do usuário
+  if (!['delta', 'text', 'reasoning', 'tool', 'permission', 'error'].includes(event.kind)) {
+    return prev; // idle/phase/diff tratados fora
+  }
+
   const next = prev.slice();
-  const ensureAssistant = () => {
-    let idx = next.findIndex((m) => m.id === assistantIdRef.current);
+  // Acha/cria a bolha do assistente desta mensagem do OpenCode. 'error' pode não ter
+  // messageId → usa a última bolha do assistente (ou cria uma).
+  let idx;
+  if (msgId) {
+    idx = next.findIndex((m) => m.ocId === msgId);
     if (idx === -1) {
-      const id = nextId();
-      assistantIdRef.current = id;
-      next.push({ id, role: 'assistant', parts: [] });
+      next.push({ id: nextId(), ocId: msgId, role: 'assistant', parts: [] });
       idx = next.length - 1;
     } else {
       next[idx] = { ...next[idx], parts: next[idx].parts.slice() };
     }
-    return idx;
-  };
+  } else {
+    idx = next.map((m) => m.role).lastIndexOf('assistant');
+    if (idx === -1) {
+      next.push({ id: nextId(), ocId: null, role: 'assistant', parts: [] });
+      idx = next.length - 1;
+    } else {
+      next[idx] = { ...next[idx], parts: next[idx].parts.slice() };
+    }
+  }
+  const parts = next[idx].parts;
+  const findPart = (pid) => (pid ? parts.findIndex((p) => p.pid === pid) : -1);
 
   switch (event.kind) {
-    case 'text': {
-      const i = ensureAssistant();
-      const parts = next[i].parts;
-      const last = parts[parts.length - 1];
-      if (last && last.type === 'text')
-        parts[parts.length - 1] = { ...last, text: last.text + event.text };
-      else parts.push({ type: 'text', text: event.text });
-      return next;
+    case 'delta': {
+      const pi = findPart(event.partId);
+      if (pi === -1) parts.push({ pid: event.partId, type: 'text', text: event.delta });
+      else parts[pi] = { ...parts[pi], text: (parts[pi].text || '') + event.delta };
+      break;
     }
+    case 'text':
     case 'reasoning': {
-      const i = ensureAssistant();
-      next[i].parts.push({ type: 'reasoning', text: event.text });
-      return next;
+      const pi = findPart(event.partId);
+      const patch = { pid: event.partId, type: event.kind, text: event.text };
+      if (pi === -1) parts.push(patch);
+      else parts[pi] = { ...parts[pi], ...patch }; // substitui (estado cheio)
+      break;
     }
     case 'tool': {
-      const i = ensureAssistant();
-      next[i].parts.push({
+      const pi = findPart(event.partId);
+      const patch = {
+        pid: event.partId,
         type: 'tool',
-        toolCallId: event.toolCallId || event.id || nextId(),
+        toolCallId: event.partId || nextId(),
         toolName: event.tool,
         status: event.status,
-      });
-      return next;
+      };
+      if (pi === -1) parts.push(patch);
+      else parts[pi] = { ...parts[pi], ...patch };
+      break;
     }
-    case 'permission': {
-      const i = ensureAssistant();
-      next[i].parts.push({
-        type: 'permission',
-        permissionId: event.permissionId,
-        title: event.title,
-      });
-      return next;
-    }
-    case 'error': {
-      const i = ensureAssistant();
-      next[i].parts.push({ type: 'text', text: '⚠️ ' + (event.message || 'erro') });
-      return next;
-    }
-    default:
-      return next; // idle/phase/diff tratados fora (busy/toolbar)
+    case 'permission':
+      parts.push({ type: 'permission', permissionId: event.permissionId, title: event.title });
+      break;
+    case 'error':
+      parts.push({ type: 'text', text: '⚠️ ' + (event.message || 'erro') });
+      break;
   }
+  return next;
 }
 
 export function CarcaraChat({ sessionId, projectPath }) {
@@ -85,7 +104,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
   const [ready, setReady] = useState(false);
   const [phase, setPhase] = useState('');
   const [pending, setPending] = useState(null); // {permissionId, title}
-  const assistantIdRef = useRef(null);
+  const roleByMsgRef = useRef({}); // { messageId: 'user' | 'assistant' } — filtra eco
   const sessionRef = useRef(sessionId);
   const projectRef = useRef(projectPath);
   sessionRef.current = sessionId;
@@ -96,7 +115,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
     setMessages([]);
     setBusy(false);
     setPending(null);
-    assistantIdRef.current = null;
+    roleByMsgRef.current = {};
   }, [sessionId]);
 
   // Sobe o motor headless para esta sessão.
@@ -120,7 +139,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
       if (event.kind === 'idle') return setBusy(false);
       if (event.kind === 'permission')
         setPending({ permissionId: event.permissionId, title: event.title });
-      setMessages((prev) => applyEvent(prev, event, assistantIdRef));
+      setMessages((prev) => applyEvent(prev, event, roleByMsgRef.current));
     });
     return () => off?.();
   }, [sessionId]);
@@ -139,7 +158,6 @@ export function CarcaraChat({ sessionId, projectPath }) {
         ...prev,
         { id: nextId(), role: 'user', parts: [{ type: 'text', text }] },
       ]);
-      assistantIdRef.current = null;
       setBusy(true);
       const r = await window.api.carcaraSend?.(sid, text);
       if (r && r.error) {
