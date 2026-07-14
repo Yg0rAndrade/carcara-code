@@ -3,6 +3,12 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [Não lançado]
+
+### Features (em progresso — branch `feat/recursos-0.1.8`, não lançado)
+
+- **Carcará Code AI** — uma IA embutida, **isolada e aditiva**, com **visualização amigável (chat HTML, não-terminal)** por cima do motor **OpenCode** rodando headless (`opencode serve`, dirigido por HTTP/SSE). Entra como **mais uma opção na escolha de IA** (não altera o Claude Code nem o terminal). Núcleo da Fase 1 validado ponta a ponta: **chat com streaming**, **cards de ferramenta**, e **edição de arquivo com aprovação** (card "Editar &lt;arquivo&gt;" → Aceitar/Rejeitar) cravando um **checkpoint** antes de gravar. Skills/MCP são herdados da config do OpenCode. Config do modelo em `~/.carcara/provider.json` (não depende de variável de ambiente). _Pendente pra lançar:_ modelo real de fábrica (o teste usa um modelo local), diff visual no card, markdown no chat.
+
 ## [0.1.8] — 2026-07-08
 
 ### Features
