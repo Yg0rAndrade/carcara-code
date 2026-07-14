@@ -132,7 +132,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
     const room = MAX_IMAGES - attachmentsRef.current.length;
     if (room <= 0) return;
     const items = await filesToAttachments(files, { max: room });
-    if (items.length) setAttachments((prev) => [...prev, ...items]);
+    if (items.length) setAttachments((prev) => [...prev, ...items].slice(0, MAX_IMAGES));
   }, []);
 
   const removeImage = useCallback((id) => {

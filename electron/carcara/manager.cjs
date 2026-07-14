@@ -171,7 +171,7 @@ async function streamEvents(sessionId, entry, emit) {
 // imagem (data-URL). Pura e testável (scripts/carcara-message-smoke.cjs).
 function buildMessageParts({ text, images = [] }) {
   const parts = [];
-  if (text && text.trim()) parts.push({ type: 'text', text });
+  if (text && text.trim()) parts.push({ type: 'text', text: text.trim() });
   for (const img of images) {
     if (!img || !img.dataUrl) continue;
     parts.push({
