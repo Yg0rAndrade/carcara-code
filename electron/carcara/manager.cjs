@@ -167,13 +167,32 @@ async function streamEvents(sessionId, entry, emit) {
   }
 }
 
-async function send({ sessionId, text }) {
+// Monta as partes da mensagem do OpenCode: texto (se houver) + uma parte 'file' por
+// imagem (data-URL). Pura e testável (scripts/carcara-message-smoke.cjs).
+function buildMessageParts({ text, images = [] }) {
+  const parts = [];
+  if (text && text.trim()) parts.push({ type: 'text', text });
+  for (const img of images) {
+    if (!img || !img.dataUrl) continue;
+    parts.push({
+      type: 'file',
+      url: img.dataUrl,
+      mime: img.mime,
+      filename: img.name,
+    });
+  }
+  return parts;
+}
+
+async function send({ sessionId, text, images = [] }) {
   const e = state.get(sessionId);
   if (!e) throw new Error('sessão Carcará não iniciada');
+  const parts = buildMessageParts({ text, images });
+  if (!parts.length) return; // nada a enviar
   await fetch(`http://${HOST}:${e.port}/session/${e.ocSessionId}/message`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: e.auth },
-    body: JSON.stringify({ parts: [{ type: 'text', text }] }),
+    body: JSON.stringify({ parts }),
   });
 }
 
@@ -210,4 +229,4 @@ function dispose({ sessionId }) {
   state.delete(sessionId);
 }
 
-module.exports = { ensure, send, abort, approve, dispose };
+module.exports = { ensure, send, abort, approve, dispose, buildMessageParts };
