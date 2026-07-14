@@ -2493,9 +2493,9 @@ ipcMain.handle('carcara:ensure', async (evt, { sessionId, projectPath }) => {
   }
 });
 
-ipcMain.handle('carcara:send', async (evt, { sessionId, text }) => {
+ipcMain.handle('carcara:send', async (evt, { sessionId, text, images }) => {
   try {
-    await carcara.send({ sessionId, text });
+    await carcara.send({ sessionId, text, images: images || [] });
     return { ok: true };
   } catch (err) {
     return { error: String((err && err.message) || err) };

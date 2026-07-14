@@ -131,7 +131,8 @@ contextBridge.exposeInMainWorld('api', {
   // on(...) genérico abaixo.
   carcaraEnsure: (sessionId, projectPath) =>
     ipcRenderer.invoke('carcara:ensure', { sessionId, projectPath }),
-  carcaraSend: (sessionId, text) => ipcRenderer.invoke('carcara:send', { sessionId, text }),
+  carcaraSend: (sessionId, text, images) =>
+    ipcRenderer.invoke('carcara:send', { sessionId, text, images }),
   carcaraAbort: (sessionId) => ipcRenderer.send('carcara:abort', { sessionId }),
   carcaraApprove: (sessionId, permissionId, ok) =>
     ipcRenderer.invoke('carcara:approve', { sessionId, permissionId, ok }),
