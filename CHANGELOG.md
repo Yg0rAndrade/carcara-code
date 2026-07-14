@@ -5,6 +5,12 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Carcará Code AI — anexar imagem:** cole (Ctrl+V), arraste-e-solte ou use o botão de clipe para
+  enviar imagens no chat; múltiplas por mensagem, com miniaturas e remoção. As imagens grandes são
+  reduzidas automaticamente antes do envio.
+
 ## [0.1.9] — 2026-07-14
 
 ### Features
