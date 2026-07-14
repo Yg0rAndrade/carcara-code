@@ -11,10 +11,21 @@ import {
   MessagePrimitive,
   ComposerPrimitive,
 } from '@assistant-ui/react';
-import { ArrowUp, Square, Wrench, Brain, Check, X, Loader2, Sparkles } from 'lucide-react';
+import {
+  ArrowUp,
+  Square,
+  Wrench,
+  Brain,
+  Check,
+  X,
+  Loader2,
+  Sparkles,
+  Paperclip,
+} from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MarkdownText } from '@/components/ChatMarkdown.jsx';
+import { filesToAttachments, MAX_IMAGES } from '@/lib/attach-image.js';
 
 let _id = 0;
 const nextId = () => 'm' + ++_id;
@@ -106,17 +117,34 @@ export function CarcaraChat({ sessionId, projectPath }) {
   const [ready, setReady] = useState(false);
   const [phase, setPhase] = useState('');
   const [pending, setPending] = useState(null); // {permissionId, title}
+  const [attachments, setAttachments] = useState([]); // [{id,dataUrl,mime,name}]
+  const [dragging, setDragging] = useState(false);
+  const attachmentsRef = useRef([]);
+  const fileInputRef = useRef(null);
+  attachmentsRef.current = attachments;
   const roleByMsgRef = useRef({}); // { messageId: 'user' | 'assistant' } — filtra eco
   const sessionRef = useRef(sessionId);
   const projectRef = useRef(projectPath);
   sessionRef.current = sessionId;
   projectRef.current = projectPath;
 
+  const addImages = useCallback(async (files) => {
+    const room = MAX_IMAGES - attachmentsRef.current.length;
+    if (room <= 0) return;
+    const items = await filesToAttachments(files, { max: room });
+    if (items.length) setAttachments((prev) => [...prev, ...items]);
+  }, []);
+
+  const removeImage = useCallback((id) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   // Zera a timeline ao trocar de sessão.
   useEffect(() => {
     setMessages([]);
     setBusy(false);
     setPending(null);
+    setAttachments([]);
     roleByMsgRef.current = {};
   }, [sessionId]);
 
@@ -154,14 +182,21 @@ export function CarcaraChat({ sessionId, projectPath }) {
         .map((c) => c.text)
         .join('')
         .trim();
+      const images = attachmentsRef.current;
       const sid = sessionRef.current;
-      if (!text || !sid) return;
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId(), role: 'user', parts: [{ type: 'text', text }] },
-      ]);
+      if ((!text && !images.length) || !sid) return;
+      const userParts = [];
+      if (text) userParts.push({ type: 'text', text });
+      for (const img of images)
+        userParts.push({ type: 'image', dataUrl: img.dataUrl, name: img.name });
+      setMessages((prev) => [...prev, { id: nextId(), role: 'user', parts: userParts }]);
+      setAttachments([]);
       setBusy(true);
-      const r = await window.api.carcaraSend?.(sid, text);
+      const r = await window.api.carcaraSend?.(
+        sid,
+        text,
+        images.map((i) => ({ dataUrl: i.dataUrl, mime: i.mime, name: i.name })),
+      );
       if (r && r.error) {
         setBusy(false);
         setPhase(t('carcara.error', { error: r.error }));
@@ -198,15 +233,17 @@ export function CarcaraChat({ sessionId, projectPath }) {
         .map((p) =>
           p.type === 'text'
             ? { type: 'text', text: p.text }
-            : p.type === 'reasoning'
-              ? { type: 'reasoning', text: p.text }
-              : {
-                  type: 'tool-call',
-                  toolCallId: p.toolCallId,
-                  toolName: p.toolName,
-                  args: {},
-                  result: p.status,
-                },
+            : p.type === 'image'
+              ? { type: 'image', image: p.dataUrl }
+              : p.type === 'reasoning'
+                ? { type: 'reasoning', text: p.text }
+                : {
+                    type: 'tool-call',
+                    toolCallId: p.toolCallId,
+                    toolName: p.toolName,
+                    args: {},
+                    result: p.status,
+                  },
         ),
     }),
     [],
@@ -235,7 +272,31 @@ export function CarcaraChat({ sessionId, projectPath }) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
+      <ThreadPrimitive.Root
+        className="relative flex min-h-0 flex-1 flex-col"
+        onDragEnter={(e) => {
+          if (Array.from(e.dataTransfer.types || []).includes('Files')) {
+            e.preventDefault();
+            setDragging(true);
+          }
+        }}
+        onDragOver={(e) => {
+          if (dragging) e.preventDefault();
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setDragging(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          if (e.dataTransfer.files?.length) addImages(e.dataTransfer.files);
+        }}
+      >
+        {dragging && (
+          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-lg border-2 border-dashed border-primary/60 bg-background/80 text-sm text-primary">
+            {t('carcara.dropHere')}
+          </div>
+        )}
         {!ready && (
           <div className="flex items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
             <Loader2 className="size-3.5 animate-spin" /> {phase || t('carcara.starting')}
@@ -280,7 +341,33 @@ export function CarcaraChat({ sessionId, projectPath }) {
           </div>
         )}
 
-        <Composer placeholder={composerPlaceholder} />
+        <Composer
+          placeholder={composerPlaceholder}
+          attachments={attachments}
+          onRemove={removeImage}
+          onPick={() => fileInputRef.current?.click()}
+          onPaste={(e) => {
+            const imgs = Array.from(e.clipboardData?.items || [])
+              .filter((it) => it.kind === 'file' && it.type.startsWith('image/'))
+              .map((it) => it.getAsFile())
+              .filter(Boolean);
+            if (imgs.length) {
+              e.preventDefault();
+              addImages(imgs);
+            }
+          }}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            addImages(e.target.files);
+            e.target.value = '';
+          }}
+        />
       </ThreadPrimitive.Root>
     </AssistantRuntimeProvider>
   );
@@ -303,6 +390,15 @@ function EmptyState() {
 }
 
 const PlainText = ({ text }) => <span className="whitespace-pre-wrap">{text}</span>;
+
+const ImageThumb = ({ image }) => (
+  <img
+    src={image}
+    alt=""
+    className="mt-1 max-h-48 w-auto cursor-zoom-in rounded-lg border border-border/50"
+    onClick={() => window.open(image, '_blank')}
+  />
+);
 
 function ToolCall({ toolName, result }) {
   return (
@@ -361,7 +457,7 @@ function UserMessage() {
   return (
     <MessagePrimitive.Root className="flex justify-end">
       <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-[13px] leading-relaxed text-primary-foreground">
-        <MessagePrimitive.Parts components={{ Text: PlainText }} />
+        <MessagePrimitive.Parts components={{ Text: PlainText, Image: ImageThumb }} />
       </div>
     </MessagePrimitive.Root>
   );
@@ -379,20 +475,51 @@ function AssistantMessage() {
   );
 }
 
-function Composer({ placeholder }) {
+function Composer({ placeholder, attachments, onRemove, onPick, onPaste }) {
+  const t = useT();
   return (
     <div className="shrink-0 border-t p-3">
+      {attachments.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {attachments.map((a) => (
+            <div key={a.id} className="relative">
+              <img
+                src={a.dataUrl}
+                alt=""
+                className="size-16 rounded-lg border border-border object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => onRemove(a.id)}
+                title={t('carcara.removeImage')}
+                className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-background text-muted-foreground shadow ring-1 ring-border hover:text-foreground [&_svg]:size-3"
+              >
+                <X />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <ComposerPrimitive.Root className="flex items-end gap-2 rounded-xl border bg-card p-2 focus-within:border-primary/60">
+        <button
+          type="button"
+          onClick={onPick}
+          title={t('carcara.attachImage')}
+          className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&_svg]:size-[17px]"
+        >
+          <Paperclip />
+        </button>
         <ComposerPrimitive.Input
           rows={1}
           autoFocus
           placeholder={placeholder}
+          onPaste={onPaste}
           className="max-h-40 min-h-[24px] flex-1 resize-none bg-transparent px-1.5 py-1 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground"
         />
         <ThreadPrimitive.If running={false}>
           <ComposerPrimitive.Send
             className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 [&_svg]:size-[15px]"
-            title="Enviar"
+            title={t('carcara.send')}
           >
             <ArrowUp />
           </ComposerPrimitive.Send>
@@ -400,7 +527,7 @@ function Composer({ placeholder }) {
         <ThreadPrimitive.If running>
           <ComposerPrimitive.Cancel
             className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[15px]"
-            title="Parar"
+            title={t('carcara.stop')}
           >
             <Square />
           </ComposerPrimitive.Cancel>
