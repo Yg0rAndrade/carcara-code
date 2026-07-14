@@ -349,6 +349,9 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   await platform.fixLoginPath(); // macOS/Linux: herda o PATH do usuário (acha claude/node/git)
+  // Aquece o cache de shells DEPOIS do fixLoginPath: no macOS o app GUI herda um PATH
+  // truncado, então detectar antes disso perderia shells do Homebrew (/opt/homebrew/bin).
+  detectShells();
   secretStore = makeSecretStore({
     crypto: safeStorage,
     filePath: path.join(app.getPath('userData'), 'remotes.secrets'),
@@ -2081,6 +2084,91 @@ function cleanEnv() {
   return env;
 }
 
+// Deriva o bash do Git a partir do git.exe no PATH (<raiz do Git>\bin\bash.exe). Necessário
+// porque o Git Bash é `probeOnly` (não caímos no `where bash.exe`, que casaria com o launcher
+// do WSL em System32). Devolve o caminho ou null.
+async function gitBashProbe(pexec, finder) {
+  try {
+    const { stdout } = await pexec(finder, ['git.exe']);
+    const gitExe = String(stdout || '')
+      .trim()
+      .split(/\r?\n/)[0]
+      .trim();
+    if (gitExe) return path.join(path.resolve(path.dirname(gitExe), '..'), 'bin', 'bash.exe');
+  } catch {}
+  return null;
+}
+
+// Detecta quais shells candidatos (platform.shellChoicesFor) estão INSTALADOS: sonda os
+// caminhos extras (`probe`) e, se não for `probeOnly`, o PATH (`where`/`which`); candidatos
+// com `verify` só entram se o comando de verificação sair 0 com saída não-vazia (ex.: WSL
+// só aparece se houver distro). Assíncrono e em paralelo — não bloqueia o processo main.
+// Memoiza a PROMISE (shells não mudam na sessão; `shell:rescan` limpa). [{ id,label,cmd,loginArgs }].
+let _shellsPromise = null;
+function detectShells() {
+  if (_shellsPromise) return _shellsPromise;
+  const { execFile } = require('child_process');
+  const { promisify } = require('util');
+  const pexec = promisify(execFile);
+  const finder = platform.whichCmdFor();
+  _shellsPromise = Promise.all(
+    platform.shellChoicesFor().map(async (c) => {
+      const probes = [...(c.probe || [])];
+      if (c.id === 'gitbash') {
+        const derived = await gitBashProbe(pexec, finder);
+        if (derived) probes.push(derived);
+      }
+      let resolved = null;
+      for (const p of probes) {
+        try {
+          if (fs.existsSync(p)) {
+            resolved = p;
+            break;
+          }
+        } catch {}
+      }
+      if (!resolved && !c.probeOnly) {
+        try {
+          const { stdout } = await pexec(finder, [c.cmd]);
+          const r = String(stdout || '')
+            .trim()
+            .split(/\r?\n/)[0]
+            .trim();
+          if (r) resolved = r;
+        } catch {}
+      }
+      if (!resolved) return null;
+      if (c.verify) {
+        try {
+          const { stdout } = await pexec(resolved, c.verify);
+          // -l -q sai em UTF-16 com NULs; tira NULs antes de checar "não-vazio".
+          if (
+            !String(stdout || '')
+              .replace(/\0/g, '')
+              .trim()
+          )
+            return null;
+        } catch {
+          return null;
+        }
+      }
+      return { id: c.id, label: c.label, cmd: resolved, loginArgs: c.loginArgs || [] };
+    }),
+  ).then((list) => list.filter(Boolean));
+  return _shellsPromise;
+}
+
+// Resolve o shell escolhido nas Configurações (cfg.shell) para o par {shell, shellArgs}.
+// 'auto'/ausente/indisponível cai no shell do SO (comportamento antigo).
+async function resolveLocalShell() {
+  const pref = loadConfig().shell || 'auto';
+  if (pref !== 'auto') {
+    const found = (await detectShells()).find((s) => s.id === pref);
+    if (found) return { shell: found.cmd, shellArgs: found.loginArgs };
+  }
+  return { shell: platform.shellFor(), shellArgs: platform.loginArgsFor() };
+}
+
 // Escolhe o transporte da sessão: node-pty local ou canal ssh2 remoto.
 async function makeTransport(projectPath, cols, rows) {
   if (!isRemote(projectPath)) {
@@ -2090,10 +2178,11 @@ async function makeTransport(projectPath, cols, rows) {
     } catch (e) {
       throw new Error('node-pty não carregou: ' + e.message);
     }
+    const { shell, shellArgs } = await resolveLocalShell();
     return new LocalPty({
       ptyLib: pty,
-      shell: platform.shellFor(),
-      shellArgs: platform.loginArgsFor(),
+      shell,
+      shellArgs,
       env: cleanEnv(),
       cwd: projectPath,
       cols,
@@ -2576,6 +2665,30 @@ ipcMain.handle('lang:set', (evt, { lang }) => {
   c.language = lang;
   saveConfig(c);
   return { ok: true };
+});
+
+// Shell do terminal: lista os instalados (+ 'auto' é implícito na UI) e a escolha atual.
+// A troca vale só para NOVAS sessões (as abertas mantêm o pty já criado).
+ipcMain.handle('shell:list', async () => ({
+  current: loadConfig().shell || 'auto',
+  choices: (await detectShells()).map(({ id, label }) => ({ id, label })),
+}));
+ipcMain.handle('shell:setPref', async (evt, { id }) => {
+  const ok = id === 'auto' || (await detectShells()).some((s) => s.id === id);
+  if (!ok) return { ok: false };
+  const c = loadConfig();
+  if (id === 'auto') delete c.shell;
+  else c.shell = id;
+  saveConfig(c);
+  return { ok: true };
+});
+// Re-varre (ex.: instalou um shell com o app aberto). Zera o cache e devolve a lista fresca.
+ipcMain.handle('shell:rescan', async () => {
+  _shellsPromise = null;
+  return {
+    current: loadConfig().shell || 'auto',
+    choices: (await detectShells()).map(({ id, label }) => ({ id, label })),
+  };
 });
 
 // ---- Modo do painel de chat: 'cli' (terminal Claude Code real, padrão) ou 'chat'

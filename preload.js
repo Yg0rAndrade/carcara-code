@@ -111,6 +111,11 @@ contextBridge.exposeInMainWorld('api', {
   chatAbort: (sessionId) => ipcRenderer.send('chat:abort', { sessionId }),
   chatClose: (sessionId) => ipcRenderer.invoke('chat:close', { sessionId }),
 
+  // Seletor de shell do terminal (Configurações › Terminal). Lista os instalados e persiste
+  // a escolha; vale para novas sessões.
+  listShells: () => ipcRenderer.invoke('shell:list'),
+  setShell: (id) => ipcRenderer.invoke('shell:setPref', { id }),
+  rescanShells: () => ipcRenderer.invoke('shell:rescan'),
   // Terminal livre (shell comum)
   shellEnsure: (projectPath, cols, rows) =>
     ipcRenderer.invoke('shell:ensure', { projectPath, cols, rows }),
