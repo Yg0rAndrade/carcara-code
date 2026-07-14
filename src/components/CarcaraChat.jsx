@@ -13,6 +13,7 @@ import {
 } from '@assistant-ui/react';
 import { ArrowUp, Square, Wrench, Brain, Check, X, Loader2, Sparkles } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 let _id = 0;
 const nextId = () => 'm' + ++_id;
@@ -138,7 +139,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
       if (event.kind === 'phase') return setPhase(event.text);
       if (event.kind === 'idle') return setBusy(false);
       if (event.kind === 'permission')
-        setPending({ permissionId: event.permissionId, title: event.title });
+        setPending({ permissionId: event.permissionId, title: event.title, diff: event.diff });
       setMessages((prev) => applyEvent(prev, event, roleByMsgRef.current));
     });
     return () => off?.();
@@ -258,6 +259,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
         {pending && (
           <div className="mx-3 mb-2 rounded-lg border border-border bg-muted/40 p-3">
             <div className="mb-2 text-sm">{pending.title || t('carcara.approveTitle')}</div>
+            {pending.diff && <DiffView diff={pending.diff} />}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -321,6 +323,36 @@ const Reasoning = ({ text }) => (
     <span className="whitespace-pre-wrap">{text}</span>
   </div>
 );
+
+// Diff unificado do card de aprovação: pula o cabeçalho do patch, colore +/− e os hunks.
+function DiffView({ diff }) {
+  const lines = String(diff || '')
+    .split('\n')
+    .filter((l) => !/^(Index:|={3,}$|--- |\+\+\+ )/.test(l));
+  return (
+    <div className="mb-2 max-h-64 overflow-auto rounded border border-border bg-background font-mono text-[11px] leading-relaxed">
+      {lines.map((l, i) => {
+        const add = l.startsWith('+');
+        const del = l.startsWith('-');
+        const hunk = l.startsWith('@@');
+        return (
+          <div
+            key={i}
+            className={cn(
+              'whitespace-pre px-2',
+              add && 'bg-green-500/10 text-green-600 dark:text-green-400',
+              del && 'bg-red-500/10 text-red-600 dark:text-red-400',
+              hunk && 'bg-muted text-muted-foreground',
+              !add && !del && !hunk && 'text-muted-foreground',
+            )}
+          >
+            {l || ' '}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function UserMessage() {
   return (

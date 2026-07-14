@@ -91,6 +91,7 @@ function normalizeEvent(oc) {
         kind: 'permission',
         permissionId: p.permissionID || p.id,
         title,
+        diff: meta.diff || null, // diff unificado (ex.: edição/escrita) pra mostrar no card
         sessionId: p.sessionID,
       };
     }

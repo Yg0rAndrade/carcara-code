@@ -97,11 +97,12 @@ function assert(cond, msg) {
     properties: {
       id: 'per_x',
       permission: 'edit',
-      metadata: { filepath: 'C:\\proj\\carcara-teste.txt' },
+      metadata: { filepath: 'C:\\proj\\carcara-teste.txt', diff: '@@ -0,0 +1 @@\n+oi' },
     },
   });
   assert(n2.permissionId === 'per_x', 'permission lê id');
   assert(n2.title === 'Editar carcara-teste.txt', 'title do filepath: ' + n2.title);
+  assert(n2.diff === '@@ -0,0 +1 @@\n+oi', 'permission carrega o diff do metadata');
 }
 
 // session.idle
