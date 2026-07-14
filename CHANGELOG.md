@@ -14,7 +14,8 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
   - **Edição de arquivo com aprovação** — card "Editar &lt;arquivo&gt;" com **diff visual** (linhas verdes/vermelhas, rolável) → Aceitar/Rejeitar, cravando um **checkpoint** antes de gravar;
   - Config do modelo em `~/.carcara/provider.json` (arquivo > env > default, **não depende de variável de ambiente herdada**);
   - Skills/MCP herdados da config do OpenCode; registrada como CLI de 1ª classe (sem terminal Claude oculto), com ícone próprio e tratada como sempre disponível nas Configurações.
-  - _Ainda pendente (próximas fases):_ modelo real de fábrica (o teste usa um modelo local), **markdown no chat** (hoje texto puro), gateway da Fase 2.
+  - _Ainda pendente (próximas fases):_ modelo real de fábrica (o teste usa um modelo local), gateway da Fase 2.
+- Chat em HTML: **respostas renderizadas em markdown** (títulos, listas, tabelas, `código inline`, blocos de código com realce de sintaxe, citações, links) nos dois chats — o da Carcará e o do Claude Code. As mensagens do usuário continuam em texto puro. Reusa o mesmo renderizador do "Novidades" (GFM + highlight), carregado sob demanda pra não pesar o boot
 
 ### Correções
 

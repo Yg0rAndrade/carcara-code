@@ -1,14 +1,17 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { cn } from '@/lib/utils';
 
 // Preview de markdown "estilo VS Code": GFM (tabelas, checkboxes, ~riscado~, links
 // automáticos) + syntax highlight nos blocos de código via highlight.js (que já é
 // dependência do projeto). Os tokens do hljs ganham cor pelo tema .md-body no index.css.
 // Carregado sob demanda (React.lazy) pra não pesar o boot — ver memória startup-performance.
-export default function Markdown({ text }) {
+// `className` sobrepõe as classes do wrapper (via tailwind-merge) — ex.: o chat pede
+// `text-foreground` no lugar do `text-muted-foreground` padrão do "Novidades".
+export default function Markdown({ text, className }) {
   return (
-    <div className="md-body text-[13px] leading-relaxed text-muted-foreground">
+    <div className={cn('md-body text-[13px] leading-relaxed text-muted-foreground', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}

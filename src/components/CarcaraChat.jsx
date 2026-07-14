@@ -14,6 +14,7 @@ import {
 import { ArrowUp, Square, Wrench, Brain, Check, X, Loader2, Sparkles } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { MarkdownText } from '@/components/ChatMarkdown.jsx';
 
 let _id = 0;
 const nextId = () => 'm' + ++_id;
@@ -371,7 +372,7 @@ function AssistantMessage() {
     <MessagePrimitive.Root className="flex flex-col gap-2">
       <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-secondary px-3.5 py-2 text-[13px] leading-relaxed text-foreground">
         <MessagePrimitive.Parts
-          components={{ Text: PlainText, Reasoning, tools: { Fallback: ToolCall } }}
+          components={{ Text: MarkdownText, Reasoning, tools: { Fallback: ToolCall } }}
         />
       </div>
     </MessagePrimitive.Root>

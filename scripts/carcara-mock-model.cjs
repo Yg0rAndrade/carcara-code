@@ -10,11 +10,29 @@ const MODEL = 'carcara-mock';
 
 function chatReply(userText) {
   const t = (userText || '').trim();
+  // Vitrine de markdown pra validar o render no chat (GFM + highlight de código).
   return (
-    `Olá! 👋 Aqui é o **modelo de teste local** da Carcará (sem IA externa).\n\n` +
-    `Você disse: "${t || '(vazio)'}".\n\n` +
-    `Streaming, bolhas e render OK. Pra testar **edição de arquivo**, peça algo como ` +
-    `"crie um arquivo teste". 🎉`
+    `## Olá! 👋 modelo de teste local\n\n` +
+    `Aqui é o **modelo de teste** da Carcará (sem IA externa). Você disse: ` +
+    `\`${t || '(vazio)'}\`.\n\n` +
+    `### O que dá pra ver aqui\n\n` +
+    `- **negrito**, *itálico* e ~~riscado~~\n` +
+    `- \`código inline\` e [um link](https://carcaracode.net)\n` +
+    `- listas ordenadas:\n` +
+    `  1. primeiro\n` +
+    `  2. segundo\n\n` +
+    `> Citação: streaming, bolhas e render de markdown OK.\n\n` +
+    `Bloco de código com highlight:\n\n` +
+    '```js\n' +
+    `function ola(nome) {\n` +
+    `  return \`Olá, \${nome}!\`; // Carcará Code AI\n` +
+    `}\n` +
+    '```\n\n' +
+    `| recurso | status |\n` +
+    `| --- | --- |\n` +
+    `| streaming | ✅ |\n` +
+    `| markdown | ✅ |\n\n` +
+    `Pra testar **edição de arquivo**, peça algo como "crie um arquivo teste". 🎉`
   );
 }
 
