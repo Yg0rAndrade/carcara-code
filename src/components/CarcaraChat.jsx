@@ -325,10 +325,12 @@ const Reasoning = ({ text }) => (
 );
 
 // Diff unificado do card de aprovação: pula o cabeçalho do patch, colore +/− e os hunks.
+// Retorna null quando não há conteúdo real (senão desenha uma caixa vazia).
 function DiffView({ diff }) {
   const lines = String(diff || '')
     .split('\n')
-    .filter((l) => !/^(Index:|={3,}$|--- |\+\+\+ )/.test(l));
+    .filter((l) => !/^(Index:|={3,}$|--- |\+\+\+ |\\ )/.test(l));
+  if (!lines.some((l) => l.trim() !== '')) return null;
   return (
     <div className="mb-2 max-h-64 overflow-auto rounded border border-border bg-background font-mono text-[11px] leading-relaxed">
       {lines.map((l, i) => {
