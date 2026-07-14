@@ -15,7 +15,9 @@ function buildOpencodeConfig({ providerBaseUrl, apiKey, model }) {
           apiKey: apiKey,
         },
         models: {
-          [model]: { name: model },
+          // tool_call: true é essencial — sem isso o OpenCode trata o modelo como
+          // sem ferramentas e o agente não consegue editar arquivo (o coração do fluxo).
+          [model]: { name: model, tool_call: true },
         },
       },
     },

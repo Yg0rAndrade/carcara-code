@@ -15,6 +15,10 @@ assert(cfg.model === 'carcara/openrouter/free-model', 'model prefixado com provi
 assert(cfg.provider && cfg.provider.carcara, 'tem provider carcara');
 assert(cfg.provider.carcara.options.baseURL === 'https://example.com/v1', 'baseURL no provider');
 assert(cfg.provider.carcara.options.apiKey === 'dev-key', 'apiKey no provider');
+assert(
+  cfg.provider.carcara.models['openrouter/free-model'].tool_call === true,
+  'modelo com tool_call habilitado (senão o agente não edita)',
+);
 assert(cfg.permission && cfg.permission.edit === 'ask', 'escrita em modo ask');
 assert(JSON.stringify(cfg).length > 0, 'serializável');
 

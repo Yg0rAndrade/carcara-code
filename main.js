@@ -2447,11 +2447,12 @@ ipcMain.handle('chat:close', (evt, { sessionId }) => {
 
 // ── Carcará Code AI (motor OpenCode headless; isolado do chat:*) ────────────
 const carcaraPrefixDir = () => path.join(app.getPath('userData'), 'carcara', 'oc');
-// Fase 1: provider DIRETO (chave de dev). Fase 2 troca pra Edge Function.
+// Fase 1: provider DIRETO — API oficial da DeepSeek (deepseek-v4-flash), chave em
+// DEEPSEEK_API_KEY. Overridável por CARCARA_DEV_*. Fase 2 troca pra Edge Function.
 const carcaraProvider = () => ({
-  baseUrl: process.env.CARCARA_DEV_BASE_URL || 'https://openrouter.ai/api/v1',
-  apiKey: process.env.CARCARA_DEV_KEY || '',
-  model: process.env.CARCARA_DEV_MODEL || 'z-ai/glm-4.6:free',
+  baseUrl: process.env.CARCARA_DEV_BASE_URL || 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY || process.env.CARCARA_DEV_KEY || '',
+  model: process.env.CARCARA_DEV_MODEL || 'deepseek-v4-flash',
 });
 // guarda o projectPath por sessão pra saber onde cravar checkpoint na aprovação
 const carcaraProjects = new Map();
