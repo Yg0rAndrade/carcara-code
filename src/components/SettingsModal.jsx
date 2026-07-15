@@ -194,6 +194,8 @@ export function SettingsModal({
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
   const [wordWrap, setWordWrap] = useState(false); // quebrar linhas longas no editor (estilo VS Code)
+  const [shells, setShells] = useState([]); // shells instalados detectados no main { id, label }
+  const [shellPref, setShellPref] = useState('auto'); // shell escolhido ('auto' = padrão do SO)
   // Detecta as dependências (Node/Git) só quando a aba está aberta — mesmo motor da tela de preparo.
   const deps = useDependencyStatus(open && tab === 'deps');
 
@@ -207,7 +209,33 @@ export function SettingsModal({
       .getNotify()
       .then((r) => setNotify(r?.enabled !== false))
       .catch(() => {});
+    // Shells instalados + escolha atual (detecção roda no main).
+    window.api
+      .listShells?.()
+      .then((r) => {
+        if (!r) return;
+        setShells(r.choices || []);
+        setShellPref(r.current || 'auto');
+      })
+      .catch(() => {});
   }, [open]);
+
+  const pickShell = (id) => {
+    setShellPref(id);
+    window.api.setShell?.(id);
+  };
+
+  // Re-varre os shells (útil se o usuário instalou um com o app aberto).
+  const rescanShells = () => {
+    window.api
+      .rescanShells?.()
+      .then((r) => {
+        if (!r) return;
+        setShells(r.choices || []);
+        setShellPref(r.current || 'auto');
+      })
+      .catch(() => {});
+  };
 
   const toggleNotify = () => {
     setNotify((v) => {
@@ -316,6 +344,13 @@ export function SettingsModal({
         <TabButton active={tab === 'code'} onClick={() => setTab('code')} icon={<Code2 />}>
           {t('settings.tabCode')}
         </TabButton>
+        <TabButton
+          active={tab === 'terminal'}
+          onClick={() => setTab('terminal')}
+          icon={<Terminal />}
+        >
+          {t('settings.tabTerminal')}
+        </TabButton>
         <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<Bell />}>
           {t('settings.tabNotify')}
         </TabButton>
@@ -346,17 +381,19 @@ export function SettingsModal({
               ? t('settings.tabAi')
               : tab === 'code'
                 ? t('settings.tabCode')
-                : tab === 'notify'
-                  ? t('settings.tabNotify')
-                  : tab === 'deps'
-                    ? t('settings.tabDeps')
-                    : tab === 'language'
-                      ? t('settings.tabLanguage')
-                      : tab === 'whatsnew'
-                        ? t('settings.tabWhatsNew')
-                        : tab === 'about'
-                          ? t('settings.tabAbout')
-                          : t('settings.tabAppearance')}
+                : tab === 'terminal'
+                  ? t('settings.tabTerminal')
+                  : tab === 'notify'
+                    ? t('settings.tabNotify')
+                    : tab === 'deps'
+                      ? t('settings.tabDeps')
+                      : tab === 'language'
+                        ? t('settings.tabLanguage')
+                        : tab === 'whatsnew'
+                          ? t('settings.tabWhatsNew')
+                          : tab === 'about'
+                            ? t('settings.tabAbout')
+                            : t('settings.tabAppearance')}
           </h1>
           <div className="flex-1" />
           <button
@@ -684,6 +721,52 @@ export function SettingsModal({
                   className="mt-0.5"
                 />
               </div>
+            </div>
+          )}
+
+          {tab === 'terminal' && (
+            <div className="mx-auto max-w-3xl">
+              <div className="flex items-center gap-2 text-[13px] font-medium">
+                <Terminal className="h-4 w-4" /> {t('settings.shellTitle')}
+                <button
+                  type="button"
+                  onClick={rescanShells}
+                  title={t('settings.shellRescan')}
+                  className="ml-auto flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+                >
+                  <RefreshCw /> {t('settings.shellRescan')}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t('settings.shellHelp')}</p>
+              <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                {/* Auto = shell padrão do SO ($SHELL / COMSPEC). Sempre a 1ª opção. */}
+                <button
+                  type="button"
+                  onClick={() => pickShell('auto')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                    shellPref === 'auto' && 'border-primary bg-muted ring-1 ring-primary',
+                  )}
+                >
+                  <Monitor className="h-4 w-4" /> {t('settings.shellAuto')}
+                  {shellPref === 'auto' && <Check className="size-3.5 text-primary" />}
+                </button>
+                {shells.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => pickShell(s.id)}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
+                      shellPref === s.id && 'border-primary bg-muted ring-1 ring-primary',
+                    )}
+                  >
+                    {s.label}
+                    {shellPref === s.id && <Check className="size-3.5 text-primary" />}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">{t('settings.shellNewHint')}</p>
             </div>
           )}
 

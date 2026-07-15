@@ -5,6 +5,10 @@
 
 // TABELA = valores puros por SO (o "locale" de plataforma). Adicionar suporte a um
 // SO = preencher a coluna dele aqui.
+// `shells` = candidatos SELECIONÁVEIS de shell por SO (dados puros). Quais estão de fato
+// INSTALADOS é decidido no main.js (tem fs/child_process), que sonda cada `cmd` no PATH e
+// os caminhos extras em `probe`. `id` é a chave estável salva no config; `label` é o nome
+// exibido (nome próprio, não traduzido); `loginArgs` são os args de shell de login.
 const TABLE = {
   win32: {
     shellDefault: 'powershell.exe',
@@ -12,6 +16,31 @@ const TABLE = {
     loginArgs: [],
     exeExt: '.exe',
     openCmd: 'start',
+    whichCmd: 'where',
+    shells: [
+      { id: 'powershell', label: 'Windows PowerShell', cmd: 'powershell.exe', loginArgs: [] },
+      { id: 'pwsh', label: 'PowerShell 7', cmd: 'pwsh.exe', loginArgs: [] },
+      { id: 'cmd', label: 'Command Prompt', cmd: 'cmd.exe', loginArgs: [] },
+      {
+        // probeOnly: nunca cair no `where bash.exe`, que casaria com o launcher do WSL em
+        // System32\bash.exe (mislabel). O main.js deriva o caminho a partir do git.exe.
+        id: 'gitbash',
+        label: 'Git Bash',
+        cmd: 'bash.exe',
+        loginArgs: ['-l'],
+        probe: ['C:/Program Files/Git/bin/bash.exe', 'C:/Program Files (x86)/Git/bin/bash.exe'],
+        probeOnly: true,
+      },
+      {
+        // wsl.exe existe sempre no System32 (mesmo sem distro). `verify` exige que
+        // `wsl.exe -l -q` liste ao menos uma distro, senão a opção não aparece.
+        id: 'wsl',
+        label: 'WSL',
+        cmd: 'wsl.exe',
+        loginArgs: [],
+        verify: ['-l', '-q'],
+      },
+    ],
   },
   darwin: {
     shellDefault: 'zsh',
@@ -19,6 +48,13 @@ const TABLE = {
     loginArgs: ['-l'],
     exeExt: '',
     openCmd: 'open',
+    whichCmd: 'which',
+    shells: [
+      { id: 'zsh', label: 'zsh', cmd: 'zsh', loginArgs: ['-l'] },
+      { id: 'bash', label: 'bash', cmd: 'bash', loginArgs: ['-l'] },
+      { id: 'fish', label: 'fish', cmd: 'fish', loginArgs: ['-l'] },
+      { id: 'sh', label: 'sh', cmd: 'sh', loginArgs: ['-l'] },
+    ],
   },
   linux: {
     shellDefault: 'bash',
@@ -26,6 +62,13 @@ const TABLE = {
     loginArgs: [],
     exeExt: '',
     openCmd: 'xdg-open',
+    whichCmd: 'which',
+    shells: [
+      { id: 'bash', label: 'bash', cmd: 'bash', loginArgs: [] },
+      { id: 'zsh', label: 'zsh', cmd: 'zsh', loginArgs: [] },
+      { id: 'fish', label: 'fish', cmd: 'fish', loginArgs: [] },
+      { id: 'sh', label: 'sh', cmd: 'sh', loginArgs: [] },
+    ],
   },
 };
 
@@ -42,6 +85,17 @@ function shellFor(platform = process.platform, env = process.env) {
 // Args para abrir o shell como login shell (só o macOS precisa, p/ herdar o PATH).
 function loginArgsFor(platform = process.platform) {
   return tableFor(platform).loginArgs;
+}
+
+// Candidatos de shell selecionáveis no SO (dados puros; a detecção do que está instalado
+// mora no main.js). Vazio para SOs sem tabela.
+function shellChoicesFor(platform = process.platform) {
+  return tableFor(platform).shells || [];
+}
+
+// Comando que localiza um executável no PATH: 'where' no Windows, 'which' no resto.
+function whichCmdFor(platform = process.platform) {
+  return tableFor(platform).whichCmd || 'which';
 }
 
 const isWin = process.platform === 'win32';
@@ -102,6 +156,8 @@ module.exports = {
   tableFor,
   shellFor,
   loginArgsFor,
+  shellChoicesFor,
+  whichCmdFor,
   fixLoginPath,
   macMenuTemplate,
   isWin,
