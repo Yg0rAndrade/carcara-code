@@ -589,7 +589,7 @@
   "update_notify_body": "有可用版本 {version} — 打开以更新",
   "settings": {
     "title": "设置",
-    "tabAi": "各项目 AI",
+    "tabAi": "项目",
     "tabAppearance": "外观",
     "tabCode": "代码",
     "tabTerminal": "终端",
@@ -693,7 +693,7 @@
     "notifyOn": "通知已开启",
     "notifyOff": "通知已关闭",
     "depsIntro": "Carcará 在你电脑上使用的工具。我们在首次使用时检查一次 — 如果你重装了系统、格式化了分区或移除了其中任何一项，可用此重新检查。AI CLI（Claude、Codex、OpenCode…）不在这里：它按项目选择，位于",
-    "depsTabRef": "各项目 AI",
+    "depsTabRef": "项目",
     "depsRecheck": "重新检查",
     "aboutRole": "AI 与自动化讲师",
     "aboutBlurb": "Carcará Code 是我用心打造的独立项目。如果它以任何方式帮助到你，欢迎来打个招呼 — 我很想知道谁在使用它。",

@@ -959,14 +959,16 @@ export default function App() {
         </button>
       )}
 
-      {/* Bolinha de reabrir o Preview: borda externa oposta (segue o lado). */}
+      {/* Bolinha de reabrir o Preview: borda externa oposta (segue o lado). Fica em
+          top-2/3 pra casar com o botão que a recolheu (a bolinha DE BAIXO da divisória),
+          espelhando a bolinha do chat que reabre em top-1/3. */}
       {previewCollapsed && (
         <button
           type="button"
           onClick={() => previewPanelRef.current?.expand()}
           style={expandStylePreview}
           title={t('app.expand_preview_tooltip')}
-          className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute top-2/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
         >
           {claudeLeft ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>

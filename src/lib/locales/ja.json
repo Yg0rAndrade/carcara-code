@@ -589,7 +589,7 @@
   "update_notify_body": "バージョン {version} が利用可能です — 開いて更新してください",
   "settings": {
     "title": "設定",
-    "tabAi": "プロジェクトごとの AI",
+    "tabAi": "プロジェクト",
     "tabAppearance": "外観",
     "tabCode": "コード",
     "tabTerminal": "ターミナル",
@@ -693,7 +693,7 @@
     "notifyOn": "通知オン",
     "notifyOff": "通知オフ",
     "depsIntro": "Carcará がお使いのコンピューターで使うツールです。初回使用時に一度確認します — システムを再インストールした、パーティションをフォーマットした、いずれかを削除した場合は、これを使って再確認してください。AI CLI（Claude、Codex、OpenCode…）はここにありません: プロジェクトごとに選択します",
-    "depsTabRef": "プロジェクトごとの AI",
+    "depsTabRef": "プロジェクト",
     "depsRecheck": "再確認",
     "aboutRole": "AI・自動化の講師",
     "aboutBlurb": "Carcará Code は、私が心を込めて作った独立したプロジェクトです。少しでもお役に立てたなら、ぜひ挨拶しに来てください — 誰が使ってくれているか知るのが大好きです。",

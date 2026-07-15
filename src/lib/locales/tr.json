@@ -589,7 +589,7 @@
   "update_notify_body": "{version} sürümü mevcut — güncellemek için aç",
   "settings": {
     "title": "Ayarlar",
-    "tabAi": "Proje bazında yapay zeka",
+    "tabAi": "Projeler",
     "tabAppearance": "Görünüm",
     "tabCode": "Kod",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Bildirimler açık",
     "notifyOff": "Bildirimler kapalı",
     "depsIntro": "Carcará'nın bilgisayarında kullandığı araçlar. İlk kullanımda bir kez kontrol ederiz — sistemi yeniden yüklediysen, bir bölümü biçimlendirdiysen veya bunlardan birini kaldırdıysan tekrar kontrol etmek için bunu kullan. Yapay zeka CLI'si (Claude, Codex, OpenCode…) burada değil: şurada proje bazında seçilir:",
-    "depsTabRef": "Proje bazında yapay zeka",
+    "depsTabRef": "Projeler",
     "depsRecheck": "Tekrar kontrol et",
     "aboutRole": "Yapay Zeka ve Otomasyon Eğitmeni",
     "aboutBlurb": "Carcará Code, benim tarafımdan özenle yapılmış bağımsız bir projedir. Sana herhangi bir şekilde yardımcı olduysa gel selam ver — kimin kullandığını bilmeye bayılıyorum.",

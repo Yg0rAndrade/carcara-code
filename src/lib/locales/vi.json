@@ -589,7 +589,7 @@
   "update_notify_body": "Đã có phiên bản {version} — mở để cập nhật",
   "settings": {
     "title": "Cài đặt",
-    "tabAi": "AI theo dự án",
+    "tabAi": "Dự án",
     "tabAppearance": "Giao diện",
     "tabCode": "Mã",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Đã bật thông báo",
     "notifyOff": "Đã tắt thông báo",
     "depsIntro": "Các công cụ mà Carcará dùng trên máy tính của bạn. Chúng tôi kiểm tra một lần khi dùng lần đầu — dùng cái này để kiểm tra lại nếu bạn đã cài lại hệ thống, định dạng một phân vùng hoặc gỡ bỏ bất kỳ công cụ nào. CLI AI (Claude, Codex, OpenCode…) không nằm ở đây: nó được chọn theo từng dự án tại thẻ",
-    "depsTabRef": "AI theo dự án",
+    "depsTabRef": "Dự án",
     "depsRecheck": "Kiểm tra lại",
     "aboutRole": "Giảng viên AI & Tự động hóa",
     "aboutBlurb": "Carcará Code là một dự án độc lập, được tôi làm ra một cách tận tâm. Nếu nó giúp ích cho bạn theo bất kỳ cách nào, hãy đến chào hỏi — tôi rất thích biết ai đang dùng nó.",

@@ -589,7 +589,7 @@
   "update_notify_body": "Version {version} verfügbar — zum Aktualisieren öffnen",
   "settings": {
     "title": "Einstellungen",
-    "tabAi": "KI pro Projekt",
+    "tabAi": "Projekte",
     "tabAppearance": "Erscheinungsbild",
     "tabCode": "Code",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Benachrichtigungen an",
     "notifyOff": "Benachrichtigungen aus",
     "depsIntro": "Tools, die Carcará auf deinem Computer verwendet. Wir prüfen einmal bei der ersten Nutzung — nutze dies, um erneut zu prüfen, falls du das System neu installiert, eine Partition formatiert oder eines davon entfernt hast. Die KI-CLI (Claude, Codex, OpenCode…) ist nicht hier: Sie wird pro Projekt gewählt, unter",
-    "depsTabRef": "KI pro Projekt",
+    "depsTabRef": "Projekte",
     "depsRecheck": "Erneut prüfen",
     "aboutRole": "Lehrer für KI & Automatisierung",
     "aboutBlurb": "Carcará Code ist ein unabhängiges Projekt, mit Sorgfalt von mir gemacht. Wenn es dir auf irgendeine Weise geholfen hat, komm vorbei und sag Hallo — ich liebe es zu wissen, wer es nutzt.",

@@ -5,7 +5,7 @@ import {
   X,
   Check,
   Paintbrush,
-  Bot,
+  FolderKanban,
   Monitor,
   Terminal,
   ZoomIn,
@@ -443,7 +443,7 @@ export function SettingsModal({
       {/* Navegação lateral */}
       <div className="flex w-52 shrink-0 flex-col gap-0.5 border-r bg-card p-3">
         <div className="px-2 py-2 text-base font-semibold">{t('settings.title')}</div>
-        <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<Bot />}>
+        <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<FolderKanban />}>
           {t('settings.tabAi')}
         </TabButton>
         <TabButton active={tab === 'clis'} onClick={() => setTab('clis')} icon={<Download />}>

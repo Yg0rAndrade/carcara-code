@@ -19,6 +19,14 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Carcará Code AI temporariamente oculto:** a IA embutida saiu da escolha de IA por ora — o motor
   precisa de uma chave de API pra funcionar e, sem ela, o chat quebraria. O código continua no app;
   a opção volta assim que a chave estiver disponível.
+- **Configurações → aba "IA por projeto" virou "Projetos":** o rótulo agora reflete que a aba faz
+  mais que escolher IA (tem também a porta fixa por projeto e cia.). Renomeada nos 18 idiomas e com
+  ícone de pasta no lugar do robô.
+
+### Corrigido
+
+- **Bolinha de reabrir o Preview no lugar certo:** o Preview é recolhido pela bolinha **de baixo** da
+  divisória, mas a bolinha de reabrir aparecia no **topo**; agora reabre embaixo, simétrico à do chat.
 
 ## [0.1.9] — 2026-07-14
 

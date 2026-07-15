@@ -589,7 +589,7 @@
   "update_notify_body": "Versie {version} beschikbaar — open om bij te werken",
   "settings": {
     "title": "Instellingen",
-    "tabAi": "AI per project",
+    "tabAi": "Projecten",
     "tabAppearance": "Uiterlijk",
     "tabCode": "Code",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Meldingen aan",
     "notifyOff": "Meldingen uit",
     "depsIntro": "Tools die Carcará op je computer gebruikt. We controleren één keer bij eerste gebruik — gebruik dit om opnieuw te controleren als je het systeem opnieuw hebt geïnstalleerd, een partitie hebt geformatteerd of een ervan hebt verwijderd. De AI-CLI (Claude, Codex, OpenCode…) staat hier niet: die wordt per project gekozen op het",
-    "depsTabRef": "AI per project",
+    "depsTabRef": "Projecten",
     "depsRecheck": "Opnieuw controleren",
     "aboutRole": "AI- & Automatiseringsdocent",
     "aboutBlurb": "Carcará Code is een onafhankelijk project, met zorg door mij gemaakt. Als het je op wat voor manier dan ook heeft geholpen, kom even hallo zeggen — ik vind het geweldig om te weten wie het gebruikt.",

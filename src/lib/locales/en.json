@@ -589,7 +589,7 @@
   "update_notify_body": "Version {version} available — open to update",
   "settings": {
     "title": "Settings",
-    "tabAi": "AI per project",
+    "tabAi": "Projects",
     "tabAppearance": "Appearance",
     "tabCode": "Code",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Notifications on",
     "notifyOff": "Notifications off",
     "depsIntro": "Tools Carcará uses on your computer. We check once on first use — use this to check again if you reinstalled the system, formatted a partition or removed any of them. The AI CLI (Claude, Codex, OpenCode…) is not here: it's chosen per project on the",
-    "depsTabRef": "AI per project",
+    "depsTabRef": "Projects",
     "depsRecheck": "Check again",
     "aboutRole": "AI & Automation Teacher",
     "aboutBlurb": "Carcará Code is an independent project, made with care by me. If it helped you in any way, come say hi — I love knowing who's using it.",

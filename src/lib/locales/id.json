@@ -589,7 +589,7 @@
   "update_notify_body": "Versi {version} tersedia — buka untuk memperbarui",
   "settings": {
     "title": "Pengaturan",
-    "tabAi": "AI per proyek",
+    "tabAi": "Proyek",
     "tabAppearance": "Tampilan",
     "tabCode": "Kode",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Notifikasi aktif",
     "notifyOff": "Notifikasi nonaktif",
     "depsIntro": "Perkakas yang Carcará pakai di komputer Anda. Kami memeriksa sekali saat pertama kali dipakai — gunakan ini untuk memeriksa lagi jika Anda memasang ulang sistem, memformat partisi, atau menghapus salah satunya. AI CLI (Claude, Codex, OpenCode…) tidak ada di sini: itu dipilih per proyek di",
-    "depsTabRef": "AI per proyek",
+    "depsTabRef": "Proyek",
     "depsRecheck": "Periksa lagi",
     "aboutRole": "Pengajar AI & Otomatisasi",
     "aboutBlurb": "Carcará Code adalah proyek independen, dibuat dengan sepenuh hati oleh saya. Jika ia membantu Anda dengan cara apa pun, sapalah saya — saya senang tahu siapa yang memakainya.",

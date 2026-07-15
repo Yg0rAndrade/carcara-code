@@ -589,7 +589,7 @@
   "update_notify_body": "Versão {version} disponível — abra para atualizar",
   "settings": {
     "title": "Configurações",
-    "tabAi": "IA por projeto",
+    "tabAi": "Projetos",
     "tabAppearance": "Aparência",
     "tabCode": "Códigos",
     "tabTerminal": "Terminal",
@@ -693,7 +693,7 @@
     "notifyOn": "Notificações ligadas",
     "notifyOff": "Notificações desligadas",
     "depsIntro": "Ferramentas que o Carcará usa no seu computador. A gente checa uma vez no primeiro uso — use isto pra verificar de novo caso tenha reinstalado o sistema, formatado uma partição ou removido alguma delas. O CLI de IA (Claude, Codex, OpenCode…) não entra aqui: ele é escolhido por projeto na aba",
-    "depsTabRef": "IA por projeto",
+    "depsTabRef": "Projetos",
     "depsRecheck": "Verificar de novo",
     "aboutRole": "Professor de IA e Automações",
     "aboutBlurb": "Carcará Code é um projeto independente, feito com carinho por mim. Se te ajudou de alguma forma, vem trocar uma ideia — adoro saber quem está usando.",
