@@ -59,6 +59,8 @@
     "stop_server_tooltip": "หยุดเซิร์ฟเวอร์",
     "collapse_chat_tooltip": "ยุบแชท",
     "expand_chat_tooltip": "ขยายแชท",
+    "collapse_preview_tooltip": "ยุบพรีวิว",
+    "expand_preview_tooltip": "ขยายพรีวิว",
     "cmd_group_panel": "แผงควบคุม",
     "cmd_group_projects": "โปรเจกต์",
     "cmd_hint_current": "ปัจจุบัน",

@@ -59,6 +59,8 @@
     "stop_server_tooltip": "إيقاف الخادم",
     "collapse_chat_tooltip": "طي الدردشة",
     "expand_chat_tooltip": "توسيع الدردشة",
+    "collapse_preview_tooltip": "طي المعاينة",
+    "expand_preview_tooltip": "توسيع المعاينة",
     "cmd_group_panel": "اللوحة",
     "cmd_group_projects": "المشاريع",
     "cmd_hint_current": "الحالي",

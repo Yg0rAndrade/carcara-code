@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Detener servidor",
     "collapse_chat_tooltip": "Contraer chat",
     "expand_chat_tooltip": "Expandir chat",
+    "collapse_preview_tooltip": "Contraer vista previa",
+    "expand_preview_tooltip": "Expandir vista previa",
     "cmd_group_panel": "Panel",
     "cmd_group_projects": "Proyectos",
     "cmd_hint_current": "actual",

@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Zatrzymaj serwer",
     "collapse_chat_tooltip": "Zwiń czat",
     "expand_chat_tooltip": "Rozwiń czat",
+    "collapse_preview_tooltip": "Zwiń podgląd",
+    "expand_preview_tooltip": "Rozwiń podgląd",
     "cmd_group_panel": "Panel",
     "cmd_group_projects": "Projekty",
     "cmd_hint_current": "bieżący",

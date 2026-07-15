@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Dừng máy chủ",
     "collapse_chat_tooltip": "Thu gọn trò chuyện",
     "expand_chat_tooltip": "Mở rộng trò chuyện",
+    "collapse_preview_tooltip": "Thu gọn xem trước",
+    "expand_preview_tooltip": "Mở rộng xem trước",
     "cmd_group_panel": "Bảng điều khiển",
     "cmd_group_projects": "Dự án",
     "cmd_hint_current": "hiện tại",

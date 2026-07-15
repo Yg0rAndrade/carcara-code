@@ -59,6 +59,8 @@
     "stop_server_tooltip": "サーバーを停止",
     "collapse_chat_tooltip": "チャットを折りたたむ",
     "expand_chat_tooltip": "チャットを展開",
+    "collapse_preview_tooltip": "プレビューを折りたたむ",
+    "expand_preview_tooltip": "プレビューを展開",
     "cmd_group_panel": "パネル",
     "cmd_group_projects": "プロジェクト",
     "cmd_hint_current": "現在",

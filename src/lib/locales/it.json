@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Ferma server",
     "collapse_chat_tooltip": "Comprimi chat",
     "expand_chat_tooltip": "Espandi chat",
+    "collapse_preview_tooltip": "Comprimi anteprima",
+    "expand_preview_tooltip": "Espandi anteprima",
     "cmd_group_panel": "Pannello",
     "cmd_group_projects": "Progetti",
     "cmd_hint_current": "attuale",

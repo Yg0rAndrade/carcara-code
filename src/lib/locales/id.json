@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Hentikan server",
     "collapse_chat_tooltip": "Ciutkan obrolan",
     "expand_chat_tooltip": "Bentangkan obrolan",
+    "collapse_preview_tooltip": "Ciutkan pratinjau",
+    "expand_preview_tooltip": "Bentangkan pratinjau",
     "cmd_group_panel": "Panel",
     "cmd_group_projects": "Proyek",
     "cmd_hint_current": "saat ini",

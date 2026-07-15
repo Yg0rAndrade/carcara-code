@@ -603,7 +603,7 @@ export function SettingsModal({
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {AI_OPTIONS.map((opt) => {
+                            {AI_OPTIONS.filter((opt) => !opt.hidden).map((opt) => {
                               const active = cur.ais.includes(opt.key);
                               const missing = !isInstalled(opt.key);
                               return (

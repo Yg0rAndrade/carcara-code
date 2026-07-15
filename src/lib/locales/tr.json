@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Sunucuyu durdur",
     "collapse_chat_tooltip": "Sohbeti daralt",
     "expand_chat_tooltip": "Sohbeti genişlet",
+    "collapse_preview_tooltip": "Önizlemeyi daralt",
+    "expand_preview_tooltip": "Önizlemeyi genişlet",
     "cmd_group_panel": "Panel",
     "cmd_group_projects": "Projeler",
     "cmd_hint_current": "geçerli",

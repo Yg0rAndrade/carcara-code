@@ -56,6 +56,10 @@ export const AI_OPTIONS = [
     Icon: CarcaraIcon,
     fullColor: true,
     desc: 'settings.aiCarcaraDesc',
+    // Oculto no 0.1.9: o motor precisa de chave de API pra funcionar; sem ela o chat
+    // quebraria. Some da escolha de IA (filtrado por `hidden`) até termos a chave —
+    // reativar é só remover esta linha. O routing/CarcaraChat continua no bundle.
+    hidden: true,
   },
   {
     key: 'shell',

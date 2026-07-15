@@ -59,6 +59,8 @@
     "stop_server_tooltip": "सर्वर बंद करें",
     "collapse_chat_tooltip": "चैट समेटें",
     "expand_chat_tooltip": "चैट फैलाएँ",
+    "collapse_preview_tooltip": "प्रीव्यू समेटें",
+    "expand_preview_tooltip": "प्रीव्यू फैलाएँ",
     "cmd_group_panel": "पैनल",
     "cmd_group_projects": "प्रोजेक्ट",
     "cmd_hint_current": "वर्तमान",

@@ -59,6 +59,8 @@
     "stop_server_tooltip": "서버 중지",
     "collapse_chat_tooltip": "채팅 접기",
     "expand_chat_tooltip": "채팅 펼치기",
+    "collapse_preview_tooltip": "미리보기 접기",
+    "expand_preview_tooltip": "미리보기 펼치기",
     "cmd_group_panel": "패널",
     "cmd_group_projects": "프로젝트",
     "cmd_hint_current": "현재",

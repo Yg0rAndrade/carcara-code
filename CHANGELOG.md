@@ -10,6 +10,15 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Carcará Code AI — anexar imagem:** cole (Ctrl+V), arraste-e-solte ou use o botão de clipe para
   enviar imagens no chat; múltiplas por mensagem, com miniaturas e remoção. As imagens grandes são
   reduzidas automaticamente antes do envio.
+- **Recolher o Preview:** além de recolher o chat, agora dá pra recolher o webview (Preview) e ficar
+  só com o chat/Código — útil em projetos que são só pasta, sem app pra servir. Botão na divisória e
+  bolinha pra reabrir, simétrico ao colapso do chat que já existia.
+
+### Alterado
+
+- **Carcará Code AI temporariamente oculto:** a IA embutida saiu da escolha de IA por ora — o motor
+  precisa de uma chave de API pra funcionar e, sem ela, o chat quebraria. O código continua no app;
+  a opção volta assim que a chave estiver disponível.
 
 ## [0.1.9] — 2026-07-14
 

@@ -100,6 +100,16 @@ export default function App() {
     if (!panel) return;
     panel.isCollapsed() ? panel.expand() : panel.collapse();
   };
+  // Simétrico ao chat: recolhe o webview (Preview) pra ficar só com o chat/Código —
+  // útil em projetos que são só pasta, sem app pra servir. Mesmo mecanismo (o
+  // react-resizable-panels lembra o tamanho anterior e expand() restaura).
+  const previewPanelRef = useRef(null);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
+  const togglePreview = () => {
+    const panel = previewPanelRef.current;
+    if (!panel) return;
+    panel.isCollapsed() ? panel.expand() : panel.collapse();
+  };
   // Controles do servidor (parar/reiniciar) vivem no PreviewPanel, mas os botões
   // ficam no cabeçalho do título (outra coluna). O PreviewPanel publica as ações
   // neste ref e reporta o `mode` pra habilitar/desabilitar os botões.
@@ -223,6 +233,11 @@ export default function App() {
   const expandStyle = claudeLeft
     ? { left: Math.max(0, (railFirst ? railWidth : 0) - 14) }
     : { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) };
+  // Espelho do expandStyle pra a bolinha de reabrir o Preview, que fica na borda
+  // EXTERNA oposta (o Preview vive do lado contrário ao chat).
+  const expandStylePreview = claudeLeft
+    ? { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) }
+    : { left: Math.max(0, (railFirst ? railWidth : 0) - 14) };
 
   // Arrastar o painel do Claude (por projeto) ou o rail (global) de lado. NÃO usamos
   // HTML5 drag-and-drop: no Electron ele não inicia de forma confiável num "punho" só
@@ -818,16 +833,35 @@ export default function App() {
 
   const handleEl = (
     <ResizableHandle key="handle" withHandle>
-      {!chatCollapsed && (
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={toggleChat}
-          title={t('app.collapse_chat_tooltip')}
-          className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {claudeLeft ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
+      {!chatCollapsed && !previewCollapsed && (
+        <>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={toggleChat}
+            title={t('app.collapse_chat_tooltip')}
+            className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {claudeLeft ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={togglePreview}
+            title={t('app.collapse_preview_tooltip')}
+            className="absolute left-1/2 top-2/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {claudeLeft ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+        </>
       )}
     </ResizableHandle>
   );
@@ -835,9 +869,14 @@ export default function App() {
   const previewPanel = (
     <ResizablePanel
       key="preview"
+      ref={previewPanelRef}
       id="preview"
       order={claudeLeft ? 2 : 1}
       minSize={28}
+      collapsible
+      collapsedSize={0}
+      onCollapse={() => setPreviewCollapsed(true)}
+      onExpand={() => setPreviewCollapsed(false)}
       className="flex flex-col"
     >
       <ErrorBoundary label="Preview">
@@ -917,6 +956,19 @@ export default function App() {
           className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
         >
           {claudeLeft ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      )}
+
+      {/* Bolinha de reabrir o Preview: borda externa oposta (segue o lado). */}
+      {previewCollapsed && (
+        <button
+          type="button"
+          onClick={() => previewPanelRef.current?.expand()}
+          style={expandStylePreview}
+          title={t('app.expand_preview_tooltip')}
+          className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {claudeLeft ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       )}
 

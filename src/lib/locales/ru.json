@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Остановить сервер",
     "collapse_chat_tooltip": "Свернуть чат",
     "expand_chat_tooltip": "Развернуть чат",
+    "collapse_preview_tooltip": "Свернуть предпросмотр",
+    "expand_preview_tooltip": "Развернуть предпросмотр",
     "cmd_group_panel": "Панель",
     "cmd_group_projects": "Проекты",
     "cmd_hint_current": "текущий",

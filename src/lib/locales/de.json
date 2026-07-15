@@ -59,6 +59,8 @@
     "stop_server_tooltip": "Server stoppen",
     "collapse_chat_tooltip": "Chat einklappen",
     "expand_chat_tooltip": "Chat ausklappen",
+    "collapse_preview_tooltip": "Vorschau einklappen",
+    "expand_preview_tooltip": "Vorschau ausklappen",
     "cmd_group_panel": "Panel",
     "cmd_group_projects": "Projekte",
     "cmd_hint_current": "aktuell",
