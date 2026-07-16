@@ -472,11 +472,16 @@ export function PreviewPanel({
   // ponteiro/crosshair e todas dependem de `mousemove` — que a emulação de toque mata,
   // porque o Electron converte mouse→touch (o gesto vira um "tap" sem arraste).
   const pointerToolActive = shooting || shot || grabbing;
-  // Modo de toque (celular/tablet) só vale com a tela LIVRE: nenhuma ferramenta de ponteiro
-  // na frente. Os dois flags abaixo saem do MESMO predicado de propósito — quando eram
-  // escritos separados, o print ficou de fora do `emulateTouch` e o arraste do recorte
-  // virava clique (rect 0×0 → CLICK_THRESHOLD → capturava a tela toda).
-  const touchMode = viewport !== 'desktop' && !pointerToolActive;
+  // "Olhando um site de verdade": aba Preview + servidor no ar. TODO recurso que age sobre
+  // o site já exige isto (foco, busca, grabber, print — ver os efeitos mais abaixo); a
+  // camada de toque era a única que não exigia, e por isso continuava ligada na aba
+  // Código/Git: a bolinha não sumia e a emulação seguia de pé fora do preview.
+  const inWeb = view === 'preview' && mode === 'web';
+  // Modo de toque (celular/tablet) só vale com a tela LIVRE: olhando o site e sem nenhuma
+  // ferramenta de ponteiro na frente. Os dois flags abaixo saem do MESMO predicado de
+  // propósito — quando eram escritos separados, o print ficou de fora do `emulateTouch` e
+  // o arraste do recorte virava clique (rect 0×0 → CLICK_THRESHOLD → capturava a tela toda).
+  const touchMode = viewport !== 'desktop' && inWeb && !pointerToolActive;
   // Camada visual: bolinha de "dedo" + ripple.
   const touchCursorActive = touchMode;
   const touchCursorActiveRef = useRef(touchCursorActive); // leitura síncrona no dom-ready
@@ -488,7 +493,7 @@ export function PreviewPanel({
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
   // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
   const inWebRef = useRef(false);
-  inWebRef.current = view === 'preview' && mode === 'web';
+  inWebRef.current = inWeb;
   // Marca que a aba Código já foi visitada (mantém o CodeView montado dali em diante).
   const codeMountedRef = useRef(false);
   const bodyRowRef = useRef(null);
@@ -1363,7 +1368,15 @@ export function PreviewPanel({
   // um executeJavaScript por entrada, não um por pixel percorrido.
   useEffect(() => {
     if (!touchCursorActive) return;
+    let last = 0;
     const onAppOver = () => {
+      // Throttle: 'mouseover' dispara a cada elemento cruzado, e a barra/rail/árvore têm
+      // dezenas deles. Sem isto vira uma enxurrada de executeJavaScript (IPC por webview)
+      // só de mexer o mouse — o app engasga. Esconder é idempotente, então perder eventos
+      // aqui não custa nada: um único HIDE por excursão já basta.
+      const now = Date.now();
+      if (now - last < 100) return;
+      last = now;
       for (const w of allWebviews()) {
         try {
           w.executeJavaScript(TOUCH_HIDE);
