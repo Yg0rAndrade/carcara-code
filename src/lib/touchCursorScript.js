@@ -47,6 +47,7 @@ export const INJECT = `(() => {
 
   // Ponteiro saiu da página (foco foi pra outra janela/iframe/barra do app): some
   // com a bolinha, senão ela fica "grudada" na última posição fora da área visível.
+  // Idempotente e auto-corretivo: se disparar à toa, o próximo move() reexibe a bolinha.
   function leave(){
     dot.style.display = 'none';
   }
@@ -86,6 +87,7 @@ export const INJECT = `(() => {
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerdown', tap);
     document.removeEventListener('mouseleave', leave);
+    document.removeEventListener('pointerleave', leave);
     document.documentElement.style.cursor = prevCursor;
     try { style.remove(); } catch (e) {}
     for (var i = 0; i < ripples.length; i++) { try { ripples[i].remove(); } catch (e) {} }
@@ -104,6 +106,10 @@ export const INJECT = `(() => {
   // página inteira) — diferente de documentElement, que dispararia a cada saída
   // de um elemento filho.
   document.addEventListener('mouseleave', leave, { passive: true });
+  // pointerleave pelo MESMO motivo do pointermove acima: com a emulação de toque
+  // ligada o mouse vira toque e o 'mouseleave' pode nunca disparar — aí a bolinha
+  // ficava grudada na borda ao sair do webview. Também não bubbla em document.
+  document.addEventListener('pointerleave', leave, { passive: true });
   window.__carcaraTouch = { teardown: teardown };
 })();`;
 

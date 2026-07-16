@@ -463,19 +463,22 @@ export function PreviewPanel({
   ); // desktop | tablet | mobile
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
-  // A "camada de toque" do modo celular/tablet (bolinha de dedo + ripple) só vale quando
-  // a tela está LIVRE: viewport de toque e nenhum overlay na frente — nem o print (foto),
-  // nem o anotador da captura (imagem), nem o seletor de elementos (grabber), que têm o
-  // seu próprio ponteiro/crosshair e brigariam com a bolinha. Além disso a bolinha some
-  // sozinha quando o mouse sai do webview (mouseleave, no touchCursorScript).
-  const touchCursorActive = viewport !== 'desktop' && !shooting && !shot && !grabbing;
+  // Ferramentas que precisam do MOUSE DE VERDADE em cima do site: o print (arrastar pra
+  // recortar), o anotador da captura e o seletor de elementos. Todas desenham o próprio
+  // ponteiro/crosshair e todas dependem de `mousemove` — que a emulação de toque mata,
+  // porque o Electron converte mouse→touch (o gesto vira um "tap" sem arraste).
+  const pointerToolActive = shooting || shot || grabbing;
+  // Modo de toque (celular/tablet) só vale com a tela LIVRE: nenhuma ferramenta de ponteiro
+  // na frente. Os dois flags abaixo saem do MESMO predicado de propósito — quando eram
+  // escritos separados, o print ficou de fora do `emulateTouch` e o arraste do recorte
+  // virava clique (rect 0×0 → CLICK_THRESHOLD → capturava a tela toda).
+  const touchMode = viewport !== 'desktop' && !pointerToolActive;
+  // Camada visual: bolinha de "dedo" + ripple.
+  const touchCursorActive = touchMode;
   const touchCursorActiveRef = useRef(touchCursorActive); // leitura síncrona no dom-ready
   touchCursorActiveRef.current = touchCursorActive;
-  // Emulação de toque (mata o :hover, converte mouse→touch) fica ligada nos modos de
-  // toque, MAS desliga enquanto o grabber está ativo: com ela o Electron converte
-  // mouse→touch e o seletor (que ouve mousemove) não pegaria o elemento sob o ponteiro.
-  // Desligar deixa o grab funcionar igual ao desktop mesmo no modo celular.
-  const emulateTouch = viewport !== 'desktop' && !grabbing;
+  // Emulação de toque no webview (mata o :hover, converte mouse→touch).
+  const emulateTouch = touchMode;
   const emulateTouchRef = useRef(emulateTouch);
   emulateTouchRef.current = emulateTouch;
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
