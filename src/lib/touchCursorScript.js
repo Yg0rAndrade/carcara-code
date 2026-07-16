@@ -110,7 +110,15 @@ export const INJECT = `(() => {
   // ligada o mouse vira toque e o 'mouseleave' pode nunca disparar — aí a bolinha
   // ficava grudada na borda ao sair do webview. Também não bubbla em document.
   document.addEventListener('pointerleave', leave, { passive: true });
-  window.__carcaraTouch = { teardown: teardown };
+  // hide = o mesmo leave(), exposto pro APP mandar esconder de fora (ver HIDE abaixo).
+  // Sem crases neste comentário: ele mora DENTRO do template literal do INJECT.
+  window.__carcaraTouch = { teardown: teardown, hide: leave };
 })();`;
 
 export const CLEANUP = `(() => { if (window.__carcaraTouch && window.__carcaraTouch.teardown) window.__carcaraTouch.teardown(); })();`;
+
+// Esconde a bolinha SEM desmontar a camada (diferente do CLEANUP): o próximo move()
+// dentro da página a reexibe sozinha. Quem chama é o app, quando percebe que o ponteiro
+// está na moldura/barra — logo, fora do site. Não dá pra confiar só no mouseleave de
+// dentro da página: com a emulação de toque o mouse vira toque e ele pode não disparar.
+export const HIDE = `(() => { if (window.__carcaraTouch && window.__carcaraTouch.hide) window.__carcaraTouch.hide(); })();`;

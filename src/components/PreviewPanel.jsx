@@ -42,7 +42,11 @@ import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
-import { INJECT as TOUCH_INJECT, CLEANUP as TOUCH_CLEANUP } from '@/lib/touchCursorScript';
+import {
+  INJECT as TOUCH_INJECT,
+  CLEANUP as TOUCH_CLEANUP,
+  HIDE as TOUCH_HIDE,
+} from '@/lib/touchCursorScript';
 import { rectFromDrag } from '@/lib/screenshot';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
@@ -1346,6 +1350,28 @@ export function PreviewPanel({
         w.executeJavaScript(script);
       } catch {}
     }
+  }, [touchCursorActive]);
+
+  // A bolinha só pode aparecer com o ponteiro SOBRE o site. Quem decide isso é o APP,
+  // não a página: o <webview> é outro processo e engole os próprios eventos de mouse —
+  // então, se um 'mouseover' chega aqui, o ponteiro está na moldura/calha/barra, ou seja,
+  // FORA do site, e a bolinha tem que sumir. É sinal autoritativo: não depende de adivinhar
+  // qual evento a emulação de toque deixa passar lá dentro (era por isso que o mouseleave
+  // da página falhava e a bolinha ficava grudada na borda).
+  // Só o "saiu" precisa ser avisado: na volta, o move() do próprio script reexibe sozinho.
+  // 'mouseover' (e não 'mousemove') porque só dispara na TRANSIÇÃO entre elementos —
+  // um executeJavaScript por entrada, não um por pixel percorrido.
+  useEffect(() => {
+    if (!touchCursorActive) return;
+    const onAppOver = () => {
+      for (const w of allWebviews()) {
+        try {
+          w.executeJavaScript(TOUCH_HIDE);
+        } catch {}
+      }
+    };
+    window.addEventListener('mouseover', onAppOver, true);
+    return () => window.removeEventListener('mouseover', onAppOver, true);
   }, [touchCursorActive]);
 
   // Silencia a mídia do preview que não está à mostra. Só toca som o webview da aba
