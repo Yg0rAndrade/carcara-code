@@ -1028,6 +1028,37 @@ export function PreviewPanel({
     window.addEventListener('mouseup', onUp, true);
   };
 
+  // Rolar a página enquanto enquadra o print. O overlay cobre o webview pra capturar o
+  // arraste, e com isso engolia a rodinha: o evento cai no overlay, o app não tem nada
+  // rolável ali e o webview (outro processo) nunca via o wheel. Valia pros DOIS modos —
+  // não era regressão do celular. Como o overlay PRECISA do mouse (é ele que faz o
+  // recorte), não dá pra liberar pointer-events: repassamos o wheel na mão pro webview.
+  const onShootWheel = (e) => {
+    const w = active && activeWebviewOf(active.path);
+    if (!w) return;
+    // Coords LOCAIS do webview: nos modos tablet/celular ele é centralizado, então o
+    // topo-esquerda dele não coincide com o do overlay.
+    const wr = w.getBoundingClientRect();
+    const x = e.clientX - wr.left;
+    const y = e.clientY - wr.top;
+    if (x < 0 || y < 0 || x > wr.width || y > wr.height) return; // rodinha sobre a calha cinza
+    try {
+      // sendInputEvent (e não scrollBy via executeJavaScript) pra rolar o que estiver SOB
+      // o ponteiro — inclusive contêineres roláveis internos do site, não só a raiz.
+      // Sinal invertido: no DOM deltaY>0 é "pra baixo"; no sendInputEvent é o contrário.
+      w.sendInputEvent({
+        type: 'mouseWheel',
+        x: Math.round(x),
+        y: Math.round(y),
+        deltaX: Math.round(-e.deltaX),
+        deltaY: Math.round(-e.deltaY),
+        canScroll: true,
+      });
+    } catch {
+      /* webview ainda não anexado/destruído — sem scroll, mas sem quebrar o print */
+    }
+  };
+
   // Sai do modo print ao deixar o preview/site, ou ao trocar de projeto.
   useEffect(() => {
     if (shooting && !(view === 'preview' && mode === 'web')) {
@@ -1996,6 +2027,7 @@ export function PreviewPanel({
             <div
               ref={overlayRef}
               onMouseDown={onShootDown}
+              onWheel={onShootWheel}
               className="absolute inset-0 z-30 cursor-crosshair"
             >
               {shotRect && (
