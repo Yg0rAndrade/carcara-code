@@ -3,16 +3,25 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
-## [Não lançado]
+## [0.1.9] — 2026-07-16
 
 ### Adicionado
 
+- **Carcará Code AI** — uma IA embutida, **isolada e aditiva**, com **visualização amigável (chat HTML, não-terminal)** por cima do motor **OpenCode** rodando headless (`opencode serve`, dirigido por HTTP/SSE). Entra como **mais uma opção na escolha de IA** (não altera o Claude Code nem o terminal). Fase 1 validada ponta a ponta no app:
+  - **Chat com streaming** (texto em tempo real, sem eco da pergunta) e **cards de ferramenta**;
+  - **Edição de arquivo com aprovação** — card "Editar &lt;arquivo&gt;" com **diff visual** (linhas verdes/vermelhas, rolável) → Aceitar/Rejeitar, cravando um **checkpoint** antes de gravar;
+  - Config do modelo em `~/.carcara/provider.json` (arquivo > env > default, **não depende de variável de ambiente herdada**);
+  - Skills/MCP herdados da config do OpenCode; registrada como CLI de 1ª classe (sem terminal Claude oculto), com ícone próprio e tratada como sempre disponível nas Configurações.
+  - _Ainda pendente (próximas fases):_ modelo real de fábrica (o teste usa um modelo local), gateway da Fase 2.
+- Chat em HTML: **respostas renderizadas em markdown** (títulos, listas, tabelas, `código inline`, blocos de código com realce de sintaxe, citações, links) nos dois chats — o da Carcará e o do Claude Code. As mensagens do usuário continuam em texto puro. Reusa o mesmo renderizador do "Novidades" (GFM + highlight), carregado sob demanda pra não pesar o boot
+- **Seletor de shell do terminal:** escolha qual shell as novas sessões usam em Configurações → Terminal — no Windows, PowerShell, PowerShell 7, Prompt de Comando, Git Bash e WSL (só aparecem os que você tem instalado); no Mac/Linux, zsh, bash, fish e sh. Contribuição de [@Korinku](https://github.com/Korinku) ([#10](https://github.com/Yg0rAndrade/carcara-code/pull/10))
 - **Carcará Code AI — anexar imagem:** cole (Ctrl+V), arraste-e-solte ou use o botão de clipe para
   enviar imagens no chat; múltiplas por mensagem, com miniaturas e remoção. As imagens grandes são
   reduzidas automaticamente antes do envio.
 - **Recolher o Preview:** além de recolher o chat, agora dá pra recolher o webview (Preview) e ficar
   só com o chat/Código — útil em projetos que são só pasta, sem app pra servir. Botão na divisória e
   bolinha pra reabrir, simétrico ao colapso do chat que já existia.
+- **WhatsApp em "Sobre & créditos":** mais um jeito de falar comigo, ao lado das outras redes.
 
 ### Alterado
 
@@ -27,21 +36,15 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 - **Bolinha de reabrir o Preview no lugar certo:** o Preview é recolhido pela bolinha **de baixo** da
   divisória, mas a bolinha de reabrir aparecia no **topo**; agora reabre embaixo, simétrico à do chat.
-
-## [0.1.9] — 2026-07-14
-
-### Features
-
-- **Carcará Code AI** — uma IA embutida, **isolada e aditiva**, com **visualização amigável (chat HTML, não-terminal)** por cima do motor **OpenCode** rodando headless (`opencode serve`, dirigido por HTTP/SSE). Entra como **mais uma opção na escolha de IA** (não altera o Claude Code nem o terminal). Fase 1 validada ponta a ponta no app:
-  - **Chat com streaming** (texto em tempo real, sem eco da pergunta) e **cards de ferramenta**;
-  - **Edição de arquivo com aprovação** — card "Editar &lt;arquivo&gt;" com **diff visual** (linhas verdes/vermelhas, rolável) → Aceitar/Rejeitar, cravando um **checkpoint** antes de gravar;
-  - Config do modelo em `~/.carcara/provider.json` (arquivo > env > default, **não depende de variável de ambiente herdada**);
-  - Skills/MCP herdados da config do OpenCode; registrada como CLI de 1ª classe (sem terminal Claude oculto), com ícone próprio e tratada como sempre disponível nas Configurações.
-  - _Ainda pendente (próximas fases):_ modelo real de fábrica (o teste usa um modelo local), gateway da Fase 2.
-- Chat em HTML: **respostas renderizadas em markdown** (títulos, listas, tabelas, `código inline`, blocos de código com realce de sintaxe, citações, links) nos dois chats — o da Carcará e o do Claude Code. As mensagens do usuário continuam em texto puro. Reusa o mesmo renderizador do "Novidades" (GFM + highlight), carregado sob demanda pra não pesar o boot
-
-### Correções
-
+- **Print não recortava no modo celular/tablet:** arrastar pra selecionar a área não fazia nada e a
+  foto saía sempre com a tela inteira. A emulação de toque continuava ligada durante o print e o
+  Electron convertia mouse→toque, então o arraste virava um toque sem movimento.
+- **Rolar a página durante o print:** a camada que captura o recorte cobria o site e engolia a
+  rodinha do mouse — agora dá pra rolar e enquadrar antes de recortar. Valia para todos os modos,
+  computador incluído.
+- **Bolinha do modo celular ficava grudada:** ao tirar o ponteiro do site (indo pro rail, para a
+  barra de endereço ou para a moldura cinza), a bolinha de "dedo" continuava aparecendo na borda.
+  Agora ela some assim que o ponteiro sai e volta quando ele entra de novo.
 - Editor: abas locais **não-sujas recarregam do disco** quando o arquivo muda por fora (ex.: a Carcará grava um arquivo) — antes o editor mostrava o conteúdo em cache mesmo com o `dist` novo no disco (edições não salvas são preservadas).
 
 ## [0.1.8] — 2026-07-08
