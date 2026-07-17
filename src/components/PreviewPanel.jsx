@@ -118,6 +118,7 @@ function MoreTools({ view, onPick }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const TOOLS = [
+    { value: 'kanban', label: t('preview.kanban'), Icon: SquareKanbanIcon },
     { value: 'todos', label: t('preview.todos'), Icon: ListTodo },
     { value: 'history', label: t('preview.history'), Icon: ClockIcon },
     { value: 'api', label: t('preview.api'), Icon: ZapIcon },
@@ -1894,15 +1895,6 @@ export function PreviewPanel({
                 >
                   <HoverIcon as={GitBranchIcon} />
                   {t('preview.git')}
-                </TabsTrigger>
-              )}
-              {!remote && (
-                <TabsTrigger
-                  value="kanban"
-                  className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
-                >
-                  <HoverIcon as={SquareKanbanIcon} />
-                  {t('preview.kanban')}
                 </TabsTrigger>
               )}
             </TabsList>
