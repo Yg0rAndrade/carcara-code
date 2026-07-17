@@ -21,6 +21,7 @@ import {
   RotateCw,
   GripVertical,
   ListTodo,
+  SquareKanbanIcon,
 } from 'lucide-react';
 import { RefreshCCWIcon } from './components/ui/refresh-ccw.jsx';
 import { XIcon } from './components/ui/x.jsx';
@@ -497,6 +498,14 @@ export default function App() {
         hint: t('app.cmd_hint_tab'),
         icon: <GitBranch />,
         run: view('git'),
+      },
+      {
+        id: 'view:kanban',
+        group: t('app.cmd_group_panel'),
+        label: t('app.cmd_view_kanban'),
+        hint: t('app.cmd_hint_tab'),
+        icon: <SquareKanbanIcon />,
+        run: view('kanban'),
       },
       {
         id: 'view:todos',

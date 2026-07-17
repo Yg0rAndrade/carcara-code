@@ -15,6 +15,7 @@ import {
   Plus,
   Globe,
   ListTodo,
+  SquareKanbanIcon,
 } from 'lucide-react';
 // Ícones animados (lucide-animated): animam no hover. Só os que têm versão no
 // registry; Crosshair/Bug seguem estáticos (não há equivalente animado).
@@ -83,6 +84,10 @@ const CheckpointsPanel = lazy(() =>
   import('./CheckpointsPanel.jsx').then((m) => ({ default: m.CheckpointsPanel })),
 );
 const TodosPanel = lazy(() => import('./TodosPanel.jsx').then((m) => ({ default: m.TodosPanel })));
+// Sai do bundle inicial junto com os outros: arrasta o dnd-kit e o mdast atrás de si.
+const KanbanPanel = lazy(() =>
+  import('./KanbanPanel.jsx').then((m) => ({ default: m.KanbanPanel })),
+);
 // Anotador do print (Fabric.js): code-split — só carrega quando há uma captura pra marcar.
 const AnnotatorModal = lazy(() => import('./AnnotatorModal.jsx'));
 
@@ -113,6 +118,7 @@ function MoreTools({ view, onPick }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const TOOLS = [
+    { value: 'todos', label: t('preview.todos'), Icon: ListTodo },
     { value: 'history', label: t('preview.history'), Icon: ClockIcon },
     { value: 'api', label: t('preview.api'), Icon: ZapIcon },
     { value: 'mcp', label: t('preview.mcp'), Icon: PlugZapIcon },
@@ -1854,6 +1860,7 @@ export function PreviewPanel({
   const inMcp = !remote && view === 'mcp';
   const inBoard = !remote && view === 'board';
   const inTodos = !remote && view === 'todos';
+  const inKanban = !remote && view === 'kanban';
   const inHistory = !remote && view === 'history';
 
   return (
@@ -1891,11 +1898,11 @@ export function PreviewPanel({
               )}
               {!remote && (
                 <TabsTrigger
-                  value="todos"
+                  value="kanban"
                   className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
                 >
-                  <ListTodo />
-                  {t('preview.todos')}
+                  <HoverIcon as={SquareKanbanIcon} />
+                  {t('preview.kanban')}
                 </TabsTrigger>
               )}
             </TabsList>
@@ -2208,6 +2215,11 @@ export function PreviewPanel({
           {inTodos && (
             <LazyPanel label="Tarefas">
               <TodosPanel active={active} chatSession={chatSession} />
+            </LazyPanel>
+          )}
+          {inKanban && (
+            <LazyPanel label="Kanban">
+              <KanbanPanel active={active} />
             </LazyPanel>
           )}
         </div>
