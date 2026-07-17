@@ -175,7 +175,7 @@ function KeyValueEditor({ rows, onChange, placeholderKey, placeholderVal }) {
 
 export function ApiPanel({ active }) {
   const t = useT();
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const projectPath = active?.path || null;
 
   // Rascunho da request persistido por projeto: ao trocar de aba o painel desmonta,
@@ -644,7 +644,7 @@ export function ApiPanel({ active }) {
                 <div className="h-full min-h-[120px] overflow-hidden rounded-md border">
                   <CodeMirror
                     value={body}
-                    theme={theme === 'dark' ? vscodeDark : vscodeLight}
+                    theme={isDark ? vscodeDark : vscodeLight}
                     height="100%"
                     style={{ height: '100%' }}
                     extensions={[editorTheme, json()]}
@@ -683,7 +683,7 @@ export function ApiPanel({ active }) {
               ) : res ? (
                 <CodeMirror
                   value={res.body || ''}
-                  theme={theme === 'dark' ? vscodeDark : vscodeLight}
+                  theme={isDark ? vscodeDark : vscodeLight}
                   height="100%"
                   style={{ height: '100%' }}
                   editable={false}

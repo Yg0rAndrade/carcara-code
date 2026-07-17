@@ -253,7 +253,7 @@ function normPath(p) {
 }
 
 export function CodeView({ active, openRequest, visible = true }) {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const t = useT();
   // Abas de arquivos abertos. Cada aba carrega o próprio estado (conteúdo, imagem,
   // notice de erro e dirty) pra que alternar entre abas preserve edições não salvas.
@@ -1496,7 +1496,7 @@ export function CodeView({ active, openRequest, visible = true }) {
             <CodeMirror
               key={activeTab.path}
               value={activeTab.content}
-              theme={theme === 'dark' ? vscodeDark : vscodeLight}
+              theme={isDark ? vscodeDark : vscodeLight}
               height="100%"
               style={{ height: '100%' }}
               extensions={[

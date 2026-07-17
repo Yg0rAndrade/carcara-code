@@ -9,15 +9,15 @@ import { useTheme } from '@/lib/theme.jsx';
 // tldraw + CSS, então só é importado sob demanda (lazy) ao abrir a aba
 // Quadro — fica fora do bundle de boot, igual CodeView/ShellView.
 export function TldrawPanel({ active }) {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   // Quadro por projeto; sem projeto, um quadro global.
   const persistenceKey = `carcara-board:${active?.path || 'global'}`;
 
   const onMount = useCallback(
     (editor) => {
-      editor.user.updateUserPreferences({ colorScheme: theme === 'dark' ? 'dark' : 'light' });
+      editor.user.updateUserPreferences({ colorScheme: isDark ? 'dark' : 'light' });
     },
-    [theme],
+    [isDark],
   );
 
   return (

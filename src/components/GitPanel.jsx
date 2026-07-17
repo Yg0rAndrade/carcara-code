@@ -94,7 +94,7 @@ function FileRow({ f, area, onClick, onAct, selected, t }) {
 
 export function GitPanel({ active, visible }) {
   const t = useT();
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const projectPath = active?.path || null;
   const [status, setStatus] = useState(null); // resultado de git:status (ok/erro)
   const [loading, setLoading] = useState(false);
@@ -607,7 +607,7 @@ export function GitPanel({ active, visible }) {
             <div className="min-h-0 flex-1">
               <CodeMirror
                 value={diffText}
-                theme={theme === 'dark' ? vscodeDark : vscodeLight}
+                theme={isDark ? vscodeDark : vscodeLight}
                 height="100%"
                 style={{ height: '100%' }}
                 editable={false}

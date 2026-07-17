@@ -66,8 +66,8 @@ function pathsToRoots(paths) {
 
 export function MCPPanel({ active }) {
   const t = useT();
-  const { theme } = useTheme();
-  const cmTheme = theme === 'dark' ? vscodeDark : vscodeLight;
+  const { isDark } = useTheme();
+  const cmTheme = isDark ? vscodeDark : vscodeLight;
   const projectPath = active?.path || null;
 
   // Conexão

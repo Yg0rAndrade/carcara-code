@@ -74,6 +74,69 @@
     --input: 0 0% 25.098%;
     --ring: 37.6923 92.126% 50.1961%;
   }
+
+  /* ── Temas nomeados ────────────────────────────────────────────────────────
+     Aplicados por [data-theme] POR CIMA da base (:root para família clara,
+     .dark para família escura). Como todos têm a mesma especificidade (0,1,0),
+     estes blocos precisam vir DEPOIS de :root e .dark para vencer no source order.
+     Só sobrescrevem o que muda de fato — o resto é herdado da base.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  /* Brasa — o escuro "turbinado" da marca: carvão levemente avermelhado e a
+     brasa mais quente/saturada puxada pra frente. Família: dark. */
+  [data-theme='brasa'] {
+    --background: 14 28% 6.5%;
+    --foreground: 24 18% 90%;
+    --card: 14 22% 10.5%;
+    --card-foreground: 24 18% 90%;
+    --popover: 14 22% 10.5%;
+    --popover-foreground: 24 18% 90%;
+    --primary: 20 100% 57%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 14 16% 13%;
+    --secondary-foreground: 24 16% 88%;
+    --muted: 14 18% 9.5%;
+    --muted-foreground: 20 10% 62%;
+    --accent: 16 72% 26%;
+    --accent-foreground: 38 96% 76%;
+    --border: 16 22% 19%;
+    --input: 16 22% 19%;
+    --ring: 20 100% 57%;
+  }
+
+  /* Carvão puro (AMOLED) — o escuro com fundo preto real (#000). Ótimo pra OLED
+     e bateria; a brasa laranja da base .dark fica ainda mais viva. Família: dark. */
+  [data-theme='carvao'] {
+    --background: 0 0% 0%;
+    --card: 0 0% 5.5%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 5.5%;
+    --popover-foreground: 0 0% 92%;
+    --secondary: 0 0% 9%;
+    --muted: 0 0% 5%;
+    --muted-foreground: 0 0% 62%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+  }
+
+  /* Papel / Sépia — o claro em modo leitura: fundo de papel quente, pouca luz
+     azul, texto marrom-grafite. A primary âmbar continua da base. Família: light. */
+  [data-theme='papel'] {
+    --background: 40 42% 95.5%;
+    --foreground: 28 16% 18%;
+    --card: 42 46% 97%;
+    --card-foreground: 28 16% 18%;
+    --popover: 42 46% 97%;
+    --popover-foreground: 28 16% 18%;
+    --secondary: 40 30% 89%;
+    --secondary-foreground: 28 16% 26%;
+    --muted: 40 34% 91.5%;
+    --muted-foreground: 30 12% 40%;
+    --accent: 44 58% 89%;
+    --accent-foreground: 22.7273 82.5% 31.3725%;
+    --border: 38 28% 83%;
+    --input: 38 28% 83%;
+  }
 }
 
 @layer base {

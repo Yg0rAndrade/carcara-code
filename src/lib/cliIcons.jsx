@@ -27,16 +27,12 @@ export function AntigravityIcon({ className }) {
 
 // OpenCode é o único com duas cores: usa a versão clara no tema escuro e vice-versa.
 export function OpenCodeIcon({ className }) {
-  const { theme } = useTheme();
-  return (
-    <LogoImg src={theme === 'dark' ? opencodeDarkUrl : opencodeLightUrl} className={className} />
-  );
+  const { isDark } = useTheme();
+  return <LogoImg src={isDark ? opencodeDarkUrl : opencodeLightUrl} className={className} />;
 }
 
 // Carcará Code AI: a própria marca do carcará (theme-aware, como no empty-state).
 export function CarcaraIcon({ className }) {
-  const { theme } = useTheme();
-  return (
-    <LogoImg src={theme === 'dark' ? carcaraDarkUrl : carcaraLightUrl} className={className} />
-  );
+  const { isDark } = useTheme();
+  return <LogoImg src={isDark ? carcaraDarkUrl : carcaraLightUrl} className={className} />;
 }

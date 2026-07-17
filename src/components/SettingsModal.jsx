@@ -27,7 +27,7 @@ import {
   ArrowDownAZ,
   ArrowUpAZ,
 } from 'lucide-react';
-import { useTheme } from '@/lib/theme.jsx';
+import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
@@ -51,6 +51,52 @@ const Markdown = lazy(() => import('./Markdown.jsx'));
 // AiManager só aparece na aba "Gerenciar IAs" — lazy pra não pesar o boot do app
 // (o SettingsModal é importado no caminho inicial). Mesmo padrão do Markdown.
 const AiManager = lazy(() => import('./AiManager.jsx'));
+
+// Amostras de cor do seletor de tema (Aparência). Espelham os valores do index.css
+// só para o mini-preview — a fonte da verdade das paletas continua sendo o CSS.
+// `label` reaproveita as chaves i18n existentes onde dá (light/dark).
+const THEME_SWATCH = {
+  light: {
+    label: 'settings.themeLight',
+    family: 'light',
+    bg: '#ffffff',
+    card: 'hsl(220 14% 96%)',
+    primary: 'hsl(37.7 92% 50%)',
+    border: 'hsl(220 13% 91%)',
+  },
+  dark: {
+    label: 'settings.themeDark',
+    family: 'dark',
+    bg: 'hsl(0 0% 9%)',
+    card: 'hsl(0 0% 15%)',
+    primary: 'hsl(25 88% 56%)',
+    border: 'hsl(0 0% 25%)',
+  },
+  brasa: {
+    label: 'settings.themeBrasa',
+    family: 'dark',
+    bg: 'hsl(14 28% 6.5%)',
+    card: 'hsl(14 22% 10.5%)',
+    primary: 'hsl(20 100% 57%)',
+    border: 'hsl(16 22% 19%)',
+  },
+  carvao: {
+    label: 'settings.themeCarvao',
+    family: 'dark',
+    bg: '#000000',
+    card: 'hsl(0 0% 5.5%)',
+    primary: 'hsl(25 88% 56%)',
+    border: 'hsl(0 0% 15%)',
+  },
+  papel: {
+    label: 'settings.themePapel',
+    family: 'light',
+    bg: 'hsl(40 42% 95.5%)',
+    card: 'hsl(42 46% 97%)',
+    primary: 'hsl(37.7 92% 50%)',
+    border: 'hsl(38 28% 83%)',
+  },
+};
 
 // Ícones de marca em SVG inline — o lucide removeu os logos de marca (questão de trademark),
 // então desenhamos aqui. Herdam currentColor e tamanho via className do <span> que os envolve.
@@ -796,27 +842,41 @@ export function SettingsModal({
             {tab === 'appearance' && (
               <div className="mx-auto max-w-3xl">
                 <div className="text-[13px] font-medium">{t('settings.appTheme')}</div>
-                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTheme('light')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      theme === 'light' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    <Sun className="h-4 w-4" /> {t('settings.themeLight')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme('dark')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      theme === 'dark' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    <Moon className="h-4 w-4" /> {t('settings.themeDark')}
-                  </button>
+                <div className="mt-3 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
+                  {THEME_ORDER.map((key) => {
+                    const p = THEME_SWATCH[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setTheme(key)}
+                        className={cn(
+                          'flex flex-col gap-2 rounded-md border p-2 text-left transition-colors hover:bg-muted',
+                          theme === key && 'border-primary ring-1 ring-primary',
+                        )}
+                      >
+                        {/* Mini-preview da paleta: fundo + "card" + acento brasa. */}
+                        <div
+                          className="flex h-12 items-center gap-1.5 rounded-[5px] border px-2"
+                          style={{ background: p.bg, borderColor: p.border }}
+                        >
+                          <span className="h-6 flex-1 rounded-sm" style={{ background: p.card }} />
+                          <span
+                            className="h-4 w-4 shrink-0 rounded-full"
+                            style={{ background: p.primary }}
+                          />
+                        </div>
+                        <span className="flex items-center gap-1.5 px-0.5 text-[13px]">
+                          {p.family === 'dark' ? (
+                            <Moon className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <Sun className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          {t(p.label)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
