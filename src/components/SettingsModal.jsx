@@ -59,42 +59,52 @@ const THEME_SWATCH = {
   light: {
     label: 'settings.themeLight',
     family: 'light',
-    bg: '#ffffff',
-    card: 'hsl(220 14% 96%)',
+    bg: 'hsl(220 16% 93%)',
+    card: '#ffffff',
+    line: 'hsl(220 13% 82%)',
     primary: 'hsl(37.7 92% 50%)',
-    border: 'hsl(220 13% 91%)',
+    border: 'hsl(220 13% 88%)',
   },
   dark: {
     label: 'settings.themeDark',
     family: 'dark',
     bg: 'hsl(0 0% 9%)',
     card: 'hsl(0 0% 15%)',
+    line: 'hsl(0 0% 34%)',
     primary: 'hsl(25 88% 56%)',
-    border: 'hsl(0 0% 25%)',
+    border: 'hsl(0 0% 26%)',
   },
   brasa: {
     label: 'settings.themeBrasa',
+    // Fundo bem mais quente/avermelhado e a brasa "acesa" (glow) pra se distinguir
+    // do escuro neutro. É o tema que deve gritar "calor".
     family: 'dark',
-    bg: 'hsl(14 28% 6.5%)',
-    card: 'hsl(14 22% 10.5%)',
+    bg: 'hsl(12 40% 8%)',
+    card: 'hsl(14 30% 12%)',
+    line: 'hsl(16 20% 34%)',
     primary: 'hsl(20 100% 57%)',
-    border: 'hsl(16 22% 19%)',
+    border: 'hsl(16 34% 22%)',
+    glow: true,
   },
   carvao: {
     label: 'settings.themeCarvao',
+    // Preto absoluto na moldura + card quase preto: lê como "o mais fundo/OLED".
     family: 'dark',
     bg: '#000000',
-    card: 'hsl(0 0% 5.5%)',
-    primary: 'hsl(25 88% 56%)',
-    border: 'hsl(0 0% 15%)',
+    card: 'hsl(0 0% 7%)',
+    line: 'hsl(0 0% 26%)',
+    primary: 'hsl(25 90% 56%)',
+    border: 'hsl(0 0% 14%)',
   },
   papel: {
     label: 'settings.themePapel',
+    // Creme quente e saturado + linhas sépia: destaca do branco frio do "Claro".
     family: 'light',
-    bg: 'hsl(40 42% 95.5%)',
-    card: 'hsl(42 46% 97%)',
-    primary: 'hsl(37.7 92% 50%)',
-    border: 'hsl(38 28% 83%)',
+    bg: 'hsl(38 44% 88%)',
+    card: 'hsl(42 52% 96%)',
+    line: 'hsl(34 26% 74%)',
+    primary: 'hsl(30 92% 48%)',
+    border: 'hsl(36 30% 80%)',
   },
 };
 
@@ -855,16 +865,35 @@ export function SettingsModal({
                           theme === key && 'border-primary ring-1 ring-primary',
                         )}
                       >
-                        {/* Mini-preview da paleta: fundo + "card" + acento brasa. */}
+                        {/* Mini-janela da IDE: a MOLDURA é o fundo do tema (mostra o
+                            matiz — neutro/avermelhado/preto/creme), o painel é o card,
+                            as barrinhas são "texto" e a pílula/bolinha é a brasa (com
+                            glow no tema Brasa). Dá superfície pra cada tema se distinguir. */}
                         <div
-                          className="flex h-12 items-center gap-1.5 rounded-[5px] border px-2"
+                          className="h-14 overflow-hidden rounded-[5px] border p-1.5"
                           style={{ background: p.bg, borderColor: p.border }}
                         >
-                          <span className="h-6 flex-1 rounded-sm" style={{ background: p.card }} />
-                          <span
-                            className="h-4 w-4 shrink-0 rounded-full"
-                            style={{ background: p.primary }}
-                          />
+                          <div
+                            className="flex h-full flex-col justify-center gap-1.5 rounded-[4px] border px-2"
+                            style={{ background: p.card, borderColor: p.border }}
+                          >
+                            <span
+                              className="h-1 w-4/5 rounded-full"
+                              style={{ background: p.line }}
+                            />
+                            <span
+                              className="h-1 w-3/5 rounded-full"
+                              style={{ background: p.line }}
+                            />
+                            <span
+                              className="mt-0.5 h-1.5 rounded-full"
+                              style={{
+                                width: p.glow ? '2.25rem' : '1.5rem',
+                                background: p.primary,
+                                boxShadow: p.glow ? `0 0 7px 0 ${p.primary}` : 'none',
+                              }}
+                            />
+                          </div>
                         </div>
                         <span className="flex items-center gap-1.5 px-0.5 text-[13px]">
                           {p.family === 'dark' ? (
