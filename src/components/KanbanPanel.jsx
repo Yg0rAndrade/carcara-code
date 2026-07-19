@@ -55,22 +55,38 @@ const joinPath = (root, name) => root + (root.includes('\\') ? '\\' : '/') + nam
 
 // Pastéis. Escritos por extenso de propósito: o Tailwind é JIT e varre o código em busca
 // de classes LITERAIS — um `bg-${cor}-200` montado em runtime nunca chega ao CSS.
-// Dois tons por cor porque pastel de tema claro vira borrão no escuro.
+//
+// No escuro NÃO use o tom 950 tingido (ex.: bg-rose-950/40): 950 é quase preto, some no
+// fundo. O truque é o tom BASE (400/500) com opacidade baixa — vira brilho colorido, não
+// sombra — reforçado por uma borda colorida, que define a coluna melhor que o preenchimento.
 const COLOR_CLASSES = {
-  rose: { swatch: 'bg-rose-300 dark:bg-rose-400', tint: 'bg-rose-50 dark:bg-rose-950/40' },
-  amber: { swatch: 'bg-amber-300 dark:bg-amber-400', tint: 'bg-amber-50 dark:bg-amber-950/40' },
+  rose: {
+    swatch: 'bg-rose-400 dark:bg-rose-400',
+    tint: 'border-rose-200 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-500/15',
+  },
+  amber: {
+    swatch: 'bg-amber-400 dark:bg-amber-400',
+    tint: 'border-amber-200 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/15',
+  },
   emerald: {
-    swatch: 'bg-emerald-300 dark:bg-emerald-400',
-    tint: 'bg-emerald-50 dark:bg-emerald-950/40',
+    swatch: 'bg-emerald-400 dark:bg-emerald-400',
+    tint: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/15',
   },
-  sky: { swatch: 'bg-sky-300 dark:bg-sky-400', tint: 'bg-sky-50 dark:bg-sky-950/40' },
+  sky: {
+    swatch: 'bg-sky-400 dark:bg-sky-400',
+    tint: 'border-sky-200 bg-sky-50 dark:border-sky-500/40 dark:bg-sky-500/15',
+  },
   violet: {
-    swatch: 'bg-violet-300 dark:bg-violet-400',
-    tint: 'bg-violet-50 dark:bg-violet-950/40',
+    swatch: 'bg-violet-400 dark:bg-violet-400',
+    tint: 'border-violet-200 bg-violet-50 dark:border-violet-500/40 dark:bg-violet-500/15',
   },
-  stone: { swatch: 'bg-stone-300 dark:bg-stone-500', tint: 'bg-stone-50 dark:bg-stone-900/60' },
+  stone: {
+    swatch: 'bg-stone-400 dark:bg-stone-400',
+    tint: 'border-stone-300 bg-stone-100 dark:border-stone-500/40 dark:bg-stone-500/15',
+  },
 };
-const NO_COLOR = { swatch: 'bg-muted-foreground/25', tint: '' };
+// Sem cor: uma borda neutra pra coluna ainda ter contorno (senão destoa das pintadas).
+const NO_COLOR = { swatch: 'bg-muted-foreground/25', tint: 'border-transparent' };
 const colorOf = (c) => COLOR_CLASSES[c] || NO_COLOR;
 
 // Fecha um popover ao clicar fora. Mesmo padrão do MoreTools da PreviewPanel.
@@ -362,7 +378,7 @@ function Column({ col, cards, showDone, onOpen, onAdd, onColor, onRename, onDele
     <div
       ref={ref}
       className={cn(
-        'flex w-[280px] shrink-0 flex-col gap-2 rounded-lg p-2 transition-colors',
+        'flex w-[280px] shrink-0 flex-col gap-2 rounded-lg border p-2 transition-colors',
         colorOf(col.color).tint,
       )}
     >
