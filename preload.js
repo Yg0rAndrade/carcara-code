@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('api', {
   // Porta fixa por projeto (opcional).
   getPort: (projectPath) => ipcRenderer.invoke('port:get', { projectPath }),
   setPort: (projectPath, port) => ipcRenderer.invoke('port:set', { projectPath, port }),
+  // Portas em LISTEN que pertencem ao projeto (terminais/preview e filhos). Sob demanda.
+  listPorts: (projectPath) => ipcRenderer.invoke('ports:list', { projectPath }),
+  killPort: (port) => ipcRenderer.invoke('ports:kill', { port }),
 
   // Catálogo/instalação de CLIs de IA (codex/opencode/agy). Eventos 'aiInstall:data'/
   // 'aiInstall:done' chegam pelo on(...) genérico abaixo.
