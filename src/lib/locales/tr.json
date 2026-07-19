@@ -657,7 +657,6 @@
     "aiChecking": "Güncellemeler kontrol ediliyor…",
     "aiInstallHint": "Yükleyici sorular sorabilir veya CLI'yi açabilir. Terminalde yanıtla — şimdi başlatmayı isterse N yanıtını ver. Takılırsa Durdur'a tıkla.",
     "aiInstallStop": "Durdur",
-    "aiTerminalClear": "Temizle",
     "aiDoneUpdated": "{label} — güncellendi (v{v})",
     "aiDoneNoChange": "{label} hâlâ v{v} — güncellenmedi (CLI kendini arka planda güncelleyebilir)",
     "aiUninstall": "Kaldır",

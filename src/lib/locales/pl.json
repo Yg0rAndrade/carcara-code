@@ -657,7 +657,6 @@
     "aiChecking": "Sprawdzanie aktualizacji…",
     "aiInstallHint": "Instalator może zadawać pytania lub otworzyć CLI. Odpowiadaj w terminalu — jeśli zapyta o uruchomienie teraz, odpowiedz N. Jeśli się zawiesi, kliknij Zatrzymaj.",
     "aiInstallStop": "Zatrzymaj",
-    "aiTerminalClear": "Wyczyść",
     "aiDoneUpdated": "{label} — zaktualizowano (v{v})",
     "aiDoneNoChange": "{label} nadal w wersji v{v} — nie zaktualizowano (CLI może aktualizować się samo w tle)",
     "aiUninstall": "Odinstaluj",

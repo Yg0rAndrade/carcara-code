@@ -657,7 +657,6 @@
     "aiChecking": "Checking for updates…",
     "aiInstallHint": "The installer may ask questions or open the CLI. Answer in the terminal — if it asks to start now, answer N. If it hangs, click Stop.",
     "aiInstallStop": "Stop",
-    "aiTerminalClear": "Clear",
     "aiDoneUpdated": "{label} — updated (v{v})",
     "aiDoneNoChange": "{label} still at v{v} — not updated (the CLI may update itself in the background)",
     "aiUninstall": "Uninstall",

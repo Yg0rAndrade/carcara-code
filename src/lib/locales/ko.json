@@ -657,7 +657,6 @@
     "aiChecking": "업데이트 확인 중…",
     "aiInstallHint": "설치 프로그램이 질문을 하거나 CLI를 열 수 있습니다. 터미널에서 답하세요 — 지금 시작할지 물으면 N으로 답하세요. 멈추면 중지를 클릭하세요.",
     "aiInstallStop": "중지",
-    "aiTerminalClear": "지우기",
     "aiDoneUpdated": "{label} — 업데이트됨 (v{v})",
     "aiDoneNoChange": "{label}이(가) 아직 v{v}입니다 — 업데이트되지 않음 (CLI가 백그라운드에서 스스로 업데이트할 수 있습니다)",
     "aiUninstall": "제거",
