@@ -43,6 +43,7 @@ const { makeKnownHosts } = require('./electron/remote/knownHosts.cjs');
 const { makeConnections } = require('./electron/remote/connections.cjs');
 const { makeRemoteFs } = require('./electron/remote/remoteFs.cjs');
 const { Client: SshClient } = require('ssh2');
+const { scanPortsForRoots, parseNetstatListening } = require('./electron/port-scan.cjs');
 
 let mainWindow;
 let updater = null;
@@ -815,6 +816,29 @@ ipcMain.handle('port:set', (evt, { projectPath, port }) => {
   c.projectPorts[projectPath] = n;
   saveConfig(c);
   return { ok: true, staticPort: n, warnWellKnown: WELL_KNOWN_PORTS.includes(n) };
+});
+// Portas abertas por um projeto (dev servers, filhos de terminal/shell/chat/preview).
+// União com o Preview do app (sempre presente, mesmo que a varredura de árvore não pegue).
+ipcMain.handle('ports:list', async (_e, { projectPath }) => {
+  const roots = rootPidsFor(projectPath);
+  const found = roots.size ? await scanPortsForRoots(roots) : [];
+  const srv = runningServers.get(projectPath);
+  const previewPort = srv ? Number(srv.port) || 0 : 0;
+  const byPort = new Map();
+  for (const f of found) byPort.set(f.port, { ...f, isPreview: f.port === previewPort });
+  // O Preview do app entra sempre, mesmo que a árvore não o pegue.
+  if (previewPort && !byPort.has(previewPort))
+    byPort.set(previewPort, {
+      port: previewPort,
+      pid: srv.proc?.pid || 0,
+      name: '',
+      isPreview: true,
+    });
+  return [...byPort.values()].sort((a, b) => a.port - b.port);
+});
+ipcMain.handle('ports:kill', async (_e, { port }) => {
+  const ok = await killPortOccupant(Number(port));
+  return { ok };
 });
 ipcMain.handle('session:setCli', (evt, { projectPath, sessionId, cli }) => {
   const c = loadConfig();
@@ -4142,23 +4166,33 @@ function killPortOccupant(port) {
     if (process.platform === 'win32') {
       exec('netstat -ano', { windowsHide: true }, (err, stdout) => {
         if (err || !stdout) return resolve(false);
-        const pids = new Set();
-        for (const line of stdout.split('\n')) {
-          const m = line.trim().match(/^TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)/i);
-          if (m && Number(m[1]) === Number(port)) pids.add(m[2]);
-        }
-        if (!pids.size) return resolve(false);
-        let pending = pids.size;
-        for (const pid of pids) {
-          exec(`taskkill /F /PID ${pid}`, { windowsHide: true }, () => {
-            if (--pending === 0) resolve(true);
-          });
-        }
+        const portMap = parseNetstatListening(stdout);
+        const owner = portMap.get(Number(port));
+        if (!owner) return resolve(false);
+        exec(`taskkill /F /T /PID ${owner}`, { windowsHide: true }, (e) => resolve(!e));
       });
     } else {
       exec(`lsof -ti tcp:${port} | xargs -r kill -9`, () => resolve(true));
     }
   });
+}
+
+// PIDs "raiz" vivos de um projeto: terminais Claude, shell livre, sessões da
+// Carcará AI e o Preview que o app subiu. A dona de uma porta descende de um destes.
+function rootPidsFor(projectPath) {
+  const roots = new Set();
+  const add = (pid) => {
+    const n = Number(pid);
+    if (n > 0) roots.add(n);
+  };
+  for (const t of terminals.values()) if (t.projectPath === projectPath) add(t.pty?.pid);
+  const sh = shells.get(projectPath);
+  if (sh) add(sh.pty?.pid);
+  for (const [sid, entry] of chatProcs)
+    if (carcaraProjects.get(sid) === projectPath) add(entry.proc?.pid);
+  const srv = runningServers.get(projectPath);
+  if (srv) add(srv.proc?.pid);
+  return roots;
 }
 
 // Resolve a porta pra subir o preview de um projeto, respeitando a porta FIXA (se houver).
