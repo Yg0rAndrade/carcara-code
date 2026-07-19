@@ -106,6 +106,44 @@ function cmdFor(platform = process.platform) {
   };
 }
 
+const { execFile } = require('child_process');
+
+// Roda um comando com timeout curto; resolve stdout ('' em qualquer erro — nunca lança).
+function run(cmd, args, timeout = 4000) {
+  return new Promise((resolve) => {
+    try {
+      execFile(cmd, args, { windowsHide: true, timeout, maxBuffer: 8 * 1024 * 1024 }, (err, out) =>
+        resolve(err ? '' : String(out || '')),
+      );
+    } catch {
+      resolve('');
+    }
+  });
+}
+
+async function listeningPortMap() {
+  const [cmd, args] = cmdFor().portList;
+  const out = await run(cmd, args);
+  return process.platform === 'win32' ? parseNetstatListening(out) : parseLsofListening(out);
+}
+
+async function processMaps() {
+  const [cmd, args] = cmdFor().procList;
+  const out = await run(cmd, args);
+  return process.platform === 'win32' ? parseCimProcesses(out) : parsePsProcesses(out);
+}
+
+// Orquestra: descobre porta->pid e a árvore de pais, e devolve só as portas cujo
+// dono descende de um dos rootPids. Nunca lança.
+async function scanPortsForRoots(rootPids) {
+  try {
+    const [portMap, maps] = await Promise.all([listeningPortMap(), processMaps()]);
+    return portsForRoots(rootPids, portMap, maps.parent, maps.name);
+  } catch {
+    return [];
+  }
+}
+
 module.exports = {
   parseNetstatListening,
   parseLsofListening,
@@ -113,4 +151,7 @@ module.exports = {
   parsePsProcesses,
   portsForRoots,
   cmdFor,
+  listeningPortMap,
+  processMaps,
+  scanPortsForRoots,
 };
