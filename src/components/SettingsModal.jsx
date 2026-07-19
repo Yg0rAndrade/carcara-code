@@ -275,6 +275,9 @@ export function SettingsModal({
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [ports, setPorts] = useState({}); // path -> { staticPort, currentPort, draft, error }
+  // path -> { loading, scanned, list: [{port,pid,name,isPreview}] }
+  const [openPorts, setOpenPorts] = useState({});
+  const [killTarget, setKillTarget] = useState(null); // { path, port, name }
   const [aiQuery, setAiQuery] = useState(''); // filtro de busca da lista "IA por projeto"
   const [aiSort, setAiSort] = useState('default'); // 'default' | 'asc' | 'desc'
   const [pendingInstall, setPendingInstall] = useState(null); // key a auto-instalar (Task 8)
@@ -503,6 +506,21 @@ export function SettingsModal({
         error: res.warnWellKnown ? t('settings.portWellKnown') : '',
       },
     }));
+  };
+
+  // Varre as portas abertas do projeto sob demanda (sem polling); clicar no ✕ de um chip
+  // sempre passa por confirmação (killTarget) antes de matar o processo e revarrer.
+  const scanPorts = async (path) => {
+    setOpenPorts((s) => ({ ...s, [path]: { ...(s[path] || {}), loading: true } }));
+    const list = await window.api.listPorts(path);
+    setOpenPorts((s) => ({ ...s, [path]: { loading: false, scanned: true, list: list || [] } }));
+  };
+
+  const confirmKill = async () => {
+    const { path, port } = killTarget;
+    setKillTarget(null);
+    await window.api.killPort(port);
+    await scanPorts(path);
   };
 
   // Lista visível da aba "IA por projeto": filtro por busca + ordenação por nome (pura, testada
@@ -794,6 +812,69 @@ export function SettingsModal({
                               </div>
                             );
                           })()}
+                          {/* Portas no ar deste projeto: varredura sob demanda (sem polling); o
+                              ✕ de cada chip sempre passa pela confirmação (killTarget) antes de
+                              matar o processo. */}
+                          <div className="mt-3 border-t pt-3">
+                            <div className="flex items-center gap-2">
+                              <span className="flex-1 text-[13px] font-medium">
+                                {t('settings.portsScan')}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => scanPorts(p.path)}
+                                disabled={openPorts[p.path]?.loading}
+                                className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                                title={t('settings.portsScan')}
+                              >
+                                <RefreshCw
+                                  className={cn(
+                                    'h-3.5 w-3.5',
+                                    openPorts[p.path]?.loading && 'animate-spin',
+                                  )}
+                                />
+                              </button>
+                            </div>
+                            {openPorts[p.path]?.scanned && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {openPorts[p.path].list.length === 0 && (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {t('settings.portsEmpty')}
+                                  </span>
+                                )}
+                                {openPorts[p.path].list.map((pt) => (
+                                  <span
+                                    key={pt.port}
+                                    className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]"
+                                  >
+                                    {pt.port}
+                                    {pt.name && (
+                                      <span className="text-muted-foreground">{pt.name}</span>
+                                    )}
+                                    {pt.isPreview && (
+                                      <span className="rounded bg-primary/15 px-1 text-[9px] text-primary">
+                                        {t('settings.portsAppTag')}
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setKillTarget({
+                                          path: p.path,
+                                          port: pt.port,
+                                          name: pt.name || String(pt.port),
+                                        })
+                                      }
+                                      className="text-muted-foreground hover:text-destructive"
+                                      title={t('settings.portsCloseConfirm')}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -833,6 +914,36 @@ export function SettingsModal({
                           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
                         >
                           {t('settings.aiInstall')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Confirma o fechamento de uma porta no ar (chip ✕): nunca mata direto. */}
+                {killTarget && (
+                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55">
+                    <div className="w-[330px] rounded-2xl border border-destructive/30 bg-background p-5 text-center shadow-xl">
+                      <div className="text-sm font-semibold">
+                        {t('settings.portsCloseTitle', {
+                          port: killTarget.port,
+                          name: killTarget.name,
+                        })}
+                      </div>
+                      <div className="mt-4 flex justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setKillTarget(null)}
+                          className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                          {t('settings.portsCloseCancel')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmKill}
+                          className="rounded-md bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:opacity-90"
+                        >
+                          {t('settings.portsCloseConfirm')}
                         </button>
                       </div>
                     </div>
