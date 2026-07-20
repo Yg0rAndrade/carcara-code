@@ -1375,6 +1375,13 @@ export function PreviewPanel({
   // um executeJavaScript por entrada, não um por pixel percorrido.
   useEffect(() => {
     if (!touchCursorActive) return;
+    const hideAll = () => {
+      for (const w of allWebviews()) {
+        try {
+          w.executeJavaScript(TOUCH_HIDE);
+        } catch {}
+      }
+    };
     let last = 0;
     const onAppOver = () => {
       // Throttle: 'mouseover' dispara a cada elemento cruzado, e a barra/rail/árvore têm
@@ -1384,14 +1391,23 @@ export function PreviewPanel({
       const now = Date.now();
       if (now - last < 100) return;
       last = now;
-      for (const w of allWebviews()) {
-        try {
-          w.executeJavaScript(TOUCH_HIDE);
-        } catch {}
-      }
+      hideAll();
+    };
+    // Sinal autoritativo de "o ponteiro saiu de vez": o mouse cruzou os limites da janela
+    // (barra de título do SO, borda da tela, outro monitor). Nesse caminho NENHUM
+    // 'mouseover' na moldura dispara — sem ele a bolinha ficava grudada na última posição
+    // dentro do webview. Entrar no <webview> NÃO dispara este mouseleave (o webview é
+    // interior ao documento do app, não uma borda dele), então não há flicker ao "tocar".
+    const onAppLeave = () => {
+      last = 0; // libera o próximo mouseover na volta, sem esperar o throttle
+      hideAll();
     };
     window.addEventListener('mouseover', onAppOver, true);
-    return () => window.removeEventListener('mouseover', onAppOver, true);
+    document.addEventListener('mouseleave', onAppLeave);
+    return () => {
+      window.removeEventListener('mouseover', onAppOver, true);
+      document.removeEventListener('mouseleave', onAppLeave);
+    };
   }, [touchCursorActive]);
 
   // Silencia a mídia do preview que não está à mostra. Só toca som o webview da aba
@@ -1950,6 +1966,12 @@ export function PreviewPanel({
               </div>
 
               <div className="flex items-center gap-0.5">
+                {/* Nova guia colada na barra de URL (ao lado do "abrir no navegador"),
+                    mais discreto que no grupo voltar/avançar. A tira de abas só aparece
+                    com 2+ páginas, então sem este botão não havia como abrir a segunda. */}
+                <ToolButton onClick={newTab} title={t('preview.tab_new')}>
+                  <Plus />
+                </ToolButton>
                 <ToolButton
                   onClick={toggleGrab}
                   disabled={mode !== 'web'}

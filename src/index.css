@@ -165,9 +165,12 @@
   .font-mono {
     font-family: var(--font-mono);
   }
-  /* Seleção na cor "brasa" — pequeno toque de identidade em todo o app. */
+  /* Seleção na cor "brasa" — pequeno toque de identidade em todo o app.
+     Opacidade baixa (como a seleção nativa de um site): com line-height
+     "relaxed", um valor alto empilha as linhas num bloco sólido opaco;
+     translúcido deixa a seleção acompanhar o texto, não pintar blocos. */
   ::selection {
-    background: hsl(var(--primary) / 0.28);
+    background: hsl(var(--primary) / 0.18);
   }
 }
 

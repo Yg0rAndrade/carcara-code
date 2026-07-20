@@ -108,6 +108,28 @@ const TERM_THEMES = {
 function syncSize(t, sessionId, resizeFn) {
   try {
     t.fit.fit();
+    // Correção de arredondamento sub-pixel: com escala de tela fracionária (Windows
+    // 125%/150% → devicePixelRatio 1.25/1.5), cada linha do xterm arredonda pra cima
+    // em device-pixels e a grade RENDERIZADA fica alguns px mais alta que rows×cellH.
+    // O FitAddon usa floor sobre a altura CSS e não vê esse estouro; em certas alturas
+    // de JANELA (mas não em tela cheia, onde altura×dpr cai redonda) a última linha —
+    // a barra de status da CLI — vaza sob o container e o overflow-hidden a corta.
+    // Medimos a grade real vs o espaço disponível e tiramos linha(s) só quando ela
+    // passa ATÉ do padding de baixo (senão respeitamos o fit e não criamos sobra).
+    const host = t.el;
+    const screen = host && host.querySelector('.xterm-screen');
+    if (screen && t.term.rows > 1) {
+      const cs = getComputedStyle(host);
+      const padTop = parseFloat(cs.paddingTop) || 0;
+      const padBottom = parseFloat(cs.paddingBottom) || 0;
+      const avail = host.clientHeight - padTop - padBottom;
+      const gridH = screen.offsetHeight;
+      if (gridH > avail + padBottom + 1) {
+        const cellH = gridH / t.term.rows;
+        const drop = Math.min(t.term.rows - 1, Math.max(1, Math.ceil((gridH - avail) / cellH)));
+        t.term.resize(t.term.cols, t.term.rows - drop);
+      }
+    }
     if (t.term.cols !== t.lastCols || t.term.rows !== t.lastRows) {
       t.lastCols = t.term.cols;
       t.lastRows = t.term.rows;

@@ -1014,6 +1014,12 @@ export function CodeView({ active, openRequest, visible = true }) {
       const k = e.key.toLowerCase();
 
       if (mod && (k === 'c' || k === 'x')) {
+        // Se há TEXTO selecionado na página (ex.: preview de markdown/HTML
+        // renderizado, grade de CSV), o Ctrl+C/Ctrl+X é do texto — deixa a cópia
+        // nativa agir. Sequestrar aqui (preventDefault + setClip) matava o copiar
+        // e ainda desmarcava a seleção pelo re-render. Só "copiamos o arquivo"
+        // quando NÃO há seleção de texto (o alvo é a árvore/aba, não conteúdo).
+        if (window.getSelection?.().toString()) return;
         if (!it) return;
         e.preventDefault();
         setClip({

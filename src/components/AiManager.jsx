@@ -279,12 +279,27 @@ export default function AiManager({ initialInstallKey = null }) {
     if (termRef.current) termRef.current.write('\r\n\x1b[2mEncerrado.\x1b[0m\r\n');
   }, []);
 
+  // Limpa a tela do terminal (reset visual). Não mata a instalação em andamento — só
+  // apaga o histórico exibido, útil quando o instalador cuspiu muito ruído.
+  const clearTerm = useCallback(() => {
+    const term = termRef.current;
+    if (!term) return;
+    term.reset();
+    // Se há um PTY vivo, devolve o foco pra digitação continuar imediatamente.
+    if (installIdRef.current) term.focus();
+  }, []);
+
   const start = useCallback(
     async (key, mode) => {
       if (busy) return;
       setBusy(key);
       setBusyMode(mode);
-      if (termRef.current) termRef.current.clear();
+      if (termRef.current) {
+        termRef.current.clear();
+        // Foca já: o instalador é um TTY real e pode perguntar (y/n, senha) logo de cara —
+        // o usuário digita direto no terminal sem precisar clicar antes.
+        termRef.current.focus();
+      }
       const { installId: id } = await window.api.aiInstallStart(key, mode);
       setInstallId(id);
       if (fitRef.current && termRef.current) {
@@ -322,33 +337,42 @@ export default function AiManager({ initialInstallKey = null }) {
               key={r.key}
               className={cn(
                 'flex items-center gap-3 rounded-lg border p-3',
-                !r.installed && 'opacity-60 grayscale',
                 installing && 'border-primary ring-1 ring-primary',
               )}
             >
-              <CliBadge optKey={r.key} />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">{LABEL(r.key)}</div>
-                <div className="text-xs text-muted-foreground">
-                  {installing ? (
-                    busyMode === 'update' ? (
-                      t('settings.aiUpdating')
+              {/* Só a identidade + status esmaecem quando não instalada. O botão de ação
+                  fica FORA deste bloco: grayscale/opacity herdam pros filhos e faziam o
+                  "Instalar" perder o laranja e parecer desligado (cinza). */}
+              <div
+                className={cn(
+                  'flex min-w-0 flex-1 items-center gap-3',
+                  !r.installed && 'opacity-60 grayscale',
+                )}
+              >
+                <CliBadge optKey={r.key} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{LABEL(r.key)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {installing ? (
+                      busyMode === 'update' ? (
+                        t('settings.aiUpdating')
+                      ) : (
+                        t('settings.aiInstalling')
+                      )
+                    ) : !r.installed ? (
+                      t('settings.aiNotInstalled')
+                    ) : r.checking ? (
+                      // Fase 1 (ai:detected): sabemos instalada+versão, mas ainda não o "latest".
+                      <span className="inline-flex items-center gap-1">
+                        <Loader2 className="size-3 animate-spin" />
+                        {t('settings.aiChecking')}
+                      </span>
+                    ) : r.updateAvailable ? (
+                      t('settings.aiUpdateAvailable', { v: r.latest })
                     ) : (
-                      t('settings.aiInstalling')
-                    )
-                  ) : !r.installed ? (
-                    t('settings.aiNotInstalled')
-                  ) : r.checking ? (
-                    // Fase 1 (ai:detected): sabemos instalada+versão, mas ainda não o "latest".
-                    <span className="inline-flex items-center gap-1">
-                      <Loader2 className="size-3 animate-spin" />
-                      {t('settings.aiChecking')}
-                    </span>
-                  ) : r.updateAvailable ? (
-                    t('settings.aiUpdateAvailable', { v: r.latest })
-                  ) : (
-                    t('settings.aiUpToDate', { v: r.version })
-                  )}
+                      t('settings.aiUpToDate', { v: r.version })
+                    )}
+                  </div>
                 </div>
               </div>
               {installing ? (
@@ -372,7 +396,7 @@ export default function AiManager({ initialInstallKey = null }) {
                   type="button"
                   disabled={!!busy || !r.installable}
                   onClick={() => start(r.key, 'install')}
-                  className="rounded-md border border-primary px-2.5 py-1.5 text-[13px] text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-40"
                 >
                   {t('settings.aiInstall')}
                 </button>
@@ -428,18 +452,32 @@ export default function AiManager({ initialInstallKey = null }) {
           <p className="text-[11px] leading-tight text-muted-foreground">
             {t('settings.aiInstallHint')}
           </p>
-          {busy && installId ? (
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={stop}
-              className="shrink-0 rounded-md border border-destructive/60 px-2 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10"
+              onClick={clearTerm}
+              className="rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              {t('settings.aiInstallStop')}
+              {t('settings.aiTerminalClear')}
             </button>
-          ) : null}
+            {busy && installId ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="rounded-md border border-destructive/60 px-2 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10"
+              >
+                {t('settings.aiInstallStop')}
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="flex-1 overflow-hidden rounded-lg border bg-[#0d0f12]">
-          <div ref={termHostRef} className="h-full w-full p-2" />
+          {/* Clicar em qualquer lugar (inclusive no padding) foca o terminal pra digitar. */}
+          <div
+            ref={termHostRef}
+            onMouseDown={() => termRef.current?.focus()}
+            className="h-full w-full p-2"
+          />
         </div>
       </div>
 
