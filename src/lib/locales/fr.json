@@ -346,7 +346,17 @@
     "info": "Qu'est-ce que c'est ?",
     "info_react": "Pour construire une application monopage — rapide et interactive, comme un tableau de bord ou un outil. Pas conçu pour apparaître sur Google.",
     "info_next": "C'est React avec plusieurs pages, conçu pour apparaître sur Google. Idéal pour les apps avec connexion, tableaux de bord et données.",
-    "info_astro": "Idéal pour les sites de contenu qui doivent apparaître sur Google — landing pages, blogs, docs. Très rapide."
+    "info_astro": "Idéal pour les sites de contenu qui doivent apparaître sur Google — landing pages, blogs, docs. Très rapide.",
+    "skill_title": "Vous ne savez pas par où commencer ?",
+    "skill_desc": "La skill /start pose 3 questions simples, choisit la technologie pour vous et laisse le projet prêt à l’emploi.",
+    "skill_install": "Installer la skill",
+    "skill_installing": "Installation…",
+    "skill_installed": "Skill /start installée",
+    "skill_ready_hint": "Ouvrez une nouvelle session dans le chat et dites /start.",
+    "skill_new_session": "Nouvelle session",
+    "skill_learn_more": "En savoir plus",
+    "skill_error": "Impossible d’installer la skill. Réessayez.",
+    "skill_missing_git": "Pour installer la skill, installez d’abord Git."
   },
   "preview": {
     "tab": "Aperçu",

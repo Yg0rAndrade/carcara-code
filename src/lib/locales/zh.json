@@ -346,7 +346,17 @@
     "info": "这是什么？",
     "info_react": "用于构建单页应用 — 快速且交互性强，例如仪表盘或工具。不适合出现在 Google 搜索结果中。",
     "info_next": "它是带有多个页面的 React，专为出现在 Google 搜索结果中而构建。非常适合带有登录、仪表盘和数据的应用。",
-    "info_astro": "最适合需要出现在 Google 搜索结果中的内容型网站 — 落地页、博客、文档。速度非常快。"
+    "info_astro": "最适合需要出现在 Google 搜索结果中的内容型网站 — 落地页、博客、文档。速度非常快。",
+    "skill_title": "不知道从哪里开始？",
+    "skill_desc": "/start 技能会问 3 个简单问题，替你选好技术，并把项目准备到可以直接使用。",
+    "skill_install": "安装技能",
+    "skill_installing": "正在安装…",
+    "skill_installed": "已安装 /start 技能",
+    "skill_ready_hint": "在聊天中开一个新会话，然后输入 /start。",
+    "skill_new_session": "新会话",
+    "skill_learn_more": "了解更多",
+    "skill_error": "技能安装失败，请重试。",
+    "skill_missing_git": "要安装技能，请先安装 Git。"
   },
   "preview": {
     "tab": "预览",

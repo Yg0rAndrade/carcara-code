@@ -436,6 +436,7 @@ export function PreviewPanel({
   onProjectsChanged,
   controlsRef,
   onModeChange,
+  onNewChatSession,
 }) {
   const t = useT();
   const [view, setView] = useState('preview');
@@ -2170,7 +2171,11 @@ export function PreviewPanel({
             mode === 'empty' &&
             (active ? (
               scaffoldProbe?.scaffoldable && scaffoldProbe.path === active.path ? (
-                <ScaffoldWizard projectPath={active.path} junk={scaffoldProbe.junk} />
+                <ScaffoldWizard
+                  projectPath={active.path}
+                  junk={scaffoldProbe.junk}
+                  onNewSession={onNewChatSession}
+                />
               ) : (
                 <div className="absolute inset-0">
                   <EmptyState>

@@ -276,6 +276,10 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('preview:touchEmu', { webContentsId, enabled }),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
 
+  // Skills do Claude Code instaláveis com 1 clique (catálogo em skill-catalog.cjs).
+  skillDetect: (id, projectPath) => ipcRenderer.invoke('skill:detect', { id, projectPath }),
+  skillInstall: (id, projectPath) => ipcRenderer.invoke('skill:install', { id, projectPath }),
+
   // Drag and drop de arquivos
   getDroppedPath: (file) => {
     try {

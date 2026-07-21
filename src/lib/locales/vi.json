@@ -346,7 +346,17 @@
     "info": "Đây là gì?",
     "info_react": "Để xây dựng ứng dụng một trang — nhanh và tương tác, như một bảng điều khiển hoặc một công cụ. Không nhằm mục đích xuất hiện trên Google.",
     "info_next": "Đây là React với nhiều trang, được xây dựng để xuất hiện trên Google. Tuyệt vời cho ứng dụng có đăng nhập, bảng điều khiển và dữ liệu.",
-    "info_astro": "Tốt nhất cho các trang nội dung cần xuất hiện trên Google — trang đích, blog, tài liệu. Rất nhanh."
+    "info_astro": "Tốt nhất cho các trang nội dung cần xuất hiện trên Google — trang đích, blog, tài liệu. Rất nhanh.",
+    "skill_title": "Chưa biết bắt đầu từ đâu?",
+    "skill_desc": "Skill /start hỏi 3 câu đơn giản, tự chọn công nghệ cho bạn và để dự án sẵn sàng sử dụng.",
+    "skill_install": "Cài skill",
+    "skill_installing": "Đang cài…",
+    "skill_installed": "Đã cài skill /start",
+    "skill_ready_hint": "Mở một phiên mới trong chat và gõ /start.",
+    "skill_new_session": "Phiên mới",
+    "skill_learn_more": "Tìm hiểu thêm",
+    "skill_error": "Không cài được skill. Hãy thử lại.",
+    "skill_missing_git": "Để cài skill, hãy cài Git trước."
   },
   "preview": {
     "tab": "Xem trước",

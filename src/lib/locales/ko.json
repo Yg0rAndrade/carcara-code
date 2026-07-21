@@ -346,7 +346,17 @@
     "info": "이게 뭔가요?",
     "info_react": "빠르고 상호작용이 많은 단일 페이지 앱을 만들 때 좋습니다. 대시보드나 도구 같은 것이죠. Google 검색에 노출하기 위한 용도는 아닙니다.",
     "info_next": "여러 페이지로 이루어진 React이며, Google 검색에 노출되도록 만들어졌습니다. 로그인, 대시보드, 데이터가 있는 앱에 적합합니다.",
-    "info_astro": "Google 검색에 노출되어야 하는 콘텐츠 사이트에 가장 좋습니다 — 랜딩 페이지, 블로그, 문서. 매우 빠릅니다."
+    "info_astro": "Google 검색에 노출되어야 하는 콘텐츠 사이트에 가장 좋습니다 — 랜딩 페이지, 블로그, 문서. 매우 빠릅니다.",
+    "skill_title": "어디서부터 시작할지 모르겠나요?",
+    "skill_desc": "/start 스킬이 간단한 질문 3개를 하고, 기술을 대신 골라 바로 쓸 수 있는 프로젝트를 만들어 줍니다.",
+    "skill_install": "스킬 설치",
+    "skill_installing": "설치 중…",
+    "skill_installed": "/start 스킬 설치됨",
+    "skill_ready_hint": "채팅에서 새 세션을 열고 /start 라고 입력하세요.",
+    "skill_new_session": "새 세션",
+    "skill_learn_more": "자세히 보기",
+    "skill_error": "스킬을 설치하지 못했습니다. 다시 시도해 주세요.",
+    "skill_missing_git": "스킬을 설치하려면 먼저 Git을 설치하세요."
   },
   "preview": {
     "tab": "미리보기",

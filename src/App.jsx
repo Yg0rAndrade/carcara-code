@@ -895,6 +895,7 @@ export default function App() {
           onProjectsChanged={reload}
           controlsRef={previewControls}
           onModeChange={setServerMode}
+          onNewChatSession={() => chatControls.current?.newSession?.()}
         />
       </ErrorBoundary>
     </ResizablePanel>

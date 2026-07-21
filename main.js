@@ -3964,6 +3964,84 @@ function writePlaceholder(projectPath, stackId) {
   }
 }
 
+// ---------- Skills do Claude Code (instalar com 1 clique) ----------
+// O wizard de projeto novo oferece a skill `start` pra quem não sabe qual stack
+// escolher. Decisões (comando, caminho do link) vêm do catálogo puro; aqui só a
+// execução. Skill instalada = link presente em .claude/skills/<dir>.
+const skillCatalog = require('./electron/skill-catalog.cjs');
+const runningSkillInstalls = new Set();
+const SKILL_INSTALL_TIMEOUT_MS = 3 * 60 * 1000;
+
+function skillLinkPaths(id, projectPath) {
+  const segs = skillCatalog.linkSegmentsFor(id);
+  if (!segs) return [];
+  const paths = [path.join(os.homedir(), ...segs)];
+  if (projectPath) paths.push(path.join(projectPath, ...segs));
+  return paths;
+}
+
+// existsSync (e não lstat) de propósito: link quebrado conta como NÃO instalada,
+// e o botão de instalar reaparece pra consertar.
+function skillInstalled(id, projectPath) {
+  return skillLinkPaths(id, projectPath).some((p) => fs.existsSync(p));
+}
+
+ipcMain.handle('skill:detect', (_evt, { id, projectPath }) => ({
+  installed: skillInstalled(id, projectPath),
+  url: skillCatalog.find(id)?.url || null,
+}));
+
+ipcMain.handle('skill:install', async (_evt, { id, projectPath }) => {
+  const entry = skillCatalog.find(id);
+  if (!entry) return { error: 'unknown-skill' };
+  if (skillInstalled(id, projectPath)) return { ok: true, alreadyInstalled: true };
+  if (runningSkillInstalls.has(id)) return { error: 'already-running' };
+
+  const missing = skillCatalog.requirementsFor(id).filter((c) => !cmdAvailable(c));
+  if (missing.length) return { error: `missing-${missing[0]}` };
+
+  const command = skillCatalog.commandFor(id);
+  runningSkillInstalls.add(id);
+  let log = '';
+  try {
+    const code = await new Promise((resolve) => {
+      const proc = spawn(command[0], command.slice(1), {
+        cwd: projectPath && fs.existsSync(projectPath) ? projectPath : os.homedir(),
+        shell: true,
+        env: { ...process.env, CI: '1' },
+      });
+      // npx pode ficar pendurado (rede/prompt); sem teto o CTA gira pra sempre.
+      const timer = setTimeout(() => {
+        log += '\ntimeout\n';
+        try {
+          proc.kill();
+        } catch {}
+      }, SKILL_INSTALL_TIMEOUT_MS);
+      const onData = (d) => {
+        log += d.toString();
+      };
+      proc.stdout.on('data', onData);
+      proc.stderr.on('data', onData);
+      proc.on('exit', (c) => {
+        clearTimeout(timer);
+        resolve(c);
+      });
+      proc.on('error', (e) => {
+        clearTimeout(timer);
+        log += '\n' + e.message + '\n';
+        resolve(1);
+      });
+    });
+    // O exit code do npx nem sempre reflete a falha do instalador: confirma pelo link.
+    if (code !== 0 || !skillInstalled(id, projectPath)) {
+      return { error: 'install-failed', log: log.slice(-4000) };
+    }
+    return { ok: true };
+  } finally {
+    runningSkillInstalls.delete(id);
+  }
+});
+
 ipcMain.handle('scaffold:stacks', () => scaffoldCore.listStacks());
 
 ipcMain.handle('scaffold:probe', (_evt, { projectPath }) => {

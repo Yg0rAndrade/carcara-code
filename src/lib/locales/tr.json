@@ -346,7 +346,17 @@
     "info": "Bu nedir?",
     "info_react": "Tek sayfalık bir uygulama oluşturmak için — hızlı ve etkileşimli, bir gösterge paneli veya araç gibi. Google'da görünmek için tasarlanmadı.",
     "info_next": "Birden fazla sayfası olan, Google'da görünmek için tasarlanmış React. Girişli uygulamalar, gösterge panelleri ve veriler için harika.",
-    "info_astro": "Google'da görünmesi gereken içerik siteleri için en iyisi — açılış sayfaları, bloglar, dokümanlar. Çok hızlı."
+    "info_astro": "Google'da görünmesi gereken içerik siteleri için en iyisi — açılış sayfaları, bloglar, dokümanlar. Çok hızlı.",
+    "skill_title": "Nereden başlayacağınızı bilmiyor musunuz?",
+    "skill_desc": "/start beceri 3 basit soru sorar, teknolojiyi sizin için seçer ve projeyi kullanıma hazır bırakır.",
+    "skill_install": "Beceriyi kur",
+    "skill_installing": "Kuruluyor…",
+    "skill_installed": "/start becerisi kuruldu",
+    "skill_ready_hint": "Sohbette yeni bir oturum açın ve /start yazın.",
+    "skill_new_session": "Yeni oturum",
+    "skill_learn_more": "Daha fazla bilgi",
+    "skill_error": "Beceri kurulamadı. Tekrar deneyin.",
+    "skill_missing_git": "Beceriyi kurmak için önce Git kurun."
   },
   "preview": {
     "tab": "Önizleme",

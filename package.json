@@ -22,6 +22,7 @@
     "test:rail": "node scripts/rail-smoke.cjs",
     "test:platform": "node scripts/platform-smoke.cjs",
     "test:portscan": "node scripts/port-scan.smoke.cjs",
+    "test:skills": "node scripts/skill-catalog-smoke.cjs",
     "test:localpty": "node scripts/localpty-smoke.cjs",
     "test:aicatalog": "node scripts/ai-catalog-smoke.cjs",
     "test:carcara": "node scripts/carcara-events-smoke.cjs",

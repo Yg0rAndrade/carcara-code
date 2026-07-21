@@ -346,7 +346,17 @@
     "info": "Co to jest?",
     "info_react": "Do budowania aplikacji jednostronicowej — szybkiej i interaktywnej, jak panel czy narzędzie. Nie jest przeznaczona do pojawiania się w Google.",
     "info_next": "To React z wieloma stronami, zbudowany tak, aby pojawiać się w Google. Świetny do aplikacji z logowaniem, panelami i danymi.",
-    "info_astro": "Najlepszy do stron z treścią, które muszą pojawiać się w Google — landing page, blogi, dokumentacja. Bardzo szybki."
+    "info_astro": "Najlepszy do stron z treścią, które muszą pojawiać się w Google — landing page, blogi, dokumentacja. Bardzo szybki.",
+    "skill_title": "Nie wiesz, od czego zacząć?",
+    "skill_desc": "Skill /start zadaje 3 proste pytania, wybiera za Ciebie technologię i zostawia gotowy projekt.",
+    "skill_install": "Zainstaluj skill",
+    "skill_installing": "Instalowanie…",
+    "skill_installed": "Skill /start zainstalowany",
+    "skill_ready_hint": "Otwórz nową sesję na czacie i napisz /start.",
+    "skill_new_session": "Nowa sesja",
+    "skill_learn_more": "Dowiedz się więcej",
+    "skill_error": "Nie udało się zainstalować skilla. Spróbuj ponownie.",
+    "skill_missing_git": "Aby zainstalować skill, najpierw zainstaluj Git."
   },
   "preview": {
     "tab": "Podgląd",

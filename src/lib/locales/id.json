@@ -346,7 +346,17 @@
     "info": "Apa ini?",
     "info_react": "Untuk membangun aplikasi satu halaman — cepat dan interaktif, seperti dasbor atau perkakas. Tidak dimaksudkan agar muncul di Google.",
     "info_next": "Ini React dengan banyak halaman, dibangun agar muncul di Google. Bagus untuk aplikasi dengan login, dasbor, dan data.",
-    "info_astro": "Terbaik untuk situs konten yang perlu muncul di Google — halaman arahan, blog, dokumentasi. Sangat cepat."
+    "info_astro": "Terbaik untuk situs konten yang perlu muncul di Google — halaman arahan, blog, dokumentasi. Sangat cepat.",
+    "skill_title": "Tidak tahu harus mulai dari mana?",
+    "skill_desc": "Skill /start mengajukan 3 pertanyaan sederhana, memilih teknologinya untuk Anda, dan menyiapkan proyek sampai siap pakai.",
+    "skill_install": "Pasang skill",
+    "skill_installing": "Memasang…",
+    "skill_installed": "Skill /start terpasang",
+    "skill_ready_hint": "Buka sesi baru di chat lalu ketik /start.",
+    "skill_new_session": "Sesi baru",
+    "skill_learn_more": "Pelajari lebih lanjut",
+    "skill_error": "Tidak bisa memasang skill. Coba lagi.",
+    "skill_missing_git": "Untuk memasang skill, pasang Git dulu."
   },
   "preview": {
     "tab": "Pratinjau",

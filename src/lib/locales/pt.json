@@ -346,7 +346,17 @@
     "info": "O que é isso?",
     "info_react": "Pra fazer um aplicativo de uma página só — rápido e interativo, tipo um painel ou uma ferramenta. Não é feito pra aparecer no Google.",
     "info_next": "É o React com várias páginas e feito pra aparecer no Google. Bom pra apps com login, painéis e dados.",
-    "info_astro": "O melhor pra sites de conteúdo que precisam aparecer no Google — landing pages, blogs, sites institucionais. Bem rápido."
+    "info_astro": "O melhor pra sites de conteúdo que precisam aparecer no Google — landing pages, blogs, sites institucionais. Bem rápido.",
+    "skill_title": "Não sabe por onde começar?",
+    "skill_desc": "A skill /start faz 3 perguntas simples, escolhe a tecnologia por você e deixa o projeto pronto pra usar.",
+    "skill_install": "Instalar skill",
+    "skill_installing": "Instalando…",
+    "skill_installed": "Skill /start instalada",
+    "skill_ready_hint": "Abra uma sessão nova no chat e diga /start.",
+    "skill_new_session": "Nova sessão",
+    "skill_learn_more": "Saiba mais",
+    "skill_error": "Não consegui instalar a skill. Tente de novo.",
+    "skill_missing_git": "Para instalar a skill, instale o Git primeiro."
   },
   "preview": {
     "tab": "Preview",

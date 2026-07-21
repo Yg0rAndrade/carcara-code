@@ -346,7 +346,17 @@
     "info": "Was ist das?",
     "info_react": "Zum Erstellen einer Single-Page-App — schnell und interaktiv, wie ein Dashboard oder ein Tool. Nicht dafür gedacht, bei Google aufzutauchen.",
     "info_next": "Es ist React mit mehreren Seiten, gebaut, um bei Google aufzutauchen. Ideal für Apps mit Login, Dashboards und Daten.",
-    "info_astro": "Am besten für Content-Websites, die bei Google auftauchen müssen — Landingpages, Blogs, Dokus. Sehr schnell."
+    "info_astro": "Am besten für Content-Websites, die bei Google auftauchen müssen — Landingpages, Blogs, Dokus. Sehr schnell.",
+    "skill_title": "Du weißt nicht, wo du anfangen sollst?",
+    "skill_desc": "Die Skill /start stellt 3 einfache Fragen, wählt die Technologie für dich aus und macht das Projekt startklar.",
+    "skill_install": "Skill installieren",
+    "skill_installing": "Wird installiert…",
+    "skill_installed": "Skill /start installiert",
+    "skill_ready_hint": "Öffne eine neue Sitzung im Chat und sage /start.",
+    "skill_new_session": "Neue Sitzung",
+    "skill_learn_more": "Mehr erfahren",
+    "skill_error": "Die Skill konnte nicht installiert werden. Versuche es erneut.",
+    "skill_missing_git": "Installiere zuerst Git, um die Skill zu installieren."
   },
   "preview": {
     "tab": "Vorschau",

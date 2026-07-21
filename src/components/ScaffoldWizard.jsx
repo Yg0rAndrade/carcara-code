@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertTriangle, ChevronRight, Info } from 'lucide-react';
+import {
+  Loader2,
+  AlertTriangle,
+  ChevronRight,
+  Info,
+  Sparkles,
+  Download,
+  Check,
+  ExternalLink,
+} from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { ReactLogo, NextLogo, AstroLogo } from './scaffoldLogos.jsx';
 import { useT } from '@/lib/i18n';
@@ -9,8 +18,106 @@ const STACK_LOGOS = { 'vite-react': ReactLogo, next: NextLogo, astro: AstroLogo 
 // Texto do "i" de informação por stack (linguagem simples, sem jargão).
 const INFO_KEY = { 'vite-react': 'info_react', next: 'info_next', astro: 'info_astro' };
 
+// CTA da skill `start` (github.com/Yg0rAndrade/start-skill): pra quem abriu uma pasta
+// vazia e não sabe qual dos três cards escolher. Instala com 1 clique (npx no main) e,
+// depois, oferece abrir uma sessão nova — o Claude só enxerga a skill numa sessão nova.
+// Estados: 'idle' | 'installing' | 'installed' | 'error'.
+function StartSkillCta({ projectPath, onNewSession }) {
+  const t = useT();
+  const [state, setState] = useState('idle');
+  const [url, setUrl] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    const p = window.api.skillDetect?.('start', projectPath);
+    if (!p || !p.then) return;
+    p.then((r) => {
+      if (!alive || !r) return;
+      if (r.url) setUrl(r.url);
+      if (r.installed) setState('installed');
+    });
+    return () => {
+      alive = false;
+    };
+  }, [projectPath]);
+
+  const install = async () => {
+    setErrorMsg('');
+    setState('installing');
+    const res = await window.api.skillInstall?.('start', projectPath);
+    if (res && res.ok) {
+      setState('installed');
+      return;
+    }
+    const code = res?.error;
+    setErrorMsg(
+      code === 'missing-git'
+        ? t('scaffold.skill_missing_git')
+        : code === 'missing-node'
+          ? t('scaffold.missing_node')
+          : t('scaffold.skill_error'),
+    );
+    setState('error');
+  };
+
+  const installed = state === 'installed';
+  const Icon = installed ? Check : Sparkles;
+
+  return (
+    <div className="w-full max-w-xl rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] to-transparent p-4 text-left">
+      <div className="flex flex-col items-center gap-4 sm:flex-row">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <div className="text-sm font-semibold">
+            {installed ? t('scaffold.skill_installed') : t('scaffold.skill_title')}
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {installed ? t('scaffold.skill_ready_hint') : t('scaffold.skill_desc')}
+          </p>
+          {state === 'error' && <p className="mt-1 text-xs text-destructive">{errorMsg}</p>}
+          {!installed && url && (
+            <button
+              onClick={() => window.api.openExternal(url)}
+              className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              {t('scaffold.skill_learn_more')}
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        <div className="shrink-0">
+          {installed ? (
+            onNewSession ? (
+              <Button size="sm" variant="secondary" onClick={onNewSession}>
+                {t('scaffold.skill_new_session')}
+              </Button>
+            ) : null
+          ) : (
+            <Button size="sm" onClick={install} disabled={state === 'installing'}>
+              {state === 'installing' ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  {t('scaffold.skill_installing')}
+                </>
+              ) : (
+                <>
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  {state === 'error' ? t('scaffold.retry') : t('scaffold.skill_install')}
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Estados: 'pick' | 'confirm' | 'running' | 'error'
-export function ScaffoldWizard({ projectPath, junk }) {
+export function ScaffoldWizard({ projectPath, junk, onNewSession }) {
   const t = useT();
   const [stacks, setStacks] = useState([]);
   const [view, setView] = useState('pick');
@@ -201,6 +308,7 @@ export function ScaffoldWizard({ projectPath, junk }) {
           );
         })}
       </div>
+      <StartSkillCta projectPath={projectPath} onNewSession={onNewSession} />
     </div>
   );
 }

@@ -346,7 +346,17 @@
     "info": "Wat is dit?",
     "info_react": "Voor het bouwen van een single-page app — snel en interactief, zoals een dashboard of een tool. Niet bedoeld om op Google te verschijnen.",
     "info_next": "Het is React met meerdere pagina's, gebouwd om op Google te verschijnen. Ideaal voor apps met login, dashboards en data.",
-    "info_astro": "Ideaal voor contentsites die op Google moeten verschijnen — landingspagina's, blogs, documentatie. Zeer snel."
+    "info_astro": "Ideaal voor contentsites die op Google moeten verschijnen — landingspagina's, blogs, documentatie. Zeer snel.",
+    "skill_title": "Weet je niet waar je moet beginnen?",
+    "skill_desc": "De /start-skill stelt 3 simpele vragen, kiest de technologie voor je en levert het project klaar voor gebruik op.",
+    "skill_install": "Skill installeren",
+    "skill_installing": "Installeren…",
+    "skill_installed": "Skill /start geïnstalleerd",
+    "skill_ready_hint": "Open een nieuwe sessie in de chat en zeg /start.",
+    "skill_new_session": "Nieuwe sessie",
+    "skill_learn_more": "Meer weten",
+    "skill_error": "Kon de skill niet installeren. Probeer het opnieuw.",
+    "skill_missing_git": "Installeer eerst Git om de skill te installeren."
   },
   "preview": {
     "tab": "Voorbeeld",
