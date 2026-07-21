@@ -10,6 +10,7 @@ import '@xterm/xterm/css/xterm.css';
 import { Loader2, MoreVertical } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { CliBadge, OPT } from '@/lib/aiOptions.jsx';
+import { AiManagerSkeleton } from './AiManagerSkeleton.jsx';
 import { cn } from '@/lib/utils';
 
 const LABEL = (key) => OPT[key]?.label ?? key;
@@ -94,6 +95,7 @@ function KebabMenu({ disabled, items, label }) {
 export default function AiManager({ initialInstallKey = null }) {
   const t = useT();
   const [rows, setRows] = useState([]); // status por CLI
+  const [probed, setProbed] = useState(false); // 1ª detecção respondeu (fim do esqueleto)
   const [busy, setBusy] = useState(null); // key em instalação/atualização
   const [busyMode, setBusyMode] = useState(null); // 'install' | 'update' | 'uninstall' — rótulo/fluxo
   const [installId, setInstallId] = useState(null);
@@ -117,6 +119,9 @@ export default function AiManager({ initialInstallKey = null }) {
     } catch {
       setRows([]);
     }
+    // A fase 1 respondeu (mesmo que vazia): sai do esqueleto. Sem este marcador, uma
+    // detecção que falha deixaria o esqueleto pulsando pra sempre.
+    setProbed(true);
     // Fase 2 (lenta, com rede): force=true fura o cache de 24h de versão pra refletir o
     // "latest" fresco e preencher latest/updateAvailable. A lista já está visível.
     try {
@@ -325,6 +330,10 @@ export default function AiManager({ initialInstallKey = null }) {
     },
     [t, start],
   );
+
+  // Antes da 1ª resposta do `aiDetected` não há linha nenhuma pra mostrar: sem isto a aba
+  // ficava em branco e o conteúdo aparecia de uma vez. Mesmo esqueleto do Suspense.
+  if (!probed) return <AiManagerSkeleton />;
 
   return (
     <div className="relative flex h-[300px] gap-4">

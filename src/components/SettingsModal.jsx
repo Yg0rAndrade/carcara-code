@@ -26,6 +26,12 @@ import {
   Search,
   ArrowDownAZ,
   ArrowUpAZ,
+  Palette,
+  SquareTerminal,
+  SquareChevronRight,
+  GitBranch,
+  Container,
+  Fish,
 } from 'lucide-react';
 import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
@@ -41,11 +47,12 @@ import { LANGUAGES } from '@/lib/languages';
 import { Flag } from '@/lib/flags.jsx';
 import { updateView } from '@/lib/updateView';
 import { useLayout } from '@/lib/layoutContext.jsx';
-import { useChatMode } from '@/lib/chatModeContext.jsx';
 // Notas de versão (aba "Novidades"): o CHANGELOG.md da raiz vira texto em build-time via
 // import ?raw do Vite — sem IPC, sem duplicar o arquivo. Markdown.jsx é lazy (mesmo padrão
 // do ChatPanel) pra não puxar react-markdown/highlight.js pro bundle inicial do app.
 import changelogText from '../../CHANGELOG.md?raw';
+
+import { AiManagerSkeleton } from './AiManagerSkeleton.jsx';
 
 const Markdown = lazy(() => import('./Markdown.jsx'));
 // AiManager só aparece na aba "Gerenciar IAs" — lazy pra não pesar o boot do app
@@ -243,6 +250,48 @@ function LayoutThumb({ rail, claude }) {
   return <span className="flex h-10 w-full items-stretch gap-1">{all}</span>;
 }
 
+// Cabeçalho de seção das Configurações: ícone + título e, quando faz falta, uma linha de
+// ajuda. Um formato só pra todas as seções — é o que faz a aba ler como uma lista, e não
+// como um mural de controles soltos de tamanhos variados.
+function SectionHead({ icon, title, help, className }) {
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-2 text-[13px] font-medium">
+        <span aria-hidden="true" className="[&_svg]:size-4">
+          {icon}
+        </span>
+        {title}
+      </div>
+      {help && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{help}</p>}
+    </div>
+  );
+}
+
+// Botão de opção das Configurações (shell, aparência do terminal, zoom). Altura ÚNICA de
+// 44px: rótulos curtos ("Claro") e longos ("Automático (padrão do sistema)") passavam a
+// render botões de alturas diferentes, e a linha ficava serrilhada. Também é o tamanho
+// mínimo confortável de alvo de clique.
+const OPTION_BTN = {
+  base: 'flex h-11 items-center gap-2 rounded-md border text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40',
+  icon: 'grid size-11 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4',
+  active: 'border-primary bg-muted ring-1 ring-primary',
+};
+
+// Ícone por shell — sem logos de marca (o lucide não traz), mas o suficiente pra bater o
+// olho e achar o seu. Fallback: o terminalzinho genérico.
+const SHELL_ICON = {
+  auto: Monitor,
+  powershell: Terminal,
+  pwsh: Terminal,
+  cmd: SquareChevronRight,
+  gitbash: GitBranch,
+  wsl: Container,
+  zsh: SquareTerminal,
+  bash: SquareTerminal,
+  fish: Fish,
+  sh: SquareTerminal,
+};
+
 export function SettingsModal({
   open,
   onClose,
@@ -258,7 +307,6 @@ export function SettingsModal({
   const t = useT();
   const { lang, setLang } = useLang();
   const { railSide, claudeSide, setPreset } = useLayout();
-  const { chatMode, setChatMode } = useChatMode();
   const [tab, setTab] = useState(initialTab);
   // Quando reabre apontando pra uma aba específica (ex.: clique na versão do rail).
   // Também guarda o auto-install quando o App abre já pedindo "instalar a CLI X"
@@ -337,10 +385,6 @@ export function SettingsModal({
       return next;
     });
   };
-
-  // Alterna o painel esquerdo entre terminal (cli) e chat assistant-ui (beta). O contexto
-  // (chatModeContext) já grava no config.json via preload e atualiza o App ao vivo.
-  const toggleChatMode = () => setChatMode(chatMode === 'chat' ? 'cli' : 'chat');
 
   // Autosave é só do renderer (o CodeView lê e salva). Guarda em localStorage e avisa
   // o CodeView na hora via evento — assim ligar/desligar vale sem reabrir o editor.
@@ -528,9 +572,14 @@ export function SettingsModal({
   const visibleProjects = filterAndSortProjects(projects, { query: aiQuery, sort: aiSort });
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-background">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('settings.title')}
+      className="fixed inset-0 z-50 flex bg-background"
+    >
       {/* Navegação lateral */}
-      <div className="flex w-52 shrink-0 flex-col gap-0.5 border-r bg-card p-3">
+      <nav className="flex w-52 shrink-0 flex-col gap-0.5 border-r bg-card p-3">
         <div className="px-2 py-2 text-base font-semibold">{t('settings.title')}</div>
         <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<FolderKanban />}>
           {t('settings.tabAi')}
@@ -575,7 +624,7 @@ export function SettingsModal({
         <TabButton active={tab === 'about'} onClick={() => setTab('about')} icon={<Heart />}>
           {t('settings.tabAbout')}
         </TabButton>
-      </div>
+      </nav>
 
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
@@ -606,13 +655,14 @@ export function SettingsModal({
             type="button"
             onClick={onClose}
             title={t('settings.close')}
-            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]"
+            aria-label={t('settings.close')}
+            className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&_svg]:size-[18px]"
           >
-            <X />
+            <X aria-hidden="true" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
           {/* Container compartilhado: largura ~80% da viewport (≈10% de margem branca de
               cada lado), com teto pra telas gigantes. Vale pra TODAS as abas. */}
           <div className="mx-auto w-[82vw] max-w-[1200px]">
@@ -627,29 +677,9 @@ export function SettingsModal({
                     {t('settings.aiIntroPost')}
                   </p>
 
-                  {/* Modo de chat (beta): terminal cru vs UI assistant-ui. Aditivo — o padrão é o
-                      terminal; ligar só troca o painel esquerdo, o resto do app não muda. */}
-                  <div className="mt-5 flex items-start justify-between gap-4 rounded-lg border p-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-[13px] font-medium">
-                        Chat em vez do terminal
-                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                          beta
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                        Mostra um painel de chat em HTML/CSS no lugar do terminal do Claude Code.
-                        Ainda em construção — o terminal continua sendo o modo completo e volta a um
-                        clique.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={chatMode === 'chat'}
-                      onCheckedChange={toggleChatMode}
-                      title={chatMode === 'chat' ? 'Usando chat' : 'Usando terminal'}
-                      className="mt-0.5"
-                    />
-                  </div>
+                  {/* O card "Chat em vez do terminal" (beta) saiu daqui: o painel ainda está em
+                      construção. A fiação continua no chatModeContext, atrás do flag
+                      CHAT_MODE_ENABLED — ligar de novo é devolver este card. */}
 
                   <div className="mt-5 flex flex-col gap-3">
                     {projects.length === 0 && (
@@ -665,6 +695,9 @@ export function SettingsModal({
                             value={aiQuery}
                             onChange={(e) => setAiQuery(e.target.value)}
                             placeholder={t('settings.aiSearchPlaceholder')}
+                            type="search"
+                            spellCheck={false}
+                            aria-label={t('settings.aiSearchPlaceholder')}
                             className="w-full rounded-md border bg-background py-1.5 pl-8 pr-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                           />
                         </div>
@@ -682,15 +715,22 @@ export function SettingsModal({
                                 ? 'settings.aiSortDesc'
                                 : 'settings.aiSortDefault',
                           )}
+                          aria-label={t(
+                            aiSort === 'asc'
+                              ? 'settings.aiSortAsc'
+                              : aiSort === 'desc'
+                                ? 'settings.aiSortDesc'
+                                : 'settings.aiSortDefault',
+                          )}
                           className={cn(
-                            'grid size-8 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted',
+                            'grid size-8 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                             aiSort !== 'default' && 'border-primary text-primary',
                           )}
                         >
                           {aiSort === 'desc' ? (
-                            <ArrowUpAZ className="size-4" />
+                            <ArrowUpAZ aria-hidden="true" className="size-4" />
                           ) : (
-                            <ArrowDownAZ className="size-4" />
+                            <ArrowDownAZ aria-hidden="true" className="size-4" />
                           )}
                         </button>
                       </div>
@@ -703,177 +743,206 @@ export function SettingsModal({
                     {visibleProjects.map((p) => {
                       const cur = sel[p.path] || { ais: ['claude'], custom: '' };
                       return (
-                        <div key={p.path} className="rounded-lg border p-3">
-                          <div className="mb-2.5 flex items-center gap-2">
+                        <div key={p.path} className="overflow-hidden rounded-lg border">
+                          {/* Cabeçalho do card = QUEM é o projeto (fundo próprio e borda
+                              embaixo). Sem isso, nome, chips de IA e portas ficavam todos no
+                              mesmo peso e o card virava uma lista sem começo. */}
+                          <div className="flex items-center gap-2.5 border-b bg-muted/40 px-3 py-2.5">
                             {p.icon ? (
                               <img
                                 src={p.icon}
                                 alt=""
+                                width={32}
+                                height={32}
                                 className="size-8 rounded-md object-contain"
                               />
                             ) : (
-                              <span className="grid size-8 place-items-center rounded-md bg-muted text-sm font-semibold uppercase">
+                              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-sm font-semibold uppercase">
                                 {p.name?.[0] || '?'}
                               </span>
                             )}
                             <span
-                              className="min-w-0 flex-1 truncate text-sm font-medium"
+                              className="min-w-0 flex-1 truncate text-sm font-semibold"
                               title={p.name}
                             >
                               {p.name}
                             </span>
-                            <span className="ml-1 flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                            <span className="flex shrink-0 items-center gap-1">
                               {cur.ais.map((k) => (
                                 <CliBadge key={k} optKey={k} small />
                               ))}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {AI_OPTIONS.filter((opt) => !opt.hidden).map((opt) => {
-                              const active = cur.ais.includes(opt.key);
-                              const missing = !isInstalled(opt.key);
-                              return (
-                                <button
-                                  key={opt.key}
-                                  type="button"
-                                  onClick={() =>
-                                    missing ? setConfirmInstall(opt.key) : toggle(p.path, opt.key)
-                                  }
-                                  title={missing ? t('settings.aiClickToInstall') : t(opt.desc)}
-                                  className={cn(
-                                    'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[13px] transition-colors hover:bg-muted',
-                                    active && 'border-primary bg-muted ring-1 ring-primary',
-                                    missing && 'border-dashed opacity-60 grayscale',
-                                  )}
-                                >
-                                  <CliBadge optKey={opt.key} />
-                                  {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
-                                  {missing && <span className="text-[11px]">⬇</span>}
-                                  {active && !missing && (
-                                    <Check className="size-3.5 text-primary" />
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {cur.ais.includes('custom') && (
-                            <Input
-                              value={cur.custom || ''}
-                              onChange={(e) => onCustom(p.path, e.target.value)}
-                              placeholder={t('settings.aiCustomPlaceholder')}
-                              className="mt-2.5 h-8 font-mono text-xs"
-                            />
-                          )}
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            {t('settings.aiMinOne')}
-                          </p>
-                          {/* Porta fixa opcional deste projeto. */}
-                          {(() => {
-                            const pe = portEntry(p.path);
-                            return (
-                              <div className="mt-3 border-t pt-3">
+
+                          <div className="p-3">
+                            <div className="flex flex-wrap gap-2">
+                              {AI_OPTIONS.filter((opt) => !opt.hidden).map((opt) => {
+                                const active = cur.ais.includes(opt.key);
+                                const missing = !isInstalled(opt.key);
+                                return (
+                                  <button
+                                    key={opt.key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() =>
+                                      missing ? setConfirmInstall(opt.key) : toggle(p.path, opt.key)
+                                    }
+                                    title={missing ? t('settings.aiClickToInstall') : t(opt.desc)}
+                                    className={cn(
+                                      // Altura fixa: os chips têm rótulos de tamanhos bem
+                                      // diferentes e, sem isso, a linha ficava serrilhada.
+                                      'flex h-9 items-center gap-2 rounded-md border px-2.5 text-[13px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                      active && 'border-primary bg-muted ring-1 ring-primary',
+                                      missing && 'border-dashed opacity-60 grayscale',
+                                    )}
+                                  >
+                                    <CliBadge optKey={opt.key} />
+                                    {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
+                                    {missing && <span className="text-[11px]">⬇</span>}
+                                    {active && !missing && (
+                                      <Check className="size-3.5 text-primary" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {cur.ais.includes('custom') && (
+                              <Input
+                                value={cur.custom || ''}
+                                onChange={(e) => onCustom(p.path, e.target.value)}
+                                placeholder={t('settings.aiCustomPlaceholder')}
+                                className="mt-2.5 h-8 font-mono text-xs"
+                              />
+                            )}
+                            {/* O aviso só aparece quando explica algo: com uma IA marcada, ela
+                                não desmarca. Antes ele se repetia em TODO card, virando ruído. */}
+                            {cur.ais.length === 1 && (
+                              <p className="mt-2 text-[11px] text-muted-foreground">
+                                {t('settings.aiMinOne')}
+                              </p>
+                            )}
+
+                            {/* Portas do projeto: fixa (o que ele VAI usar) e no ar (o que ele
+                                está usando agora) — dois assuntos irmãos, lado a lado, em vez de
+                                empilhados como se um dependesse do outro. */}
+                            <div className="mt-3 grid gap-x-6 gap-y-3 border-t pt-3 sm:grid-cols-2">
+                              {(() => {
+                                const pe = portEntry(p.path);
+                                return (
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <Switch
+                                        checked={pe.on}
+                                        onCheckedChange={() => togglePort(p.path)}
+                                      />
+                                      <span className="flex-1 text-[13px] font-medium">
+                                        {t('settings.portFixed')}
+                                      </span>
+                                      {pe.currentPort && (
+                                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                          {t('settings.portCurrent', { port: pe.currentPort })}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {pe.on && (
+                                      <>
+                                        <Input
+                                          value={pe.draft}
+                                          inputMode="numeric"
+                                          onChange={(e) => onPortDraft(p.path, e.target.value)}
+                                          onBlur={() => commitPort(p.path)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') commitPort(p.path);
+                                          }}
+                                          placeholder={t('settings.portPlaceholder')}
+                                          aria-label={t('settings.portFixed')}
+                                          className="mt-2 h-8 w-28 font-mono text-xs"
+                                        />
+                                        <p
+                                          className={cn(
+                                            'mt-1.5 text-[11px]',
+                                            pe.error ? 'text-destructive' : 'text-muted-foreground',
+                                          )}
+                                        >
+                                          {pe.error || t('settings.portHint')}
+                                        </p>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Portas no ar: varredura sob demanda (sem polling); o ✕ de cada
+                                  chip sempre passa pela confirmação (killTarget). */}
+                              <div>
                                 <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={pe.on}
-                                    onCheckedChange={() => togglePort(p.path)}
-                                  />
                                   <span className="flex-1 text-[13px] font-medium">
-                                    {t('settings.portFixed')}
+                                    {t('settings.portsScan')}
                                   </span>
-                                  {pe.currentPort && (
-                                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                                      {t('settings.portCurrent', { port: pe.currentPort })}
-                                    </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => scanPorts(p.path)}
+                                    disabled={openPorts[p.path]?.loading}
+                                    className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+                                    title={t('settings.portsScan')}
+                                    aria-label={t('settings.portsScan')}
+                                  >
+                                    <RefreshCw
+                                      aria-hidden="true"
+                                      className={cn(
+                                        'h-3.5 w-3.5',
+                                        openPorts[p.path]?.loading && 'animate-spin',
+                                      )}
+                                    />
+                                  </button>
+                                </div>
+                                <div aria-live="polite">
+                                  {openPorts[p.path]?.scanned && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      {openPorts[p.path].list.length === 0 && (
+                                        <span className="text-[11px] text-muted-foreground">
+                                          {t('settings.portsEmpty')}
+                                        </span>
+                                      )}
+                                      {openPorts[p.path].list.map((pt) => (
+                                        <span
+                                          key={pt.port}
+                                          className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]"
+                                        >
+                                          {pt.port}
+                                          {pt.name && (
+                                            <span className="text-muted-foreground">{pt.name}</span>
+                                          )}
+                                          {pt.isPreview && (
+                                            <span className="rounded bg-primary/15 px-1 text-[9px] text-primary">
+                                              {t('settings.portsAppTag')}
+                                            </span>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setKillTarget({
+                                                path: p.path,
+                                                port: pt.port,
+                                                name: pt.name || String(pt.port),
+                                              })
+                                            }
+                                            className="text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+                                            title={t('settings.portsCloseConfirm')}
+                                            aria-label={t('settings.portsCloseTitle', {
+                                              port: pt.port,
+                                              name: pt.name || String(pt.port),
+                                            })}
+                                          >
+                                            <X aria-hidden="true" className="h-3 w-3" />
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
-                                {pe.on && (
-                                  <>
-                                    <Input
-                                      value={pe.draft}
-                                      inputMode="numeric"
-                                      onChange={(e) => onPortDraft(p.path, e.target.value)}
-                                      onBlur={() => commitPort(p.path)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') commitPort(p.path);
-                                      }}
-                                      placeholder={t('settings.portPlaceholder')}
-                                      className="mt-2 h-8 w-28 font-mono text-xs"
-                                    />
-                                    <p
-                                      className={cn(
-                                        'mt-1.5 text-[11px]',
-                                        pe.error ? 'text-destructive' : 'text-muted-foreground',
-                                      )}
-                                    >
-                                      {pe.error || t('settings.portHint')}
-                                    </p>
-                                  </>
-                                )}
                               </div>
-                            );
-                          })()}
-                          {/* Portas no ar deste projeto: varredura sob demanda (sem polling); o
-                              ✕ de cada chip sempre passa pela confirmação (killTarget) antes de
-                              matar o processo. */}
-                          <div className="mt-3 border-t pt-3">
-                            <div className="flex items-center gap-2">
-                              <span className="flex-1 text-[13px] font-medium">
-                                {t('settings.portsScan')}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => scanPorts(p.path)}
-                                disabled={openPorts[p.path]?.loading}
-                                className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
-                                title={t('settings.portsScan')}
-                              >
-                                <RefreshCw
-                                  className={cn(
-                                    'h-3.5 w-3.5',
-                                    openPorts[p.path]?.loading && 'animate-spin',
-                                  )}
-                                />
-                              </button>
                             </div>
-                            {openPorts[p.path]?.scanned && (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {openPorts[p.path].list.length === 0 && (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {t('settings.portsEmpty')}
-                                  </span>
-                                )}
-                                {openPorts[p.path].list.map((pt) => (
-                                  <span
-                                    key={pt.port}
-                                    className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]"
-                                  >
-                                    {pt.port}
-                                    {pt.name && (
-                                      <span className="text-muted-foreground">{pt.name}</span>
-                                    )}
-                                    {pt.isPreview && (
-                                      <span className="rounded bg-primary/15 px-1 text-[9px] text-primary">
-                                        {t('settings.portsAppTag')}
-                                      </span>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setKillTarget({
-                                          path: p.path,
-                                          port: pt.port,
-                                          name: pt.name || String(pt.port),
-                                        })
-                                      }
-                                      className="text-muted-foreground hover:text-destructive"
-                                      title={t('settings.portsCloseConfirm')}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         </div>
                       );
@@ -953,26 +1022,30 @@ export function SettingsModal({
             )}
 
             {tab === 'clis' && (
-              <Suspense
-                fallback={<div className="p-8 text-center text-sm text-muted-foreground">…</div>}
-              >
+              // Esqueleto no lugar do "…": o chunk do AiManager é grande (xterm) e a
+              // sondagem das CLIs leva um tempo — a aba abria em branco e depois pulava.
+              <Suspense fallback={<AiManagerSkeleton />}>
                 <AiManager initialInstallKey={pendingInstall} />
               </Suspense>
             )}
 
             {tab === 'appearance' && (
-              <div className="mx-auto max-w-3xl">
-                <div className="text-[13px] font-medium">{t('settings.appTheme')}</div>
-                <div className="mt-3 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
+              // Todas as seções desta aba compartilham a MESMA coluna (max-w-2xl) e o mesmo
+              // cabeçalho (ícone + título + ajuda): os blocos alinham pela esquerda e pela
+              // direita, então dá pra varrer a aba de cima a baixo sem procurar cada controle.
+              <div className="mx-auto max-w-2xl">
+                <SectionHead icon={<Palette />} title={t('settings.appTheme')} />
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {THEME_ORDER.map((key) => {
                     const p = THEME_SWATCH[key];
                     return (
                       <button
                         key={key}
                         type="button"
+                        aria-pressed={theme === key}
                         onClick={() => setTheme(key)}
                         className={cn(
-                          'flex flex-col gap-2 rounded-md border p-2 text-left transition-colors hover:bg-muted',
+                          'flex flex-col gap-2 rounded-md border p-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                           theme === key && 'border-primary ring-1 ring-primary',
                         )}
                       >
@@ -1019,27 +1092,32 @@ export function SettingsModal({
                   })}
                 </div>
 
-                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                  <ZoomIn className="h-4 w-4" /> {t('settings.zoomTitle')}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t('settings.zoomHelp')}{' '}
-                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd> +{' '}
-                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd> /{' '}
-                  <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd>{' '}
-                  {t('settings.zoomFocusHint')}
-                </p>
-                <div className="mt-3 flex max-w-md items-center gap-2">
+                <SectionHead
+                  className="mt-8"
+                  icon={<ZoomIn />}
+                  title={t('settings.zoomTitle')}
+                  help={
+                    <>
+                      {t('settings.zoomHelp')}{' '}
+                      <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">Ctrl</kbd>{' '}
+                      + <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">+</kbd>{' '}
+                      / <kbd className="rounded border bg-muted px-1 font-mono text-[11px]">−</kbd>{' '}
+                      {t('settings.zoomFocusHint')}
+                    </>
+                  }
+                />
+                <div className="mt-3 flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => applyZoom('out')}
                     disabled={zoom <= 0.5}
                     title={t('settings.zoomOut')}
-                    className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
+                    aria-label={t('settings.zoomOut')}
+                    className={OPTION_BTN.icon}
                   >
-                    <ZoomOut />
+                    <ZoomOut aria-hidden="true" />
                   </button>
-                  <div className="grid h-9 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
+                  <div className="grid h-11 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
                     {Math.round(zoom * 100)}%
                   </div>
                   <button
@@ -1047,78 +1125,78 @@ export function SettingsModal({
                     onClick={() => applyZoom('in')}
                     disabled={zoom >= 2}
                     title={t('settings.zoomIn')}
-                    className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4"
+                    aria-label={t('settings.zoomIn')}
+                    className={OPTION_BTN.icon}
                   >
-                    <ZoomIn />
+                    <ZoomIn aria-hidden="true" />
                   </button>
                   <button
                     type="button"
                     onClick={() => applyZoom('reset')}
                     disabled={zoom === 1}
                     title={t('settings.zoomReset')}
-                    className="flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5"
+                    className={cn(OPTION_BTN.base, 'px-3')}
                   >
-                    <RotateCcw /> {t('settings.zoomResetLabel')}
+                    <RotateCcw aria-hidden="true" className="size-3.5" />{' '}
+                    {t('settings.zoomResetLabel')}
                   </button>
                 </div>
 
-                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                  <Terminal className="h-4 w-4" /> {t('settings.termTitle')}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t('settings.termHelp')}</p>
-                <div className="mt-3 grid max-w-md grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTerminalAppearance('auto')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      terminalAppearance === 'auto' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    <Monitor className="h-4 w-4" /> {t('settings.termAuto')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTerminalAppearance('light')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      terminalAppearance === 'light' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    <Sun className="h-4 w-4" /> {t('settings.themeLight')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTerminalAppearance('dark')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      terminalAppearance === 'dark' && 'border-primary ring-1 ring-primary',
-                    )}
-                  >
-                    <Moon className="h-4 w-4" /> {t('settings.themeDark')}
-                  </button>
+                <SectionHead
+                  className="mt-8"
+                  icon={<Terminal />}
+                  title={t('settings.termTitle')}
+                  help={t('settings.termHelp')}
+                />
+                {/* Mesma grade de 3 colunas do seletor de tema: as células caem exatamente
+                    sob as de cima, em vez de virarem três botõezinhos de larguras diferentes. */}
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'auto', Icon: Monitor, label: t('settings.termAuto') },
+                    { key: 'light', Icon: Sun, label: t('settings.themeLight') },
+                    { key: 'dark', Icon: Moon, label: t('settings.themeDark') },
+                  ].map(({ key, Icon, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={terminalAppearance === key}
+                      onClick={() => setTerminalAppearance(key)}
+                      title={label}
+                      className={cn(
+                        OPTION_BTN.base,
+                        'justify-center px-3',
+                        terminalAppearance === key && OPTION_BTN.active,
+                      )}
+                    >
+                      <Icon aria-hidden="true" className="size-4 shrink-0" />
+                      <span className="truncate">{label}</span>
+                    </button>
+                  ))}
                 </div>
 
-                <div className="mt-8 flex items-center gap-2 text-[13px] font-medium">
-                  <Monitor className="h-4 w-4" /> {t('settings.layoutTitle')}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t('settings.layoutHelp')}</p>
-                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                <SectionHead
+                  className="mt-8"
+                  icon={<Monitor />}
+                  title={t('settings.layoutTitle')}
+                  help={t('settings.layoutHelp')}
+                />
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {LAYOUT_PRESETS.map((preset) => {
                     const active = railSide === preset.rail && claudeSide === preset.claude;
                     return (
                       <button
                         key={preset.rail + preset.claude}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => setPreset(preset.rail, preset.claude)}
                         title={t(preset.labelKey)}
                         className={cn(
-                          'flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted',
+                          'flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                           active && 'border-primary ring-1 ring-primary',
                         )}
                       >
                         <LayoutThumb rail={preset.rail} claude={preset.claude} />
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="line-clamp-2 text-left text-[11px] leading-tight text-muted-foreground">
                           {t(preset.labelKey)}
                         </span>
                       </button>
@@ -1129,7 +1207,9 @@ export function SettingsModal({
             )}
 
             {tab === 'code' && (
-              <div className="mx-auto flex max-w-3xl flex-col gap-3">
+              // Mesma coluna das abas Aparência/Terminal: trocar de aba não muda a largura
+              // do conteúdo (nada "anda" pro lado quando você navega pelo menu).
+              <div className="mx-auto flex max-w-2xl flex-col gap-3">
                 <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13px] font-medium">
@@ -1170,46 +1250,51 @@ export function SettingsModal({
             )}
 
             {tab === 'terminal' && (
-              <div className="mx-auto max-w-3xl">
-                <div className="flex items-center gap-2 text-[13px] font-medium">
-                  <Terminal className="h-4 w-4" /> {t('settings.shellTitle')}
+              <div className="mx-auto max-w-2xl">
+                <div className="flex items-start justify-between gap-3">
+                  <SectionHead
+                    icon={<Terminal />}
+                    title={t('settings.shellTitle')}
+                    help={t('settings.shellHelp')}
+                  />
                   <button
                     type="button"
                     onClick={rescanShells}
                     title={t('settings.shellRescan')}
-                    className="ml-auto flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+                    className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&_svg]:size-3.5"
                   >
-                    <RefreshCw /> {t('settings.shellRescan')}
+                    <RefreshCw aria-hidden="true" /> {t('settings.shellRescan')}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t('settings.shellHelp')}</p>
-                <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
+                {/* Um cartão por shell, todos do mesmo tamanho, com ícone à esquerda e o
+                    ✓ sempre na mesma quina — antes cada botão tinha a largura do seu
+                    rótulo e o "Automático" quebrava em duas linhas, ficando mais alto.
+                    A grade cresce com a janela em vez de espremer tudo em 2 colunas. */}
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {/* Auto = shell padrão do SO ($SHELL / COMSPEC). Sempre a 1ª opção. */}
-                  <button
-                    type="button"
-                    onClick={() => pickShell('auto')}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                      shellPref === 'auto' && 'border-primary bg-muted ring-1 ring-primary',
-                    )}
-                  >
-                    <Monitor className="h-4 w-4" /> {t('settings.shellAuto')}
-                    {shellPref === 'auto' && <Check className="size-3.5 text-primary" />}
-                  </button>
-                  {shells.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => pickShell(s.id)}
-                      className={cn(
-                        'flex items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted',
-                        shellPref === s.id && 'border-primary bg-muted ring-1 ring-primary',
-                      )}
-                    >
-                      {s.label}
-                      {shellPref === s.id && <Check className="size-3.5 text-primary" />}
-                    </button>
-                  ))}
+                  {[{ id: 'auto', label: t('settings.shellAuto') }, ...shells].map((s) => {
+                    const Icon = SHELL_ICON[s.id] || Terminal;
+                    const active = shellPref === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => pickShell(s.id)}
+                        title={s.label}
+                        className={cn(OPTION_BTN.base, 'px-3', active && OPTION_BTN.active)}
+                      >
+                        <Icon
+                          aria-hidden="true"
+                          className={cn('size-4 shrink-0', active && 'text-primary')}
+                        />
+                        <span className="min-w-0 flex-1 truncate text-left">{s.label}</span>
+                        {active && (
+                          <Check aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 <p className="mt-3 text-[11px] text-muted-foreground">
                   {t('settings.shellNewHint')}
@@ -1218,7 +1303,7 @@ export function SettingsModal({
             )}
 
             {tab === 'notify' && (
-              <div className="mx-auto max-w-3xl">
+              <div className="mx-auto max-w-2xl">
                 <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                   <div className="min-w-0">
                     <div className="text-[13px] font-medium">{t('settings.notifyTitle')}</div>
@@ -1371,6 +1456,8 @@ export function SettingsModal({
                   <img
                     src={ygorPhoto}
                     alt={AUTHOR.name}
+                    width={56}
+                    height={56}
                     className="size-14 shrink-0 rounded-xl object-cover ring-1 ring-primary/20"
                   />
                   <div className="min-w-0">
@@ -1431,12 +1518,15 @@ function TabButton({ active, onClick, icon, children }) {
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] transition-colors [&_svg]:size-4',
+        'flex items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&_svg]:size-4',
         active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60',
       )}
     >
-      {icon}
+      <span aria-hidden="true" className="contents">
+        {icon}
+      </span>
       {children}
     </button>
   );

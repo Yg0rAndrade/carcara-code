@@ -5,7 +5,15 @@ import { createContext, useContext, useEffect, useState } from 'react';
 // localStorage pra ler síncrono no boot (sem piscar) e re-sincroniza com o
 // config.json (fonte da verdade) ao montar.
 const LKEY = 'chatMode:v1';
-const modeOf = (v) => (v === 'chat' ? 'chat' : 'cli');
+
+// Chave mestra do recurso. O painel de chat ainda está em construção, então a opção saiu
+// das Configurações e o modo fica travado no terminal — inclusive pra quem já tinha
+// deixado 'chat' ligado (senão ficaria preso num painel incompleto, sem botão pra voltar).
+// A fiação (config.json, contexto, ChatPanel) continua intacta: quando o chat estiver
+// pronto, basta ligar este flag de volta e devolver o card na aba "Projetos".
+const CHAT_MODE_ENABLED = false;
+
+const modeOf = (v) => (CHAT_MODE_ENABLED && v === 'chat' ? 'chat' : 'cli');
 
 function readMirror() {
   try {
