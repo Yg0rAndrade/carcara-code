@@ -10,8 +10,6 @@ import {
   Crop,
   ExternalLink,
   Monitor,
-  Tablet,
-  Smartphone,
   Plus,
   Globe,
   ListTodo,
@@ -35,6 +33,8 @@ import { HoverIcon } from './ui/hover-icon.jsx';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs.jsx';
 import { Input } from './ui/input.jsx';
 import { Button } from './ui/button.jsx';
+import { ToolButton } from './ui/tool-button.jsx';
+import { DevicePicker } from './ui/device-picker.jsx';
 import { ResizeBar } from './ui/resize-bar.jsx';
 import { DragHandle } from './ui/drag-handle.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
@@ -48,6 +48,7 @@ import {
   CLEANUP as TOUCH_CLEANUP,
   HIDE as TOUCH_HIDE,
 } from '@/lib/touchCursorScript';
+import { applyViewport } from '@/lib/webviewChrome';
 import { rectFromDrag } from '@/lib/screenshot';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
@@ -245,88 +246,6 @@ function TabChip({ label, favicon, active, onSelect, onClose, closeTitle }) {
   );
 }
 
-// Botão de ícone pequeno e neutro da barra (cor só no hover/ativo).
-function ToolButton({ active, className, children, ...props }) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        // Superfície de descanso: sem ela o botão é "texto fantasma" e some na barra.
-        'grid h-7 w-7 place-items-center rounded-md bg-secondary text-muted-foreground transition-colors',
-        'hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40',
-        '[&_svg]:size-[15px]',
-        // Ativo = brasa, igual à aba selecionada (data-[state=active]:text-primary).
-        active && 'bg-background text-primary shadow-sm hover:bg-background hover:text-primary',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-// Seletor de tamanho de tela (computador/tablet/celular). Mostra só o dispositivo
-// atual; ao clicar, abre um dropdown com as três opções — mesmo padrão visual do
-// menu "Ferramentas", pra barra ficar coesa. Fica colado na barra de URL.
-function DevicePicker({ value, onChange, disabled }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const DEVICES = [
-    { value: 'desktop', label: t('preview.viewport_desktop'), Icon: Monitor },
-    { value: 'tablet', label: t('preview.viewport_tablet'), Icon: Tablet },
-    { value: 'mobile', label: t('preview.viewport_mobile'), Icon: Smartphone },
-  ];
-  const current = DEVICES.find((d) => d.value === value) || DEVICES[0];
-  const CurrentIcon = current.Icon;
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onDown);
-    return () => window.removeEventListener('mousedown', onDown);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <ToolButton
-        onClick={() => setOpen((o) => !o)}
-        disabled={disabled}
-        active={open || value !== 'desktop'}
-        title={t('preview.viewport')}
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <CurrentIcon />
-      </ToolButton>
-      {open && (
-        <div className="absolute left-0 top-9 z-50 min-w-[150px] overflow-hidden rounded-md border bg-popover py-1 shadow-md">
-          {DEVICES.map((d) => (
-            <button
-              key={d.value}
-              type="button"
-              onClick={() => {
-                onChange(d.value);
-                setOpen(false);
-              }}
-              className={cn(
-                'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4',
-                value === d.value && 'font-medium text-primary',
-              )}
-            >
-              <d.Icon />
-              {d.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Menu da câmera (mesmo padrão do DevicePicker): clicar abre "Selecionar área" / "Tela toda".
 function ShotPicker({ onArea, onFull, active, disabled }) {
   const t = useT();
@@ -404,30 +323,6 @@ function partitionFor(projectPath) {
   let h = 0;
   for (let i = 0; i < projectPath.length; i++) h = (h * 31 + projectPath.charCodeAt(i)) | 0;
   return 'persist:preview-' + (h >>> 0).toString(36);
-}
-
-// Larguras dos modos de visualização. `null` = desktop (ocupa tudo). Os demais
-// fixam a largura e centralizam o webview, simulando tablet/celular pra testar
-// o layout responsivo sem precisar redimensionar a janela toda.
-const VIEWPORTS = { desktop: null, tablet: 820, mobile: 390 };
-
-// Aplica o modo de visualização ao <webview>: no desktop ele volta a ocupar a
-// área inteira; nos outros vira uma "moldura" centralizada de largura fixa.
-function applyViewport(w, vp) {
-  const width = VIEWPORTS[vp];
-  if (!width) {
-    w.style.width = '100%';
-    w.style.left = '0';
-    w.style.right = '0';
-    w.style.transform = 'none';
-  } else {
-    // Largura fixa e centralizado. Sem borda/sombra: a calha cinza ao redor já
-    // separa o "dispositivo" do fundo (mesma ideia do Lovable), e o site fica limpo.
-    w.style.width = width + 'px';
-    w.style.left = '50%';
-    w.style.right = 'auto';
-    w.style.transform = 'translateX(-50%)';
-  }
 }
 
 export function PreviewPanel({

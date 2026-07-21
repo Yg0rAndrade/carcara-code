@@ -107,6 +107,17 @@ assert(
   sc.isScaffoldable(['.git', 'carcara-scaffold-tmp']) === true,
   '.git + nosso tempdir é scaffoldável',
 );
+// O CTA da skill `start` instala em .claude/skills/ antes do scaffold: a pasta
+// não pode deixar de ser scaffoldável por causa disso (vide skill-catalog.cjs).
+assert(sc.isScaffoldable(['.claude']) === true, '.claude sozinho é scaffoldável');
+assert(
+  sc.isScaffoldable(['.git', '.claude']) === true,
+  '.git + .claude (skill instalada) é scaffoldável',
+);
+assert(
+  JSON.stringify(sc.junkPresent(['.claude', 'README.md'])) === JSON.stringify(['README.md']),
+  'junkPresent não conta o .claude',
+);
 assert(
   sc.isScaffoldable(['carcara-scaffold-tmp', 'package.json']) === false,
   'tempdir + conteúdo real ainda bloqueia',

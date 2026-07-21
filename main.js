@@ -3972,18 +3972,21 @@ const skillCatalog = require('./electron/skill-catalog.cjs');
 const runningSkillInstalls = new Set();
 const SKILL_INSTALL_TIMEOUT_MS = 3 * 60 * 1000;
 
-function skillLinkPaths(id, projectPath) {
+// Caminho do link, na base do escopo da skill. Escopo 'project' NÃO considera a
+// instalação global: o CTA fala do projeto aberto, e quem já rodou o npx global
+// alguma vez veria "instalada" para sempre, em projeto nenhum.
+function skillLinkPath(id, projectPath) {
   const segs = skillCatalog.linkSegmentsFor(id);
-  if (!segs) return [];
-  const paths = [path.join(os.homedir(), ...segs)];
-  if (projectPath) paths.push(path.join(projectPath, ...segs));
-  return paths;
+  if (!segs) return null;
+  const base = skillCatalog.scopeFor(id) === 'project' ? projectPath : os.homedir();
+  return base ? path.join(base, ...segs) : null;
 }
 
 // existsSync (e não lstat) de propósito: link quebrado conta como NÃO instalada,
 // e o botão de instalar reaparece pra consertar.
 function skillInstalled(id, projectPath) {
-  return skillLinkPaths(id, projectPath).some((p) => fs.existsSync(p));
+  const p = skillLinkPath(id, projectPath);
+  return !!p && fs.existsSync(p);
 }
 
 ipcMain.handle('skill:detect', (_evt, { id, projectPath }) => ({
@@ -4000,13 +4003,18 @@ ipcMain.handle('skill:install', async (_evt, { id, projectPath }) => {
   const missing = skillCatalog.requirementsFor(id).filter((c) => !cmdAvailable(c));
   if (missing.length) return { error: `missing-${missing[0]}` };
 
+  // `--project` linka no cwd: sem pasta válida, a skill cairia na home sem ninguém pedir.
+  const inProject = skillCatalog.scopeFor(id) === 'project';
+  const validProject = !!projectPath && fs.existsSync(projectPath);
+  if (inProject && !validProject) return { error: 'no-project' };
+
   const command = skillCatalog.commandFor(id);
   runningSkillInstalls.add(id);
   let log = '';
   try {
     const code = await new Promise((resolve) => {
       const proc = spawn(command[0], command.slice(1), {
-        cwd: projectPath && fs.existsSync(projectPath) ? projectPath : os.homedir(),
+        cwd: validProject ? projectPath : os.homedir(),
         shell: true,
         env: { ...process.env, CI: '1' },
       });

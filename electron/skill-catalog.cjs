@@ -14,6 +14,10 @@ const CATALOG = [
     url: 'https://github.com/Yg0rAndrade/start-skill',
     // O instalador clona via git; sem node/git ele falha com erro cru de shell.
     needs: ['node', 'git'],
+    // Escopo 'project': o link vai pra <projeto>/.claude/skills/start, não pra home.
+    // É o que o CTA precisa — "instalada" tem que falar do projeto aberto; instalação
+    // global faria o botão nunca aparecer pra quem já rodou o npx alguma vez.
+    scope: 'project',
   },
 ];
 
@@ -27,17 +31,24 @@ function find(id) {
   return BY_ID.get(id) || null;
 }
 
-// Comando do instalador. `project: true` instala só no projeto atual (link em
-// ./.claude/skills/<dir>); o padrão é global (~/.claude/skills/<dir>).
-function commandFor(id, { project = false } = {}) {
+// Comando do instalador, já com a flag do escopo da entrada. `--project` é passado
+// EXPLÍCITO de propósito: o padrão do start-skill hoje é global, e depender do
+// padrão do pacote deixaria o escopo à mercê de uma publicação nova no npm.
+function commandFor(id) {
   const s = BY_ID.get(id);
   if (!s) return null;
   const cmd = ['npx', '-y', s.pkg];
-  if (project) cmd.push('--project');
+  if (scopeFor(id) === 'project') cmd.push('--project');
   return cmd;
 }
 
-// Segmentos do caminho do link, a partir da home (global) ou da pasta do projeto.
+// 'project' = link dentro da pasta do projeto; 'global' = na home do usuário.
+function scopeFor(id) {
+  const s = BY_ID.get(id);
+  return s ? s.scope || 'global' : null;
+}
+
+// Segmentos do caminho do link, a partir da base do escopo (projeto ou home).
 // Quem junta com path.join é o main (aqui não há fs).
 function linkSegmentsFor(id) {
   const s = BY_ID.get(id);
@@ -49,4 +60,12 @@ function requirementsFor(id) {
   return s ? (s.needs || []).slice() : [];
 }
 
-module.exports = { CATALOG, listSkills, find, commandFor, linkSegmentsFor, requirementsFor };
+module.exports = {
+  CATALOG,
+  listSkills,
+  find,
+  commandFor,
+  scopeFor,
+  linkSegmentsFor,
+  requirementsFor,
+};

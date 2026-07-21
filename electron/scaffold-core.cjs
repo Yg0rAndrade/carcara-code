@@ -14,9 +14,11 @@ const SCAFFOLD_JUNK = new Set(['.git', '.gitignore', 'readme.md', 'license']);
 const SCAFFOLD_TEMP_DIR = 'carcara-scaffold-tmp';
 
 // isScaffoldable tolera o nosso tempdir (senão o re-probe durante o scaffold
-// desmontaria o wizard e um tempdir órfão de crash bloquearia pra sempre).
-// junkPresent continua em SCAFFOLD_JUNK -> o tempdir nunca aparece pro usuário.
-const SCAFFOLD_IGNORE = new Set([...SCAFFOLD_JUNK, SCAFFOLD_TEMP_DIR.toLowerCase()]);
+// desmontaria o wizard e um tempdir órfão de crash bloquearia pra sempre) e o
+// '.claude' — o CTA da skill `start` instala em .claude/skills/ ANTES do scaffold,
+// e sem isto a própria instalação desqualificaria a pasta e sumiria com o wizard.
+// junkPresent continua em SCAFFOLD_JUNK -> nenhum dos dois aparece pro usuário.
+const SCAFFOLD_IGNORE = new Set([...SCAFFOLD_JUNK, SCAFFOLD_TEMP_DIR.toLowerCase(), '.claude']);
 
 // Catálogo fixo (v1: só web). Ordem = ordem dos cards.
 // Todos 'cli': rodam o create-* oficial SEM instalar (o install roda depois,

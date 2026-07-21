@@ -39,7 +39,6 @@ import {
   Sheet,
   Music,
   Loader2,
-  Crosshair,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -313,14 +312,6 @@ export function CodeView({ active, openRequest, visible = true }) {
       return n;
     });
   };
-
-  // "Selecionar elemento" (grabber) na visualização de HTML — mesmo modo do Preview.
-  // Vale só pra aba à mostra: sair do preview, trocar de aba ou de projeto desliga
-  // (o webview some junto, então não há o que limpar do outro lado).
-  const [htmlGrab, setHtmlGrab] = useState(false);
-  useEffect(() => {
-    setHtmlGrab(false);
-  }, [activeTab?.path, htmlShown]);
 
   // CSV/TSV mostrados como GRADE (planilha read-only) em vez de texto. Por path. CSVs
   // pequenos abrem como texto editável e este set marca quem virou grade; CSVs grandes
@@ -1374,20 +1365,6 @@ export function CodeView({ active, openRequest, visible = true }) {
                     )}
                   </Button>
                 )}
-              {htmlShown && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-7 w-7 shrink-0 p-0 text-muted-foreground',
-                    htmlGrab && 'bg-primary/15 text-primary hover:bg-primary/15 hover:text-primary',
-                  )}
-                  onClick={() => setHtmlGrab((g) => !g)}
-                  title={t('preview.grab_element')}
-                >
-                  <Crosshair className="size-3.5" />
-                </Button>
-              )}
               {activeTab &&
                 !activeTab.notice &&
                 !activeTab.image &&
@@ -1496,11 +1473,7 @@ export function CodeView({ active, openRequest, visible = true }) {
                 </div>
               }
             >
-              <HtmlViewer
-                path={activeTab.path}
-                grabbing={htmlGrab}
-                onGrabEnd={() => setHtmlGrab(false)}
-              />
+              <HtmlViewer path={activeTab.path} />
             </Suspense>
           ) : mdPreview ? (
             <div className="absolute inset-0 overflow-y-auto px-8 py-6">
