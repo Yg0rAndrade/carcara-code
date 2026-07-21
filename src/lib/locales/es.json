@@ -610,7 +610,6 @@
     "shellAuto": "Automático (predeterminado del sistema)",
     "shellRescan": "Volver a analizar",
     "shellNewHint": "Se aplica a los terminales que se abran a partir de ahora; las sesiones ya abiertas mantienen su shell.",
-    "tabNotify": "Notificaciones",
     "tabDeps": "Dependencias",
     "tabLanguage": "Idioma",
     "tabAbout": "Acerca de y créditos",

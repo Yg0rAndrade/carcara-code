@@ -610,7 +610,6 @@
     "shellAuto": "Automatisch (systeemstandaard)",
     "shellRescan": "Opnieuw scannen",
     "shellNewHint": "Geldt voor terminals die vanaf nu worden geopend; reeds geopende sessies behouden hun shell.",
-    "tabNotify": "Meldingen",
     "tabDeps": "Afhankelijkheden",
     "tabLanguage": "Taal",
     "tabAbout": "Over & credits",

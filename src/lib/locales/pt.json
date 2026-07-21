@@ -610,7 +610,6 @@
     "shellAuto": "Automático (padrão do sistema)",
     "shellRescan": "Re-verificar",
     "shellNewHint": "Vale para terminais abertos a partir de agora; sessões já abertas mantêm o shell atual.",
-    "tabNotify": "Notificações",
     "tabDeps": "Dependências",
     "tabLanguage": "Idioma",
     "tabAbout": "Sobre & créditos",

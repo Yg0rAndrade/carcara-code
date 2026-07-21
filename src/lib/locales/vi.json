@@ -610,7 +610,6 @@
     "shellAuto": "Tự động (mặc định của hệ thống)",
     "shellRescan": "Quét lại",
     "shellNewHint": "Áp dụng cho các terminal mở từ bây giờ; các phiên đã mở vẫn giữ shell hiện tại.",
-    "tabNotify": "Thông báo",
     "tabDeps": "Phụ thuộc",
     "tabLanguage": "Ngôn ngữ",
     "tabAbout": "Giới thiệu & ghi công",

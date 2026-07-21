@@ -610,7 +610,6 @@
     "shellAuto": "自动（系统默认）",
     "shellRescan": "重新扫描",
     "shellNewHint": "适用于从现在起打开的终端；已打开的会话保持其 Shell 不变。",
-    "tabNotify": "通知",
     "tabDeps": "依赖项",
     "tabLanguage": "语言",
     "tabAbout": "关于与致谢",

@@ -610,7 +610,6 @@
     "shellAuto": "自動（システム既定）",
     "shellRescan": "再スキャン",
     "shellNewHint": "今後開くターミナルに適用されます。既に開いているセッションは現在のシェルを維持します。",
-    "tabNotify": "通知",
     "tabDeps": "依存関係",
     "tabLanguage": "言語",
     "tabAbout": "概要とクレジット",

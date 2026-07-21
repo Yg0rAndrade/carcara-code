@@ -610,7 +610,6 @@
     "shellAuto": "Automatisch (Systemstandard)",
     "shellRescan": "Erneut suchen",
     "shellNewHint": "Gilt für ab jetzt geöffnete Terminals; bereits offene Sitzungen behalten ihre Shell.",
-    "tabNotify": "Benachrichtigungen",
     "tabDeps": "Abhängigkeiten",
     "tabLanguage": "Sprache",
     "tabAbout": "Über & Credits",

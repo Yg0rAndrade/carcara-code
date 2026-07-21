@@ -610,7 +610,6 @@
     "shellAuto": "Auto (system default)",
     "shellRescan": "Rescan",
     "shellNewHint": "Applies to terminals opened from now on; sessions already open keep their shell.",
-    "tabNotify": "Notifications",
     "tabDeps": "Dependencies",
     "tabLanguage": "Language",
     "tabAbout": "About & credits",

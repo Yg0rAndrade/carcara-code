@@ -610,7 +610,6 @@
     "shellAuto": "Otomatis (bawaan sistem)",
     "shellRescan": "Pindai ulang",
     "shellNewHint": "Berlaku untuk terminal yang dibuka mulai sekarang; sesi yang sudah terbuka mempertahankan shell-nya.",
-    "tabNotify": "Notifikasi",
     "tabDeps": "Dependensi",
     "tabLanguage": "Bahasa",
     "tabAbout": "Tentang & kredit",

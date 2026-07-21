@@ -610,7 +610,6 @@
     "shellAuto": "자동 (시스템 기본값)",
     "shellRescan": "다시 검색",
     "shellNewHint": "지금부터 여는 터미널에 적용됩니다. 이미 열린 세션은 기존 셸을 유지합니다.",
-    "tabNotify": "알림",
     "tabDeps": "의존성",
     "tabLanguage": "언어",
     "tabAbout": "정보 및 크레딧",

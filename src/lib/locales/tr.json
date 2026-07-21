@@ -610,7 +610,6 @@
     "shellAuto": "Otomatik (sistem varsayılanı)",
     "shellRescan": "Yeniden tara",
     "shellNewHint": "Bundan sonra açılan terminaller için geçerlidir; zaten açık olan oturumlar kabuğunu korur.",
-    "tabNotify": "Bildirimler",
     "tabDeps": "Bağımlılıklar",
     "tabLanguage": "Dil",
     "tabAbout": "Hakkında ve katkılar",

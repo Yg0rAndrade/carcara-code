@@ -250,6 +250,20 @@ function LayoutThumb({ rail, claude }) {
   return <span className="flex h-10 w-full items-stretch gap-1">{all}</span>;
 }
 
+// Título do cabeçalho por aba. Tabela em vez da escada de ternários que existia aqui:
+// aba nova = uma linha, e não dá pra esquecer um ramo no meio do encadeamento.
+const TAB_TITLE = {
+  ai: 'settings.tabAi',
+  clis: 'settings.tabClis',
+  appearance: 'settings.tabAppearance',
+  code: 'settings.tabCode',
+  terminal: 'settings.tabTerminal',
+  deps: 'settings.tabDeps',
+  language: 'settings.tabLanguage',
+  whatsnew: 'settings.tabWhatsNew',
+  about: 'settings.tabAbout',
+};
+
 // Cabeçalho de seção das Configurações: ícone + título e, quando faz falta, uma linha de
 // ajuda. Um formato só pra todas as seções — é o que faz a aba ler como uma lista, e não
 // como um mural de controles soltos de tamanhos variados.
@@ -604,9 +618,6 @@ export function SettingsModal({
         >
           {t('settings.tabTerminal')}
         </TabButton>
-        <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<Bell />}>
-          {t('settings.tabNotify')}
-        </TabButton>
         <TabButton active={tab === 'deps'} onClick={() => setTab('deps')} icon={<HardDrive />}>
           {t('settings.tabDeps')}
         </TabButton>
@@ -629,27 +640,7 @@ export function SettingsModal({
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-14 shrink-0 items-center border-b px-6">
-          <h1 className="text-[15px] font-semibold">
-            {tab === 'ai'
-              ? t('settings.tabAi')
-              : tab === 'clis'
-                ? t('settings.tabClis')
-                : tab === 'code'
-                  ? t('settings.tabCode')
-                  : tab === 'terminal'
-                    ? t('settings.tabTerminal')
-                    : tab === 'notify'
-                      ? t('settings.tabNotify')
-                      : tab === 'deps'
-                        ? t('settings.tabDeps')
-                        : tab === 'language'
-                          ? t('settings.tabLanguage')
-                          : tab === 'whatsnew'
-                            ? t('settings.tabWhatsNew')
-                            : tab === 'about'
-                              ? t('settings.tabAbout')
-                              : t('settings.tabAppearance')}
-          </h1>
+          <h1 className="text-[15px] font-semibold">{t(TAB_TITLE[tab] || TAB_TITLE.appearance)}</h1>
           <div className="flex-1" />
           <button
             type="button"
@@ -1246,6 +1237,30 @@ export function SettingsModal({
                     className="mt-0.5"
                   />
                 </div>
+
+                {/* A notificação de "o Claude terminou" morava numa aba só pra ela, com um
+                    interruptor único. Virou o terceiro cartão daqui: mesmo formato dos
+                    outros e uma entrada a menos no menu lateral. */}
+                <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                      <Bell className="size-3.5 text-primary" /> {t('settings.notifyTitle')}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('settings.notifyHelp')}{' '}
+                      <span className="font-medium text-foreground">
+                        {t('settings.notifyHelpNotLooking')}
+                      </span>
+                      {t('settings.notifyHelp2')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notify}
+                    onCheckedChange={toggleNotify}
+                    title={notify ? t('settings.notifyOn') : t('settings.notifyOff')}
+                    className="mt-0.5"
+                  />
+                </div>
               </div>
             )}
 
@@ -1299,29 +1314,6 @@ export function SettingsModal({
                 <p className="mt-3 text-[11px] text-muted-foreground">
                   {t('settings.shellNewHint')}
                 </p>
-              </div>
-            )}
-
-            {tab === 'notify' && (
-              <div className="mx-auto max-w-2xl">
-                <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium">{t('settings.notifyTitle')}</div>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {t('settings.notifyHelp')}{' '}
-                      <span className="font-medium text-foreground">
-                        {t('settings.notifyHelpNotLooking')}
-                      </span>
-                      {t('settings.notifyHelp2')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notify}
-                    onCheckedChange={toggleNotify}
-                    title={notify ? t('settings.notifyOn') : t('settings.notifyOff')}
-                    className="mt-0.5"
-                  />
-                </div>
               </div>
             )}
 

@@ -610,7 +610,6 @@
     "shellAuto": "Automatycznie (domyślna systemu)",
     "shellRescan": "Skanuj ponownie",
     "shellNewHint": "Dotyczy terminali otwieranych od teraz; już otwarte sesje zachowują swoją powłokę.",
-    "tabNotify": "Powiadomienia",
     "tabDeps": "Zależności",
     "tabLanguage": "Język",
     "tabAbout": "O programie i podziękowania",
