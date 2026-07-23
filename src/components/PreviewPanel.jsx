@@ -43,12 +43,7 @@ import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
-import {
-  INJECT as TOUCH_INJECT,
-  CLEANUP as TOUCH_CLEANUP,
-  HIDE as TOUCH_HIDE,
-  ENTER_SENTINEL as TOUCH_ENTER,
-} from '@/lib/touchCursorScript';
+import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
 import { applyViewport } from '@/lib/webviewChrome';
 import { rectFromDrag } from '@/lib/screenshot';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
@@ -371,60 +366,21 @@ export function PreviewPanel({
   ); // desktop | tablet | mobile
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
-  // Ferramentas que precisam do MOUSE DE VERDADE em cima do site: o print (arrastar pra
-  // recortar), o anotador da captura e o seletor de elementos. Todas desenham o próprio
-  // ponteiro/crosshair e todas dependem de `mousemove` — que a emulação de toque mata,
-  // porque o Electron converte mouse→touch (o gesto vira um "tap" sem arraste).
-  const pointerToolActive = shooting || shot || grabbing;
   // "Olhando um site de verdade": aba Preview + servidor no ar. TODO recurso que age sobre
-  // o site já exige isto (foco, busca, grabber, print — ver os efeitos mais abaixo); a
-  // camada de toque era a única que não exigia, e por isso continuava ligada na aba
-  // Código/Git: a bolinha não sumia e a emulação seguia de pé fora do preview.
+  // o site já exige isto (foco, busca, grabber, print — ver os efeitos mais abaixo).
   const inWeb = view === 'preview' && mode === 'web';
-  // Modo de toque (celular/tablet) só vale com a tela LIVRE: olhando o site e sem nenhuma
-  // ferramenta de ponteiro na frente. Os dois flags abaixo saem do MESMO predicado de
-  // propósito — quando eram escritos separados, o print ficou de fora do `emulateTouch` e
-  // o arraste do recorte virava clique (rect 0×0 → CLICK_THRESHOLD → capturava a tela toda).
-  const touchMode = viewport !== 'desktop' && inWeb && !pointerToolActive;
-  // Camada visual: bolinha de "dedo" + ripple.
-  const touchCursorActive = touchMode;
-  const touchCursorActiveRef = useRef(touchCursorActive); // leitura síncrona no dom-ready
-  touchCursorActiveRef.current = touchCursorActive;
-  // Emulação de toque no webview (mata o :hover, converte mouse→touch).
-  const emulateTouch = touchMode;
-  const emulateTouchRef = useRef(emulateTouch);
-  emulateTouchRef.current = emulateTouch;
-  // A conversão mouse→toque instala o cursor de toque do CHROMIUM (a bolinha cinza), e
-  // esse cursor vale pra JANELA INTEIRA — não só pro retângulo do site. Enquanto ele
-  // estiver ligado, a bolinha aparece na moldura, na barra, na aba Código, em tudo, e o
-  // app não consegue tomar o cursor de volta (o Blink dele não reenvia um cursor que,
-  // pra ele, não mudou). Por isso a conversão só fica ligada com o ponteiro SOBRE o
-  // site: 'saiu' vem do app (mouseover na moldura), 'entrou' vem da página (sentinela do
-  // script injetado). Ver main.js (applyTouchEmu) e touchCursorScript.js.
-  const pointerOverSiteRef = useRef(false);
-  const setPointerOverSite = useCallback((over) => {
-    // "saiu" repetido não custa nada (o mouse do app dispara sem parar); "entrou" sempre
-    // reafirma, porque já vem uma vez por travessia e o main zera esse estado a cada
-    // re-aplicação do modo de toque (troca de aba, navegação, DevTools).
-    if (!over && pointerOverSiteRef.current === false) return;
-    pointerOverSiteRef.current = over;
-    for (const w of allWebviews()) {
-      let id = null;
-      try {
-        id = w.getWebContentsId();
-      } catch {}
-      if (id != null) window.api.previewTouchPointer(id, over);
-      // Ao sair, esconder a bolinha laranja e desligar a conversão são O MESMO passo. Se
-      // um ficasse pra trás (era o caso quando o HIDE passava por throttle e o aviso
-      // não), a página continuava achando que o ponteiro estava dentro e não avisava a
-      // volta — e o modo de toque só voltava depois de um clique.
-      if (!over) {
-        try {
-          w.executeJavaScript(TOUCH_HIDE);
-        } catch {}
-      }
-    }
-  }, []);
+  // Modo celular/tablet: telas de toque não têm hover. São DUAS peças independentes, e
+  // nenhuma delas mexe no cursor ou no input da janela:
+  //   1. `Emulation.setTouchEmulationEnabled` no main → APIs de toque e as media queries
+  //      `(hover: none)` / `(pointer: coarse)`;
+  //   2. o script `noHoverScript` injetado na página → desarma os `:hover` puros (que
+  //      nenhuma media query cobre).
+  // O que NÃO se usa mais é `setEmitTouchEventsForMouse` (mouse→toque): ele não é do
+  // <webview>, é da árvore inteira de WebContents — ligava o modo toque na JANELA TODA e
+  // punha o cursor de toque do Chromium por cima do app. Ver noHoverScript.js.
+  const touchMode = viewport !== 'desktop' && inWeb;
+  const touchModeRef = useRef(touchMode); // leitura síncrona no dom-ready
+  touchModeRef.current = touchMode;
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
   // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
   const inWebRef = useRef(false);
@@ -597,16 +553,13 @@ export function PreviewPanel({
         try {
           w.executeJavaScript(NAV_INJECT);
         } catch {}
-        // Modo celular: a navegação/reload apaga o DOM injetado, então re-injeta o
-        // cursor de "toque" (bolinha + ripple) a cada dom-ready — mas só quando a tela
-        // está livre (sem foto/imagem/grabber na frente). Fora disso, não faz nada.
-        if (touchCursorActiveRef.current) {
+        // Modo celular: a navegação/reload traz folhas de estilo novas e apaga o que foi
+        // injetado, então re-mata o :hover a cada dom-ready. E re-afirma a emulação de
+        // toque (persiste no debugger, mas garante depois de navegar).
+        if (touchModeRef.current) {
           try {
-            w.executeJavaScript(TOUCH_INJECT);
+            w.executeJavaScript(NO_HOVER_INJECT);
           } catch {}
-        }
-        // Re-afirma a emulação de toque (persiste no debugger, mas garante após navegar).
-        if (emulateTouchRef.current) {
           try {
             window.api.previewEmulateTouch(w.getWebContentsId(), true);
           } catch {}
@@ -625,9 +578,6 @@ export function PreviewPanel({
           setGrabbing(false);
         } else if (msg.startsWith(GRAB_CANCEL)) {
           setGrabbing(false);
-        } else if (msg.startsWith(TOUCH_ENTER)) {
-          // O ponteiro entrou no site: só agora a conversão mouse→toque pode ligar.
-          setPointerOverSite(true);
         }
       });
       if (url) {
@@ -638,7 +588,7 @@ export function PreviewPanel({
       refreshTabBar();
       return tab;
     },
-    [refreshTabBar, setPointerOverSite],
+    [refreshTabBar],
   );
 
   // Remove TODAS as abas de um projeto (servidor caiu/parado). Zera o webview de cada.
@@ -728,12 +678,6 @@ export function PreviewPanel({
       setGrabbing(false);
     } else {
       stopShoot(); // entrar no seletor desliga o print
-      // No modo celular/tablet a camada de toque estaria injetada; tira ela ANTES do
-      // grab pra não brigar (bolinha vs. crosshair) nem sobrescrever o cursor depois.
-      // O efeito de touchCursorActive/emulateTouch cuida do resto (e da volta ao sair).
-      try {
-        w.executeJavaScript(TOUCH_CLEANUP);
-      } catch {}
       w.executeJavaScript(INJECT)
         .then(() => setGrabbing(true))
         .catch(() => {});
@@ -1270,65 +1214,29 @@ export function PreviewPanel({
     for (const w of allWebviews()) applyViewport(w, viewport);
   }, [viewport]);
 
-  // Emulação de toque (mata o :hover, converte mouse→touch): liga nos modos de toque,
-  // desliga no desktop e enquanto o grabber está ativo. Ver `emulateTouch` acima.
+  // Modo celular/tablet — peça 1: APIs de toque e as media queries `(hover: none)` /
+  // `(pointer: coarse)`, via `Emulation.setTouchEmulationEnabled` no main. Não mexe no
+  // cursor nem no input (medido). Ver `touchMode` acima.
   useEffect(() => {
-    // O main zera o "ponteiro sobre o site" a cada re-aplicação do modo; o ref aqui
-    // acompanha, senão o próximo aviso de entrada seria descartado como repetido.
-    pointerOverSiteRef.current = false;
     for (const w of allWebviews()) {
       let id = null;
       try {
         id = w.getWebContentsId();
       } catch {}
-      if (id != null) window.api.previewEmulateTouch(id, emulateTouch);
+      if (id != null) window.api.previewEmulateTouch(id, touchMode);
     }
-  }, [emulateTouch]);
+  }, [touchMode]);
 
-  // Camada de "toque" (bolinha + ripple, mecânica do seletor de elementos): injeta
-  // enquanto a tela estiver livre no modo de toque; senão roda o CLEANUP (idempotente,
-  // sem vazar). Assim ela some ao abrir foto/imagem/grabber e volta quando fecham.
-  // Ver `touchCursorActive` acima.
+  // Peça 2: desarmar os `:hover` puros da página (nenhuma media query cobre esses). Roda
+  // dentro do site; sair do modo celular restaura os seletores originais.
   useEffect(() => {
-    const script = touchCursorActive ? TOUCH_INJECT : TOUCH_CLEANUP;
+    const script = touchMode ? NO_HOVER_INJECT : NO_HOVER_CLEANUP;
     for (const w of allWebviews()) {
       try {
         w.executeJavaScript(script);
       } catch {}
     }
-  }, [touchCursorActive]);
-
-  // "O ponteiro está no site?" só o APP responde pelo lado de fora: o <webview> é outro
-  // processo e engole os próprios eventos de mouse — então QUALQUER evento de mouse que
-  // chega aqui significa que o ponteiro está na moldura/calha/barra, ou seja, FORA do
-  // site. Sinal autoritativo: não depende de adivinhar o que a emulação de toque deixa
-  // passar lá dentro (era por isso que o mouseleave da página falhava e a bolinha ficava
-  // grudada na borda). A volta ("entrou") não dá pra ver daqui — o app não recebe nada na
-  // borda do webview, nem mouseenter no elemento (medido); quem avisa é a própria página,
-  // pela sentinela ENTER do script injetado (ver console-message no createTab).
-  //
-  // 'mousemove' e não 'mouseover': mouseover só dispara na TRANSIÇÃO entre elementos, e
-  // entre duas transições cabe um aviso de entrada atrasado (o console-message é assíncrono)
-  // que ligaria a bolinha com o ponteiro já fora — aí ela ficava presa até o mouse cruzar
-  // outro elemento. Com mousemove, qualquer tremida do mouse na moldura corrige. Custa uma
-  // comparação de boolean por evento: setPointerOverSite só faz IPC na TRANSIÇÃO.
-  useEffect(() => {
-    if (!touchCursorActive) return;
-    const onAppMouse = () => setPointerOverSite(false);
-    window.addEventListener('mousemove', onAppMouse, true);
-    window.addEventListener('mouseover', onAppMouse, true);
-    // Sinal de "o ponteiro saiu de vez": o mouse cruzou os limites da janela (barra de
-    // título do SO, borda da tela, outro monitor). Nesse caminho nenhum mousemove na
-    // moldura dispara — sem ele a bolinha ficava grudada na última posição dentro do
-    // webview. Entrar no <webview> NÃO dispara este mouseleave (o webview é interior ao
-    // documento do app, não uma borda dele), então não há flicker ao "tocar".
-    document.addEventListener('mouseleave', onAppMouse);
-    return () => {
-      window.removeEventListener('mousemove', onAppMouse, true);
-      window.removeEventListener('mouseover', onAppMouse, true);
-      document.removeEventListener('mouseleave', onAppMouse);
-    };
-  }, [touchCursorActive, setPointerOverSite]);
+  }, [touchMode]);
 
   // Silencia a mídia do preview que não está à mostra. Só toca som o webview da aba
   // ATIVA do projeto ATIVO com o Preview aberto (mode 'web'); qualquer outro — aba de

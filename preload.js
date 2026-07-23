@@ -271,14 +271,10 @@ contextBridge.exposeInMainWorld('api', {
   capturePreview: (webContentsId, rect, opts) =>
     ipcRenderer.invoke('preview:capture', { webContentsId, rect, ...(opts || {}) }),
 
-  // Liga/desliga a emulação de toque no preview (mata o :hover em celular/tablet).
+  // Liga/desliga o modo celular/tablet no preview: APIs de toque + media queries
+  // (hover: none)/(pointer: coarse). Ver main.js.
   previewEmulateTouch: (webContentsId, enabled) =>
     ipcRenderer.invoke('preview:touchEmu', { webContentsId, enabled }),
-  // Avisa se o ponteiro está sobre o site. Só com ele lá em cima é que a conversão
-  // mouse→toque pode ficar ligada — ela instala o cursor de toque do Chromium (a bolinha
-  // cinza), que vale pra janela inteira e não sai mais pelo lado do app. Ver main.js.
-  previewTouchPointer: (webContentsId, over) =>
-    ipcRenderer.invoke('preview:touchPointer', { webContentsId, over }),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
 
   // Skills do Claude Code instaláveis com 1 clique (catálogo em skill-catalog.cjs).
