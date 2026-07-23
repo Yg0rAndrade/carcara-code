@@ -47,6 +47,7 @@ import {
   INJECT as TOUCH_INJECT,
   CLEANUP as TOUCH_CLEANUP,
   HIDE as TOUCH_HIDE,
+  ENTER_SENTINEL as TOUCH_ENTER,
 } from '@/lib/touchCursorScript';
 import { applyViewport } from '@/lib/webviewChrome';
 import { rectFromDrag } from '@/lib/screenshot';
@@ -393,6 +394,27 @@ export function PreviewPanel({
   const emulateTouch = touchMode;
   const emulateTouchRef = useRef(emulateTouch);
   emulateTouchRef.current = emulateTouch;
+  // A conversão mouse→toque instala o cursor de toque do CHROMIUM (a bolinha cinza), e
+  // esse cursor vale pra JANELA INTEIRA — não só pro retângulo do site. Enquanto ele
+  // estiver ligado, a bolinha aparece na moldura, na barra, na aba Código, em tudo, e o
+  // app não consegue tomar o cursor de volta (o Blink dele não reenvia um cursor que,
+  // pra ele, não mudou). Por isso a conversão só fica ligada com o ponteiro SOBRE o
+  // site: 'saiu' vem do app (mouseover na moldura), 'entrou' vem da página (sentinela do
+  // script injetado). Ver main.js (applyTouchEmu) e touchCursorScript.js.
+  const pointerOverSiteRef = useRef(false);
+  const setPointerOverSite = useCallback((over) => {
+    // "saiu" repetido não custa IPC (o mouseover da moldura dispara sem parar); "entrou"
+    // sempre reafirma, porque já vem uma vez por travessia e o main zera esse estado a
+    // cada re-aplicação do modo de toque (troca de aba, navegação, DevTools).
+    if (!over && pointerOverSiteRef.current === false) return;
+    pointerOverSiteRef.current = over;
+    for (const w of allWebviews()) {
+      try {
+        const id = w.getWebContentsId();
+        if (id != null) window.api.previewTouchPointer(id, over);
+      } catch {}
+    }
+  }, []);
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
   // tem a busca dele). Ref pra ser lido dentro dos listeners registrados uma vez.
   const inWebRef = useRef(false);
@@ -593,6 +615,9 @@ export function PreviewPanel({
           setGrabbing(false);
         } else if (msg.startsWith(GRAB_CANCEL)) {
           setGrabbing(false);
+        } else if (msg.startsWith(TOUCH_ENTER)) {
+          // O ponteiro entrou no site: só agora a conversão mouse→toque pode ligar.
+          setPointerOverSite(true);
         }
       });
       if (url) {
@@ -603,7 +628,7 @@ export function PreviewPanel({
       refreshTabBar();
       return tab;
     },
-    [refreshTabBar],
+    [refreshTabBar, setPointerOverSite],
   );
 
   // Remove TODAS as abas de um projeto (servidor caiu/parado). Zera o webview de cada.
@@ -1238,6 +1263,9 @@ export function PreviewPanel({
   // Emulação de toque (mata o :hover, converte mouse→touch): liga nos modos de toque,
   // desliga no desktop e enquanto o grabber está ativo. Ver `emulateTouch` acima.
   useEffect(() => {
+    // O main zera o "ponteiro sobre o site" a cada re-aplicação do modo; o ref aqui
+    // acompanha, senão o próximo aviso de entrada seria descartado como repetido.
+    pointerOverSiteRef.current = false;
     for (const w of allWebviews()) {
       let id = null;
       try {
@@ -1266,12 +1294,15 @@ export function PreviewPanel({
   // FORA do site, e a bolinha tem que sumir. É sinal autoritativo: não depende de adivinhar
   // qual evento a emulação de toque deixa passar lá dentro (era por isso que o mouseleave
   // da página falhava e a bolinha ficava grudada na borda).
-  // Só o "saiu" precisa ser avisado: na volta, o move() do próprio script reexibe sozinho.
   // 'mouseover' (e não 'mousemove') porque só dispara na TRANSIÇÃO entre elementos —
   // um executeJavaScript por entrada, não um por pixel percorrido.
+  // A volta ("entrou no site") não tem como ser vista daqui: o app não recebe nenhum
+  // evento de mouse na borda do webview (medido — nem mouseenter no elemento). Quem avisa
+  // é a própria página, pela sentinela ENTER do script injetado (ver console-message).
   useEffect(() => {
     if (!touchCursorActive) return;
-    const hideAll = () => {
+    // Some com a bolinha NOSSA (a laranja, desenhada dentro da página).
+    const hideDot = () => {
       for (const w of allWebviews()) {
         try {
           w.executeJavaScript(TOUCH_HIDE);
@@ -1280,14 +1311,19 @@ export function PreviewPanel({
     };
     let last = 0;
     const onAppOver = () => {
-      // Throttle: 'mouseover' dispara a cada elemento cruzado, e a barra/rail/árvore têm
-      // dezenas deles. Sem isto vira uma enxurrada de executeJavaScript (IPC por webview)
-      // só de mexer o mouse — o app engasga. Esconder é idempotente, então perder eventos
-      // aqui não custa nada: um único HIDE por excursão já basta.
+      // Desligar a conversão mouse→toque NÃO passa pelo throttle: é ela que instala a
+      // bolinha CINZA do Chromium (a que vazava pra janela inteira), e o aviso já é
+      // deduplicado por estado — um IPC por travessia. Atrasar em 100ms seria deixar a
+      // bolinha presa justamente quando o ponteiro entra e sai rápido do site.
+      setPointerOverSite(false);
+      // Já esconder a bolinha laranja é executeJavaScript em CADA webview, e 'mouseover'
+      // dispara a cada elemento cruzado (a barra/rail/árvore têm dezenas). Sem throttle
+      // vira uma enxurrada de IPC só de mexer o mouse. Esconder é idempotente, então
+      // perder eventos aqui não custa nada: um HIDE por excursão já basta.
       const now = Date.now();
       if (now - last < 100) return;
       last = now;
-      hideAll();
+      hideDot();
     };
     // Sinal autoritativo de "o ponteiro saiu de vez": o mouse cruzou os limites da janela
     // (barra de título do SO, borda da tela, outro monitor). Nesse caminho NENHUM
@@ -1296,7 +1332,8 @@ export function PreviewPanel({
     // interior ao documento do app, não uma borda dele), então não há flicker ao "tocar".
     const onAppLeave = () => {
       last = 0; // libera o próximo mouseover na volta, sem esperar o throttle
-      hideAll();
+      setPointerOverSite(false);
+      hideDot();
     };
     window.addEventListener('mouseover', onAppOver, true);
     document.addEventListener('mouseleave', onAppLeave);
@@ -1304,7 +1341,7 @@ export function PreviewPanel({
       window.removeEventListener('mouseover', onAppOver, true);
       document.removeEventListener('mouseleave', onAppLeave);
     };
-  }, [touchCursorActive]);
+  }, [touchCursorActive, setPointerOverSite]);
 
   // Silencia a mídia do preview que não está à mostra. Só toca som o webview da aba
   // ATIVA do projeto ATIVO com o Preview aberto (mode 'web'); qualquer outro — aba de

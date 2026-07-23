@@ -8,9 +8,17 @@
 // eventos de mouse sobre o site nunca chegam ao container do app — só o script de dentro vê.
 // Injetado quando o viewport é 'mobile' e re-injetado a cada navegação (dom-ready).
 
+// Sentinela de "o ponteiro entrou no site", emitida pela página via console (mesma ponte
+// do seletor de elementos). É o ÚNICO jeito de o app saber disso: o <webview> é outro
+// processo e engole os eventos de mouse — o documento do app não recebe mouseenter/
+// mouseleave na borda do webview (medido: nenhum evento chega). Quem sai avisa pelo lado
+// do app (mouseover na moldura); quem entra avisa por aqui.
+export const ENTER_SENTINEL = '__carcara_touch_enter__';
+
 export const INJECT = `(() => {
   if (window.__carcaraTouch) return;
   var ACCENT = '#f2792b';
+  var ENTER = '${ENTER_SENTINEL}';
 
   // Bolinha translúcida de "dedo": segue o ponteiro, centrada nele. pointer-events:none pra
   // deixar o clique real passar pro site por baixo; z-index alto igual ao box do grab.
@@ -39,7 +47,17 @@ export const INJECT = `(() => {
   // Ripples vivos (pra limpar no teardown se ainda estiverem animando).
   var ripples = [];
 
+  // 'inside' = o ponteiro está sobre o site (do ponto de vista da página). A transição
+  // fora→dentro é avisada ao app UMA vez por excursão (não a cada pixel): é ela que
+  // religa a conversão mouse→toque, que fica desligada enquanto o ponteiro está na
+  // moldura — senão o cursor de toque do Chromium sequestra a janela inteira.
+  var inside = false;
+
   function move(e){
+    if (!inside) {
+      inside = true;
+      try { console.log(ENTER); } catch (err) {}
+    }
     dot.style.display = 'block';
     dot.style.left = e.clientX + 'px';
     dot.style.top = e.clientY + 'px';
@@ -49,6 +67,7 @@ export const INJECT = `(() => {
   // com a bolinha, senão ela fica "grudada" na última posição fora da área visível.
   // Idempotente e auto-corretivo: se disparar à toa, o próximo move() reexibe a bolinha.
   function leave(){
+    inside = false; // a próxima entrada volta a avisar o app
     dot.style.display = 'none';
   }
 

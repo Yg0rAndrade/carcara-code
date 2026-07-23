@@ -572,7 +572,29 @@ ipcMain.on('devtools:undock', (_e, { previewId }) => {
 // debugger). O desejo por webview fica em touchEmuWant; applyTouchEmu concilia com o
 // DevTools (que toma o debugger). NÃO mexe no tamanho do viewport (a moldura já é feita
 // por CSS no renderer).
-const touchEmuWant = new Map(); // contents.id -> boolean
+//
+// DOIS INTERRUPTORES, DE PROPÓSITO (medido, não achismo):
+//
+//   setTouchEmulationEnabled  → APIs de toque + `@media (hover:none)`/`(pointer:coarse)`.
+//                               NÃO mexe no cursor. Fica ligado o tempo todo no modo
+//                               celular/tablet: ligar/desligar faria o site re-renderizar
+//                               (media queries piscando) a cada ida e volta do ponteiro.
+//
+//   setEmitTouchEventsForMouse → converte mouse→toque (é o que mata o `:hover` puro) E
+//                               instala o cursor de toque do Chromium: aquela BOLINHA
+//                               CINZA. Esse cursor é do processo do <webview>, mas vale
+//                               pra JANELA INTEIRA — com ele ligado a bolinha aparece na
+//                               moldura, na aba Código, na barra, em tudo, mesmo que o
+//                               ponteiro nunca tenha entrado no site (comprovado com
+//                               GetCursorInfo: o handle do cursor da janela vira um
+//                               bitmap customizado no instante do comando). E o app NÃO
+//                               consegue tomar o cursor de volta pelo lado dele: o Blink
+//                               do app não reenvia um cursor que, pra ele, não mudou.
+//                               Por isso ele só fica ligado enquanto o ponteiro está
+//                               sobre o site (touchPointerOver) — desligar devolve a seta
+//                               na hora, sem precisar mexer o mouse.
+const touchEmuWant = new Map(); // contents.id -> boolean (modo celular/tablet ligado)
+const touchPointerOver = new Map(); // contents.id -> boolean (ponteiro sobre o site)
 function applyTouchEmu(contents) {
   if (!contents || contents.isDestroyed()) return;
   const dbg = contents.debugger;
@@ -583,11 +605,12 @@ function applyTouchEmu(contents) {
       dbg
         .sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
         .catch(() => {});
+      const over = touchPointerOver.get(contents.id) === true;
       dbg
-        .sendCommand('Emulation.setEmitTouchEventsForMouse', {
-          enabled: true,
-          configuration: 'mobile',
-        })
+        .sendCommand(
+          'Emulation.setEmitTouchEventsForMouse',
+          over ? { enabled: true, configuration: 'mobile' } : { enabled: false },
+        )
         .catch(() => {});
     } else if (dbg.isAttached()) {
       dbg.detach(); // detach zera os overrides de emulação → o hover volta
@@ -598,6 +621,16 @@ function applyTouchEmu(contents) {
 }
 ipcMain.handle('preview:touchEmu', (_e, { webContentsId, enabled }) => {
   touchEmuWant.set(webContentsId, !!enabled);
+  // Toda re-aplicação do modo começa com o ponteiro "fora": na dúvida, sem bolinha. A
+  // página reafirma a entrada no próximo movimento do mouse (sentinela do script).
+  touchPointerOver.set(webContentsId, false);
+  const c = webContents.fromId(webContentsId);
+  if (c) applyTouchEmu(c);
+  return { ok: true };
+});
+// "O ponteiro está sobre o site?" — quem sabe disso é o renderer (ver PreviewPanel).
+ipcMain.handle('preview:touchPointer', (_e, { webContentsId, over }) => {
+  touchPointerOver.set(webContentsId, !!over);
   const c = webContents.fromId(webContentsId);
   if (c) applyTouchEmu(c);
   return { ok: true };
