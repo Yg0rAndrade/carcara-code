@@ -403,16 +403,26 @@ export function PreviewPanel({
   // script injetado). Ver main.js (applyTouchEmu) e touchCursorScript.js.
   const pointerOverSiteRef = useRef(false);
   const setPointerOverSite = useCallback((over) => {
-    // "saiu" repetido não custa IPC (o mouseover da moldura dispara sem parar); "entrou"
-    // sempre reafirma, porque já vem uma vez por travessia e o main zera esse estado a
-    // cada re-aplicação do modo de toque (troca de aba, navegação, DevTools).
+    // "saiu" repetido não custa nada (o mouse do app dispara sem parar); "entrou" sempre
+    // reafirma, porque já vem uma vez por travessia e o main zera esse estado a cada
+    // re-aplicação do modo de toque (troca de aba, navegação, DevTools).
     if (!over && pointerOverSiteRef.current === false) return;
     pointerOverSiteRef.current = over;
     for (const w of allWebviews()) {
+      let id = null;
       try {
-        const id = w.getWebContentsId();
-        if (id != null) window.api.previewTouchPointer(id, over);
+        id = w.getWebContentsId();
       } catch {}
+      if (id != null) window.api.previewTouchPointer(id, over);
+      // Ao sair, esconder a bolinha laranja e desligar a conversão são O MESMO passo. Se
+      // um ficasse pra trás (era o caso quando o HIDE passava por throttle e o aviso
+      // não), a página continuava achando que o ponteiro estava dentro e não avisava a
+      // volta — e o modo de toque só voltava depois de um clique.
+      if (!over) {
+        try {
+          w.executeJavaScript(TOUCH_HIDE);
+        } catch {}
+      }
     }
   }, []);
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
@@ -1288,58 +1298,35 @@ export function PreviewPanel({
     }
   }, [touchCursorActive]);
 
-  // A bolinha só pode aparecer com o ponteiro SOBRE o site. Quem decide isso é o APP,
-  // não a página: o <webview> é outro processo e engole os próprios eventos de mouse —
-  // então, se um 'mouseover' chega aqui, o ponteiro está na moldura/calha/barra, ou seja,
-  // FORA do site, e a bolinha tem que sumir. É sinal autoritativo: não depende de adivinhar
-  // qual evento a emulação de toque deixa passar lá dentro (era por isso que o mouseleave
-  // da página falhava e a bolinha ficava grudada na borda).
-  // 'mouseover' (e não 'mousemove') porque só dispara na TRANSIÇÃO entre elementos —
-  // um executeJavaScript por entrada, não um por pixel percorrido.
-  // A volta ("entrou no site") não tem como ser vista daqui: o app não recebe nenhum
-  // evento de mouse na borda do webview (medido — nem mouseenter no elemento). Quem avisa
-  // é a própria página, pela sentinela ENTER do script injetado (ver console-message).
+  // "O ponteiro está no site?" só o APP responde pelo lado de fora: o <webview> é outro
+  // processo e engole os próprios eventos de mouse — então QUALQUER evento de mouse que
+  // chega aqui significa que o ponteiro está na moldura/calha/barra, ou seja, FORA do
+  // site. Sinal autoritativo: não depende de adivinhar o que a emulação de toque deixa
+  // passar lá dentro (era por isso que o mouseleave da página falhava e a bolinha ficava
+  // grudada na borda). A volta ("entrou") não dá pra ver daqui — o app não recebe nada na
+  // borda do webview, nem mouseenter no elemento (medido); quem avisa é a própria página,
+  // pela sentinela ENTER do script injetado (ver console-message no createTab).
+  //
+  // 'mousemove' e não 'mouseover': mouseover só dispara na TRANSIÇÃO entre elementos, e
+  // entre duas transições cabe um aviso de entrada atrasado (o console-message é assíncrono)
+  // que ligaria a bolinha com o ponteiro já fora — aí ela ficava presa até o mouse cruzar
+  // outro elemento. Com mousemove, qualquer tremida do mouse na moldura corrige. Custa uma
+  // comparação de boolean por evento: setPointerOverSite só faz IPC na TRANSIÇÃO.
   useEffect(() => {
     if (!touchCursorActive) return;
-    // Some com a bolinha NOSSA (a laranja, desenhada dentro da página).
-    const hideDot = () => {
-      for (const w of allWebviews()) {
-        try {
-          w.executeJavaScript(TOUCH_HIDE);
-        } catch {}
-      }
-    };
-    let last = 0;
-    const onAppOver = () => {
-      // Desligar a conversão mouse→toque NÃO passa pelo throttle: é ela que instala a
-      // bolinha CINZA do Chromium (a que vazava pra janela inteira), e o aviso já é
-      // deduplicado por estado — um IPC por travessia. Atrasar em 100ms seria deixar a
-      // bolinha presa justamente quando o ponteiro entra e sai rápido do site.
-      setPointerOverSite(false);
-      // Já esconder a bolinha laranja é executeJavaScript em CADA webview, e 'mouseover'
-      // dispara a cada elemento cruzado (a barra/rail/árvore têm dezenas). Sem throttle
-      // vira uma enxurrada de IPC só de mexer o mouse. Esconder é idempotente, então
-      // perder eventos aqui não custa nada: um HIDE por excursão já basta.
-      const now = Date.now();
-      if (now - last < 100) return;
-      last = now;
-      hideDot();
-    };
-    // Sinal autoritativo de "o ponteiro saiu de vez": o mouse cruzou os limites da janela
-    // (barra de título do SO, borda da tela, outro monitor). Nesse caminho NENHUM
-    // 'mouseover' na moldura dispara — sem ele a bolinha ficava grudada na última posição
-    // dentro do webview. Entrar no <webview> NÃO dispara este mouseleave (o webview é
-    // interior ao documento do app, não uma borda dele), então não há flicker ao "tocar".
-    const onAppLeave = () => {
-      last = 0; // libera o próximo mouseover na volta, sem esperar o throttle
-      setPointerOverSite(false);
-      hideDot();
-    };
-    window.addEventListener('mouseover', onAppOver, true);
-    document.addEventListener('mouseleave', onAppLeave);
+    const onAppMouse = () => setPointerOverSite(false);
+    window.addEventListener('mousemove', onAppMouse, true);
+    window.addEventListener('mouseover', onAppMouse, true);
+    // Sinal de "o ponteiro saiu de vez": o mouse cruzou os limites da janela (barra de
+    // título do SO, borda da tela, outro monitor). Nesse caminho nenhum mousemove na
+    // moldura dispara — sem ele a bolinha ficava grudada na última posição dentro do
+    // webview. Entrar no <webview> NÃO dispara este mouseleave (o webview é interior ao
+    // documento do app, não uma borda dele), então não há flicker ao "tocar".
+    document.addEventListener('mouseleave', onAppMouse);
     return () => {
-      window.removeEventListener('mouseover', onAppOver, true);
-      document.removeEventListener('mouseleave', onAppLeave);
+      window.removeEventListener('mousemove', onAppMouse, true);
+      window.removeEventListener('mouseover', onAppMouse, true);
+      document.removeEventListener('mouseleave', onAppMouse);
     };
   }, [touchCursorActive, setPointerOverSite]);
 
