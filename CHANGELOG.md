@@ -3,6 +3,51 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.10] — 2026-07-24
+
+### Adicionado
+
+- **Temas novos — Brasa, Carvão e Papel:** além do claro e do escuro, três temas de verdade —
+  **Brasa** (escuro com o laranja do carcará em brasa), **Carvão** (preto puro, ideal pra telas
+  AMOLED) e **Papel/Sépia** (tom creme, leitura mais suave). O seletor mostra um **preview de cada
+  tema** (mini-janela com as cores reais), pra escolher no olho.
+- **Kanban em Markdown — um quadro que é um arquivo:** aba **"Kanban"** que transforma o
+  `tarefas.md` do projeto num board (colunas = etapas, cartões = tarefas). Arrastar um cartão entre
+  colunas reescreve o Markdown na hora — a fonte da verdade continua sendo o arquivo, então o Claude
+  Code lê e entende o estado do quadro.
+- **Portas abertas do projeto — ver e fechar:** na aba **Projetos**, chips com as portas que o
+  projeto está usando (varredura sob demanda) e um **✕ pra encerrar a porta** (com confirmação).
+  Motor nativo, sem dependência externa (netstat/lsof + consulta de processos do sistema).
+- **Visualizador de HTML com a barra do navegador:** abrir um `.html` na aba **Código** agora traz a
+  mesma barra enxuta do Preview — **seletor de elementos (grabber)**, **dispositivo**
+  (computador/tablet/celular), **recarregar** e **zoom da página**. Um `.html` é um site, então ganha
+  as mesmas ferramentas.
+- **Atalho pra começar do zero:** o assistente de projeto novo sugere a skill **/start** pra quem não
+  sabe qual tecnologia usar — responde três perguntas simples e o projeto é montado.
+
+### Alterado
+
+- **Configurações mais organizadas:** hierarquia e tamanhos revistos, com **esqueleto de carregamento**
+  enquanto a lista de projetos carrega; a aba **Notificações** virou um cartão dentro da aba Código.
+- **Kanban saiu da barra:** o acesso ao quadro foi pro **menu de ferramentas** (dropdown), deixando a
+  barra principal mais limpa.
+
+### Corrigido
+
+- **A "bolinha" que vazava pra fora do Preview — resolvida de vez:** no modo celular/tablet, um cursor
+  de toque (bolinha cinza) escapava do site e ficava por cima da interface do app. Rastreando a fundo,
+  a causa era o **emulador de toque do próprio Chromium**, que valia pra janela inteira. A correção
+  parou de usar esse emulador; o modo celular continua sem `:hover` (reescrevendo o CSS da página),
+  agora sem o efeito colateral.
+- **Preview travava em "procurando a porta…" com apps pesados (Next.js):** projetos cujo primeiro
+  carregamento demora mais de ~1,5s nunca abriam no Preview — ficava só o terminal repetindo `GET /`.
+  Agora a checagem de "está pronto?" é mais leve e paciente (não empilha requisições no servidor e
+  espera até 8s), com uma rede de segurança que abre o Preview assim que o servidor anuncia que subiu.
+- **Botão "Parar" do Preview não parava (só reiniciava) e sumia durante o boot:** na inicialização o
+  botão ficava desabilitado, então só dava pra Reiniciar (que reocupava a porta); e o "parar" retornava
+  antes de o servidor morrer de fato. Agora o **Parar fica disponível durante o boot** e **encerra a
+  árvore inteira do servidor** (liberando a porta) antes de qualquer relance.
+
 ## [0.1.9] — 2026-07-16
 
 ### Adicionado
