@@ -819,7 +819,7 @@ export default function App() {
               onClick={() => previewControls.current?.stop?.()}
               onMouseEnter={() => stopIcon.current?.startAnimation?.()}
               onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
-              disabled={serverMode !== 'web'}
+              disabled={serverMode === 'empty'}
               title={t('app.stop_server_tooltip')}
               className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
             >

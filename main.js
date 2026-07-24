@@ -173,17 +173,46 @@ function tn(key, vars) {
   return s;
 }
 
+// Mata o processo E TODA A ÁRVORE dele, e só resolve quando a árvore morreu de fato.
+// No Windows o dev server real é NETO do wrapper de shell (spawn shell:true); matar só
+// o pai deixa o neto vivo segurando a porta — por isso `taskkill /t`. Retornar Promise
+// deixa quem PRECISA (o `preview:stop`, e por tabela o "reiniciar", que faz stop→start)
+// esperar a porta liberar antes de relançar; os demais chamadores seguem fire-and-forget.
 function killProc(proc) {
-  if (!proc) return;
-  if (process.platform === 'win32') {
-    try {
-      spawn('taskkill', ['/pid', String(proc.pid), '/f', '/t']);
-    } catch {}
-  } else {
-    try {
-      proc.kill();
-    } catch {}
-  }
+  return new Promise((resolve) => {
+    if (!proc) return resolve();
+    if (process.platform === 'win32') {
+      try {
+        const tk = spawn('taskkill', ['/pid', String(proc.pid), '/f', '/t']);
+        tk.on('exit', () => resolve());
+        tk.on('error', () => resolve());
+      } catch {
+        resolve();
+      }
+    } else {
+      let done = false;
+      let timer = null;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        if (timer) clearTimeout(timer);
+        resolve();
+      };
+      proc.once('exit', finish);
+      try {
+        proc.kill();
+      } catch {
+        return finish();
+      }
+      // Rede de segurança: se não morrer em 2s, SIGKILL e segue.
+      timer = setTimeout(() => {
+        try {
+          proc.kill('SIGKILL');
+        } catch {}
+        finish();
+      }, 2000);
+    }
+  });
 }
 
 // Envia pro renderer só se a janela ainda existir (evita "Object has been destroyed").
@@ -4612,12 +4641,14 @@ ipcMain.handle('preview:log:get', (evt, { projectPath }) => {
   return e ? e.log : '';
 });
 
-ipcMain.handle('preview:stop', (evt, { projectPath }) => {
+ipcMain.handle('preview:stop', async (evt, { projectPath }) => {
   const e = runningServers.get(projectPath);
   if (e) {
     if (e.probe) clearInterval(e.probe);
-    killProc(e.proc);
     runningServers.delete(projectPath);
+    // Espera a árvore MORRER de fato antes de resolver: assim o "reiniciar"
+    // (stop→start) não relança na porta enquanto o servidor antigo ainda a segura.
+    await killProc(e.proc);
   }
   return { stopped: true };
 });
