@@ -4341,7 +4341,12 @@ function probeOne(host, port) {
         resolve(v);
       }
     };
-    const req = http.get({ host, port, path: '/', timeout: 1500 }, (res) => {
+    // HEAD (não GET): qualquer resposta HTTP já prova "servidor vivo", e HEAD não força
+    // render de página inteira — sem isso, cada tick do probe dispara um SSR completo no
+    // dev server, empilhando trabalho e mantendo o tempo de resposta alto de propósito.
+    // Timeout folgado (8s): Next/SSR pesado leva 2–3s no primeiro hit; 1,5s marcava um
+    // servidor vivo-porém-lento como morto e o Preview nunca abria.
+    const req = http.request({ host, port, path: '/', method: 'HEAD', timeout: 8000 }, (res) => {
       res.destroy();
       finish(true);
     });
@@ -4350,6 +4355,7 @@ function probeOne(host, port) {
       req.destroy();
       finish(false);
     });
+    req.end();
   });
 }
 function probePort(port) {
@@ -4435,9 +4441,16 @@ async function startPhpPreview(projectPath, decision) {
   proc.stderr.on('data', onData);
 
   // Probe determinístico: a porta que escolhemos e forçamos.
+  // Guarda `probing`: não dispara probe novo enquanto o anterior está em voo, senão o
+  // intervalo empilha requisições no servidor e mantém a resposta lenta de propósito.
   entry.probe = setInterval(async () => {
-    if (entry.url) return;
-    if (await probePort(port)) markReady(port);
+    if (entry.url || entry.probing) return;
+    entry.probing = true;
+    try {
+      if (await probePort(port)) markReady(port);
+    } finally {
+      entry.probing = false;
+    }
   }, 600);
 
   proc.on('exit', (code) => {
@@ -4518,6 +4531,7 @@ ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
   sendPhase(projectPath, `Subindo: ${cmd.manager} ${args.join(' ')}`);
 
   const env = { ...process.env, PORT: String(port), BROWSER: 'none', FORCE_COLOR: '1' };
+  const startedAt = Date.now();
   const proc = spawn(cmd.manager, args, { cwd: projectPath, shell: true, env });
   entry.proc = proc;
 
@@ -4544,18 +4558,34 @@ ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
 
   // Caminho principal (determinístico): espera a porta que ESCOLHEMOS e forçamos subir.
   // Plano B: se o framework ignorou a flag e subiu noutra porta, usa a que ELE imprimiu.
+  // Guarda `probing`: um probe por vez (o intervalo NÃO empilha requisições no dev server).
   entry.probe = setInterval(async () => {
-    if (entry.url) return;
-    if (await probePort(port)) {
-      markReady(port);
-      return;
-    }
-    const urls = [
-      ...entry.log.matchAll(/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d+)/gi),
-    ];
-    if (urls.length) {
-      const p = Number(urls[urls.length - 1][1]);
-      if (p !== port && p >= 1024 && p <= 65535 && (await probePort(p))) markReady(p);
+    if (entry.url || entry.probing) return;
+    entry.probing = true;
+    try {
+      if (await probePort(port)) {
+        markReady(port);
+        return;
+      }
+      const urls = [
+        ...entry.log.matchAll(/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d+)/gi),
+      ];
+      if (urls.length) {
+        const p = Number(urls[urls.length - 1][1]);
+        if (p !== port && p >= 1024 && p <= 65535 && (await probePort(p))) {
+          markReady(p);
+          return;
+        }
+      }
+      // Rede de segurança (fail-open): o dev server já anunciou "pronto" no log
+      // (Next: "✓ Ready in Xs"; Vite/Next: "Local: http://…") mas o probe não passou em
+      // 60s. Melhor abrir o webview na porta forçada — o servidor ESTÁ de pé (o Chrome o
+      // alcança) — do que deixar o usuário preso no terminal pra sempre.
+      if (Date.now() - startedAt > 60000 && /\bReady in\b|Local:\s*https?:\/\//i.test(entry.log)) {
+        markReady(port);
+      }
+    } finally {
+      entry.probing = false;
     }
   }, 600);
 
