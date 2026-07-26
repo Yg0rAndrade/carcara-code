@@ -46,6 +46,7 @@ import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
 import { applyViewport } from '@/lib/webviewChrome';
 import { applyTabWebviewAttrs } from '@/lib/previewWebview';
+import { decideAutoStart } from '@/lib/previewAutoStart';
 import { rectFromDrag } from '@/lib/screenshot';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
@@ -1316,39 +1317,37 @@ export function PreviewPanel({
     };
 
     (async () => {
-      const handled = autoStartedRef.current.has(active.path); // efeito já cuidou deste projeto
-      if (urlsRef.current.has(active.path)) {
-        autoStartedRef.current.add(active.path);
-        showWebFor(active.path, urlsRef.current.get(active.path));
-        return;
-      }
-      const status = await window.api.previewStatus(active.path);
+      // O que fazer é decisão PURA (src/lib/previewAutoStart.js) — inclusive a trava que
+      // impede o efeito de ressuscitar o servidor que o usuário acabou de parar.
+      const hasUrl = urlsRef.current.has(active.path);
+      const status = hasUrl
+        ? { running: true, url: null }
+        : await window.api.previewStatus(active.path);
       if (cancelled || activePathRef.current !== active.path) return; // já trocou/desmontou
-      if (status.running) autoStartedRef.current.add(active.path);
-      if (status.running && status.url) {
-        showWebFor(active.path, status.url);
-        return;
-      }
-      if (active.previewType == null) {
+      const { action, markHandled } = decideAutoStart({
+        hasUrl,
+        running: !!status.running,
+        statusUrl: status.url || null,
+        previewType: active.previewType,
+        handled: autoStartedRef.current.has(active.path),
+        sameProject: prevPath === active.path,
+      });
+      if (markHandled) autoStartedRef.current.add(active.path);
+      if (action === 'keep') return; // log do erro de quem caiu continua à mostra
+      if (action === 'empty') {
         setMode('empty');
         return;
       }
-      // Servidor FORA do ar e este projeto já passou por aqui: o usuário parou, ou o
-      // servidor morreu — não relança sozinho. Sendo só um re-run do efeito no mesmo
-      // projeto, nem mexe no modo (o log com o erro de quem caiu tem que continuar à
-      // mostra). Voltando de outro projeto, cai no empty state; quem sobe de novo é o
-      // botão Reiniciar.
-      if (!status.running && handled) {
-        if (prevPath !== active.path) setMode('empty');
+      if (action === 'show') {
+        showWebFor(active.path, hasUrl ? urlsRef.current.get(active.path) : status.url);
         return;
       }
-      autoStartedRef.current.add(active.path); // vamos subir agora
 
       setMode('log');
       setTimeout(async () => {
         if (cancelled || activePathRef.current !== active.path) return;
         if (logRef.current) logRef.current.textContent = '';
-        if (status.running && !status.url) {
+        if (action === 'attach') {
           const log = await window.api.previewGetLog(active.path);
           if (log) appendLog(active.path, log);
           appendLog(active.path, t('preview.log_found'));
