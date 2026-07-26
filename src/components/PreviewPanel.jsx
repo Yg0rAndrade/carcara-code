@@ -1261,6 +1261,14 @@ export function PreviewPanel({
   }, [applyMuting, tabBar.activeId]);
 
   const pollingRef = useRef(new Set()); // paths com um waitAndShow em curso (evita loops duplicados)
+  // Paths cujo preview este efeito JÁ tentou subir sozinho. O efeito abaixo re-roda
+  // sempre que o OBJETO do projeto muda de identidade — e ele muda quando o main
+  // reporta `running: false` (o reload() disparado por 'preview:exit'). Sem esta
+  // trava, o "Parar" ressuscitava o servidor no mesmo instante (parar → exit →
+  // reload → objeto novo → efeito → start) e um dev server que morre no boot
+  // entrava em loop infinito de relançar. Auto-start é só a PRIMEIRA vez; depois,
+  // quem manda subir de novo é o usuário (botão Reiniciar).
+  const autoStartedRef = useRef(new Set());
 
   // Troca de projeto: inicia/retoma o preview do projeto ativo.
   useEffect(() => {
@@ -1269,6 +1277,7 @@ export function PreviewPanel({
       return;
     }
     let cancelled = false; // efeito desmontou/trocou de projeto: corta o setTimeout e o poller
+    const prevPath = activePathRef.current; // pra saber se é troca de projeto ou só re-run
     activePathRef.current = active?.path || null;
     refreshTabBar(); // a tira reflete as abas do novo projeto ativo
     if (!active) {
@@ -1305,12 +1314,15 @@ export function PreviewPanel({
     };
 
     (async () => {
+      const handled = autoStartedRef.current.has(active.path); // efeito já cuidou deste projeto
       if (urlsRef.current.has(active.path)) {
+        autoStartedRef.current.add(active.path);
         showWebFor(active.path, urlsRef.current.get(active.path));
         return;
       }
       const status = await window.api.previewStatus(active.path);
       if (cancelled || activePathRef.current !== active.path) return; // já trocou/desmontou
+      if (status.running) autoStartedRef.current.add(active.path);
       if (status.running && status.url) {
         showWebFor(active.path, status.url);
         return;
@@ -1319,6 +1331,16 @@ export function PreviewPanel({
         setMode('empty');
         return;
       }
+      // Servidor FORA do ar e este projeto já passou por aqui: o usuário parou, ou o
+      // servidor morreu — não relança sozinho. Sendo só um re-run do efeito no mesmo
+      // projeto, nem mexe no modo (o log com o erro de quem caiu tem que continuar à
+      // mostra). Voltando de outro projeto, cai no empty state; quem sobe de novo é o
+      // botão Reiniciar.
+      if (!status.running && handled) {
+        if (prevPath !== active.path) setMode('empty');
+        return;
+      }
+      autoStartedRef.current.add(active.path); // vamos subir agora
 
       setMode('log');
       setTimeout(async () => {
