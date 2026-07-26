@@ -45,6 +45,7 @@ import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
 import { applyViewport } from '@/lib/webviewChrome';
+import { applyTabWebviewAttrs } from '@/lib/previewWebview';
 import { rectFromDrag } from '@/lib/screenshot';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
@@ -461,8 +462,9 @@ export function PreviewPanel({
       const proj = getProjTabs(projectPath);
       const id = ++tabIdRef.current;
       const w = document.createElement('webview');
-      // Isola a sessão deste projeto (precisa ser definido ANTES de anexar/navegar).
-      w.setAttribute('partition', partitionFor(projectPath));
+      // Isola a sessão deste projeto e libera os popups pro handler do main (que os
+      // transforma em aba interna). Precisa vir ANTES de anexar/navegar.
+      applyTabWebviewAttrs(w, partitionFor(projectPath));
       w.style.position = 'absolute';
       w.style.inset = '0';
       w.style.width = '100%';

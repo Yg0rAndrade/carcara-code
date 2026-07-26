@@ -35,6 +35,7 @@ const phpRuntime = require('./electron/php-runtime.cjs');
 const { reconcile: reconcileRail } = require('./electron/rail-core.cjs');
 const { LocalPty } = require('./electron/remote/localPty.cjs');
 const platform = require('./electron/platform.cjs');
+const { decideWindowOpen } = require('./electron/window-open.cjs');
 const { isRemote, parseSshUri, buildSshUri, hostKey } = require('./electron/remote/sshUri.cjs');
 const { parseSshConfig } = require('./electron/remote/sshConfig.cjs');
 const { SshShell } = require('./electron/remote/sshShell.cjs');
@@ -548,14 +549,16 @@ app.on('web-contents-created', (_event, contents) => {
   // Links que abririam "nova janela" (target=_blank, window.open, Ctrl+clique) NÃO
   // viram mais aquela janela flutuante nativa do Chromium: viram uma ABA interna do
   // preview. Negamos o popup e avisamos o renderer, que cria a aba no projeto dono
-  // deste webview (casado pelo sourceId). mailto:/tel: e afins vão pro sistema.
+  // deste webview (casado pelo sourceId). A política de esquemas mora em
+  // electron/window-open.cjs (testada em window-open.test.js).
+  // ATENÇÃO: isto só dispara porque o <webview> das abas leva `allowpopups`; sem o
+  // atributo o Chromium mata o popup DENTRO do guest e este handler nunca roda.
+  // Ver src/lib/previewWebview.js e scripts/popup-smoke.cjs.
   contents.setWindowOpenHandler(({ url, disposition }) => {
-    if (url && /^https?:/i.test(url)) {
+    const { action } = decideWindowOpen(url);
+    if (action === 'tab') {
       safeSend('preview:new-tab', { sourceId: contents.id, url, disposition });
-    } else if (url && /^mailto:/i.test(url)) {
-      // SÓ mailto: vai pro sistema — mesma regra do handler shell:openExternal. Nada de
-      // file:/smb:/ms-msdt:/data: etc.: uma página do preview não pode abrir esquemas
-      // perigosos no SO via window.open. O resto é negado sem repasse.
+    } else if (action === 'external') {
       shell.openExternal(url).catch(() => {});
     }
     return { action: 'deny' };
