@@ -11,6 +11,7 @@
 // exibido (nome próprio, não traduzido); `loginArgs` são os args de shell de login.
 const TABLE = {
   win32: {
+    appId: 'Carcará Code',
     shellDefault: 'powershell.exe',
     shellEnv: 'COMSPEC',
     loginArgs: [],
@@ -44,6 +45,7 @@ const TABLE = {
     ],
   },
   darwin: {
+    appId: 'Carcará Code',
     shellDefault: 'zsh',
     shellEnv: 'SHELL',
     loginArgs: ['-l'],
@@ -59,6 +61,14 @@ const TABLE = {
     ],
   },
   linux: {
+    // ASCII sem espaço, diferente do 'Carcará Code' do Win/Mac: o GNOME Shell moderno
+    // tenta agrupar a janela num scope do systemd ("app-<appId>-<pid>.scope") e casar o
+    // WM_CLASS X11 com o StartupWMClass do .desktop. Ambos os mecanismos falham
+    // silenciosamente com acento/espaço no nome (nome de unit systemd inválido; e o
+    // WM_CLASS acentuado é lido como Latin-1 pelo comparador do Shell, dessincronizando
+    // do StartupWMClass lido como UTF-8) — o app abre, mas fica com um ícone solto e
+    // sem nome (tipo engrenagem) na dock, em vez de mesclar com o ícone fixado.
+    appId: 'CarcaraCode',
     shellDefault: 'bash',
     shellEnv: 'SHELL',
     loginArgs: [],
@@ -99,6 +109,11 @@ function shellChoicesFor(platform = process.platform) {
 // Comando que localiza um executável no PATH: 'where' no Windows, 'which' no resto.
 function whichCmdFor(platform = process.platform) {
   return tableFor(platform).whichCmd || 'which';
+}
+
+// Identidade registrada via app.setName() (ver comentário do appId na TABELA acima).
+function appIdFor(platform = process.platform) {
+  return tableFor(platform).appId;
 }
 
 const isWin = process.platform === 'win32';
@@ -161,6 +176,7 @@ module.exports = {
   loginArgsFor,
   shellChoicesFor,
   whichCmdFor,
+  appIdFor,
   fixLoginPath,
   macMenuTemplate,
   isWin,

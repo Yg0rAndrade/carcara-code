@@ -63,8 +63,10 @@ let remoteFs = null;
 const APP_NAME = 'Carcará Code';
 const APP_ICON = path.join(__dirname, 'build', 'icon.png');
 
-// Nome e identidade no Windows (agrupa o ícone certo na taskbar).
-app.setName(APP_NAME);
+// Nome e identidade registrados no SO (agrupa o ícone certo na taskbar/dock).
+// Ver electron/platform.cjs › TABLE.<so>.appId: no Linux é ASCII sem espaço,
+// diferente do nome de exibição, por causa de um bug de rastreamento do GNOME Shell.
+app.setName(platform.appIdFor());
 if (process.platform === 'win32') app.setAppUserModelId('com.carcara.code');
 
 // Scrollbar igual ao Chrome atual. Sem isto, o Chromium do Electron renderiza o
