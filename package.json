@@ -3,6 +3,7 @@
   "version": "0.1.11",
   "description": "IDE minimalista para o Claude Code — cara de Lovable",
   "main": "main.js",
+  "desktopName": "CarcaraCode.desktop",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -81,7 +82,9 @@
       "target": "AppImage",
       "icon": "build/icon.png",
       "category": "Development",
-      "artifactName": "CarcaraCode-${version}.AppImage"
+      "artifactName": "CarcaraCode-${version}.AppImage",
+      "executableName": "CarcaraCode",
+      "syncDesktopName": true
     },
     "mac": {
       "target": "dmg",
