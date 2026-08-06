@@ -3,6 +3,45 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.11] — 2026-08-06
+
+### Adicionado
+
+- **Um terminal de verdade dentro do "Gerenciar IAs":** a aba agora tem um terminal completo — o
+  mesmo shell do seu computador, com **Ctrl+V pra colar**, Ctrl+C pra copiar a seleção, histórico
+  de rolagem e links clicáveis. Dá pra rodar qualquer comando ali, não só o da receita.
+- **Link pra documentação oficial de cada IA:** ao lado de cada comando, um atalho direto pra
+  página do fornecedor — se algo mudar do lado deles, a fonte da verdade está a um clique.
+
+### Alterado
+
+- **Instalar e atualizar IAs virou "rode este comando", não um botão mágico:** em vez de o app
+  executar o instalador escondido, ele **mostra o comando oficial** num campo que você pode
+  **editar**, com "Copiar" e "Colar no terminal" (a linha entra no terminal e **você** aperta
+  Enter). Nada roda sem alguém ter lido. É mais simples, a falha fica visível, e se um fornecedor
+  mudar o instalador você ajusta a linha na hora, sem esperar uma atualização do Carcará.
+
+### Corrigido
+
+- **O OpenCode "sumindo" do computador:** atualizar o OpenCode pelo npm podia deixar a instalação
+  quebrada — as versões novas do npm bloqueiam a etapa que baixa o programa de verdade, e o
+  resultado era o app dizer, corretamente, que a IA não estava instalada. A receita do Carcará
+  agora libera essa etapa, então atualizar não quebra mais.
+- **Botões de instalar/atualizar que travavam em "Instalando…" pra sempre:** em muitos computadores
+  o instalador embutido não tinha como rodar (dependia de um programa que o Windows não traz), e a
+  falha acontecia em silêncio, sem mensagem nenhuma. Esse caminho foi removido.
+- **Texto ilegível quando o tema do terminal era diferente do tema do app:** com o terminal no
+  escuro e o Carcará no claro (ou o contrário), a tela de "Escolha a IA desta aba" e o fundo do
+  chat ficavam com texto quase invisível. Agora a área do terminal leva junto as cores certas.
+- **Botão do terminal mostrando `settings.aiTerminalClear`:** faltava a tradução do botão "Limpar"
+  em todos os idiomas.
+- **Preview subindo sozinho depois de você mandar parar:** apertar "Parar" e ver o servidor voltar
+  no susto, às vezes em loop. O servidor agora só sobe sozinho na primeira vez que o projeto é
+  aberto — depois disso, quem manda é você.
+- **Botões do site que abriam nada:** links com `target="_blank"` e telas abertas por
+  `window.open` (por exemplo um PDF gerado pelo próprio site) voltaram a abrir como aba interna
+  do Preview, em vez de simplesmente não acontecer nada.
+
 ## [0.1.10] — 2026-07-24
 
 ### Adicionado
