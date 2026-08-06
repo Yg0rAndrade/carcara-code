@@ -41,6 +41,10 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Botões do site que abriam nada:** links com `target="_blank"` e telas abertas por
   `window.open` (por exemplo um PDF gerado pelo próprio site) voltaram a abrir como aba interna
   do Preview, em vez de simplesmente não acontecer nada.
+- **Linux — ícone solto na dock do GNOME:** o app abria com um ícone genérico e sem nome, em vez
+  de mesclar com o ícone fixado na dock. O identificador do app no Linux passou a ser ASCII sem
+  espaço, que é o que o GNOME Shell consegue casar. Contribuição de
+  [@guelfi](https://github.com/guelfi) ([#11](https://github.com/Yg0rAndrade/carcara-code/pull/11)).
 
 ## [0.1.10] — 2026-07-24
 
