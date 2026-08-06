@@ -666,6 +666,7 @@
     "aiChecking": "更新を確認中…",
     "aiInstallHint": "インストーラーが質問したり CLI を開いたりすることがあります。ターミナルで答えてください — 今すぐ起動するか聞かれたら N と答えてください。動かなくなったら「停止」をクリックしてください。",
     "aiInstallStop": "停止",
+    "aiTerminalClear": "クリア",
     "aiDoneUpdated": "{label} — 更新しました（v{v}）",
     "aiDoneNoChange": "{label} は v{v} のままです — 更新されていません（CLI がバックグラウンドで自動更新する場合があります）",
     "aiUninstall": "アンインストール",

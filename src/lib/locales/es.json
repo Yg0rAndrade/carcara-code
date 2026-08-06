@@ -666,6 +666,7 @@
     "aiChecking": "Buscando actualizaciones…",
     "aiInstallHint": "El instalador puede hacer preguntas o abrir el CLI. Responde en la terminal — si te pide iniciar ahora, responde N. Si se cuelga, haz clic en Detener.",
     "aiInstallStop": "Detener",
+    "aiTerminalClear": "Limpiar",
     "aiDoneUpdated": "{label} — actualizado (v{v})",
     "aiDoneNoChange": "{label} sigue en v{v} — no actualizado (el CLI puede actualizarse solo en segundo plano)",
     "aiUninstall": "Desinstalar",

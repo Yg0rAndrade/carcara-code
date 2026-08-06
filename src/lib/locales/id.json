@@ -666,6 +666,7 @@
     "aiChecking": "Memeriksa pembaruan…",
     "aiInstallHint": "Pemasang mungkin mengajukan pertanyaan atau membuka CLI. Jawab di terminal — jika ia meminta untuk memulai sekarang, jawab N. Jika macet, klik Hentikan.",
     "aiInstallStop": "Hentikan",
+    "aiTerminalClear": "Bersihkan",
     "aiDoneUpdated": "{label} — diperbarui (v{v})",
     "aiDoneNoChange": "{label} masih di v{v} — tidak diperbarui (CLI mungkin memperbarui dirinya sendiri di latar belakang)",
     "aiUninstall": "Copot pemasangan",

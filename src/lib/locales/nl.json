@@ -666,6 +666,7 @@
     "aiChecking": "Controleren op updates…",
     "aiInstallHint": "Het installatieprogramma kan vragen stellen of de CLI openen. Antwoord in de terminal — als het vraagt om nu te starten, antwoord N. Als het vastloopt, klik op Stoppen.",
     "aiInstallStop": "Stoppen",
+    "aiTerminalClear": "Wissen",
     "aiDoneUpdated": "{label} — bijgewerkt (v{v})",
     "aiDoneNoChange": "{label} nog steeds op v{v} — niet bijgewerkt (de CLI werkt zichzelf mogelijk op de achtergrond bij)",
     "aiUninstall": "Verwijderen",

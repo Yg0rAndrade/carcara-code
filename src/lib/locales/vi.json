@@ -666,6 +666,7 @@
     "aiChecking": "Đang kiểm tra cập nhật…",
     "aiInstallHint": "Trình cài đặt có thể hỏi hoặc mở CLI. Trả lời trong terminal — nếu nó hỏi có khởi động ngay không, hãy trả lời N. Nếu nó bị treo, nhấp Dừng.",
     "aiInstallStop": "Dừng",
+    "aiTerminalClear": "Xóa",
     "aiDoneUpdated": "{label} — đã cập nhật (v{v})",
     "aiDoneNoChange": "{label} vẫn ở v{v} — chưa cập nhật (CLI có thể tự cập nhật ngầm)",
     "aiUninstall": "Gỡ cài đặt",
