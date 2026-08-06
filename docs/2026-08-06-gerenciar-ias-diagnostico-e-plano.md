@@ -219,3 +219,60 @@ install/update/uninstall automático some ou encolhe muito).
 - `npm run build` **só compila** — a tela precisa de smoke manual (lição do TDZ no
   `DESAFIOS.md`). E o app instalado não lê o `dist/` do repositório: testar com
   `npm start`.
+
+---
+
+## Parte 2 — IMPLEMENTADA (opção A)
+
+Aprovada pelo usuário e implementada na mesma data.
+
+### O que a tela virou
+
+Coluna esquerda: as 4 CLIs com estado (não instalada / na versão X / atualização
+disponível), um ⋮ por linha (Instalar · Atualizar · Desinstalar) e um "Verificar de
+novo". Coluna direita: o título ("Como instalar {CLI}"), o link da **documentação
+oficial**, uma nota quando a receita precisa de explicação, os comandos em campos
+**editáveis** com "Copiar" e "Colar no terminal", e embaixo o terminal ao vivo.
+
+"Colar no terminal" escreve a linha **sem Enter**. Quem confirma é o usuário — nada
+executa sem alguém ter lido.
+
+### Mudanças por arquivo
+
+- `electron/ai-catalog.cjs` — `RECIPES`: passos por SO (array, o `agy` precisa de dois),
+  `docs` oficial e `note_key`. `installSpec`/`updateSpec`/`uninstallSpec` (specs de
+  execução) saíram; entrou `commandsFor()`. `claude` entrou em `INSTALLABLE_KEYS` (a
+  receita dele é mostrável como as outras).
+- `electron/ai-installer.cjs` — `run()` e `spawnSpecFor()` removidos (~65 linhas).
+  Sobraram `detect`/`whichBin`/`latestVersion` e o cache de 24 h.
+- `main.js` — `aiInstall:*` (start/input/resize/cancel + `pendingDone`) trocado por
+  `aiConsole:ensure|input|resize`, um shell comum via `resolveLocalShell()` na home.
+  **O erro do PTY volta no _retorno_ do `ensure`, não por evento** — é isso que elimina
+  a corrida que travava a tela.
+- `src/components/AiManager.jsx` — reescrito (562 → ~400 linhas, com mais recurso).
+- `src/lib/locales/*.json` — 9 chaves novas × 18 idiomas; `aiInstallConfirmBody`
+  reescrito (não prometemos mais "vou rodar o instalador").
+
+### Receitas do Windows: têm de rodar no `cmd.exe`
+
+O smoke mostrou que o shell do SO aqui é `C:\WINDOWS\system32\cmd.exe` (via `COMSPEC`).
+Por isso as receitas do Windows chamam `powershell -NoProfile -ExecutionPolicy Bypass
+-Command "..."` explicitamente em vez de um `irm | iex` solto — assim a linha funciona
+colada em cmd, PowerShell ou pwsh. E o OpenCode no Windows vai por
+`npm install -g --allow-scripts=opencode-ai opencode-ai` (validado com `--dry-run`: o
+flag é aceito e o aviso de scripts bloqueados some).
+
+### Testes
+
+- `scripts/ai-console-smoke.cjs` (`npm run test:aiconsole`) — **novo**: abre o shell do
+  SO como a tela faz, escreve um comando e exige o eco + a execução. É o guardião do modo
+  de falha antigo (shell fixo que não existe).
+- `electron/ai-catalog.test.js` — reescrito, com dois testes de **regressão nomeados**:
+  nenhuma receita de Windows depende de `bash`/`sh`, e todo `npm install` das receitas
+  carrega `--allow-scripts`.
+- `scripts/ai-catalog-smoke.cjs` — mesmas invariantes no smoke por SO.
+- Estado final: 278 testes vitest, 7 smokes, lint 0 erros, build ok.
+
+### Pendente
+
+Smoke **manual** da tela (`npm start`) — build verde não substitui abrir a tela uma vez.

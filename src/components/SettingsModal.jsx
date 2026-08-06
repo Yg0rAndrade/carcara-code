@@ -941,8 +941,9 @@ export function SettingsModal({
                   </div>
                 </>
 
-                {/* Confirmação de instalação sob demanda: clicar numa CLI ausente ("Por projeto")
-                  abre este overlay; confirmar leva pra aba "Gerenciar IAs" já instalando. */}
+                {/* Clicar numa CLI ausente ("Por projeto") abre este overlay; confirmar leva
+                  pra aba "Gerenciar IAs" com ela já selecionada e o comando oficial à mostra.
+                  Nada roda sozinho — quem aperta Enter no terminal é o usuário. */}
                 {confirmInstall && (
                   <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55">
                     <div className="w-[330px] rounded-2xl border border-primary/30 bg-background p-5 text-center shadow-xl">

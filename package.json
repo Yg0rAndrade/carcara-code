@@ -28,7 +28,8 @@
     "test:aicatalog": "node scripts/ai-catalog-smoke.cjs",
     "test:carcara": "node scripts/carcara-events-smoke.cjs",
     "test:carcara-config": "node scripts/carcara-config-smoke.cjs",
-    "test:carcara-msg": "node scripts/carcara-message-smoke.cjs"
+    "test:carcara-msg": "node scripts/carcara-message-smoke.cjs",
+    "test:aiconsole": "node scripts/ai-console-smoke.cjs"
   },
   "lint-staged": {
     "*.{js,jsx,cjs,mjs}": [

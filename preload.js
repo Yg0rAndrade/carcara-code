@@ -50,18 +50,17 @@ contextBridge.exposeInMainWorld('api', {
   listPorts: (projectPath) => ipcRenderer.invoke('ports:list', { projectPath }),
   killPort: (port) => ipcRenderer.invoke('ports:kill', { port }),
 
-  // Catálogo/instalação de CLIs de IA (codex/opencode/agy). Eventos 'aiInstall:data'/
-  // 'aiInstall:done' chegam pelo on(...) genérico abaixo.
+  // Catálogo (receitas MOSTRADAS) e detecção das CLIs de IA. O app não instala nada:
+  // o console abaixo é um shell comum e quem roda o comando é o usuário. O evento
+  // 'aiConsole:data' chega pelo on(...) genérico abaixo.
   aiCatalog: () => ipcRenderer.invoke('ai:catalog'),
   aiDetected: () => ipcRenderer.invoke('ai:detected'),
   aiStatus: (force) => ipcRenderer.invoke('ai:status', { force }),
-  aiInstallStart: (key, mode) => ipcRenderer.invoke('aiInstall:start', { key, mode }),
   // Caminho do binário da CLI, pro painel "Desinstalar" (null se não achar).
   whichBin: (key) => ipcRenderer.invoke('ai:whichBin', { key }),
-  aiInstallInput: (installId, data) => ipcRenderer.send('aiInstall:input', { installId, data }),
-  aiInstallResize: (installId, cols, rows) =>
-    ipcRenderer.send('aiInstall:resize', { installId, cols, rows }),
-  aiInstallCancel: (installId) => ipcRenderer.invoke('aiInstall:cancel', { installId }),
+  aiConsoleEnsure: (cols, rows) => ipcRenderer.invoke('aiConsole:ensure', { cols, rows }),
+  aiConsoleInput: (data) => ipcRenderer.send('aiConsole:input', { data }),
+  aiConsoleResize: (cols, rows) => ipcRenderer.send('aiConsole:resize', { cols, rows }),
   getLayout: () => ipcRenderer.invoke('layout:get'),
   setLayout: (layout) => ipcRenderer.invoke('layout:set', layout),
   getProjectLayout: (projectPath) => ipcRenderer.invoke('layout:getProject', { projectPath }),

@@ -1,88 +1,101 @@
 import { describe, it, expect } from 'vitest';
 import {
+  commandsFor,
   catalogFor,
-  installSpec,
-  updateSpec,
   uninstallGuide,
-  uninstallSpec,
   parseVersion,
   cmpVersions,
   computeUpdateAvailable,
   INSTALLABLE_KEYS,
 } from './ai-catalog.cjs';
 
-describe('installSpec', () => {
-  it('codex usa powershell no win32 e sh no resto', () => {
-    expect(installSpec('codex', 'win32')).toEqual({
-      shell: 'powershell',
-      cmd: 'irm https://chatgpt.com/codex/install.ps1 | iex',
-      postInstall: null,
-    });
-    expect(installSpec('codex', 'darwin')).toEqual({
-      shell: 'sh',
-      cmd: 'curl -fsSL https://chatgpt.com/codex/install.sh | sh',
-      postInstall: null,
-    });
+describe('commandsFor', () => {
+  it('devolve passos + doc oficial por SO', () => {
+    const win = commandsFor('codex', 'win32');
+    expect(win.install).toHaveLength(1);
+    expect(win.install[0]).toContain('chatgpt.com/codex/install.ps1');
+    expect(win.docs).toMatch(/^https:\/\//);
+
+    const mac = commandsFor('codex', 'darwin');
+    expect(mac.install[0]).toContain('curl');
+    expect(commandsFor('codex', 'linux')).toEqual(mac); // unix compartilha o slot
   });
-  it('agy tem postInstall "agy install"', () => {
-    expect(installSpec('agy', 'linux').postInstall).toBe('agy install');
+
+  it('update cai no install quando o fornecedor não tem comando próprio', () => {
+    const c = commandsFor('codex', 'win32');
+    expect(c.update).toEqual(c.install);
   });
-  it('desconhecido/custom → null', () => {
-    expect(installSpec('custom', 'linux')).toBeNull();
-    expect(installSpec('zzz', 'linux')).toBeNull();
+
+  it('update próprio quando existe (claude update / opencode upgrade)', () => {
+    expect(commandsFor('claude', 'linux').update).toEqual(['claude update']);
+    expect(commandsFor('opencode', 'linux').update).toEqual(['opencode upgrade']);
+  });
+
+  it('agy precisa de dois passos (instalador + `agy install`)', () => {
+    const c = commandsFor('agy', 'linux');
+    expect(c.install).toHaveLength(2);
+    expect(c.install[1]).toBe('agy install');
+  });
+
+  it('CLI desconhecida → null', () => {
+    expect(commandsFor('custom', 'linux')).toBeNull();
+    expect(commandsFor('zzz', 'linux')).toBeNull();
   });
 });
 
-describe('updateSpec', () => {
-  it('opencode é builtin (opencode upgrade)', () => {
-    expect(updateSpec('opencode', 'linux')).toEqual({
-      shell: 'sh',
-      cmd: 'opencode upgrade',
-      builtin: true,
-    });
+describe('regressões de 2026-08-06', () => {
+  // O `sh`/`bash` não está no PATH do Windows nem com o Git instalado (medido). Uma
+  // receita que dependesse deles era inexecutável — foi o que travou o "Instalar" do
+  // OpenCode em "Instalando…" para sempre.
+  it('nenhuma receita de Windows depende de bash/sh', () => {
+    for (const key of INSTALLABLE_KEYS) {
+      const c = commandsFor(key, 'win32');
+      for (const step of [...c.install, ...c.update]) {
+        expect(step, `${key}: ${step}`).not.toMatch(/\|\s*(bash|sh)\b/);
+        expect(step, `${key}: ${step}`).not.toMatch(/^\s*(bash|sh)\b/);
+      }
+    }
   });
-  it('codex reexecuta o instalador', () => {
-    expect(updateSpec('codex', 'win32').cmd).toBe(
-      'irm https://chatgpt.com/codex/install.ps1 | iex',
-    );
+
+  // npm >= 12 bloqueia postinstall por padrão. O `opencode-ai` entrega o binário real
+  // justamente nele: sem o flag sobra um stub de 479 bytes, o Windows recusa o
+  // executável e a CLI passa a ser detectada como "não instalada".
+  it('todo `npm install` das receitas libera os scripts do pacote', () => {
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      for (const key of INSTALLABLE_KEYS) {
+        const c = commandsFor(key, platform);
+        for (const step of [...c.install, ...c.update]) {
+          if (/\bnpm\s+(install|i)\b/.test(step)) {
+            expect(step, `${key}/${platform}`).toMatch(/--allow-scripts=/);
+          }
+        }
+      }
+    }
+  });
+
+  it('opencode no Windows vai por npm (não por curl|bash)', () => {
+    const c = commandsFor('opencode', 'win32');
+    expect(c.install[0]).toContain('npm install -g');
+    expect(c.install[0]).toContain('--allow-scripts=opencode-ai');
   });
 });
 
-describe('uninstallGuide / uninstallSpec', () => {
-  it('codex é comando npm (com note e sem depender de plataforma no descritor)', () => {
-    const g = uninstallGuide('codex', 'win32');
+describe('uninstallGuide', () => {
+  it('comando reversível com nota', () => {
+    const g = uninstallGuide('codex');
     expect(g.kind).toBe('command');
     expect(g.run).toBe('npm uninstall -g @openai/codex');
     expect(g.note_key).toBe('settings.uninstallCodexNote');
+    expect(g.bin).toBe('codex');
   });
-  it('claude é comando npm do pacote oficial', () => {
-    expect(uninstallGuide('claude', 'linux').run).toBe(
-      'npm uninstall -g @anthropic-ai/claude-code',
-    );
-  });
-  it('opencode usa o desinstalador próprio', () => {
-    expect(uninstallGuide('opencode', 'darwin').run).toBe('opencode uninstall');
-  });
-  it('agy é os-apps (sem run — delega pros Apps do SO)', () => {
-    const g = uninstallGuide('agy', 'win32');
+  it('agy delega pros Apps do SO (sem comando)', () => {
+    const g = uninstallGuide('agy');
     expect(g.kind).toBe('os-apps');
     expect(g.run).toBeUndefined();
     expect(g.note_key).toBe('settings.uninstallAgyNote');
   });
-  it('desconhecido → null', () => {
-    expect(uninstallGuide('zzz', 'linux')).toBeNull();
-  });
-  it('uninstallSpec: powershell no win, sh no resto; os-apps → null', () => {
-    expect(uninstallSpec('codex', 'win32')).toEqual({
-      shell: 'powershell',
-      cmd: 'npm uninstall -g @openai/codex',
-    });
-    expect(uninstallSpec('codex', 'linux')).toEqual({
-      shell: 'sh',
-      cmd: 'npm uninstall -g @openai/codex',
-    });
-    expect(uninstallSpec('agy', 'win32')).toBeNull();
-    expect(uninstallSpec('zzz', 'linux')).toBeNull();
+  it('CLI desconhecida → null', () => {
+    expect(uninstallGuide('zzz')).toBeNull();
   });
 });
 
@@ -111,10 +124,21 @@ describe('cmpVersions / computeUpdateAvailable', () => {
 });
 
 describe('catalogFor / INSTALLABLE_KEYS', () => {
-  it('inclui os 3 instaláveis, não inclui custom', () => {
-    expect(INSTALLABLE_KEYS).toEqual(['codex', 'opencode', 'agy']);
+  it('cobre as 4 CLIs e propaga receita + guia', () => {
+    expect(INSTALLABLE_KEYS).toEqual(['codex', 'opencode', 'agy', 'claude']);
     const keys = catalogFor('linux').map((e) => e.key);
-    expect(keys).toContain('codex');
+    expect(keys).toEqual(['codex', 'opencode', 'agy', 'claude']);
     expect(keys).not.toContain('custom');
+    for (const e of catalogFor('linux')) {
+      expect(e.docs).toMatch(/^https:\/\//);
+      expect(e.install.length).toBeGreaterThan(0);
+      expect(e.update.length).toBeGreaterThan(0);
+      expect(e.uninstall).toBeTruthy();
+    }
+  });
+  it('note_key só onde a receita explica algo (opencode/win)', () => {
+    const win = Object.fromEntries(catalogFor('win32').map((e) => [e.key, e]));
+    expect(win.opencode.note_key).toBe('settings.aiNoteOpencodeWin');
+    expect(win.codex.note_key).toBeNull();
   });
 });

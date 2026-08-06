@@ -1,15 +1,14 @@
 'use strict';
-// Executor das CLIs de IA (com Node). Detecta versão instalada, resolve a última
-// publicada (GitHub/npm, cache 24h, degradação silenciosa) e roda o instalador
-// oficial num PTY real. As DECISÕES (comando por SO, parse) vêm do ai-catalog puro;
-// aqui só a execução. Ver docs/superpowers/specs/2026-07-10-gestao-clis-ia-design.md.
+// Sonda das CLIs de IA (com Node). Detecta a versão instalada e resolve a última
+// publicada (GitHub/npm, cache 24h, degradação silenciosa). As DECISÕES (receita por
+// SO, parse de versão) vêm do ai-catalog puro; aqui só o que precisa de fs/rede.
+// O app NÃO instala nada por conta própria — ver a nota no fim do arquivo.
 
 const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
 const { spawnSync } = require('node:child_process');
 const catalog = require('./ai-catalog.cjs');
-const { LocalPty } = require('./remote/localPty.cjs');
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -146,69 +145,13 @@ async function latestVersion(key, { userDataDir, nowMs = Date.now(), force = fal
   return version;
 }
 
-// Como rodar um comando de uma vez no interpretador do catálogo e deixá-lo SAIR
-// sozinho (dispara onExit em qualquer SO). Evita depender de escrever "exit" num
-// shell interativo — não portável (cmd.exe não separa por ';'). powershell roda o
-// comando .ps1 (irm|iex); sh roda os curl|bash/sh (Mac/Linux, e Win com bash do git).
-function spawnSpecFor(shellName, line) {
-  if (shellName === 'powershell') {
-    return {
-      shell: 'powershell.exe',
-      shellArgs: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', line],
-    };
-  }
-  return { shell: 'sh', shellArgs: ['-lc', line] };
-}
-
-// Roda o instalador/updater oficial num PTY real. `cleanEnv` vem do main (mesmo env
-// dos terminais). Marca o fim escrevendo um sentinela e detectando o exit do shell.
-function run(key, mode, opts = {}) {
-  const { cwd, cols = 80, rows = 24, cleanEnv, onData, onDone } = opts;
-  const spec =
-    mode === 'update'
-      ? catalog.updateSpec(key)
-      : mode === 'uninstall'
-        ? catalog.uninstallSpec(key)
-        : catalog.installSpec(key);
-  if (!spec) {
-    const err =
-      mode === 'uninstall' ? 'CLI sem desinstalação por comando: ' : 'CLI não instalável: ';
-    onDone && onDone({ ok: false, version: null, error: err + key });
-    return { write() {}, resize() {}, kill() {} };
-  }
-  let ptyLib;
-  try {
-    ptyLib = require('node-pty');
-  } catch (e) {
-    onDone && onDone({ ok: false, version: null, error: 'node-pty: ' + e.message });
-    return { write() {}, resize() {}, kill() {} };
-  }
-  // Comando (+ postInstall só no install). Separador ';' funciona em powershell e sh
-  // (o '&&' NÃO existe no PowerShell 5.1). O interpretador vem do spec.shell.
-  const post = mode === 'install' && spec.postInstall ? ` ; ${spec.postInstall}` : '';
-  const line = `${spec.cmd}${post}`;
-  const { shell, shellArgs } = spawnSpecFor(spec.shell, line);
-  let proc;
-  try {
-    proc = new LocalPty({ ptyLib, shell, shellArgs, env: cleanEnv, cwd, cols, rows });
-  } catch (e) {
-    // Ex.: 'sh' ausente no Windows (opencode precisa do bash do git). Degrada.
-    onDone && onDone({ ok: false, version: null, error: 'shell indisponível: ' + e.message });
-    return { write() {}, resize() {}, kill() {} };
-  }
-  proc.onData((d) => onData && onData(d));
-  proc.onExit(() => {
-    const det = detect(key);
-    onDone && onDone({ ok: det.installed, version: det.version });
-  });
-  // Ecoa o comando pro usuário ver antes do output (transparência/segurança).
-  onData && onData(`\r\n\x1b[2m$ ${line}\x1b[0m\r\n`);
-  return {
-    write: (d) => proc.write(d),
-    resize: (c, r) => proc.resize(c, r),
-    kill: () => proc.kill(),
-  };
-}
+// NOTA (0.1.11): aqui existia um `run()` que subia o instalador oficial num PTY
+// próprio, escolhendo o interpretador (`powershell`/`sh`) pelo catálogo. Ele saiu.
+// Motivo medido em docs/2026-08-06-gerenciar-ias-diagnostico-e-plano.md: no Windows
+// o `sh` não está no PATH (nem com Git instalado), o `new LocalPty` lançava de forma
+// SÍNCRONA, e a falha chegava ao renderer antes do id da instalação — deixando o botão
+// preso em "Instalando…" para sempre, sem erro na tela. Agora o app só mostra o comando
+// (ai-catalog.RECIPES) e o usuário roda no terminal comum, vendo tudo.
 
 module.exports = {
   detect,
@@ -218,5 +161,4 @@ module.exports = {
   writeCache,
   isFresh,
   latestVersion,
-  run,
 };

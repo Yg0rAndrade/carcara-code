@@ -51,8 +51,7 @@ let updater = null;
 const runningServers = new Map(); // projectPath -> { proc, url, port, log }
 const terminals = new Map(); // sessionId -> { pty, buffer, projectPath } (sessões do Claude Code)
 const shells = new Map(); // projectPath -> { pty, buffer } (terminal livre por projeto)
-const aiInstalls = new Map(); // installId -> pty handle
-let aiInstallSeq = 0;
+let aiConsole = null; // { pty, buffer, cols, rows, shell } — shell do "Gerenciar IAs"
 let ptyLib = null;
 // Camada 1 SSH: instanciados em app.whenReady() (precisam de app.getPath('userData')).
 // Módulo-scope (não const dentro do whenReady) pra ficarem visíveis aos handlers IPC.
@@ -902,7 +901,7 @@ ipcMain.handle('ai:detected', () =>
       key: entry.key,
       installed: det.installed,
       version: det.version,
-      installable: !!entry.install,
+      installable: entry.install.length > 0,
     };
   }),
 );
@@ -926,7 +925,7 @@ ipcMain.handle('ai:status', async (evt, arg) => {
       version: det.version,
       latest,
       updateAvailable: aiCatalog.computeUpdateAvailable(det.version, latest),
-      installable: !!entry.install,
+      installable: entry.install.length > 0,
     });
   }
   return out;
@@ -936,57 +935,68 @@ ipcMain.handle('ai:status', async (evt, arg) => {
 // à mão). null se não achar. Ramificação por SO fica no ai-installer (tem Node).
 ipcMain.handle('ai:whichBin', (evt, { key }) => aiInstaller.whichBin(key));
 
-ipcMain.handle('aiInstall:start', (evt, { key, mode }) => {
-  const installId = `ai-${++aiInstallSeq}`;
-  let registered = false;
-  let pendingDone = null; // set se onDone disparar SÍNCRONO durante run() (falha imediata)
-  // 'update' | 'uninstall' | 'install' (default). uninstall roda o comando GUIADO
-  // (npm uninstall -g / opencode uninstall) no mesmo PTY e re-detecta no exit.
-  const runMode = mode === 'update' ? 'update' : mode === 'uninstall' ? 'uninstall' : 'install';
-  const handle = aiInstaller.run(key, runMode, {
-    cwd: app.getPath('home'),
-    cols: 80,
-    rows: 24,
-    cleanEnv: cleanEnv(),
-    onData: (data) => safeSend('aiInstall:data', { installId, data }),
-    onDone: (res) => {
-      // Falha síncrona dentro de run() (sem spec / node-pty / spawn): ainda não
-      // registramos nem retornamos o installId. Guarda p/ tratar depois do return.
-      if (!registered) {
-        pendingDone = res;
-        return;
-      }
-      aiInstalls.delete(installId);
-      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version, error: res.error });
-    },
-  });
-  if (pendingDone) {
-    // run() já terminou (falhou) de forma síncrona: NÃO entra no map (nada a cancelar)
-    // e o done vai no próximo tick, pra o renderer já ter recebido o installId.
-    const res = pendingDone;
-    setImmediate(() =>
-      safeSend('aiInstall:done', { installId, ok: res.ok, version: res.version, error: res.error }),
-    );
-  } else {
-    aiInstalls.set(installId, handle);
-    registered = true;
+// Console do "Gerenciar IAs": um shell COMUM na pasta do usuário, igual ao terminal
+// livre do projeto (mesmo `resolveLocalShell`, que respeita o shell escolhido nas
+// Configurações). O app só escreve a linha do comando nele — quem aperta Enter é o
+// usuário. Nada de instalador embutido: ver a nota em electron/ai-installer.cjs.
+ipcMain.handle('aiConsole:ensure', async (evt, { cols, rows }) => {
+  if (aiConsole) {
+    if (cols && rows && (cols !== aiConsole.cols || rows !== aiConsole.rows)) {
+      aiConsole.cols = cols;
+      aiConsole.rows = rows;
+      try {
+        aiConsole.pty.resize(cols, rows);
+      } catch {}
+    }
+    return { existed: true, buffer: aiConsole.buffer };
   }
-  return { installId };
+  let pty;
+  try {
+    pty = ptyLib || (ptyLib = require('node-pty'));
+  } catch (e) {
+    return { error: 'node-pty: ' + e.message };
+  }
+  const { shell, shellArgs } = await resolveLocalShell();
+  let proc;
+  try {
+    proc = new LocalPty({
+      ptyLib: pty,
+      shell,
+      shellArgs,
+      env: cleanEnv(),
+      cwd: app.getPath('home'),
+      cols,
+      rows,
+    });
+  } catch (e) {
+    // O construtor do LocalPty lança SÍNCRONO quando o shell não existe. Devolver o
+    // erro pelo retorno (e não por evento) tira a corrida que travava a tela antiga.
+    return { error: e.message };
+  }
+  const entry = { pty: proc, buffer: '', cols, rows, shell };
+  aiConsole = entry;
+  proc.onData((data) => {
+    entry.buffer += data;
+    if (entry.buffer.length > 200000) entry.buffer = entry.buffer.slice(-150000);
+    safeSend('aiConsole:data', { data });
+  });
+  proc.onExit(() => {
+    if (aiConsole === entry) aiConsole = null;
+    safeSend('aiConsole:exit', {});
+  });
+  return { existed: false, buffer: '', shell };
 });
 
-ipcMain.on('aiInstall:input', (evt, { installId, data }) => {
-  const h = aiInstalls.get(installId);
-  if (h) h.write(data);
+ipcMain.on('aiConsole:input', (evt, { data }) => {
+  if (aiConsole) aiConsole.pty.write(data);
 });
-ipcMain.on('aiInstall:resize', (evt, { installId, cols, rows }) => {
-  const h = aiInstalls.get(installId);
-  if (h) h.resize(cols, rows);
-});
-ipcMain.handle('aiInstall:cancel', (evt, { installId }) => {
-  const h = aiInstalls.get(installId);
-  if (h) h.kill();
-  aiInstalls.delete(installId);
-  return { ok: true };
+ipcMain.on('aiConsole:resize', (evt, { cols, rows }) => {
+  if (!aiConsole) return;
+  aiConsole.cols = cols;
+  aiConsole.rows = rows;
+  try {
+    aiConsole.pty.resize(cols, rows);
+  } catch {}
 });
 
 // ---- Layout (lado do rail/Claude) ----
