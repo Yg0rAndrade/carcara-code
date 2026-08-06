@@ -7,7 +7,13 @@ import '@xterm/xterm/css/xterm.css';
 import { useTheme } from '@/lib/theme.jsx';
 // Paleta e semântica de copiar/colar são compartilhadas com o terminal do
 // "Gerenciar IAs" (AiManager) — ver src/lib/xtermShared.js.
-import { TERM_THEMES, baseTerminalOptions, attachCopyPaste } from '@/lib/xtermShared';
+import {
+  TERM_THEMES,
+  baseTerminalOptions,
+  attachCopyPaste,
+  terminalSurface,
+} from '@/lib/xtermShared';
+import { cn } from '@/lib/utils';
 
 // Refaz o fit e só avisa o PTY quando a grade de caracteres realmente mudou.
 // Resizes redundantes fazem o conpty reemitir a tela e duplicar conteúdo.
@@ -163,14 +169,15 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
     };
   }, [activeProject]);
 
+  // Fundo do terminal + família de cores juntos: o estado vazio abaixo é texto do app
+  // sobre o fundo do terminal, e sem escopar ele some quando os dois temas divergem.
+  const surface = terminalSurface(terminalTheme);
+
   return (
     <div
       ref={hostRef}
-      className="absolute inset-0"
-      style={{
-        display: visible ? 'block' : 'none',
-        background: TERM_THEMES[terminalTheme].background,
-      }}
+      className={cn('absolute inset-0', surface.className)}
+      style={{ ...surface.style, display: visible ? 'block' : 'none' }}
     >
       {!activeProject && (
         <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-muted-foreground">

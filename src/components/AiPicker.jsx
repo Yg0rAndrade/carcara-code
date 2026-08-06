@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme.jsx';
 import { OPT, CliBadge } from '@/lib/aiOptions.jsx';
+import { terminalSurface } from '@/lib/xtermShared';
 import { cn } from '@/lib/utils';
 
 // Tela de escolha da IA de uma aba nova (mostrada quando o projeto tem 2+ IAs e a
@@ -26,10 +27,18 @@ export function AiPicker({ ais, onPick, onOpenAiInstall }) {
   }, []);
   const missing = (key) =>
     key !== 'custom' && key !== 'shell' && key !== 'carcara' && installed && !installed.has(key);
+  // A família de cores vem junto com o fundo (terminalSurface): os cards e os textos
+  // daqui são UI do app sobre o fundo do TERMINAL — sem escopar, o texto resolvia pelo
+  // tema do root e sumia quando os dois divergiam (terminal escuro + app claro).
+  const surface = terminalSurface(terminalTheme);
+
   return (
     <div
-      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 p-6"
-      style={{ background: terminalTheme === 'dark' ? '#0b0f17' : '#ffffff' }}
+      className={cn(
+        'absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 p-6',
+        surface.className,
+      )}
+      style={surface.style}
     >
       <div className="text-center">
         <h2 className="text-[15px] font-semibold text-foreground">{t('aiPicker.title')}</h2>

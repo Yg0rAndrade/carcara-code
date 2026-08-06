@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 // Paleta compartilhada com o terminal livre (ShellView) e o do Gerenciar IAs.
-import { TERM_THEMES } from '@/lib/xtermShared';
+import { TERM_THEMES, terminalSurface } from '@/lib/xtermShared';
 import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
@@ -1442,10 +1442,15 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
     );
   };
 
+  // Fundo do terminal + família de cores da subárvore andam JUNTOS (terminalSurface):
+  // esta coluna inteira tem UI do app por cima do fundo do terminal — abas, estado
+  // vazio, seletor de IA, menus.
+  const termSurface = terminalSurface(terminalTheme);
+
   return (
     <div
-      className="flex flex-1 flex-col overflow-hidden"
-      style={{ background: terminalTheme === 'dark' ? '#0b0f17' : '#ffffff' }}
+      className={cn('flex flex-1 flex-col overflow-hidden', termSurface.className)}
+      style={termSurface.style}
     >
       <div ref={hostRef} className="relative flex-1 overflow-hidden">
         {!activeProject && (

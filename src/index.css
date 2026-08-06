@@ -13,7 +13,14 @@
    Tudo num só hue quente; o laranja é a única cor saturada — é a assinatura.
    ───────────────────────────────────────────────────────────────────────── */
 @layer base {
-  :root {
+  /* `.light` existe pelo mesmo motivo que `.dark`: permitir que uma SUBÁRVORE declare
+     a família de cores dela, independente do root. Quem usa é a superfície do terminal
+     (ver `terminalSurface` em src/lib/xtermShared.js) — o terminal tem tema próprio, e
+     sem isto o texto do app dentro dela continuaria resolvendo pelo tema do root e
+     sumia no fundo quando os dois divergiam (terminal escuro + app claro). É lista de
+     seletores, não bloco duplicado: os valores continuam declarados uma vez só. */
+  :root,
+  .light {
     /* Tema claro — neutro frio + acento âmbar. */
     --background: 0 0% 100%;
     --foreground: 0 0% 14.902%;

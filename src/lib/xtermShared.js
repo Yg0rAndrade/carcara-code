@@ -49,6 +49,21 @@ export const TERM_THEMES = {
   },
 };
 
+// Superfície que usa o fundo do TERMINAL (que tem tema próprio, independente do app).
+//
+// Devolve fundo E classe de família juntos, de propósito: pintar só o fundo era um bug
+// visual real — o texto do app dentro da área (`text-foreground`, `text-muted-foreground`,
+// `border`) continuava resolvendo pelo tema do ROOT, então com "terminal escuro + app
+// claro" saía cinza-claro sobre quase-preto, ilegível. A classe faz a subárvore declarar
+// a própria família (ver `.light`/`.dark` em src/index.css), e aí tudo lá dentro combina.
+//
+// Use sempre os dois — `className` e `style` — em qualquer área pintada com o fundo do
+// terminal que também contenha UI do app (aba, estado vazio, seletor de IA).
+export function terminalSurface(terminalTheme) {
+  const key = terminalTheme === 'dark' ? 'dark' : 'light';
+  return { className: key, style: { background: TERM_THEMES[key].background } };
+}
+
 // Opções base de um terminal do app. `theme` é a chave 'light' | 'dark'.
 export function baseTerminalOptions(theme) {
   return {

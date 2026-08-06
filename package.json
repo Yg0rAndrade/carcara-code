@@ -29,7 +29,8 @@
     "test:carcara": "node scripts/carcara-events-smoke.cjs",
     "test:carcara-config": "node scripts/carcara-config-smoke.cjs",
     "test:carcara-msg": "node scripts/carcara-message-smoke.cjs",
-    "test:aiconsole": "node scripts/ai-console-smoke.cjs"
+    "test:aiconsole": "node scripts/ai-console-smoke.cjs",
+    "test:themescope": "electron scripts/theme-scope-smoke.cjs"
   },
   "lint-staged": {
     "*.{js,jsx,cjs,mjs}": [
