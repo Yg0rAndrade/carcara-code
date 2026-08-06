@@ -14,6 +14,8 @@ import {
   CornerDownLeft,
 } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
+// Paleta compartilhada com o terminal livre (ShellView) e o do Gerenciar IAs.
+import { TERM_THEMES } from '@/lib/xtermShared';
 import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
@@ -55,53 +57,6 @@ function pasteIntoSession(sid, text) {
   const body = String(text).replace(/\r\n/g, '\n').replace(/\n/g, '\r');
   window.api.termInput(sid, '\x1b[200~' + body + '\x1b[201~');
 }
-
-const TERM_THEMES = {
-  light: {
-    background: '#ffffff',
-    foreground: '#1f2430',
-    cursor: '#2563eb',
-    selectionBackground: '#cfe0ff',
-    black: '#1f2430',
-    brightBlack: '#6b7280',
-    red: '#d12d36',
-    brightRed: '#e5484d',
-    green: '#15803d',
-    brightGreen: '#1a9d4d',
-    yellow: '#b45309',
-    brightYellow: '#c2710c',
-    blue: '#2563eb',
-    brightBlue: '#3b82f6',
-    magenta: '#7c3aed',
-    brightMagenta: '#9333ea',
-    cyan: '#0e7490',
-    brightCyan: '#0891b2',
-    white: '#1f2430',
-    brightWhite: '#0b0e14',
-  },
-  dark: {
-    background: '#0b0f17',
-    foreground: '#e6e8ee',
-    cursor: '#7c5cff',
-    selectionBackground: '#33405e',
-    black: '#1b1f28',
-    brightBlack: '#5c6473',
-    red: '#ff7a7a',
-    brightRed: '#ff9a9a',
-    green: '#34d399',
-    brightGreen: '#52e0ad',
-    yellow: '#ffce6b',
-    brightYellow: '#ffd98a',
-    blue: '#6ea8fe',
-    brightBlue: '#8fc0ff',
-    magenta: '#c7a6ff',
-    brightMagenta: '#d6bcff',
-    cyan: '#6be0d6',
-    brightCyan: '#8aeae1',
-    white: '#e6e8ee',
-    brightWhite: '#ffffff',
-  },
-};
 
 // Refaz o fit e só avisa o PTY quando a grade de caracteres realmente mudou.
 // Resizes redundantes fazem o conpty reemitir a tela e duplicar conteúdo.

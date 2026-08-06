@@ -681,6 +681,7 @@
     "aiUninstall": "Desinstalar",
     "aiUninstallTitle": "Desinstalar {label}",
     "aiCopy": "Copiar",
+    "aiCopied": "¡Copiado!",
     "aiRunInTerminal": "Ejecutar en la terminal",
     "aiOpenWindowsApps": "Abrir Aplicaciones de Windows",
     "aiClose": "Cerrar",

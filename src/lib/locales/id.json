@@ -681,6 +681,7 @@
     "aiUninstall": "Copot pemasangan",
     "aiUninstallTitle": "Copot pemasangan {label}",
     "aiCopy": "Salin",
+    "aiCopied": "Tersalin!",
     "aiRunInTerminal": "Jalankan di terminal",
     "aiOpenWindowsApps": "Buka Aplikasi Windows",
     "aiClose": "Tutup",

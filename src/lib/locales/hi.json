@@ -681,6 +681,7 @@
     "aiUninstall": "अनइंस्टॉल करें",
     "aiUninstallTitle": "{label} अनइंस्टॉल करें",
     "aiCopy": "कॉपी करें",
+    "aiCopied": "कॉपी हो गया!",
     "aiRunInTerminal": "टर्मिनल में चलाएँ",
     "aiOpenWindowsApps": "Windows Apps खोलें",
     "aiClose": "बंद करें",

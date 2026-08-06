@@ -5,53 +5,9 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { useTheme } from '@/lib/theme.jsx';
-
-const TERM_THEMES = {
-  light: {
-    background: '#ffffff',
-    foreground: '#1f2430',
-    cursor: '#2563eb',
-    selectionBackground: '#cfe0ff',
-    black: '#1f2430',
-    brightBlack: '#6b7280',
-    red: '#d12d36',
-    brightRed: '#e5484d',
-    green: '#15803d',
-    brightGreen: '#1a9d4d',
-    yellow: '#b45309',
-    brightYellow: '#c2710c',
-    blue: '#2563eb',
-    brightBlue: '#3b82f6',
-    magenta: '#7c3aed',
-    brightMagenta: '#9333ea',
-    cyan: '#0e7490',
-    brightCyan: '#0891b2',
-    white: '#1f2430',
-    brightWhite: '#0b0e14',
-  },
-  dark: {
-    background: '#0b0f17',
-    foreground: '#e6e8ee',
-    cursor: '#7c5cff',
-    selectionBackground: '#33405e',
-    black: '#1b1f28',
-    brightBlack: '#5c6473',
-    red: '#ff7a7a',
-    brightRed: '#ff9a9a',
-    green: '#34d399',
-    brightGreen: '#52e0ad',
-    yellow: '#ffce6b',
-    brightYellow: '#ffd98a',
-    blue: '#6ea8fe',
-    brightBlue: '#8fc0ff',
-    magenta: '#c7a6ff',
-    brightMagenta: '#d6bcff',
-    cyan: '#6be0d6',
-    brightCyan: '#8aeae1',
-    white: '#e6e8ee',
-    brightWhite: '#ffffff',
-  },
-};
+// Paleta e semântica de copiar/colar são compartilhadas com o terminal do
+// "Gerenciar IAs" (AiManager) — ver src/lib/xtermShared.js.
+import { TERM_THEMES, baseTerminalOptions, attachCopyPaste } from '@/lib/xtermShared';
 
 // Refaz o fit e só avisa o PTY quando a grade de caracteres realmente mudou.
 // Resizes redundantes fazem o conpty reemitir a tela e duplicar conteúdo.
@@ -117,15 +73,7 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
       el.style.padding = '8px 4px 8px 10px';
       host.appendChild(el);
 
-      const term = new Terminal({
-        fontSize: 13,
-        fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
-        theme: TERM_THEMES[themeRef.current],
-        cursorBlink: true,
-        scrollback: 5000,
-        // Garante contraste mínimo p/ texto esmaecido não sumir no fundo claro.
-        minimumContrastRatio: 4.5,
-      });
+      const term = new Terminal(baseTerminalOptions(themeRef.current));
       const fit = new FitAddon();
       term.loadAddon(fit);
       // Links clicáveis no terminal (addon oficial do xterm). Ctrl/Cmd+clique
@@ -136,33 +84,7 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
           if (event.ctrlKey || event.metaKey) onOpenUrlRef.current?.(uri);
         }),
       );
-      // Copiar/colar no terminal. Ctrl/Cmd+C copia a seleção quando há texto
-      // selecionado; sem seleção, deixa virar SIGINT (interromper comando), igual
-      // ao VS Code. Ctrl/Cmd+V: NÃO colamos por conta própria — o xterm já trata o
-      // evento 'paste' nativo do navegador (e respeita o bracketed-paste). Só
-      // retornamos false pra o xterm não mandar ^V (0x16) pro PTY; assim sobra um
-      // único caminho de colagem e o texto não entra em dobro.
-      term.attachCustomKeyEventHandler((e) => {
-        if (e.type !== 'keydown') return true;
-        const mod = e.ctrlKey || e.metaKey;
-        if (!mod) return true;
-        const k = e.key.toLowerCase();
-        if (k === 'c') {
-          const sel = term.getSelection();
-          if (sel && !e.shiftKey) {
-            window.api.copyText(sel);
-            term.clearSelection();
-            return false;
-          }
-          if (sel && e.shiftKey) {
-            window.api.copyText(sel);
-            return false;
-          }
-          return true; // sem seleção: Ctrl+C normal (SIGINT)
-        }
-        if (k === 'v') return false; // deixa a colagem nativa do xterm cuidar (uma vez só)
-        return true;
-      });
+      attachCopyPaste(term);
 
       term.open(el);
       // Renderizador WebGL: pinta o terminal num único canvas de GPU e repinta a

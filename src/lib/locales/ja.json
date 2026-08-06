@@ -681,6 +681,7 @@
     "aiUninstall": "アンインストール",
     "aiUninstallTitle": "{label} をアンインストール",
     "aiCopy": "コピー",
+    "aiCopied": "コピーしました",
     "aiRunInTerminal": "ターミナルで実行",
     "aiOpenWindowsApps": "Windows のアプリを開く",
     "aiClose": "閉じる",

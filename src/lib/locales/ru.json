@@ -681,6 +681,7 @@
     "aiUninstall": "Удалить",
     "aiUninstallTitle": "Удалить {label}",
     "aiCopy": "Копировать",
+    "aiCopied": "Скопировано!",
     "aiRunInTerminal": "Запустить в терминале",
     "aiOpenWindowsApps": "Открыть «Приложения» Windows",
     "aiClose": "Закрыть",

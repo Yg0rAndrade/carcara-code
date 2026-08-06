@@ -681,6 +681,7 @@
     "aiUninstall": "Gỡ cài đặt",
     "aiUninstallTitle": "Gỡ cài đặt {label}",
     "aiCopy": "Sao chép",
+    "aiCopied": "Đã sao chép!",
     "aiRunInTerminal": "Chạy trong terminal",
     "aiOpenWindowsApps": "Mở Windows Apps",
     "aiClose": "Đóng",

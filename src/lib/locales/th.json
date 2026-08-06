@@ -681,6 +681,7 @@
     "aiUninstall": "ถอนการติดตั้ง",
     "aiUninstallTitle": "ถอนการติดตั้ง {label}",
     "aiCopy": "คัดลอก",
+    "aiCopied": "คัดลอกแล้ว!",
     "aiRunInTerminal": "รันในเทอร์มินัล",
     "aiOpenWindowsApps": "เปิด Windows Apps",
     "aiClose": "ปิด",

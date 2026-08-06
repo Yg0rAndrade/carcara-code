@@ -681,6 +681,7 @@
     "aiUninstall": "卸载",
     "aiUninstallTitle": "卸载 {label}",
     "aiCopy": "复制",
+    "aiCopied": "已复制！",
     "aiRunInTerminal": "在终端中运行",
     "aiOpenWindowsApps": "打开 Windows 应用",
     "aiClose": "关闭",

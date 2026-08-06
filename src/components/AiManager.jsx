@@ -12,10 +12,13 @@ import { createPortal } from 'react-dom';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Loader2, MoreVertical, ExternalLink, RefreshCw } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useTheme } from '@/lib/theme.jsx';
 import { CliBadge, OPT } from '@/lib/aiOptions.jsx';
 import { AiManagerSkeleton } from './AiManagerSkeleton.jsx';
+import { TERM_THEMES, baseTerminalOptions, attachCopyPaste } from '@/lib/xtermShared';
 import { cn } from '@/lib/utils';
 
 const LABEL = (key) => OPT[key]?.label ?? key;
@@ -107,10 +110,18 @@ export default function AiManager({ initialInstallKey = null }) {
   const [edits, setEdits] = useState({}); // `${key}:${action}:${i}` -> comando editado
   const [consoleErr, setConsoleErr] = useState(null);
   const [rechecking, setRechecking] = useState(false);
+  const [copied, setCopied] = useState(null); // id do passo copiado (feedback do botão)
   const isWin = window.api.platform === 'win32';
-  const termHostRef = useRef(null);
   const termRef = useRef(null);
   const fitRef = useRef(null);
+  // O terminal é criado uma vez (ref-callback) e captura o tema do momento; o ref
+  // mantém o valor atual pra criação, e o efeito abaixo repinta os já abertos.
+  const { terminalTheme } = useTheme();
+  const themeRef = useRef(terminalTheme);
+  useEffect(() => {
+    themeRef.current = terminalTheme;
+    if (termRef.current) termRef.current.options.theme = TERM_THEMES[terminalTheme];
+  }, [terminalTheme]);
 
   const refresh = useCallback(async (force = false) => {
     // Fase 1 (rápida, só detecção local): renderiza a lista NA HORA. Cada linha entra
@@ -166,20 +177,27 @@ export default function AiManager({ initialInstallKey = null }) {
     if (selRow) setAction(selRow.installed ? 'update' : 'install');
   }, [sel, selRow?.installed]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Terminal: um shell COMUM na pasta do usuário, criado uma vez e mantido vivo
-  // enquanto a aba estiver aberta. Sem instalador embutido, sem evento de "terminou" —
-  // o que aparece aqui é exatamente o que o comando fez.
-  useEffect(() => {
-    if (!termHostRef.current || termRef.current) return;
-    const term = new Terminal({
-      fontSize: 12,
-      convertEol: true,
-      disableStdin: false,
-      theme: { background: '#0d0f12' },
-    });
+  // Terminal: um shell COMUM na pasta do usuário, criado quando o elemento host entra
+  // no DOM e mantido vivo enquanto a aba estiver aberta.
+  //
+  // É um REF-CALLBACK (React 19 aceita cleanup no retorno), não um `useEffect([])`, e a
+  // diferença não é estilo: com efeito de deps vazias o terminal nunca nascia. No 1º
+  // render `probed` é false, a tela devolve o esqueleto, o host não existe, o efeito
+  // desistia no `if (!ref.current)` — e, com deps `[]`, não rodava de novo quando
+  // o host aparecia. Resultado: PTY nenhum, e "Colar no terminal" escrevia no vazio
+  // (medido: nenhum cmd.exe filho do app). O ref-callback dispara pelo DOM, então não
+  // existe ordem de render que o fure.
+  const attachTerm = useCallback((node) => {
+    if (!node || termRef.current) return;
+    // Terminal COMPLETO, igual ao livre do projeto: mesma paleta por tema, mesmo
+    // Ctrl+C/Ctrl+V (módulo compartilhado), scrollback e links clicáveis. Dá pra colar
+    // o comando com Ctrl+V e rodar qualquer outra coisa — não é um visor de saída.
+    const term = new Terminal(baseTerminalOptions(themeRef.current));
     const fit = new FitAddon();
     term.loadAddon(fit);
-    term.open(termHostRef.current);
+    term.loadAddon(new WebLinksAddon((e, uri) => window.api.openExternal(uri)));
+    attachCopyPaste(term);
+    term.open(node);
     termRef.current = term;
     fitRef.current = fit;
     term.onData((d) => window.api.aiConsoleInput(d));
@@ -208,13 +226,14 @@ export default function AiManager({ initialInstallKey = null }) {
     // Backstop pra mudanças internas de layout (abrir modal, trocar sub-aba) que
     // não disparam o resize do window, igual ao ShellView.
     const ro = new ResizeObserver(onResize);
-    ro.observe(termHostRef.current);
+    ro.observe(node);
     return () => {
       window.removeEventListener('resize', onResize);
       ro.disconnect();
       offData && offData();
       term.dispose();
       termRef.current = null;
+      fitRef.current = null;
     };
   }, []);
 
@@ -245,6 +264,13 @@ export default function AiManager({ initialInstallKey = null }) {
     term.focus();
   }, []);
 
+  // "Copiar" sem retorno visual parece botão quebrado — foi reportado exatamente assim.
+  const copy = useCallback((id, cmd) => {
+    window.api.copyText(cmd);
+    setCopied(id);
+    setTimeout(() => setCopied((c) => (c === id ? null : c)), 1500);
+  }, []);
+
   const clearTerm = useCallback(() => {
     termRef.current?.reset();
     termRef.current?.focus();
@@ -271,7 +297,7 @@ export default function AiManager({ initialInstallKey = null }) {
     action === 'uninstall' ? entry?.uninstall?.note_key || null : entry?.note_key || null;
 
   return (
-    <div className="flex h-[340px] gap-4">
+    <div className="flex h-[420px] gap-4">
       {/* Lista de CLIs — selecionar troca a receita ao lado. */}
       <div className="w-[38%] shrink-0 space-y-2 overflow-auto">
         {rows.map((r) => (
@@ -401,12 +427,14 @@ export default function AiManager({ initialInstallKey = null }) {
                       aria-label={t(titleKey, { label: LABEL(sel) })}
                       className="min-w-0 flex-1 rounded-md border bg-muted/40 px-2.5 py-1.5 font-mono text-[12px] outline-none focus:border-primary"
                     />
+                    {/* Copiar sem retorno visual parece botão quebrado (foi reportado
+                        exatamente assim). O rótulo vira "Copiado!" por 1,5 s. */}
                     <button
                       type="button"
-                      onClick={() => window.api.copyText(s.cmd)}
-                      className="shrink-0 rounded-md border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      onClick={() => copy(s.id, s.cmd)}
+                      className="w-[76px] shrink-0 rounded-md border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
-                      {t('settings.aiCopy')}
+                      {copied === s.id ? t('settings.aiCopied') : t('settings.aiCopy')}
                     </button>
                     <button
                       type="button"
@@ -425,7 +453,7 @@ export default function AiManager({ initialInstallKey = null }) {
           </>
         ) : null}
 
-        <div className="mt-auto flex items-center justify-between gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
           <span className="truncate text-[11px] text-muted-foreground">
             {consoleErr ? t('settings.aiConsoleError', { err: consoleErr }) : null}
           </span>
@@ -437,10 +465,15 @@ export default function AiManager({ initialInstallKey = null }) {
             {t('settings.aiTerminalClear')}
           </button>
         </div>
-        <div className="h-[150px] shrink-0 overflow-hidden rounded-lg border bg-[#0d0f12]">
+        {/* Terminal livre: ocupa todo o espaço que sobra (mín. 160px). Dá pra digitar,
+            colar com Ctrl+V e rodar qualquer comando — não só o da receita. */}
+        <div
+          className="min-h-[160px] flex-1 overflow-hidden rounded-lg border"
+          style={{ background: TERM_THEMES[terminalTheme].background }}
+        >
           {/* Clicar em qualquer lugar (inclusive no padding) foca o terminal pra digitar. */}
           <div
-            ref={termHostRef}
+            ref={attachTerm}
             onMouseDown={() => termRef.current?.focus()}
             className="h-full w-full p-2"
           />

@@ -681,6 +681,7 @@
     "aiUninstall": "إلغاء التثبيت",
     "aiUninstallTitle": "إلغاء تثبيت {label}",
     "aiCopy": "نسخ",
+    "aiCopied": "تم النسخ!",
     "aiRunInTerminal": "تشغيل في الطرفية",
     "aiOpenWindowsApps": "فتح تطبيقات Windows",
     "aiClose": "إغلاق",

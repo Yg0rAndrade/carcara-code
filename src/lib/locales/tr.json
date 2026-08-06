@@ -681,6 +681,7 @@
     "aiUninstall": "Kaldır",
     "aiUninstallTitle": "{label} kaldır",
     "aiCopy": "Kopyala",
+    "aiCopied": "Kopyalandı!",
     "aiRunInTerminal": "Terminalde çalıştır",
     "aiOpenWindowsApps": "Windows Uygulamaları'nı aç",
     "aiClose": "Kapat",

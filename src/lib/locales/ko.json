@@ -681,6 +681,7 @@
     "aiUninstall": "제거",
     "aiUninstallTitle": "{label} 제거",
     "aiCopy": "복사",
+    "aiCopied": "복사됨!",
     "aiRunInTerminal": "터미널에서 실행",
     "aiOpenWindowsApps": "Windows 앱 열기",
     "aiClose": "닫기",
