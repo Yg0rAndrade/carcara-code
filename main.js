@@ -23,7 +23,7 @@ const detectPort = require('detect-port');
 const mcpCore = require('./electron/mcp-core.cjs');
 const mcpOauth = require('./electron/mcp-oauth.cjs');
 const mediaCore = require('./electron/media-core.cjs');
-const claudeSessions = require('./electron/claude-sessions.cjs');
+const { readerFor } = require('./electron/session-history.cjs');
 const aiCli = require('./electron/ai-cli.cjs');
 const aiCatalog = require('./electron/ai-catalog.cjs');
 const aiInstaller = require('./electron/ai-installer.cjs');
@@ -669,13 +669,6 @@ ipcMain.handle('setup:markDone', () => {
 
 // ---------- CLI de IA (Claude Code / OpenCode / Antigravity / custom) ----------
 
-// O Claude Code guarda o transcript em ~/.claude/projects/<projeto>/<id>.jsonl.
-// Procura esse arquivo (em qualquer projeto) E confirma que tem conversa de verdade
-// (ao menos uma mensagem de usuário) — senão o `--resume` falharia com "no conversation".
-function claudeHistoryExists(claudeId) {
-  return claudeSessions.historyExists(claudeId);
-}
-
 // Acha a metadata da sessão (tab) no config.
 function getSessionMeta(cfg, projectPath, sessionId) {
   const list = (cfg.sessions && cfg.sessions[projectPath]) || [];
@@ -685,6 +678,10 @@ function getSessionMeta(cfg, projectPath, sessionId) {
 // OpenCode/Antigravity geram o próprio id da conversa. A gente captura esse id
 // do output do terminal (captureResumeId) e guarda amarrado à nossa sessão+CLI,
 // pra retomar o tab certo depois. Pro Claude o id já é o nosso (--session-id).
+// ATENÇÃO: raspar o stdout só funciona se a CLI imprimir a dica E o usuário sair dela
+// graciosamente — fechar o app mata o PTY antes. Quem tem histórico legível em disco
+// (claude, codex) usa o session-history.cjs, que não depende disso; aqui ficou só o
+// que ainda não tem leitor.
 function saveResumeId(projectPath, sessionId, cli, resumeId) {
   const cfg = loadConfig();
   const s = getSessionMeta(cfg, projectPath, sessionId);
@@ -708,7 +705,10 @@ function captureResumeId(entry) {
     const m = tail.match(/\bses_[A-Za-z0-9]{6,}\b/);
     if (m) id = m[0];
   } else if (entry.cli === 'codex') {
-    // Codex imprime a dica de retomada: "codex resume <id>"
+    // Reforço, não caminho principal: o Codex só imprime "To continue this session, run
+    // codex resume <id>" ao ENCERRAR. Quem garante o resume é o codex-sessions.cjs, que
+    // lê o rollout em disco enquanto a conversa acontece. Isto aqui só ajuda no caso de
+    // a conversa ter trocado de thread (/new) e o usuário sair do Codex pelo teclado.
     const m = tail.match(/codex\s+(?:exec\s+)?resume\s+([0-9a-fA-F][\w-]{7,})/i);
     if (m) id = m[1];
   } else {
@@ -721,40 +721,44 @@ function captureResumeId(entry) {
 
 // Comando que sobe automaticamente em cada nova sessão. Lido fresco do config,
 // então trocar o CLI nas configs vale pras próximas sessões abertas.
-// Devolve { cmd, capture, claudeId }: `capture` pede pro term:ensure vigiar o
-// transcript (pra descobrir o id real e o título). Retoma a MESMA conversa do tab
-// SÓ ao reabrir o app inteiro (quando há id com conversa salva); aba nova = em branco.
+// Devolve { cmd, capture, histId }: `capture` pede pro term:ensure vigiar o histórico
+// em disco (pra descobrir o id real da conversa e o título). Retoma a MESMA conversa
+// do tab SÓ ao reabrir o app inteiro (quando há id com conversa salva); aba nova = em
+// branco. Vale pra toda CLI com leitor em session-history.cjs (claude, codex).
 function buildLaunchCommand(sessionId, projectPath) {
   const c = loadConfig();
   const { ais, custom } = aiCli.resolveProjectAis(c, projectPath);
   const s = getSessionMeta(c, projectPath, sessionId);
   const cli = aiCli.effectiveCli(s, ais);
-  if (cli === 'claude') {
-    // Id do Claude desacoplado do id da aba. Migra o esquema antigo (id da aba).
-    let cid = s && s.claudeId;
-    if (!cid && claudeHistoryExists(sessionId)) cid = sessionId;
-    if (cid && claudeHistoryExists(cid)) {
+  const reader = readerFor(cli);
+  if (reader) {
+    // Id da conversa desacoplado do id da aba (o legacyId migra o esquema antigo do
+    // claude, em que os dois eram o mesmo).
+    const cid = reader.getId(s) || reader.legacyId(sessionId);
+    if (cid && reader.historyExists(cid)) {
       // tem conversa salva → retoma
-      if (s && s.claudeId !== cid) {
-        s.claudeId = cid;
+      if (s && reader.getId(s) !== cid) {
+        reader.setId(s, cid);
         saveConfig(c);
       }
-      return { cmd: `claude --resume ${cid}`, capture: false, claudeId: cid, cli };
+      return { cmd: reader.resumeCmd(cid), capture: false, histId: cid, cli };
     }
-    // Sem conversa válida (aba nova, ou "morta" sem mensagens) → sobe `claude` puro,
-    // igual ao Claude Code real (sem flag de retomada). O id real da conversa é
-    // capturado depois do transcript (capture:true) pra permitir o --resume no restart.
-    return { cmd: 'claude', capture: true, claudeId: null, cli };
+    // Sem conversa válida (aba nova, ou "morta" sem mensagens) → sobe a CLI pura, sem
+    // flag de retomada. O id real é capturado depois, do histórico em disco
+    // (capture:true), pra permitir o resume no próximo restart.
+    return { cmd: reader.cmd, capture: true, histId: null, cli };
   }
   return { cmd: aiCli.buildResumeCommand(cli, s, custom), capture: false, cli };
 }
 
-// Salva o id real da conversa do Claude amarrado à aba (pra retomar no restart).
-function saveClaudeId(projectPath, sessionId, claudeId) {
+// Salva o id real da conversa (Claude/Codex) amarrado à aba, pra retomar no restart.
+function saveHistoryId(projectPath, sessionId, cli, histId) {
+  const reader = readerFor(cli);
+  if (!reader) return;
   const cfg = loadConfig();
   const s = getSessionMeta(cfg, projectPath, sessionId);
-  if (s && s.claudeId !== claudeId) {
-    s.claudeId = claudeId;
+  if (s && reader.getId(s) !== histId) {
+    reader.setId(s, histId);
     saveConfig(cfg);
   }
 }
@@ -772,33 +776,42 @@ function applySessionTitle(projectPath, sessionId, title) {
   }
 }
 
-// Nome da aba a partir do transcript: o ai-title que o Claude gera (preferido) ou,
-// na falta dele, o primeiro prompt do usuário (igual ao que aparece no `claude
-// --resume`). Devolve null se ainda não houver nem id nem prompt.
-function readSessionTitle(projectPath, claudeId) {
-  if (!claudeId) return null;
-  const fp = claudeSessions.transcriptPath(projectPath, claudeId);
-  return fp ? claudeSessions.sessionTitle(fp) : null;
+// Nome da aba a partir do histórico em disco: no claude, o ai-title que ele gera
+// (preferido) ou o primeiro prompt do usuário; no codex, o primeiro prompt (a CLI não
+// gera título). Devolve null se ainda não houver nem id nem prompt.
+function readSessionTitle(projectPath, cli, histId) {
+  const reader = readerFor(cli);
+  if (!reader || !histId) return null;
+  return reader.title(projectPath, histId);
 }
 
-// Vigia o transcript de uma sessão claude: (1) se ainda não sabemos o id real,
-// acha o transcript novo que apareceu depois do launch; (2) lê o último aiTitle e
-// renomeia a aba. Roda a cada ~1.5s enquanto o pty viver.
-function startClaudeWatcher(entry, capture) {
-  if (capture) entry.preSnapshot = claudeSessions.snapshot(entry.projectPath);
+// Título da aba a partir do que está salvo no config (usa a CLI da própria aba).
+function readSessionTitleFor(projectPath, s) {
+  if (!s) return null;
+  const reader = readerFor(s.cli || 'claude');
+  return reader ? readSessionTitle(projectPath, s.cli || 'claude', reader.getId(s)) : null;
+}
+
+// Vigia o histórico em disco de uma sessão (claude/codex): (1) se ainda não sabemos o
+// id real da conversa, acha o arquivo novo que apareceu depois do launch; (2) lê o
+// título e renomeia a aba. Roda a cada ~1.5s enquanto o pty viver.
+function startSessionWatcher(entry, capture) {
+  const reader = readerFor(entry.cli);
+  if (!reader) return;
+  if (capture) entry.preSnapshot = reader.snapshot(entry.projectPath);
   const tick = () => {
     const e = terminals.get(entry.sessionId);
     if (!e) return; // pty já morreu → watcher para (timer limpo no onExit)
     try {
-      if (!e.claudeId && e.preSnapshot) {
-        const found = claudeSessions.newTranscript(e.projectPath, e.preSnapshot);
+      if (!e.histId && e.preSnapshot) {
+        const found = reader.findNew(e.projectPath, e.preSnapshot);
         if (found) {
-          e.claudeId = found;
-          saveClaudeId(e.projectPath, e.sessionId, found);
+          e.histId = found;
+          saveHistoryId(e.projectPath, e.sessionId, e.cli, found);
         }
       }
-      if (e.claudeId) {
-        const title = readSessionTitle(e.projectPath, e.claudeId);
+      if (e.histId) {
+        const title = readSessionTitle(e.projectPath, e.cli, e.histId);
         if (title && title !== e.lastTitle) {
           e.lastTitle = title;
           applySessionTitle(e.projectPath, e.sessionId, title);
@@ -2468,14 +2481,30 @@ function chatSpawnOpts(projectPath, withStdin) {
   };
 }
 
-// Repassa as linhas já parseadas pro renderer, capturando o id de retomada quando aparece.
-function emitChatLines(sessionId, adapter, lines) {
+// Id de retomada da aba no modo chat. O Map é só cache do processo: ao reabrir o app
+// ele nasce vazio, então cai no que está PERSISTIDO no config (mesmo campo que o modo
+// terminal usa — s.claudeId / s.resume.codex), senão a conversa recomeçava do zero a
+// cada abertura, que é o mesmo bug que o terminal tinha.
+function chatResumeIdFor(sessionId, projectPath, cli) {
+  const cached = chatResumeIds.get(sessionId);
+  if (cached) return cached;
+  const reader = readerFor(cli);
+  if (!reader || !projectPath) return null;
+  const saved = reader.getId(getSessionMeta(loadConfig(), projectPath, sessionId));
+  if (saved) chatResumeIds.set(sessionId, saved);
+  return saved || null;
+}
+
+// Repassa as linhas já parseadas pro renderer, capturando o id de retomada quando
+// aparece — e GRAVANDO no config, pra sobreviver ao fechar o app.
+function emitChatLines(sessionId, projectPath, adapter, lines) {
   for (const line of lines) {
     const s = line.trim();
     if (!s) continue;
     for (const ev of adapter.parseLine(s)) {
       if (ev.sessionId && chatResumeIds.get(sessionId) !== ev.sessionId) {
         chatResumeIds.set(sessionId, ev.sessionId);
+        saveHistoryId(projectPath, sessionId, adapter.cli, ev.sessionId);
       }
       safeSend('chat:event', { sessionId, event: ev });
     }
@@ -2484,7 +2513,7 @@ function emitChatLines(sessionId, adapter, lines) {
 
 // --- Persistente (claude): 1 processo, stdin aberto ---
 function spawnPersistentChat(sessionId, projectPath, adapter) {
-  const resumeId = chatResumeIds.get(sessionId) || null;
+  const resumeId = chatResumeIdFor(sessionId, projectPath, adapter.cli);
   const proc = spawn(
     adapter.bin,
     adapter.buildArgs({ resumeId }),
@@ -2496,7 +2525,7 @@ function spawnPersistentChat(sessionId, projectPath, adapter) {
     entry.buf += chunk.toString();
     const lines = entry.buf.split('\n');
     entry.buf = lines.pop() || '';
-    emitChatLines(sessionId, adapter, lines);
+    emitChatLines(sessionId, projectPath, adapter, lines);
   });
   proc.stderr.on('data', (c) =>
     safeSend('chat:event', { sessionId, event: { kind: 'stderr', text: c.toString() } }),
@@ -2524,7 +2553,7 @@ function ensurePersistentChat(sessionId, projectPath, adapter) {
 
 // --- Por turno (codex/agy): 1 processo por mensagem ---
 function runChatTurn(sessionId, projectPath, adapter, text) {
-  const resumeId = chatResumeIds.get(sessionId) || null;
+  const resumeId = chatResumeIdFor(sessionId, projectPath, adapter.cli);
   const args = adapter.buildArgs({ resumeId, prompt: text, hasHistory: chatSeen.has(sessionId) });
   const proc = spawn(adapter.bin, args, chatSpawnOpts(projectPath, false));
   chatTurnProcs.set(sessionId, proc);
@@ -2537,7 +2566,7 @@ function runChatTurn(sessionId, projectPath, adapter, text) {
       buf += s;
       const lines = buf.split('\n');
       buf = lines.pop() || '';
-      emitChatLines(sessionId, adapter, lines);
+      emitChatLines(sessionId, projectPath, adapter, lines);
     }
   });
   proc.stderr.on('data', (c) =>
@@ -2551,16 +2580,16 @@ function runChatTurn(sessionId, projectPath, adapter, text) {
     });
   });
   proc.on('close', (code) => {
-    if (!adapter.text && buf.trim()) emitChatLines(sessionId, adapter, [buf]); // última linha
+    if (!adapter.text && buf.trim()) emitChatLines(sessionId, projectPath, adapter, [buf]); // última linha
     if (chatTurnProcs.get(sessionId) === proc) chatTurnProcs.delete(sessionId);
     chatSeen.add(sessionId);
     safeSend('chat:event', { sessionId, event: { kind: 'result', code } });
   });
 }
 
-ipcMain.handle('chat:start', (evt, { sessionId }) => ({
+ipcMain.handle('chat:start', (evt, { sessionId, projectPath, cli }) => ({
   ok: true,
-  claudeId: chatResumeIds.get(sessionId) || null,
+  claudeId: chatResumeIdFor(sessionId, projectPath, cli || 'claude'),
 }));
 
 ipcMain.handle('chat:send', (evt, { sessionId, projectPath, text, images, cli }) => {
@@ -2569,7 +2598,8 @@ ipcMain.handle('chat:send', (evt, { sessionId, projectPath, text, images, cli })
     if (!adapter) return { error: `Chat ainda não suportado para "${cli}".` };
     if (adapter.mode === 'persistent') {
       const e = ensurePersistentChat(sessionId, projectPath, adapter);
-      e.proc.stdin.write(adapter.buildInput(text, chatResumeIds.get(sessionId) || '', images));
+      const rid = chatResumeIdFor(sessionId, projectPath, adapter.cli) || '';
+      e.proc.stdin.write(adapter.buildInput(text, rid, images));
     } else {
       if (chatTurnProcs.has(sessionId)) return { error: 'Aguarde o turno atual terminar.' };
       runChatTurn(sessionId, projectPath, adapter, text);
@@ -2705,8 +2735,8 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   // só promove se o transcript já tiver um.
   let changed = false;
   for (const s of list) {
-    if (!s.manual && (!s.name || s.name === 'Untitled') && s.claudeId) {
-      const t = readSessionTitle(projectPath, s.claudeId);
+    if (!s.manual && (!s.name || s.name === 'Untitled')) {
+      const t = readSessionTitleFor(projectPath, s);
       if (t && t !== s.name) {
         s.name = t;
         changed = true;
@@ -2722,7 +2752,7 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
 // avisa o renderer via 'session:meta'; se ainda não houver aiTitle, não faz nada.
 ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
   const s = getSessionMeta(loadConfig(), projectPath, sessionId);
-  const title = s && readSessionTitle(projectPath, s.claudeId);
+  const title = readSessionTitleFor(projectPath, s);
   if (title) applySessionTitle(projectPath, sessionId, title);
   return { ok: !!title, name: title || null };
 });
@@ -2730,7 +2760,7 @@ ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
 // ---------- Painel de Tasks (todos do Claude ao vivo) ----------
 // Uma única assinatura (só existe um painel): o renderer assina a sessão da aba
 // de chat ativa e o main vigia o transcript por mtime no mesmo ritmo do
-// startClaudeWatcher (1,5s), re-parseando e empurrando 'todos:snapshot' SÓ
+// startSessionWatcher (1,5s), re-parseando e empurrando 'todos:snapshot' SÓ
 // quando algo mudou no disco. Sem assinatura, custo zero.
 let todosSub = null; // { projectPath, sessionId, claudeId, timer, lastStamp, lastJson }
 
@@ -2757,7 +2787,9 @@ function todosTick() {
     // empurrar o snapshot da conversa nova.
     const e = terminals.get(sub.sessionId);
     const meta = getSessionMeta(loadConfig(), sub.projectPath, sub.sessionId);
-    const claudeId = (e && e.claudeId) || (meta && meta.claudeId) || null;
+    // O painel de Tasks é só do claude: `e.histId` pode ser o id de outra CLI (codex),
+    // que não tem transcript nesse formato — por isso a checagem de `cli`.
+    const claudeId = (e && e.cli === 'claude' && e.histId) || (meta && meta.claudeId) || null;
     if (claudeId !== sub.claudeId) {
       sub.claudeId = claudeId;
       sub.lastStamp = undefined;
@@ -2799,7 +2831,7 @@ ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
   const cfg = loadConfig();
   const list = getSessions(cfg, projectPath);
   // Igual ao Claude Code: a aba nasce "Untitled" e, assim que a conversa ganha um
-  // título (aiTitle no transcript), o startClaudeWatcher renomeia. Sem contador
+  // título (aiTitle no transcript), o startSessionWatcher renomeia. Sem contador
   // crescente "Sessão N" — aquilo ia ao infinito e não dizia nada do conteúdo.
   const session = { id: crypto.randomUUID(), name: name || 'Untitled' };
   list.push(session);
@@ -2821,7 +2853,7 @@ ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
       s.manual = true;
     } else {
       s.manual = false;
-      s.name = readSessionTitle(projectPath, s.claudeId) || 'Untitled';
+      s.name = readSessionTitleFor(projectPath, s) || 'Untitled';
     }
     saveConfig(cfg);
     safeSend('session:meta', { projectPath, sessionId, name: s.name });
@@ -3071,10 +3103,10 @@ ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, 
     // Casa o tema do Claude Code com o do terminal ANTES de subir o CLI, pra ele já
     // nascer com as cores certas pro fundo (claro/escuro). Só faz sentido pro claude.
     if (cli === 'claude' && theme) applyClaudeTheme(theme);
-    // Aba nova = `claude` puro; retoma a conversa só ao reabrir o app (id com histórico).
-    if (cli === 'claude') {
-      entry.claudeId = launch.claudeId || null;
-      startClaudeWatcher(entry, launch.capture); // captura id (se nova) + título da aba
+    // Aba nova = CLI pura; retoma a conversa só ao reabrir o app (id com histórico).
+    if (readerFor(cli)) {
+      entry.histId = launch.histId || null;
+      startSessionWatcher(entry, launch.capture); // captura id (se nova) + título da aba
     }
     // Terminal limpo (cli 'shell') ⇒ cmd vazio ⇒ não escreve nada: só o shell do SO.
     if (launch.cmd) proc.write(launch.cmd + '\r');
@@ -3343,7 +3375,7 @@ function scheduleAutoCheckpoint(entry) {
   // Reaproveita o título que o próprio Claude gera pra aba (aiTitle): assim o
   // Histórico mostra o MESMO nome da aba. Cai pro rótulo genérico só quando o
   // Claude ainda não titulou esta conversa.
-  const title = readSessionTitle(projectPath, entry.claudeId) || entry.lastTitle || null;
+  const title = readSessionTitle(projectPath, entry.cli, entry.histId) || entry.lastTitle || null;
   const label = title || 'Após resposta do Claude ' + new Date().toISOString();
   checkpointCreate(projectPath, label)
     .then((r) => {

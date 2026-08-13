@@ -143,6 +143,7 @@ function latestAiTitle(file) {
 }
 
 // Limpa um texto de prompt pra virar nome de aba: desembrulha slash-commands
+// (exportado: o codex-sessions.cjs reusa isto pro título da aba de Codex).
 // (<command-name>/x</command-name><command-args>…</command-args> -> "/x …"), tira
 // quaisquer outras tags, normaliza espaços e corta no tamanho de um título.
 function cleanTitle(s) {
@@ -215,6 +216,7 @@ module.exports = {
   transcriptPath,
   snapshot,
   newTranscript,
+  cleanTitle,
   latestAiTitle,
   firstPromptTitle,
   sessionTitle,
