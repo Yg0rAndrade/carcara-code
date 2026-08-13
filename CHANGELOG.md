@@ -3,6 +3,20 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.12] — 2026-08-13
+
+### Corrigido
+
+- **Conversas do Codex sumindo ao fechar e reabrir o app:** as abas de Codex voltavam em branco
+  (as do Claude, não). O Carcará dependia de uma dica que o Codex só escreve na tela quando você
+  sai dele pelo teclado — fechando o app, ela nunca aparecia. Agora o Carcará acompanha o próprio
+  histórico do Codex no computador, então a aba volta na mesma conversa mesmo se o app for fechado
+  no meio, travar ou desligar.
+- **Abas de Codex eternamente "Untitled":** a aba agora ganha nome sozinha, a partir do que você
+  pediu na conversa — igual às do Claude.
+- **Modo chat (bolhas) esquecendo a conversa ao reabrir:** o mesmo problema por outro caminho; o
+  ponto de retomada agora é guardado junto com a aba.
+
 ## [0.1.11] — 2026-08-06
 
 ### Adicionado
