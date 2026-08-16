@@ -12,7 +12,9 @@ const path = require('path');
 const { execFileSync, spawn } = require('child_process');
 
 const expected = process.argv[2];
-const releaseDir = path.resolve(process.argv[3] || path.join('release', `mac-${expected}`));
+const defaultAppDir =
+  expected === 'x64' ? path.join('release', 'mac') : path.join('release', 'mac-arm64');
+const releaseDir = path.resolve(process.argv[3] || defaultAppDir);
 const MACH_ARCH = { arm64: 'arm64', x64: 'x86_64' };
 
 function fail(message) {

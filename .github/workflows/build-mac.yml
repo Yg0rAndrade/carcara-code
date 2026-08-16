@@ -36,9 +36,11 @@ jobs:
           - runner: macos-15-intel
             arch: x64
             uname: x86_64
+            app_dir: release/mac
           - runner: macos-15
             arch: arm64
             uname: arm64
+            app_dir: release/mac-arm64
     name: Build mac (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
 
@@ -66,7 +68,7 @@ jobs:
           npm run test:platform
           npm run test:localpty
 
-      - name: Gerar o instalador (.dmg da arquitetura do runner)
+      - name: Gerar o app da arquitetura do runner
         env:
           # O package.json usa assinatura ad-hoc (identity "-"): funciona sem
           # certificado local e mantém a integridade exigida pelo Apple Silicon.
@@ -75,10 +77,28 @@ jobs:
           npm run build
           # O nome técnico precisa ficar em ASCII no macOS 26; o nome visível da
           # janela continua sendo "Carcará Code", definido pelo próprio app.
-          npx electron-builder --mac dmg --${{ matrix.arch }} --publish never --config.npmRebuild=true --config.productName=CarcaraCode
+          npx electron-builder --mac dir --${{ matrix.arch }} --publish never --config.npmRebuild=true --config.productName=CarcaraCode
+          # Reaplica a assinatura ad-hoc depois de o bundle estar completo. Isso
+          # evita CodeResources inconsistente em imagens novas dos runners.
+          codesign --force --deep --sign - "${{ matrix.app_dir }}/CarcaraCode.app"
 
       - name: Auditar arquitetura do app e dos addons nativos
-        run: npm run verify:mac-arch -- ${{ matrix.arch }}
+        run: npm run verify:mac-arch -- ${{ matrix.arch }} "${{ matrix.app_dir }}"
+
+      - name: Criar o instalador DMG com a ferramenta nativa do macOS
+        run: |
+          staging_dir="$(mktemp -d "${RUNNER_TEMP}/carcara-dmg.XXXXXX")"
+          trap 'find "$staging_dir" -depth -delete' EXIT
+          ditto "${{ matrix.app_dir }}/CarcaraCode.app" "$staging_dir/CarcaraCode.app"
+          ln -s /Applications "$staging_dir/Applications"
+          version="$(node -p "require('./package.json').version")"
+          hdiutil create \
+            -volname "CarcaraCode ${version}" \
+            -srcfolder "$staging_dir" \
+            -ov \
+            -format UDZO \
+            "release/CarcaraCode-${version}-${{ matrix.arch }}.dmg"
+          hdiutil verify "release/CarcaraCode-${version}-${{ matrix.arch }}.dmg"
 
       - name: Publicar o .dmg como artefato
         uses: actions/upload-artifact@v4
