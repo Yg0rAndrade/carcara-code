@@ -16,7 +16,7 @@
     "prepare": "husky",
     "pack:exe": "vite build && electron-builder --win nsis --publish never",
     "pack:appimage": "vite build && electron-builder --linux AppImage --publish never",
-    "pack:dmg": "vite build && electron-builder --mac dmg --publish never",
+    "pack:dmg": "vite build && electron-builder --mac dmg --publish never --config.npmRebuild=true --config.productName=CarcaraCode",
     "test:i18n": "node scripts/i18n-parity.smoke.cjs",
     "test:csv": "node scripts/csv-smoke.cjs",
     "test:php": "node scripts/php-smoke.cjs",
@@ -31,7 +31,8 @@
     "test:carcara-config": "node scripts/carcara-config-smoke.cjs",
     "test:carcara-msg": "node scripts/carcara-message-smoke.cjs",
     "test:aiconsole": "node scripts/ai-console-smoke.cjs",
-    "test:themescope": "electron scripts/theme-scope-smoke.cjs"
+    "test:themescope": "electron scripts/theme-scope-smoke.cjs",
+    "verify:mac-arch": "node scripts/verify-macos-architecture.cjs"
   },
   "lint-staged": {
     "*.{js,jsx,cjs,mjs}": [
@@ -91,7 +92,7 @@
       "icon": "build/icon.png",
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": false,
-      "identity": null,
+      "identity": "-",
       "artifactName": "CarcaraCode-${version}-${arch}.dmg"
     },
     "dmg": {

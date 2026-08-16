@@ -368,7 +368,10 @@ function createWindow() {
 
   // Auto-atualização (só no app empacotado). Envia status pro renderer por um canal só.
   updater = initUpdater({
-    isPackaged: app.isPackaged,
+    // O workflow publica dois DMGs nativos, mas ainda não publica latest-mac.yml
+    // multi-arquitetura. Tratar o Mac como canal sem updater evita um erro 404 no boot;
+    // Windows/Linux continuam com o comportamento atual.
+    isPackaged: app.isPackaged && !platform.isMac,
     send: (payload) => safeSend('update:status', payload),
     notify: (version) => {
       const n = new Notification({ title: APP_NAME, body: tn('update_notify_body', { version }) });
