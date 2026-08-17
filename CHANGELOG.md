@@ -3,6 +3,36 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.13] — 2026-08-17
+
+### Adicionado
+
+- **Versão para macOS funcionando de verdade:** o Carcará agora sai em `.dmg` nativo por
+  processador — um para **Apple Silicon** (M1 em diante) e outro para **Macs Intel** —, com o
+  mesmo aplicativo completo do Windows e do Linux, sem versão reduzida. A automação recompila os
+  componentes nativos (como o terminal) para o processador certo, confere que o app **abre** e que
+  **nenhum binário** ficou com a arquitetura errada; se algo não bater, a publicação é interrompida
+  em vez de sair um pacote quebrado. As instruções de instalação (inclusive o "clique com Control →
+  Abrir" da primeira vez) estão no README. Contribuição de
+  [@manoelnetodev](https://github.com/manoelnetodev) ([#12](https://github.com/Yg0rAndrade/carcara-code/pull/12)).
+- **Vários terminais no mesmo projeto:** o terminal livre virou abas, com divisão de tela — dá pra
+  deixar o servidor rodando num, os comandos de git noutro, e fechar cada um separadamente.
+- **O painel do Git mostra a qual repositório o projeto está ligado:** o endereço aparece como link
+  (abre no navegador) e dá pra **trocar** ou **desvincular** o repositório ali mesmo. Desvincular
+  mexe só na ligação — histórico e arquivos ficam intactos.
+- **"Pegar elemento" no Preview agora aponta o arquivo de origem:** ao capturar um elemento da
+  página, o pacote copiado inclui o arquivo e a linha de onde ele veio em projetos Vue, React,
+  Astro e Svelte, então a IA já sabe onde mexer.
+
+### Corrigido
+
+- **macOS — app que não abria com acento no caminho:** o nome técnico do pacote passou a ser ASCII
+  (`CarcaraCode`); o nome que você vê continua **Carcará Code**.
+- **macOS — erro de atualização logo na abertura:** o verificador de novas versões ficava dando erro
+  no Mac porque ainda não existe canal de atualização automática para as duas arquiteturas. No Mac
+  ele fica desligado por ora (a atualização é baixando o `.dmg` novo); Windows e Linux seguem
+  atualizando sozinhos.
+
 ## [0.1.12] — 2026-08-13
 
 ### Corrigido
