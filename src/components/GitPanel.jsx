@@ -9,6 +9,11 @@ import {
   AlertTriangle,
   Copy,
   X,
+  Info,
+  Settings,
+  ExternalLink,
+  Link2Off,
+  Link2,
 } from 'lucide-react';
 // Ícones animados (lucide-animated) usados nos botões da barra do Git.
 import { GitBranchIcon } from './ui/git-branch.jsx';
@@ -27,6 +32,7 @@ import { Input } from './ui/input.jsx';
 import { useTheme } from '@/lib/theme.jsx';
 import { toast } from '@/lib/toast.js';
 import { useT } from '@/lib/i18n';
+import { remoteToWebUrl } from '@/lib/remoteUrl.js';
 
 const diffEditorTheme = EditorView.theme({
   '&': { fontSize: '12.5px', height: '100%' },
@@ -107,6 +113,10 @@ export function GitPanel({ active, visible }) {
   const [publishOpen, setPublishOpen] = useState(false); // form "definir repositório" ao publicar sem remote
   const [branchMenu, setBranchMenu] = useState(null); // { all } quando aberto
   const [newBranch, setNewBranch] = useState('');
+  const [infoOpen, setInfoOpen] = useState(false); // popover "i": repositório conectado (hover)
+  const [gearMenu, setGearMenu] = useState(false); // menu da engrenagem (conectar/branches/desvincular)
+  const [connectForm, setConnectForm] = useState(false); // form "conectar outro repositório" (dentro do menu)
+  const [confirmUnlink, setConfirmUnlink] = useState(false); // 2º passo do "desvincular"
 
   const refresh = useCallback(
     async (silent) => {
@@ -276,6 +286,21 @@ export function GitPanel({ active, visible }) {
 
   const needsPush = status?.ahead > 0 || !status?.tracking;
 
+  // Repositório conectado: origin na frente, mas expõe todos (upstream de fork é comum).
+  const remotes = status?.remotes || [];
+  const origin = remotes.find((r) => r.name === 'origin') || remotes[0] || null;
+  const closeGear = () => {
+    setGearMenu(false);
+    setConnectForm(false);
+    setConfirmUnlink(false);
+  };
+  const openConnectForm = () => {
+    setInfoOpen(false);
+    setGearMenu(true);
+    setConfirmUnlink(false);
+    setConnectForm(true);
+  };
+
   return (
     <div className="absolute inset-0 z-10 flex flex-col overflow-hidden bg-background">
       {/* Toolbar: branch + sync */}
@@ -306,6 +331,189 @@ export function GitPanel({ active, visible }) {
           </span>
         )}
         <div className="flex-1" />
+
+        {/* Info do repositório conectado: clique abre o popover; a URL dentro abre no navegador. */}
+        {origin ? (
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              title={t('git.connected_repo')}
+              onClick={() =>
+                infoOpen ? setInfoOpen(false) : (setGearMenu(false), setInfoOpen(true))
+              }
+            >
+              <Info className="size-4" />
+            </Button>
+            {infoOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setInfoOpen(false)} />
+                <div className="absolute right-0 top-9 z-50 w-72 rounded-md border bg-popover p-2 shadow-lg">
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('git.connected_repo')}
+                  </p>
+                  {remotes.map((r) => {
+                    const web = remoteToWebUrl(r.url);
+                    return (
+                      <div key={r.name} className="mb-1.5 last:mb-0">
+                        <span className="rounded bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                          {r.name}
+                        </span>
+                        {web ? (
+                          <button
+                            type="button"
+                            title={t('git.open_in_browser')}
+                            onClick={() => {
+                              window.api.openExternal(web);
+                              setInfoOpen(false);
+                            }}
+                            className="mt-0.5 flex w-full items-start gap-1 rounded px-1 py-0.5 text-left hover:bg-muted [&_svg]:mt-0.5 [&_svg]:size-3 [&_svg]:shrink-0"
+                          >
+                            <ExternalLink className="text-primary" />
+                            <span className="break-all font-mono text-[11px] text-primary hover:underline">
+                              {r.url}
+                            </span>
+                          </button>
+                        ) : (
+                          <p className="mt-0.5 break-all px-1 font-mono text-[11px] text-foreground/80">
+                            {r.url}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            title={t('git.connect_repo')}
+            onClick={openConnectForm}
+          >
+            <Link2 className="size-4" />
+          </Button>
+        )}
+
+        {/* Engrenagem: conectar outro repositório / ver branches / desvincular. */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            title={t('git.repo_settings')}
+            onClick={() => (gearMenu ? closeGear() : (setInfoOpen(false), setGearMenu(true)))}
+          >
+            <Settings className="size-4" />
+          </Button>
+          {gearMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={closeGear} />
+              <div className="absolute right-0 top-9 z-50 w-72 rounded-md border bg-popover p-1 shadow-lg">
+                {connectForm ? (
+                  <div className="p-1.5">
+                    <p className="mb-1.5 text-[11px] text-muted-foreground">
+                      {t('git.connect_repo_help')}
+                    </p>
+                    <Input
+                      value={remoteUrl}
+                      onChange={(e) => setRemoteUrl(e.target.value)}
+                      placeholder={t('git.remote_url_publish_placeholder')}
+                      className="h-8 text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      className="mt-1.5 w-full"
+                      disabled={!remoteUrl.trim() || !!busy}
+                      onClick={() =>
+                        run(
+                          'remote',
+                          () => window.api.gitAddRemote(projectPath, remoteUrl.trim()),
+                          t('git.toast_remote'),
+                        ).then((r) => {
+                          if (r && r.ok !== false) {
+                            setRemoteUrl('');
+                            closeGear();
+                          }
+                        })
+                      }
+                    >
+                      {origin ? t('git.change_repo') : t('git.connect')}
+                    </Button>
+                  </div>
+                ) : confirmUnlink ? (
+                  <div className="p-1.5">
+                    <p className="mb-2 text-[11.5px] leading-relaxed text-foreground/90">
+                      {t('git.unlink_confirm')}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex-1"
+                        onClick={() => setConfirmUnlink(false)}
+                      >
+                        {t('git.cancel')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={!!busy}
+                        onClick={() =>
+                          run(
+                            'unlink',
+                            () => window.api.gitRemoveRemote(projectPath, origin?.name || 'origin'),
+                            t('git.toast_unlinked'),
+                          ).then(() => closeGear())
+                        }
+                      >
+                        {t('git.unlink')}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setConnectForm(true)}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-3.5"
+                    >
+                      <Link2 className="text-muted-foreground" />
+                      {origin ? t('git.change_repo') : t('git.connect_repo')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeGear();
+                        openBranchMenu();
+                      }}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-3.5"
+                    >
+                      <GitBranch className="text-muted-foreground" />
+                      {t('git.view_branches')}
+                    </button>
+                    {origin && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmUnlink(true)}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-500/10 dark:text-red-400 [&_svg]:size-3.5"
+                      >
+                        <Link2Off />
+                        {t('git.unlink')}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
         <Button
           variant="ghost"
           size="icon"

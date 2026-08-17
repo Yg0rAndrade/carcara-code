@@ -145,12 +145,12 @@ contextBridge.exposeInMainWorld('api', {
   listShells: () => ipcRenderer.invoke('shell:list'),
   setShell: (id) => ipcRenderer.invoke('shell:setPref', { id }),
   rescanShells: () => ipcRenderer.invoke('shell:rescan'),
-  // Terminal livre (shell comum)
-  shellEnsure: (projectPath, cols, rows) =>
-    ipcRenderer.invoke('shell:ensure', { projectPath, cols, rows }),
-  shellInput: (projectPath, data) => ipcRenderer.send('shell:input', { projectPath, data }),
-  shellResize: (projectPath, cols, rows) =>
-    ipcRenderer.send('shell:resize', { projectPath, cols, rows }),
+  // Terminais livres (shell comum) — N por projeto, keyed por termId
+  shellEnsure: (termId, projectPath, cols, rows) =>
+    ipcRenderer.invoke('shell:ensure', { termId, projectPath, cols, rows }),
+  shellInput: (termId, data) => ipcRenderer.send('shell:input', { termId, data }),
+  shellResize: (termId, cols, rows) => ipcRenderer.send('shell:resize', { termId, cols, rows }),
+  shellClose: (termId) => ipcRenderer.invoke('shell:close', { termId }),
 
   // Projetos remotos (SSH)
   addRemote: (profile, secret) => ipcRenderer.invoke('remotes:add', { profile, secret }),
@@ -177,6 +177,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('git:createBranch', { projectPath, name }),
   gitInit: (projectPath) => ipcRenderer.invoke('git:init', { projectPath }),
   gitAddRemote: (projectPath, url) => ipcRenderer.invoke('git:addRemote', { projectPath, url }),
+  gitRemoveRemote: (projectPath, name) =>
+    ipcRenderer.invoke('git:removeRemote', { projectPath, name }),
 
   // API connector (REST)
   httpSend: (request, workingDir) => ipcRenderer.invoke('http:send', { request, workingDir }),

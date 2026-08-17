@@ -50,7 +50,7 @@ let mainWindow;
 let updater = null;
 const runningServers = new Map(); // projectPath -> { proc, url, port, log }
 const terminals = new Map(); // sessionId -> { pty, buffer, projectPath } (sessões do Claude Code)
-const shells = new Map(); // projectPath -> { pty, buffer } (terminal livre por projeto)
+const shells = new Map(); // termId -> { pty, buffer, cols, rows, projectPath } (terminais livres; N por projeto)
 let aiConsole = null; // { pty, buffer, cols, rows, shell } — shell do "Gerenciar IAs"
 let ptyLib = null;
 // Camada 1 SSH: instanciados em app.whenReady() (precisam de app.getPath('userData')).
@@ -1265,13 +1265,13 @@ ipcMain.handle('projects:remove', (evt, { projectPath }) => {
       secretStore.remove(hk);
     } catch {}
     if (cfg.remotes) delete cfg.remotes[hk];
-    // mata o shell remoto do projeto, se houver
-    const sh = shells.get(projectPath);
-    if (sh) {
+    // mata todos os terminais livres do projeto, se houver
+    for (const [termId, sh] of shells) {
+      if (sh.projectPath !== projectPath) continue;
       try {
         sh.pty.kill();
       } catch {}
-      shells.delete(projectPath);
+      shells.delete(termId);
     }
   }
   saveConfig(cfg);
@@ -3144,9 +3144,11 @@ ipcMain.on('term:resize', (evt, { sessionId, cols, rows }) => {
 
 // ---------- Terminal livre (shell comum p/ npm, instalar skills, etc.) ----------
 // Igual ao do Claude Code, mas NÃO sobe o `claude` — abre só o shell no projeto.
-ipcMain.handle('shell:ensure', async (evt, { projectPath, cols, rows }) => {
-  if (shells.has(projectPath)) {
-    const e = shells.get(projectPath);
+// Terminais livres: N por projeto, keyed por termId (o renderer gera o id). O
+// projectPath vem junto pra spawnar no cwd certo e pro fluxo de reconexão ssh.
+ipcMain.handle('shell:ensure', async (evt, { termId, projectPath, cols, rows }) => {
+  if (shells.has(termId)) {
+    const e = shells.get(termId);
     // Mesmo caso do term:ensure: xterm recriado em outro tamanho precisa que o
     // PTY adote a grade nova, senão a tela fica desenhada pro tamanho antigo.
     if (cols && rows && (cols !== e.cols || rows !== e.rows)) {
@@ -3164,29 +3166,29 @@ ipcMain.handle('shell:ensure', async (evt, { projectPath, cols, rows }) => {
   } catch (e) {
     return { error: e.message };
   }
-  const entry = { pty: proc, buffer: '', cols, rows };
-  shells.set(projectPath, entry);
+  const entry = { pty: proc, buffer: '', cols, rows, projectPath };
+  shells.set(termId, entry);
 
   proc.onData((data) => {
     entry.buffer += data;
     if (entry.buffer.length > 200000) entry.buffer = entry.buffer.slice(-150000);
-    safeSend('shell:data', { projectPath, data });
+    safeSend('shell:data', { termId, projectPath, data });
   });
   proc.onExit(() => {
-    shells.delete(projectPath);
-    safeSend('shell:exit', { projectPath });
+    shells.delete(termId);
+    safeSend('shell:exit', { termId, projectPath });
   });
 
   return { existed: false, buffer: '' };
 });
 
-ipcMain.on('shell:input', (evt, { projectPath, data }) => {
-  const e = shells.get(projectPath);
+ipcMain.on('shell:input', (evt, { termId, data }) => {
+  const e = shells.get(termId);
   if (e) e.pty.write(data);
 });
 
-ipcMain.on('shell:resize', (evt, { projectPath, cols, rows }) => {
-  const e = shells.get(projectPath);
+ipcMain.on('shell:resize', (evt, { termId, cols, rows }) => {
+  const e = shells.get(termId);
   if (e) {
     e.cols = cols;
     e.rows = rows;
@@ -3194,6 +3196,19 @@ ipcMain.on('shell:resize', (evt, { projectPath, cols, rows }) => {
       e.pty.resize(cols, rows);
     } catch {}
   }
+});
+
+// Fecha uma aba de terminal: mata o PTY e some do map (o onExit também remove,
+// mas removemos já pra não reemitir 'shell:exit' pro renderer que já fechou).
+ipcMain.handle('shell:close', async (evt, { termId }) => {
+  const e = shells.get(termId);
+  if (e) {
+    shells.delete(termId);
+    try {
+      e.pty.kill();
+    } catch {}
+  }
+  return { ok: true };
 });
 
 // ---------- Git (source control) ----------
@@ -3452,18 +3467,26 @@ ipcMain.handle('git:status', (evt, { projectPath }) =>
     const git = gitFor(projectPath);
     if (!(await git.checkIsRepo())) return { isRepo: false };
     const s = await git.status();
-    // Sem 'origin' não dá pra publicar — o painel usa isto pra pedir a URL antes de tentar o push.
-    let hasRemote = false;
+    // Remotes com URL (fetch): o painel mostra a qual repositório o projeto está ligado,
+    // abre no navegador e permite trocar/desvincular sem re-perguntar a cada render.
+    // Sem 'origin' não dá pra publicar — usado também pra pedir a URL antes do push.
+    let remotes = [];
     try {
-      hasRemote = (await git.getRemotes()).some((r) => r.name === 'origin');
+      remotes = (await git.getRemotes(true)).map((r) => ({
+        name: r.name,
+        url: (r.refs && (r.refs.fetch || r.refs.push)) || '',
+      }));
     } catch {}
+    const origin = remotes.find((r) => r.name === 'origin');
     return {
       isRepo: true,
       branch: s.current,
       tracking: s.tracking,
       ahead: s.ahead,
       behind: s.behind,
-      hasRemote,
+      hasRemote: !!origin,
+      remotes,
+      remoteUrl: (origin && origin.url) || '',
       files: s.files.map((f) => ({ path: f.path, index: f.index, working: f.working_dir })),
     };
   }),
@@ -3555,6 +3578,14 @@ ipcMain.handle('git:addRemote', (evt, { projectPath, url }) =>
     } catch {
       await git.remote(['set-url', 'origin', url]);
     } // origin já existia → atualiza
+    return {};
+  }),
+);
+
+// Desvincular: remove só o remote (não toca no histórico nem nos arquivos).
+ipcMain.handle('git:removeRemote', (evt, { projectPath, name }) =>
+  gitTry(async () => {
+    await gitFor(projectPath).removeRemote(name || 'origin');
     return {};
   }),
 );
@@ -4355,8 +4386,7 @@ function rootPidsFor(projectPath) {
     if (n > 0) roots.add(n);
   };
   for (const t of terminals.values()) if (t.projectPath === projectPath) add(t.pty?.pid);
-  const sh = shells.get(projectPath);
-  if (sh) add(sh.pty?.pid);
+  for (const sh of shells.values()) if (sh.projectPath === projectPath) add(sh.pty?.pid);
   for (const [sid, entry] of chatProcs)
     if (carcaraProjects.get(sid) === projectPath) add(entry.proc?.pid);
   const srv = runningServers.get(projectPath);

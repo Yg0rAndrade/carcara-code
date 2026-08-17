@@ -60,6 +60,7 @@ export const INJECT = `(() => {
   }
   function trimStr(s){ var a = 0, b = s.length; while (a < b && s.charCodeAt(a)===32) a++; while (b > a && s.charCodeAt(b-1)===32) b--; return s.slice(a, b); }
   function trunc(s, n){ s = String(s==null ? '' : s); return s.length > n ? s.slice(0, n) + '…' : s; }
+  function truncTail(s, n){ s = String(s==null ? '' : s); return s.length > n ? '…' + s.slice(s.length - n) : s; }
   function digits(s){ var n = 0, i, c; for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); if (c>=48 && c<=57) n++; } return n; }
 
   // Classe "lixo" = hash de CSS-module / styled / emotion. Conservador: só corta quando é
@@ -143,6 +144,9 @@ export const INJECT = `(() => {
       a = attrs[i]; an = a.name;
       if (an === 'class' || an === 'style' || an.indexOf('__carcara')===0) continue;
       if (!keepAttr(an)) continue;
+      // href/src inteiros (só a cauda quando gigante, ex.: data URI): URL cortada no meio é
+      // inútil — nem abre nem casa no fonte. Truncar só atributos de texto longo.
+      if (an === 'href' || an === 'src') { s += a.value ? (' ' + an + '="' + truncTail(a.value, 200) + '"') : (' ' + an); continue; }
       s += a.value ? (' ' + an + '="' + trunc(a.value, 40) + '"') : (' ' + an);
     }
     var txt = directText(el);
@@ -161,6 +165,77 @@ export const INJECT = `(() => {
     if (low.indexOf('src/') === 0) return p;
     var seg = p.split('/').filter(function(x){ return x; });
     return seg.length > 2 ? seg.slice(seg.length - 2).join('/') : seg.join('/');
+  }
+
+  // ---- source via atributos que os frameworks injetam em dev (Astro/Vue/react-inspector/Svelte) ----
+  // Quando a página NÃO é React (ou como reforço quando é), sobe o DOM lendo os atributos de
+  // source que Astro/Vue/react-dev-inspector já colocam em dev, e o objeto __svelte_meta do Svelte.
+  // Devolve { file, line, col, kind } com file já passado pelo cleanFile(), ou null.
+  function toInt(s){
+    s = trimStr(String(s==null ? '' : s));
+    if (!s) return null;
+    var n = 0, i, c;
+    for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); if (c < 48 || c > 57) return null; n = n*10 + (c-48); }
+    return n;
+  }
+  // "arquivo:linha:col" tolerando ':' no path (só os 2 últimos contam) — mesmo parse do element-source.
+  function parseLoc(v){
+    if (!v) return null;
+    v = trimStr(String(v));
+    var c2 = v.lastIndexOf(':');
+    if (c2 < 0) return null;
+    var c1 = v.lastIndexOf(':', c2 - 1);
+    if (c1 >= 0) {
+      var ln = toInt(v.slice(c1 + 1, c2)), cl = toInt(v.slice(c2 + 1));
+      if (ln != null && cl != null) return { file: v.slice(0, c1), line: ln, col: cl };
+    }
+    var only = toInt(v.slice(c2 + 1));
+    if (only != null) return { file: v.slice(0, c2), line: only, col: null };
+    return null;
+  }
+  function attrLoc(node){
+    if (!node || node.nodeType !== 1 || !node.getAttribute) return null;
+    var v, p;
+    // Vue (vite-plugin-vue-inspector): data-v-inspector = "path:linha:col" (path relativo)
+    v = node.getAttribute('data-v-inspector');
+    if (v) { p = parseLoc(v); if (p) return { file: cleanFile(p.file), line: p.line, col: p.col, kind: 'vue' }; }
+    // react-dev-inspector: 3 atributos separados; a coluna vem 0-based → +1 pra 1-based
+    v = node.getAttribute('data-inspector-relative-path');
+    if (v) {
+      var rl = toInt(node.getAttribute('data-inspector-line'));
+      var rc = toInt(node.getAttribute('data-inspector-column'));
+      return { file: cleanFile(v), line: rl, col: (rc==null ? null : rc + 1), kind: 'react' };
+    }
+    // Astro: data-astro-source-file (absoluto) + data-astro-source-loc = "linha:col" (1-based)
+    v = node.getAttribute('data-astro-source-file');
+    if (v) {
+      var loc = node.getAttribute('data-astro-source-loc'), al = null, ac = null;
+      if (loc) { loc = String(loc); var k = loc.indexOf(':'); if (k >= 0) { al = toInt(loc.slice(0, k)); ac = toInt(loc.slice(k + 1)); } else al = toInt(loc); }
+      return { file: cleanFile(v), line: al, col: ac, kind: 'astro' };
+    }
+    // LocatorJS (modo path): data-locatorjs = "fullPath:linha:col" (col 0-based → +1)
+    v = node.getAttribute('data-locatorjs');
+    if (v) { p = parseLoc(v); if (p) return { file: cleanFile(p.file), line: p.line, col: (p.col==null ? null : p.col + 1), kind: 'locatorjs' }; }
+    // genérico: data-source = "arquivo:linha"
+    v = node.getAttribute('data-source');
+    if (v) { p = parseLoc(v); if (p) return { file: cleanFile(p.file), line: p.line, col: p.col, kind: 'generic' }; }
+    return null;
+  }
+  function svelteLoc(node){
+    try {
+      var m = node && node.__svelte_meta && node.__svelte_meta.loc;
+      // Svelte: __svelte_meta.loc = { file, line(1-based), column(0-based) }
+      if (m && m.file) return { file: cleanFile(m.file), line: (m.line || null), col: (m.column==null ? null : m.column + 1), kind: 'svelte' };
+    } catch (e) {}
+    return null;
+  }
+  function domSourceLoc(el){
+    for (var node = el, d = 0; node && node.nodeType === 1 && d < 15; d++) {
+      var a = attrLoc(node) || svelteLoc(node);
+      if (a && a.file) return a;
+      node = node.parentElement;
+    }
+    return null;
   }
 
   // ---- stack de componentes via fiber (sobe o return chain, pula wrappers, dedupa) ----
@@ -205,17 +280,28 @@ export const INJECT = `(() => {
     return out;
   }
 
+  function fmtLoc(o){ return o.file + (o.line ? (':' + o.line + (o.col ? (':' + o.col) : '')) : ''); }
   function capture(el){
     var lines = [];
-    lines.push('Elemento selecionado (preview):');
-    lines.push(buildTag(el));
     var stack = componentStack(el), i, c, loc;
+    // "Alvo" = melhor pista de fonte pro agente ir direto ao arquivo (sem grepar o texto renderizado).
+    // Prioriza o atributo de source do PRÓPRIO elemento (Astro/Vue/Svelte/react-inspector), mais
+    // preciso que o _debugSource do fiber (nível de componente); só cai no stack se não houver.
+    var target = domSourceLoc(el);
+    if (!target) { for (i = 0; i < stack.length; i++) { if (stack[i].file) { target = stack[i]; break; } } }
+
+    lines.push('Elemento selecionado (preview):');
+    if (target && target.file) lines.push('Alvo: ' + fmtLoc(target));
+    lines.push(buildTag(el));
     for (i = 0; i < stack.length; i++) {
       c = stack[i];
-      loc = c.file ? (c.file + (c.line ? (':' + c.line + (c.col ? ':' + c.col : '')) : '')) : null;
+      loc = c.file ? fmtLoc(c) : null;
       lines.push('  in ' + c.name + (loc ? (' (at ' + loc + ')') : ''));
     }
     lines.push('');
+    // Com o Alvo resolvido, o texto/atributos vistos no DOM podem ser interpolados no fonte
+    // ({s.hero.cta}, href={url}); avisar pra editar o arquivo apontado, não grepar o renderizado.
+    if (target && target.file) lines.push('Fonte: edite ' + target.file + ' — texto/atributos podem ser interpolados; não grepe o texto renderizado.');
     var route = location.pathname + (location.search || '') + (location.hash || '');
     var title = squish(document.title || '');
     lines.push('Rota: ' + route + (title ? (' · "' + trunc(title, 60) + '"') : ''));
