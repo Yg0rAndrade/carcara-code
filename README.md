@@ -80,6 +80,15 @@ chmod +x CarcaraCode-*.AppImage
 
 > É um arquivo único e portátil — não precisa instalar. No gerenciador de arquivos, dá também pra marcar "Permitir execução" nas propriedades e abrir com duplo-clique.
 
+**macOS 11 ou mais recente** — baixe o `.dmg` correspondente ao processador do Mac:
+
+- `CarcaraCode-*-arm64.dmg` para Apple Silicon (M1, M2, M3, M4 e posteriores).
+- `CarcaraCode-*-x64.dmg` para Macs com processador Intel.
+
+Abra o `.dmg` e arraste o **Carcará Code** para Aplicativos. Os builds atuais usam assinatura ad-hoc, sem Developer ID, e não são notarizados; na primeira abertura, use **clique com Control → Abrir**. Se o macOS ainda bloquear, vá em **Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim**. Não é necessário desativar o Gatekeeper.
+
+> O pacote para macOS usa a mesma base do aplicativo para Windows e Linux — não é uma versão reduzida. A automação recompila os módulos nativos (como o terminal `node-pty`) para cada processador, usa `CarcaraCode` como nome técnico do bundle (evitando falha de inicialização com caminhos acentuados no macOS) e interrompe a publicação se o aplicativo não abrir ou se algum binário tiver arquitetura/ABI errada.
+
 ## Como rodar (a partir do código)
 
 ```bash

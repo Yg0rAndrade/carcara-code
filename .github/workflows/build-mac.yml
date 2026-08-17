@@ -5,6 +5,15 @@ name: Build macOS
 #  - Automaticamente, quando você cria uma tag começando com "v" (ex: v0.1.0)
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/build-mac.yml'
+      - 'electron/**'
+      - 'scripts/**'
+      - 'main.js'
+      - 'preload.js'
+      - 'package.json'
+      - 'package-lock.json'
   push:
     tags:
       - 'v*'
@@ -13,21 +22,25 @@ permissions:
   contents: write
 
 # Dois .dmg NATIVOS, um por arquitetura, cada um no runner certo — em vez de um
-# "universal" único. Com npmRebuild:false, o build universal não recompila os módulos
-# nativos por arch, então os .node ficam idênticos nas duas metades e o @electron/universal
-# quebra (node-pty, canvas, cpu-features… um por vez). Buildar por-arch no runner nativo
-# gera o binário correto de cada lado, sem merge e sem whitelist.
-#  - macos-13 = Intel (x64) · macos-14 = Apple Silicon (arm64) — ambos grátis em repo público.
+# "universal" único. Cada job recompila os módulos nativos para a ABI do Electron e
+# para a arquitetura do próprio runner; assim node-pty, canvas, cpu-features e afins
+# não vazam binários do Node do sistema nem da outra arquitetura para o pacote.
+#  - macos-15-intel = Intel (x64) · macos-15 = Apple Silicon (arm64).
+# O label macos-13 foi descontinuado pelo GitHub Actions em dezembro de 2025.
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-13
+          - runner: macos-15-intel
             arch: x64
-          - runner: macos-14
+            uname: x86_64
+            app_dir: release/mac
+          - runner: macos-15
             arch: arm64
+            uname: arm64
+            app_dir: release/mac-arm64
     name: Build mac (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
 
@@ -44,11 +57,48 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Gerar o instalador (.dmg da arquitetura do runner)
+      - name: Confirmar arquitetura nativa do runner
+        run: |
+          test "$(node -p process.arch)" = "${{ matrix.arch }}"
+          test "$(uname -m)" = "${{ matrix.uname }}"
+
+      - name: Rodar testes de plataforma e módulos nativos
+        run: |
+          npm test
+          npm run test:platform
+          npm run test:localpty
+
+      - name: Gerar o app da arquitetura do runner
         env:
-          # App não-assinado por ora: impede o electron-builder de procurar cert.
+          # O package.json usa assinatura ad-hoc (identity "-"): funciona sem
+          # certificado local e mantém a integridade exigida pelo Apple Silicon.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run pack:dmg
+        run: |
+          npm run build
+          # O nome técnico precisa ficar em ASCII no macOS 26; o nome visível da
+          # janela continua sendo "Carcará Code", definido pelo próprio app.
+          npx electron-builder --mac dir --${{ matrix.arch }} --publish never --config.npmRebuild=true --config.productName=CarcaraCode
+          # Reaplica a assinatura ad-hoc depois de o bundle estar completo. Isso
+          # evita CodeResources inconsistente em imagens novas dos runners.
+          codesign --force --deep --sign - "${{ matrix.app_dir }}/CarcaraCode.app"
+
+      - name: Auditar arquitetura do app e dos addons nativos
+        run: npm run verify:mac-arch -- ${{ matrix.arch }} "${{ matrix.app_dir }}"
+
+      - name: Criar o instalador DMG com a ferramenta nativa do macOS
+        run: |
+          staging_dir="$(mktemp -d "${RUNNER_TEMP}/carcara-dmg.XXXXXX")"
+          trap 'find "$staging_dir" -depth -delete' EXIT
+          ditto "${{ matrix.app_dir }}/CarcaraCode.app" "$staging_dir/CarcaraCode.app"
+          ln -s /Applications "$staging_dir/Applications"
+          version="$(node -p "require('./package.json').version")"
+          hdiutil create \
+            -volname "CarcaraCode ${version}" \
+            -srcfolder "$staging_dir" \
+            -ov \
+            -format UDZO \
+            "release/CarcaraCode-${version}-${{ matrix.arch }}.dmg"
+          hdiutil verify "release/CarcaraCode-${version}-${{ matrix.arch }}.dmg"
 
       - name: Publicar o .dmg como artefato
         uses: actions/upload-artifact@v4
