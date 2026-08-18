@@ -40,18 +40,25 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CarcaraCode-Setup
-          path: release/*.exe
+          # Inclui o `latest.yml` e o blockmap: sem eles, um publish que falhou so se
+          # recupera rebuildando (o `latest.yml` carrega o sha512 do .exe exato).
+          path: |
+            release/*.exe
+            release/latest.yml
+            release/*.blockmap
           retention-days: 30
           if-no-files-found: error
 
       # Só quando for uma tag (ex: v0.1.0): cria uma página de Release
       # com o .exe anexado — link bonito e fácil de mandar pra alguém baixar.
+      # Retry + conferencia dos assets ficam na action composta (ver DESAFIOS.md:
+      # um 5xx de um segundo na v0.1.13 publicou a release sem `latest.yml` e derrubou
+      # o auto-update). `latest.yml` e o blockmap sao o que o electron-updater consome.
       - name: Publicar Release (somente em tags)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publicar-release
         with:
           files: |
             release/*.exe
             release/latest.yml
             release/*.blockmap
-          generate_release_notes: true

@@ -1415,9 +1415,19 @@ export function SettingsModal({
                   const statusText = update.state === 'idle' ? t('update.upToDate') : v.title;
                   return (
                     <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
-                      <span className="min-w-0 truncate text-sm text-muted-foreground">
-                        {statusText}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-muted-foreground">{statusText}</div>
+                        {/* O motivo cru do erro. Sem ele, um 404 de `latest.yml` (release
+                            publicada sem os assets) fica igual a estar sem internet. */}
+                        {v.detail && (
+                          <div
+                            title={v.detail}
+                            className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-muted-foreground/70"
+                          >
+                            {v.detail}
+                          </div>
+                        )}
+                      </div>
                       {v.action === 'download' ? (
                         <button
                           onClick={onUpdateDownload}

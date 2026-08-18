@@ -41,5 +41,8 @@ jobs:
       - name: CSV smoke
         run: npm run test:csv
 
+      - name: Publicacao de release smoke
+        run: npm run test:release
+
       - name: Build renderer
         run: npm run build

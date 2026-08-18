@@ -114,8 +114,7 @@ jobs:
       # usado por ora.)
       - name: Publicar Release (somente em tags)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publicar-release
         with:
           files: |
             release/*.dmg
-          generate_release_notes: true

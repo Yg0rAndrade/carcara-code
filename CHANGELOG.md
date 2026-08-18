@@ -3,6 +3,27 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [Não lançado]
+
+### Corrigido
+
+- **"Falha ao atualizar" ao procurar novas versões:** a publicação da 0.1.13 foi interrompida no
+  meio por uma instabilidade momentânea do GitHub, e o instalador do Windows acabou não sendo
+  anexado à página da versão. Com isso, todo mundo que clicava em **Verificar atualizações** recebia
+  um erro — o app procurava um arquivo que não existia. Os arquivos foram republicados: quem está na
+  0.1.12 já consegue atualizar normalmente.
+
+### Alterado
+
+- **A publicação de uma versão nova agora insiste antes de desistir:** se o GitHub falhar por alguns
+  segundos no meio do envio, a automação tenta de novo (até cinco vezes, com espera crescente) em vez
+  de parar na primeira tentativa. No fim, ela ainda **confere na própria página da versão** que todos
+  os arquivos chegaram; se faltar qualquer um, a publicação falha na hora, em vez de deixar uma versão
+  pela metade quebrando a atualização de todo mundo.
+- **O erro de atualização agora diz o motivo:** antes a tela mostrava só "Falha ao atualizar". Agora
+  aparece embaixo a causa real (arquivo não encontrado, sem conexão, etc.), tanto no aviso do canto
+  quanto na aba **Sobre**.
+
 ## [0.1.13] — 2026-08-17
 
 ### Adicionado

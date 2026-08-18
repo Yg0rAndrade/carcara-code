@@ -13,6 +13,14 @@ export function UpdatePill({ update, onDownload, onInstall, onRetry, onDismiss }
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-medium text-foreground">{v.title}</div>
+          {v.detail && (
+            <div
+              title={v.detail}
+              className="mt-1 line-clamp-2 break-words text-[11px] leading-snug text-muted-foreground"
+            >
+              {v.detail}
+            </div>
+          )}
           {v.showProgress && (
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div

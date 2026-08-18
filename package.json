@@ -24,6 +24,7 @@
     "test:platform": "node scripts/platform-smoke.cjs",
     "test:portscan": "node scripts/port-scan.smoke.cjs",
     "test:grab": "node scripts/grab-source.smoke.cjs",
+    "test:release": "node scripts/publicar-release.smoke.cjs",
     "test:popup": "electron scripts/popup-smoke.cjs",
     "test:skills": "node scripts/skill-catalog-smoke.cjs",
     "test:localpty": "node scripts/localpty-smoke.cjs",

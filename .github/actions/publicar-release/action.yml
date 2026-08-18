@@ -1,0 +1,24 @@
+name: Publicar assets na Release
+description: >
+  Anexa arquivos à Release da tag atual, com retry contra instabilidade transitória da
+  API do GitHub e conferência de que os assets realmente ficaram lá. Existe porque um
+  5xx de um segundo na v0.1.13 deixou a release sem `latest.yml` e derrubou o
+  auto-update de todo mundo (ver DESAFIOS.md).
+
+inputs:
+  files:
+    description: Globs dos arquivos a anexar, um por linha.
+    required: true
+  token:
+    description: Token com permissão de contents:write.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        FILES: ${{ inputs.files }}
+      run: bash "$GITHUB_ACTION_PATH/publicar.sh"
