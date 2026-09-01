@@ -256,3 +256,101 @@ describe('sessionTitle', () => {
     expect(codex.sessionTitle(f)).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Camada app-server: as partes de DECISÃO, puras, sem subir processo nenhum.
+// São elas que corrigem os dois modos de falha do leitor de rollout: o id trocado
+// (rollout id ≠ thread id a partir do Codex 0.148) e o travamento por candidato duplo.
+// ---------------------------------------------------------------------------
+const THREAD_A = '019ffbcf-d74a-7343-a084-00e15399d30d';
+const THREAD_B = '019ffbd0-4cfb-7252-957b-afdb26a52690';
+
+function row(over = {}) {
+  return {
+    id: THREAD_A,
+    title: 'oi codex',
+    cwd: PROJ,
+    path: null,
+    ephemeral: false,
+    parentThreadId: null,
+    forkedFromId: null,
+    recencyAt: 1,
+    ...over,
+  };
+}
+
+describe('idFromPath', () => {
+  it('tira o uuid do caminho de um rollout', () => {
+    expect(
+      codex.idFromPath(
+        'C:\\x\\sessions\\2026\\08\\13\\rollout-2026-08-13T12-48-50-' + ID_A + '.jsonl',
+      ),
+    ).toBe(ID_A);
+  });
+
+  it('caminho que não é rollout, ou vazio, → null', () => {
+    expect(codex.idFromPath('C:\\x\\state_5.sqlite')).toBeNull();
+    expect(codex.idFromPath(null)).toBeNull();
+  });
+});
+
+describe('pickNewThread', () => {
+  it('acha a thread que nasceu depois do snapshot', () => {
+    const rows = [row({ id: THREAD_B }), row({ id: THREAD_A })];
+    expect(codex.pickNewThread(rows, new Set([THREAD_A]))).toBe(THREAD_B);
+  });
+
+  it('REGRESSÃO: subagente e fork não contam como candidato', () => {
+    // Com `multi_agent` ligado eles nascem junto com a conversa principal. Antes disso
+    // o "exatamente um candidato" via dois, devolvia null pra sempre, e a aba nunca
+    // ganhava id — a conversa se perdia mesmo com o histórico intacto no disco.
+    const rows = [
+      row({ id: THREAD_B }),
+      row({ id: 'sub-1', parentThreadId: THREAD_B }),
+      row({ id: 'fork-1', forkedFromId: THREAD_B }),
+    ];
+    expect(codex.pickNewThread(rows, new Set())).toBe(THREAD_B);
+  });
+
+  it('thread sem turno de usuário ainda não conta (espera o próximo tick)', () => {
+    expect(codex.pickNewThread([row({ id: THREAD_B, title: null })], new Set())).toBeNull();
+  });
+
+  it('duas conversas de verdade ao mesmo tempo → espera, não chuta', () => {
+    const rows = [row({ id: THREAD_A }), row({ id: THREAD_B })];
+    expect(codex.pickNewThread(rows, new Set())).toBeNull();
+  });
+
+  it('nada novo → null', () => {
+    expect(codex.pickNewThread([row()], new Set([THREAD_A]))).toBeNull();
+    expect(codex.pickNewThread(null, new Set())).toBeNull();
+  });
+});
+
+describe('pickResolvedId', () => {
+  it('REGRESSÃO: id salvo pelo 0.1.13 (rollout id) vira o thread id da mesma conversa', () => {
+    // O config antigo guardou o uuid do NOME do arquivo. No Codex 0.148+ o
+    // `codex resume` não aceita mais esse id (PR #38127). O caminho do rollout que o
+    // thread/list devolve é o que liga um ao outro.
+    const rows = [
+      row({
+        id: THREAD_B,
+        path: 'C:\\x\\sessions\\2026\\08\\13\\rollout-2026-08-13T12-48-50-' + ID_A + '.jsonl',
+      }),
+    ];
+    expect(codex.pickResolvedId(rows, ID_A)).toBe(THREAD_B);
+  });
+
+  it('id que já é thread id fica como está', () => {
+    expect(codex.pickResolvedId([row({ id: THREAD_A })], THREAD_A)).toBe(THREAD_A);
+  });
+
+  it('sem app-server (rows null) devolve o id salvo, pro plano B decidir', () => {
+    expect(codex.pickResolvedId(null, ID_A)).toBe(ID_A);
+  });
+
+  it('sem correspondência devolve o id salvo (quem descarta é o threadExists)', () => {
+    expect(codex.pickResolvedId([row({ id: THREAD_B })], ID_A)).toBe(ID_A);
+    expect(codex.pickResolvedId([row()], null)).toBeNull();
+  });
+});

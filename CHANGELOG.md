@@ -7,6 +7,16 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ### Corrigido
 
+- **Conversas do Codex voltando em branco para quem atualizou o Codex:** da versão 0.148 em diante o
+  Codex passou a guardar o histórico de outro jeito e trocou o código que identifica cada conversa.
+  O Carcará ainda procurava pelo código antigo, então reabria a aba do zero mesmo com a conversa
+  inteira salva no computador. Agora ele pergunta ao próprio Codex qual é a conversa de cada aba, o
+  que funciona nos dois formatos, e converte sozinho os códigos antigos que já estavam guardados.
+  Em versão de Codex que não tem esse recurso, ele continua lendo o histórico como antes.
+- **Aba de Codex que nunca ganhava nome nem voltava depois de fechada:** quando o Codex abria um
+  subagente junto com a conversa principal, o Carcará via duas conversas nascendo ao mesmo tempo,
+  não sabia qual era a da aba e desistia de identificar. Agora ele reconhece subagente e cópia de
+  conversa, e fica com a principal.
 - **"Falha ao atualizar" ao procurar novas versões:** a publicação da 0.1.13 foi interrompida no
   meio por uma instabilidade momentânea do GitHub, e o instalador do Windows acabou não sendo
   anexado à página da versão. Com isso, todo mundo que clicava em **Verificar atualizações** recebia

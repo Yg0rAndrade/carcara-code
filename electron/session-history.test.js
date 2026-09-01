@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,9 +12,15 @@ const CODEX_ID = '019f717c-3f0d-7232-89f3-38461f87005c';
 const CLAUDE_ID = 'a5c14242-6a1f-4580-b69b-a072fe97bc7c';
 
 let homes = [];
+// Os testes deste arquivo exercitam o PLANO B (leitura do rollout em disco). Sem o
+// interruptor, o leitor do codex tentaria subir um `codex app-server` de verdade.
+beforeEach(() => {
+  process.env.CARCARA_CODEX_APP_SERVER = '0';
+});
 afterEach(() => {
   delete process.env.CODEX_HOME;
   delete process.env.CLAUDE_CONFIG_DIR;
+  delete process.env.CARCARA_CODEX_APP_SERVER;
   for (const h of homes) fs.rmSync(h, { recursive: true, force: true });
   homes = [];
 });
@@ -95,15 +101,18 @@ describe('getId / setId', () => {
 });
 
 describe('leitura do histórico em disco', () => {
-  it('codex: historyExists + snapshot/findNew + título', () => {
+  it('codex: historyExists + snapshot/findNew + título', async () => {
     fakeCodexHome();
     const r = readerFor('codex');
-    expect(r.historyExists(CODEX_ID)).toBe(true);
-    expect(r.historyExists('nao-existe')).toBe(false);
-    expect(r.snapshot(PROJ).has(CODEX_ID)).toBe(true);
-    expect(r.findNew(PROJ, new Set())).toBe(CODEX_ID);
-    expect(r.title(PROJ, CODEX_ID)).toBe('oi codex');
-    expect(r.title(PROJ, null)).toBeNull();
+    expect(await r.historyExists(CODEX_ID, PROJ)).toBe(true);
+    expect(await r.historyExists('nao-existe', PROJ)).toBe(false);
+    // Sem app-server o snapshot cai no plano B e se identifica como tal.
+    const snap = await r.snapshot(PROJ);
+    expect(snap.via).toBe('rollout');
+    expect(snap.ids.has(CODEX_ID)).toBe(true);
+    expect(await r.findNew(PROJ, { via: 'rollout', ids: new Set() })).toBe(CODEX_ID);
+    expect(await r.title(PROJ, CODEX_ID)).toBe('oi codex');
+    expect(await r.title(PROJ, null)).toBeNull();
   });
 
   it('claude: historyExists + título continuam funcionando (não regrediu)', () => {
@@ -116,14 +125,20 @@ describe('leitura do histórico em disco', () => {
     expect(r.title(PROJ, CLAUDE_ID)).toBe('oi claude');
   });
 
-  it('REGRESSÃO: rollout do Codex sem turno de usuário não vira resume', () => {
+  it('REGRESSÃO: rollout do Codex sem turno de usuário não vira resume', async () => {
     // Era o que o `codex resume <id>` abriria: uma sessão vazia.
     fakeCodexHome({ withUser: false });
-    expect(readerFor('codex').historyExists(CODEX_ID)).toBe(false);
+    expect(await readerFor('codex').historyExists(CODEX_ID, PROJ)).toBe(false);
   });
 
   it('legacyId do codex é sempre null (o id da aba nunca foi o da thread)', () => {
     fakeCodexHome();
     expect(readerFor('codex').legacyId(CODEX_ID)).toBeNull();
+  });
+
+  it('sem app-server, o resolveId do codex devolve o id salvo sem inventar nada', async () => {
+    fakeCodexHome();
+    expect(await readerFor('codex').resolveId(CODEX_ID, PROJ)).toBe(CODEX_ID);
+    expect(await readerFor('codex').resolveId(null, PROJ)).toBeNull();
   });
 });

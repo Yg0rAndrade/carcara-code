@@ -22,7 +22,9 @@ const { cleanTitle } = require('./claude-sessions.cjs');
 // tem 21-42 KB e as linhas de contexto que vêm antes são enormes. O limite certo é em
 // LINHAS (o turno do usuário está sempre nas primeiras), com um teto de bytes só como
 // trava de segurança.
-const MAX_LINES = 40;
+// 80 e não 40: nos rollouts medidos o turno do usuário cai na linha 9, com 8 linhas de
+// preâmbulo, mas esse preâmbulo cresce com MCP, hooks e plugins carregados no projeto.
+const MAX_LINES = 80;
 const MAX_BYTES = 8 * 1024 * 1024;
 const CHUNK = 65536;
 
@@ -242,6 +244,106 @@ function sessionTitle(file) {
   return title;
 }
 
+// ---------------------------------------------------------------------------
+// Camada preferida: o `thread/list` do app-server.
+//
+// Tudo acima continua valendo como PLANO B. O plano A é perguntar ao próprio Codex,
+// porque a partir do 0.148 ele migra o histórico sozinho para um thread store paginado
+// e o uuid do nome do arquivo deixa de ser o id que o `codex resume` aceita
+// (PR #38127). Ver CODEX-SESSAO-DIAGNOSTICO.md.
+// ---------------------------------------------------------------------------
+const appServer = require('./codex-app-server.cjs');
+
+// Uuid embutido no caminho de um rollout. É o que liga o id antigo (gravado no config
+// pelo 0.1.13, raspado do nome do arquivo) ao thread id novo da mesma conversa.
+function idFromPath(p) {
+  const m = p ? ROLLOUT_RE.exec(path.basename(String(p))) : null;
+  return m ? m[1] : null;
+}
+
+// Threads do projeto pelo app-server, já sem as descartáveis e sem as que ainda não
+// têm conversa. Devolve null (não []) quando o app-server não serve: aí quem chama
+// sabe que precisa cair no plano B, em vez de achar que o projeto não tem conversa.
+async function threadsVia(projectPath, fast) {
+  const rows = await appServer.listThreads({ cwd: projectPath, fast });
+  if (!rows) return null;
+  return rows.filter((t) => t.id && !t.ephemeral && sameCwd(t.cwd, projectPath));
+}
+
+// Ids que JÁ existiam, tirado antes de subir o `codex`. Carrega a origem junto (`via`)
+// porque os dois planos falam ids DIFERENTES no Codex 0.148+ (thread id vs rollout id):
+// tirar o snapshot por um caminho e procurar o novo pelo outro casaria a aba com o id
+// errado. Pra quem chama é valor opaco, só volta no findNewThread.
+async function snapshotThreads(projectPath) {
+  const rows = await threadsVia(projectPath, true);
+  if (rows) return { via: 'app', ids: new Set(rows.map((t) => t.id)) };
+  return { via: 'rollout', ids: snapshot(projectPath) };
+}
+
+// Thread NOVA (fora do snapshot) deste projeto que já tem turno de usuário.
+// Descarta subagente e fork (`parentThreadId`/`forkedFromId`): com `multi_agent` ligado
+// eles nascem junto com a conversa principal, e antes disso o "exatamente um candidato"
+// travava pra sempre e a aba nunca ganhava id.
+// Parte pura (testável sem subir processo): dadas as threads de agora e os ids de antes,
+// qual é a conversa desta aba? Segue exigindo candidato ÚNICO, porque casar a aba com a
+// conversa errada é pior do que ficar sem título por mais um tick.
+function pickNewThread(rows, snapIds) {
+  const fresh = (rows || []).filter(
+    (t) => t && t.id && !snapIds.has(t.id) && !t.parentThreadId && !t.forkedFromId && t.title,
+  );
+  return fresh.length === 1 ? fresh[0].id : null;
+}
+
+async function findNewThread(projectPath, snap) {
+  if (snap && snap.via === 'app') {
+    const rows = await threadsVia(projectPath, true);
+    if (!rows) return null; // app-server caiu no meio: não arrisca casar id do outro plano
+    return pickNewThread(rows, snap.ids);
+  }
+  return newRollout(projectPath, snap ? snap.ids : null);
+}
+
+// Troca o id salvo pelo config antigo (rollout id) pelo thread id da mesma conversa,
+// casando pelo caminho do rollout que o thread/list devolve. Sem nada a migrar, ou sem
+// app-server, devolve o próprio id — quem decide se presta é o threadExists.
+// Parte pura do resolveThreadId.
+function pickResolvedId(rows, savedId) {
+  if (!savedId) return null;
+  if (!rows || rows.some((t) => t.id === savedId)) return savedId;
+  const hit = rows.find((t) => idFromPath(t.path) === savedId);
+  return hit ? hit.id : savedId;
+}
+
+async function resolveThreadId(savedId, projectPath) {
+  if (!savedId) return null;
+  return pickResolvedId(await threadsVia(projectPath, false), savedId);
+}
+
+// A conversa desse id existe E tem turno de usuário? Chamado antes de emitir o resume.
+async function threadExists(id, projectPath) {
+  if (!id) return false;
+  const rows = await threadsVia(projectPath, false);
+  if (rows) {
+    const hit = rows.find((t) => t.id === id);
+    if (hit) return !!hit.title;
+  }
+  return historyExists(id);
+}
+
+// Título da aba: o `preview` do thread/list já é o primeiro prompt do usuário, então
+// não precisa abrir rollout de 30 MB. `name` (thread nomeada) vence, e vem antes no
+// normalizador do cliente.
+async function threadTitle(projectPath, id) {
+  if (!id) return null;
+  const rows = await threadsVia(projectPath, true);
+  if (rows) {
+    const hit = rows.find((t) => t.id === id);
+    if (hit && hit.title) return cleanTitle(hit.title);
+  }
+  const fp = rolloutPath(id);
+  return fp ? sessionTitle(fp) : null;
+}
+
 module.exports = {
   sessionsBase,
   normPath,
@@ -254,4 +356,14 @@ module.exports = {
   snapshot,
   newRollout,
   sessionTitle,
+  // camada app-server (assíncrona) + suas partes de decisão puras
+  idFromPath,
+  pickNewThread,
+  pickResolvedId,
+  threadsVia,
+  snapshotThreads,
+  findNewThread,
+  resolveThreadId,
+  threadExists,
+  threadTitle,
 };

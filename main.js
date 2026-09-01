@@ -24,6 +24,7 @@ const mcpCore = require('./electron/mcp-core.cjs');
 const mcpOauth = require('./electron/mcp-oauth.cjs');
 const mediaCore = require('./electron/media-core.cjs');
 const { readerFor } = require('./electron/session-history.cjs');
+const codexAppServer = require('./electron/codex-app-server.cjs');
 const aiCli = require('./electron/ai-cli.cjs');
 const aiCatalog = require('./electron/ai-catalog.cjs');
 const aiInstaller = require('./electron/ai-installer.cjs');
@@ -250,6 +251,9 @@ function cleanup() {
   }
   shells.clear();
   stopTodosWatcher();
+  try {
+    codexAppServer.shutdown(); // senão o `codex app-server` fica de pé depois da janela
+  } catch {}
   try {
     mcpCore.mcpDisconnectAll();
   } catch {}
@@ -728,7 +732,7 @@ function captureResumeId(entry) {
 // em disco (pra descobrir o id real da conversa e o título). Retoma a MESMA conversa
 // do tab SÓ ao reabrir o app inteiro (quando há id com conversa salva); aba nova = em
 // branco. Vale pra toda CLI com leitor em session-history.cjs (claude, codex).
-function buildLaunchCommand(sessionId, projectPath) {
+async function buildLaunchCommand(sessionId, projectPath) {
   const c = loadConfig();
   const { ais, custom } = aiCli.resolveProjectAis(c, projectPath);
   const s = getSessionMeta(c, projectPath, sessionId);
@@ -736,9 +740,11 @@ function buildLaunchCommand(sessionId, projectPath) {
   const reader = readerFor(cli);
   if (reader) {
     // Id da conversa desacoplado do id da aba (o legacyId migra o esquema antigo do
-    // claude, em que os dois eram o mesmo).
-    const cid = reader.getId(s) || reader.legacyId(sessionId);
-    if (cid && reader.historyExists(cid)) {
+    // claude, em que os dois eram o mesmo). O resolveId migra o esquema antigo do
+    // codex, em que o id salvo era o do arquivo de rollout e não o da thread.
+    let cid = reader.getId(s) || (await reader.legacyId(sessionId));
+    if (cid && reader.resolveId) cid = await reader.resolveId(cid, projectPath);
+    if (cid && (await reader.historyExists(cid, projectPath))) {
       // tem conversa salva → retoma
       if (s && reader.getId(s) !== cid) {
         reader.setId(s, cid);
@@ -782,14 +788,14 @@ function applySessionTitle(projectPath, sessionId, title) {
 // Nome da aba a partir do histórico em disco: no claude, o ai-title que ele gera
 // (preferido) ou o primeiro prompt do usuário; no codex, o primeiro prompt (a CLI não
 // gera título). Devolve null se ainda não houver nem id nem prompt.
-function readSessionTitle(projectPath, cli, histId) {
+async function readSessionTitle(projectPath, cli, histId) {
   const reader = readerFor(cli);
   if (!reader || !histId) return null;
   return reader.title(projectPath, histId);
 }
 
 // Título da aba a partir do que está salvo no config (usa a CLI da própria aba).
-function readSessionTitleFor(projectPath, s) {
+async function readSessionTitleFor(projectPath, s) {
   if (!s) return null;
   const reader = readerFor(s.cli || 'claude');
   return reader ? readSessionTitle(projectPath, s.cli || 'claude', reader.getId(s)) : null;
@@ -798,29 +804,37 @@ function readSessionTitleFor(projectPath, s) {
 // Vigia o histórico em disco de uma sessão (claude/codex): (1) se ainda não sabemos o
 // id real da conversa, acha o arquivo novo que apareceu depois do launch; (2) lê o
 // título e renomeia a aba. Roda a cada ~1.5s enquanto o pty viver.
-function startSessionWatcher(entry, capture) {
+// É `async` porque o leitor do codex fala com o `codex app-server`. Quem chama PRECISA
+// dar await antes de escrever o comando no pty: o snapshot tem que ser tirado com a
+// conversa ainda inexistente, senão ela já nasce dentro do "o que já existia" e o
+// findNew nunca a enxerga.
+async function startSessionWatcher(entry, capture) {
   const reader = readerFor(entry.cli);
   if (!reader) return;
-  if (capture) entry.preSnapshot = reader.snapshot(entry.projectPath);
-  const tick = () => {
+  if (capture) entry.preSnapshot = await reader.snapshot(entry.projectPath);
+  const tick = async () => {
     const e = terminals.get(entry.sessionId);
-    if (!e) return; // pty já morreu → watcher para (timer limpo no onExit)
+    if (!e || e.tickBusy) return; // pty morto, ou tick anterior ainda rodando
+    e.tickBusy = true;
     try {
       if (!e.histId && e.preSnapshot) {
-        const found = reader.findNew(e.projectPath, e.preSnapshot);
+        const found = await reader.findNew(e.projectPath, e.preSnapshot);
         if (found) {
           e.histId = found;
           saveHistoryId(e.projectPath, e.sessionId, e.cli, found);
         }
       }
       if (e.histId) {
-        const title = readSessionTitle(e.projectPath, e.cli, e.histId);
+        const title = await readSessionTitle(e.projectPath, e.cli, e.histId);
         if (title && title !== e.lastTitle) {
           e.lastTitle = title;
           applySessionTitle(e.projectPath, e.sessionId, title);
         }
       }
-    } catch {}
+    } catch {
+    } finally {
+      e.tickBusy = false;
+    }
   };
   entry.titleTimer = setInterval(tick, 1500);
 }
@@ -2730,7 +2744,7 @@ function getSessions(cfg, projectPath) {
   return cfg.sessions[projectPath];
 }
 
-ipcMain.handle('sessions:list', (evt, { projectPath }) => {
+ipcMain.handle('sessions:list', async (evt, { projectPath }) => {
   const cfg = loadConfig();
   const list = getSessions(cfg, projectPath);
   // Ao reabrir o app, re-verifica as abas ainda sem título: o Claude pode ter
@@ -2739,7 +2753,7 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
   let changed = false;
   for (const s of list) {
     if (!s.manual && (!s.name || s.name === 'Untitled')) {
-      const t = readSessionTitleFor(projectPath, s);
+      const t = await readSessionTitleFor(projectPath, s);
       if (t && t !== s.name) {
         s.name = t;
         changed = true;
@@ -2753,9 +2767,9 @@ ipcMain.handle('sessions:list', (evt, { projectPath }) => {
 // Re-verifica o título de UMA aba sob demanda (ex.: ao clicar nela). Útil quando o
 // Claude emitiu o aiTitle tarde ou a sessão já encerrou (watcher parado). Aplica e
 // avisa o renderer via 'session:meta'; se ainda não houver aiTitle, não faz nada.
-ipcMain.handle('session:refreshTitle', (evt, { projectPath, sessionId }) => {
+ipcMain.handle('session:refreshTitle', async (evt, { projectPath, sessionId }) => {
   const s = getSessionMeta(loadConfig(), projectPath, sessionId);
-  const title = readSessionTitleFor(projectPath, s);
+  const title = await readSessionTitleFor(projectPath, s);
   if (title) applySessionTitle(projectPath, sessionId, title);
   return { ok: !!title, name: title || null };
 });
@@ -2846,7 +2860,7 @@ ipcMain.handle('sessions:create', (evt, { projectPath, name }) => {
 // aiTitle automático (ver applySessionTitle). Nome vazio limpa `manual` e volta ao
 // título automático do transcript (ou "Untitled" se ainda não houver). Avisa o
 // renderer via 'session:meta' pra manter todos os panes em sincronia.
-ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
+ipcMain.handle('sessions:rename', async (evt, { projectPath, sessionId, name }) => {
   const cfg = loadConfig();
   const s = getSessions(cfg, projectPath).find((x) => x.id === sessionId);
   if (s) {
@@ -2856,7 +2870,7 @@ ipcMain.handle('sessions:rename', (evt, { projectPath, sessionId, name }) => {
       s.manual = true;
     } else {
       s.manual = false;
-      s.name = readSessionTitleFor(projectPath, s) || 'Untitled';
+      s.name = (await readSessionTitleFor(projectPath, s)) || 'Untitled';
     }
     saveConfig(cfg);
     safeSend('session:meta', { projectPath, sessionId, name: s.name });
@@ -3070,7 +3084,7 @@ ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, 
   let launch = null;
   let cli = 'claude';
   if (!remote) {
-    launch = buildLaunchCommand(sessionId, projectPath);
+    launch = await buildLaunchCommand(sessionId, projectPath);
     cli = launch.cli;
   }
   const entry = { pty: proc, buffer: '', projectPath, sessionId, cli, remote, cols, rows };
@@ -3109,7 +3123,8 @@ ipcMain.handle('term:ensure', async (evt, { sessionId, projectPath, cols, rows, 
     // Aba nova = CLI pura; retoma a conversa só ao reabrir o app (id com histórico).
     if (readerFor(cli)) {
       entry.histId = launch.histId || null;
-      startSessionWatcher(entry, launch.capture); // captura id (se nova) + título da aba
+      // await: o snapshot precisa estar fechado ANTES de o comando ir pro pty.
+      await startSessionWatcher(entry, launch.capture); // captura id (se nova) + título
     }
     // Terminal limpo (cli 'shell') ⇒ cmd vazio ⇒ não escreve nada: só o shell do SO.
     if (launch.cmd) proc.write(launch.cmd + '\r');
@@ -3387,13 +3402,16 @@ async function checkpointRestore(projectPath, hash) {
 function checkpointsEnabled() {
   return loadConfig().checkpoints !== false;
 }
-function scheduleAutoCheckpoint(entry) {
+async function scheduleAutoCheckpoint(entry) {
   const projectPath = entry && entry.projectPath;
   if (!projectPath || !checkpointsEnabled()) return;
   // Reaproveita o título que o próprio Claude gera pra aba (aiTitle): assim o
   // Histórico mostra o MESMO nome da aba. Cai pro rótulo genérico só quando o
   // Claude ainda não titulou esta conversa.
-  const title = readSessionTitle(projectPath, entry.cli, entry.histId) || entry.lastTitle || null;
+  const title =
+    (await readSessionTitle(projectPath, entry.cli, entry.histId).catch(() => null)) ||
+    entry.lastTitle ||
+    null;
   const label = title || 'Após resposta do Claude ' + new Date().toISOString();
   checkpointCreate(projectPath, label)
     .then((r) => {
