@@ -22,6 +22,36 @@ function userLine(message) {
     payload: { type: 'user_message', message, images: [] },
   });
 }
+// FORMATO REAL capturado do Codex 0.153.3: o turno do usuário deixou de ser um
+// `user_message` e virou um `item_completed` com `item.type === 'UserMessage'`.
+function userLineNovo(message) {
+  return JSON.stringify({
+    timestamp: '2026-09-04T21:31:14.076Z',
+    type: 'event_msg',
+    payload: {
+      type: 'item_completed',
+      thread_id: '01a06e55-2e5d-7330-834a-ea8e1498d568',
+      item: {
+        type: 'UserMessage',
+        id: '01a06e55-391c-7092-a134-02dd54f53c36',
+        content: [{ type: 'text', text: message, text_elements: [] }],
+      },
+    },
+  });
+}
+// O `<environment_context>` que o Codex injeta também é `role: "user"`. Está aqui pra
+// provar que ele NÃO pode virar o título da aba.
+function envContextLine(cwd) {
+  return JSON.stringify({
+    timestamp: '2026-09-04T21:31:13.990Z',
+    type: 'response_item',
+    payload: {
+      type: 'message',
+      role: 'user',
+      content: [{ type: 'input_text', text: `<environment_context>\n  <cwd>${cwd}</cwd>\n` }],
+    },
+  });
+}
 function agentLine(text) {
   return JSON.stringify({
     timestamp: '2026-07-17T19:10:26.022Z',
@@ -352,5 +382,87 @@ describe('pickResolvedId', () => {
   it('sem correspondência devolve o id salvo (quem descarta é o threadExists)', () => {
     expect(codex.pickResolvedId([row({ id: THREAD_B })], ID_A)).toBe(ID_A);
     expect(codex.pickResolvedId([row()], null)).toBeNull();
+  });
+});
+
+// O bug que fazia a aba de Codex voltar em branco no Codex novo: o leitor procurava a
+// string "user_message", que sumiu do rollout na 0.153.3. O arquivo estava lá, com a
+// conversa, e o Carcará achava que a aba estava vazia. Ver CODEX-SESSAO-DIAGNOSTICO.md.
+describe('userText: os dois formatos de turno do usuário', () => {
+  it('formato 0.144.6 (event_msg/user_message)', () => {
+    expect(codex.userText(userLine('arrumar o menu'))).toBe('arrumar o menu');
+  });
+
+  it('REGRESSÃO: formato 0.153.3 (item_completed/UserMessage)', () => {
+    expect(codex.userText(userLineNovo('arrumar o menu'))).toBe('arrumar o menu');
+  });
+
+  it('junta os pedaços de content do formato novo', () => {
+    const ln = JSON.stringify({
+      type: 'event_msg',
+      payload: {
+        type: 'item_completed',
+        item: {
+          type: 'UserMessage',
+          content: [
+            { type: 'text', text: 'ola ' },
+            { type: 'text', text: 'mundo' },
+          ],
+        },
+      },
+    });
+    expect(codex.userText(ln)).toBe('ola mundo');
+  });
+
+  it('o <environment_context> injetado pelo Codex não conta como turno do usuário', () => {
+    expect(codex.userText(envContextLine(PROJ))).toBeNull();
+  });
+
+  it('resposta do agente, linha quebrada e item de outro tipo não contam', () => {
+    expect(codex.userText(agentLine('pronto'))).toBeNull();
+    expect(codex.userText('{ nao e json')).toBeNull();
+    expect(
+      codex.userText(
+        JSON.stringify({
+          type: 'event_msg',
+          payload: {
+            type: 'item_completed',
+            item: { type: 'AgentMessage', content: [{ type: 'text', text: 'x' }] },
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('turno do usuário vazio não vira título', () => {
+    expect(codex.userText(userLineNovo('   '))).toBeNull();
+  });
+});
+
+describe('REGRESSÃO: rollout no formato do Codex 0.153.3', () => {
+  it('rolloutHasUser e sessionTitle enxergam o turno do usuário', () => {
+    setup();
+    const f = writeRollout({
+      id: ID_A,
+      cwd: PROJ,
+      lines: [envContextLine(PROJ), userLineNovo('Arrumar o menu da home'), agentLine('feito')],
+    });
+    expect(codex.rolloutHasUser(f)).toBe(true);
+    expect(codex.sessionTitle(f)).toBe('Arrumar o menu da home');
+  });
+
+  it('newRollout acha a conversa nova (era aqui que a aba voltava em branco)', () => {
+    setup();
+    const snap = codex.snapshot(PROJ);
+    writeRollout({ id: ID_A, cwd: PROJ, lines: [userLineNovo('conversa nova')] });
+    expect(codex.newRollout(PROJ, snap)).toBe(ID_A);
+    expect(codex.historyExists(ID_A)).toBe(true);
+  });
+
+  it('rollout do formato novo SEM turno do usuário segue sem valer resume', () => {
+    setup();
+    const f = writeRollout({ id: ID_B, cwd: PROJ, lines: [envContextLine(PROJ)] });
+    expect(codex.rolloutHasUser(f)).toBe(false);
+    expect(codex.sessionTitle(f)).toBeNull();
   });
 });

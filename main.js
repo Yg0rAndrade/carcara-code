@@ -1072,17 +1072,20 @@ ipcMain.handle('projects:add', async () => {
     title: tn('dialog_choose_folders'),
     properties: ['openDirectory', 'multiSelections'],
   });
-  if (res.canceled) return { added: 0 };
+  if (res.canceled) return { added: 0, paths: [] };
   const cfg = loadConfig();
-  let added = 0;
+  // Devolve QUAIS pastas entraram (não só quantas): o renderer abre a escolha de IA em
+  // cima delas logo depois. Pasta já cadastrada não entra na lista — a IA dela já foi
+  // escolhida uma vez.
+  const paths = [];
   for (const p of res.filePaths) {
     if (!cfg.projects.includes(p)) {
       cfg.projects.push(p);
-      added++;
+      paths.push(p);
     }
   }
   saveConfig(cfg);
-  return { added };
+  return { added: paths.length, paths };
 });
 
 // Cadastra/atualiza um projeto remoto. profile: { host, port, user, authType,

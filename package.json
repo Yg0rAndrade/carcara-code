@@ -30,6 +30,7 @@
     "test:localpty": "node scripts/localpty-smoke.cjs",
     "test:aicatalog": "node scripts/ai-catalog-smoke.cjs",
     "test:codex": "node scripts/codex-app-server.smoke.cjs",
+    "test:codex-e2e": "node scripts/codex-resume.e2e.cjs",
     "test:carcara": "node scripts/carcara-events-smoke.cjs",
     "test:carcara-config": "node scripts/carcara-config-smoke.cjs",
     "test:carcara-msg": "node scripts/carcara-message-smoke.cjs",

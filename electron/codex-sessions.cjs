@@ -5,10 +5,10 @@
 // o app mata o PTY antes disso e a conversa se perdia. O rollout, ao contrário, é
 // append-only e é escrito DURANTE a sessão, então sobrevive a kill/crash.
 //
-// Formato verificado no Codex 0.144.6 (Windows):
+// Formato verificado no Codex 0.144.6 e 0.153.3 (Windows):
 //   1ª linha: {"type":"session_meta","payload":{"id":"<uuid>","session_id":"<uuid>",
 //              "cwd":"C:\\...\\projeto","originator":"codex-tui",...}}
-//   turno do usuário: {"type":"event_msg","payload":{"type":"user_message","message":"..."}}
+//   turno do usuário: mudou de forma entre as duas versões — ver `userText` abaixo.
 // `codex resume <id>` CONTINUA o mesmo rollout (não cria arquivo novo).
 const fs = require('fs');
 const os = require('os');
@@ -118,12 +118,49 @@ function readMeta(file) {
   return meta;
 }
 
+// O turno do usuário mudou de forma no rollout. Medido nesta máquina:
+//
+//   0.144.6 {"type":"event_msg","payload":{"type":"user_message","message":"oi"}}
+//   0.153.3 {"type":"event_msg","payload":{"type":"item_completed",
+//            "item":{"type":"UserMessage","content":[{"type":"text","text":"oi"}]}}}
+//
+// As duas convivem: a máquina de um usuário pode estar em qualquer versão, e um rollout
+// antigo no disco segue no formato antigo mesmo depois do `codex update`. Procurar só
+// pela string "user_message", como antes, deixava o leitor cego no Codex novo — o
+// arquivo existia, tinha a conversa, e o Carcará achava que a aba estava vazia.
+//
+// Não serve olhar `response_item`/`role: "user"`: o `<environment_context>` que o Codex
+// injeta no começo da conversa também é `role: "user"`, e viraria o título da aba.
+const USER_MARKS = ['"user_message"', '"UserMessage"'];
+
+// Texto do turno do usuário nesta linha, ou null se a linha não for um turno do usuário.
+// Um lugar só, porque `rolloutHasUser` e `sessionTitle` precisam da mesma resposta.
+function userText(ln) {
+  // Pré-filtro barato: o scanLines passa por linhas de contexto de dezenas de KB e não
+  // vale parsear todas.
+  if (!USER_MARKS.some((m) => ln.indexOf(m) !== -1)) return null;
+  let o;
+  try {
+    o = JSON.parse(ln);
+  } catch {
+    return null;
+  }
+  const p = (o && o.payload) || {};
+  if (p.type === 'user_message' && typeof p.message === 'string') return p.message;
+  if (p.type === 'item_completed' && p.item && p.item.type === 'UserMessage') {
+    const parts = Array.isArray(p.item.content) ? p.item.content : [];
+    const txt = parts.map((c) => (c && typeof c.text === 'string' ? c.text : '')).join('');
+    return txt.trim() || null;
+  }
+  return null;
+}
+
 // Tem conversa de verdade? Sem um turno de usuário, `codex resume` retomaria uma
 // sessão vazia (mesma razão do transcriptHasUser do Claude).
 function rolloutHasUser(file) {
   let found = false;
   scanLines(file, (ln) => {
-    if (ln.indexOf('"user_message"') === -1) return true;
+    if (!userText(ln)) return true;
     found = true;
     return false;
   });
@@ -227,19 +264,12 @@ function newRollout(projectPath, snap, base = sessionsBase()) {
 function sessionTitle(file) {
   let title = null;
   scanLines(file, (ln) => {
-    if (ln.indexOf('"user_message"') === -1) return true;
-    try {
-      const o = JSON.parse(ln);
-      const p = (o && o.payload) || {};
-      if (p.type === 'user_message' && p.message) {
-        const t = cleanTitle(p.message);
-        if (t) {
-          title = t;
-          return false;
-        }
-      }
-    } catch {}
-    return true;
+    const msg = userText(ln);
+    if (!msg) return true;
+    const t = cleanTitle(msg);
+    if (!t) return true; // prompt só de espaço/emoji: segue procurando o próximo
+    title = t;
+    return false;
   });
   return title;
 }
@@ -349,6 +379,7 @@ module.exports = {
   normPath,
   sameCwd,
   readMeta,
+  userText,
   rolloutHasUser,
   listRollouts,
   rolloutPath,

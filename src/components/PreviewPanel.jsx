@@ -244,6 +244,49 @@ function TabChip({ label, favicon, active, onSelect, onClose, closeTitle }) {
   );
 }
 
+// Botão de recarregar da barra de URL. O estado "Ctrl pressionado" (que pinta a
+// setinha de laranja pra anunciar o hard reload) mora AQUI, e não no PreviewPanel:
+// lá em cima, cada toque no Ctrl re-renderizava o painel inteiro — incluindo o
+// preview de markdown da aba Código, que perdia a seleção de texto e deixava o
+// Ctrl+C sem nada pra copiar. Isolado, o Ctrl só repinta este botão.
+function ReloadButton({ onClick, disabled }) {
+  const t = useT();
+  const [ctrlHeld, setCtrlHeld] = useState(false);
+  // blur limpa o estado pra não travar "preso" laranja se a pessoa alt-tabar
+  // segurando a tecla.
+  useEffect(() => {
+    const onDown = (e) => {
+      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(true);
+    };
+    const onUp = (e) => {
+      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(false);
+    };
+    const onBlur = () => setCtrlHeld(false);
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={ctrlHeld ? t('preview.reload_hard') : t('preview.reload')}
+      className={cn(
+        'absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]',
+        ctrlHeld ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+      )}
+    >
+      <RotateCWIcon />
+    </button>
+  );
+}
+
 // Menu da câmera (mesmo padrão do DevicePicker): clicar abre "Selecionar área" / "Tela toda".
 function ShotPicker({ onArea, onFull, active, disabled }) {
   const t = useT();
@@ -361,7 +404,6 @@ export function PreviewPanel({
   const overlayRef = useRef(null); // camada do print (pra medir e desenhar o retângulo)
   const [canBack, setCanBack] = useState(false); // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
-  const [ctrlHeld, setCtrlHeld] = useState(false); // Ctrl/Cmd pressionado: feedback laranja no botão de recarregar (hard reload)
   const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
   const [viewport, setViewport] = useState(
     () => localStorage.getItem('previewViewport') || 'desktop',
@@ -1533,26 +1575,6 @@ export function PreviewPanel({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  // Feedback visual: segurar Ctrl/Cmd deixa a setinha de recarregar laranja (hard reload
-  // à mão). blur limpa o estado pra não travar "preso" laranja se a pessoa alt-tabar
-  // segurando a tecla.
-  useEffect(() => {
-    const onDown = (e) => {
-      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(true);
-    };
-    const onUp = (e) => {
-      if (e.key === 'Control' || e.key === 'Meta') setCtrlHeld(false);
-    };
-    const onBlur = () => setCtrlHeld(false);
-    window.addEventListener('keydown', onDown);
-    window.addEventListener('keyup', onUp);
-    window.addEventListener('blur', onBlur);
-    return () => {
-      window.removeEventListener('keydown', onDown);
-      window.removeEventListener('keyup', onUp);
-      window.removeEventListener('blur', onBlur);
-    };
-  }, []);
   // Abre o preview atual no navegador padrão do sistema. Sem lock-in: se a pessoa
   // preferir o navegador dela (DevTools próprio, extensões, etc.), é só um clique.
   const openInBrowser = () => {
@@ -1785,18 +1807,7 @@ export function PreviewPanel({
               <DevicePicker value={viewport} onChange={setViewport} disabled={mode !== 'web'} />
               {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
               <div className="relative flex-1">
-                <button
-                  type="button"
-                  onClick={reload}
-                  disabled={mode !== 'web'}
-                  title={ctrlHeld ? t('preview.reload_hard') : t('preview.reload')}
-                  className={cn(
-                    'absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]',
-                    ctrlHeld ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <RotateCWIcon />
-                </button>
+                <ReloadButton onClick={reload} disabled={mode !== 'web'} />
                 <Input
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}

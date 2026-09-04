@@ -89,6 +89,7 @@ export function Rail({
   };
   const resetDrag = () => {
     clearTimers();
+    stopAutoScroll();
     dwellKeyRef.current = null;
     hoverRef.current = null;
     setDrag(null);
@@ -97,6 +98,51 @@ export function Rail({
 
   const dragKeyOf = () =>
     drag?.path ? drag.path : drag?.folderId ? 'folder:' + drag.folderId : null;
+
+  // --- rolagem automática nas bordas da lista ---
+  // O arrastar-e-soltar do HTML não rola container nenhum sozinho: numa lista longa,
+  // chegar num projeto fora da parte visível era impossível (o arraste morria na borda).
+  // Encostar no topo ou no fim da lista durante o arraste rola, com velocidade
+  // proporcional à profundidade da borda. Vale pro arraste interno e pro externo.
+  const listRef = useRef(null);
+  const autoScrollRef = useRef({ raf: 0, dy: 0 });
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current.raf) cancelAnimationFrame(autoScrollRef.current.raf);
+    autoScrollRef.current = { raf: 0, dy: 0 };
+  };
+  const tickAutoScroll = () => {
+    const el = listRef.current;
+    const dy = autoScrollRef.current.dy;
+    if (!el || !dy) {
+      stopAutoScroll();
+      return;
+    }
+    el.scrollTop += dy;
+    autoScrollRef.current.raf = requestAnimationFrame(tickAutoScroll);
+  };
+  const AUTO_SCROLL_EDGE = 46; // px de borda sensível
+  const AUTO_SCROLL_MAX = 16; // px por quadro no limite
+  const onListDragOver = (e) => {
+    e.preventDefault();
+    const el = listRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const fromTop = e.clientY - r.top;
+    const fromBottom = r.bottom - e.clientY;
+    let dy = 0;
+    if (fromTop < AUTO_SCROLL_EDGE)
+      dy = -Math.ceil(
+        ((AUTO_SCROLL_EDGE - Math.max(fromTop, 0)) / AUTO_SCROLL_EDGE) * AUTO_SCROLL_MAX,
+      );
+    else if (fromBottom < AUTO_SCROLL_EDGE)
+      dy = Math.ceil(
+        ((AUTO_SCROLL_EDGE - Math.max(fromBottom, 0)) / AUTO_SCROLL_EDGE) * AUTO_SCROLL_MAX,
+      );
+    autoScrollRef.current.dy = dy;
+    if (dy && !autoScrollRef.current.raf)
+      autoScrollRef.current.raf = requestAnimationFrame(tickAutoScroll);
+    else if (!dy) stopAutoScroll();
+  };
 
   // --- Arrasto de arquivo EXTERNO (de fora do app) sobre a barra ---
   // Parar ~0,7s em cima de OUTRO projeto durante um arrasto externo abre aquele projeto
@@ -123,15 +169,32 @@ export function Rail({
       )
         clearExtDwell();
     };
-    window.addEventListener('drop', clearExtDwell, true);
-    window.addEventListener('dragend', clearExtDwell, true);
+    const onAnyDragEnd = () => {
+      clearExtDwell();
+      stopAutoScroll();
+    };
+    window.addEventListener('drop', onAnyDragEnd, true);
+    window.addEventListener('dragend', onAnyDragEnd, true);
     document.addEventListener('dragleave', onDocLeave);
     return () => {
-      window.removeEventListener('drop', clearExtDwell, true);
-      window.removeEventListener('dragend', clearExtDwell, true);
+      window.removeEventListener('drop', onAnyDragEnd, true);
+      window.removeEventListener('dragend', onAnyDragEnd, true);
       document.removeEventListener('dragleave', onDocLeave);
+      stopAutoScroll();
     };
   }, []);
+
+  // Lista longa: trocar de projeto por fora do rail (paleta Ctrl+K, atalho, clique num
+  // link) deixava o ícone ativo fora da parte visível e o anel laranja invisível. Traz o
+  // ativo pro campo de visão sempre que ele muda. `block: 'nearest'` só rola o mínimo:
+  // se o ícone já está visível, nada se mexe.
+  useEffect(() => {
+    const el = listRef.current;
+    const key = active?.path;
+    if (!el || !key) return;
+    const item = el.querySelector(`[data-rail-key="${CSS.escape(key)}"]`);
+    item?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [active?.path, rail]);
   const onExternalRowDragOver = (e, project) => {
     e.preventDefault();
     try {
@@ -169,10 +232,16 @@ export function Rail({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const dragKey = dragKeyOf();
-    if (!dragKey || row.key === dragKey) {
+    if (!dragKey) {
       clearTimers();
       return;
     }
+    // O preview ao vivo desliza o item ARRASTADO pra posição do alvo, então ele passa a
+    // ficar sob o cursor e manda dragover aqui. Sair sem tocar em timer nem alvo: zerar
+    // os relógios neste ponto matava o dwell do merge no meio, e "colocar um projeto
+    // dentro do outro" acabava virando só reordenar.
+    if (row.key === dragKey) return;
+
     const r = e.currentTarget.getBoundingClientRect();
     const cx = e.clientX - r.left,
       cy = e.clientY - r.top;
@@ -180,26 +249,27 @@ export function Rail({
       cx > r.width * 0.28 && cx < r.width * 0.72 && cy > r.height * 0.28 && cy < r.height * 0.72;
     const canMerge =
       !drag?.folderId && (row.kind === 'project' || row.kind === 'folder' || row.kind === 'child');
+    const zone = inCenter && canMerge ? 'merge' : 'reorder';
 
-    // Alvo imediato pro drop (não espera o atraso do visual): centro+mergeável = merge,
-    // senão reorder. Assim um drop rápido sempre funciona.
-    hoverRef.current = { row, zone: inCenter && canMerge ? 'merge' : 'reorder' };
+    // Alvo imediato pro drop (não espera o atraso do visual). Assim um drop rápido
+    // sempre funciona.
+    hoverRef.current = { row, zone };
 
-    // Entrou numa linha nova: NÃO desliza na hora (feel iOS). Agenda o slide (reorder) com
-    // um atraso curto; assim dá tempo de pousar no centro pra criar/entrar pasta. Guardamos
-    // o próprio `row` no `over` pra o drop usar o alvo rastreado (não o elemento sob o
-    // cursor, que o preview ao vivo pode ter trocado pelo item arrastado).
+    // Linha nova: zera os dois relógios e recomeça a decisão nela.
     if (dwellKeyRef.current !== row.key) {
       clearTimers();
       dwellKeyRef.current = row.key;
-      reorderRef.current = setTimeout(() => {
-        reorderRef.current = null;
-        setOver({ key: row.key, zone: 'reorder', row });
-      }, 150);
     }
 
-    if (inCenter && canMerge) {
-      if (!mergeRef.current) {
+    if (zone === 'merge') {
+      // Centro de um alvo mesclável: o merge manda no slide, não o contrário. Cancelar
+      // o slide pendente é o que segura o alvo no lugar enquanto a pessoa espera a pasta
+      // abrir; sem isso o alvo descia debaixo do cursor e o dwell nunca completava.
+      if (reorderRef.current) {
+        clearTimeout(reorderRef.current);
+        reorderRef.current = null;
+      }
+      if (!mergeRef.current && !(over?.key === row.key && over?.zone === 'merge')) {
         mergeRef.current = setTimeout(() => {
           mergeRef.current = null;
           setOver({ key: row.key, zone: 'merge', row });
@@ -209,6 +279,15 @@ export function Rail({
       if (mergeRef.current) {
         clearTimeout(mergeRef.current);
         mergeRef.current = null;
+      }
+      // Fora do centro: NÃO desliza na hora (feel iOS), agenda o slide com um atraso
+      // curto. Guardamos o próprio `row` no `over` pra o drop usar o alvo rastreado (não
+      // o elemento sob o cursor, que o preview ao vivo pode ter trocado).
+      if (!reorderRef.current && !(over?.key === row.key && over?.zone === 'reorder')) {
+        reorderRef.current = setTimeout(() => {
+          reorderRef.current = null;
+          setOver({ key: row.key, zone: 'reorder', row });
+        }, 150);
       }
       setOver((prev) =>
         prev && prev.key === row.key && prev.zone === 'merge'
@@ -273,6 +352,7 @@ export function Rail({
     const el = (
       <button
         draggable
+        data-rail-key={p.path}
         onDragStart={() => setDrag({ path: p.path })}
         onDragOver={(e) =>
           onRowDragOver(e, {
@@ -475,13 +555,15 @@ export function Rail({
         >
           <SearchIcon size={18} />
         </button>
-        <div className="my-2.5 h-px w-7 rounded-full bg-border" />
+        <div className="mb-1 mt-2.5 h-px w-7 rounded-full bg-border" />
       </div>
 
       {/* Lista rolável: projetos soltos + pastas (com filhos indentados quando abertas). */}
       <div
-        className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2"
-        onDragOver={(e) => e.preventDefault()}
+        ref={listRef}
+        className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2 py-1.5"
+        onDragOver={onListDragOver}
+        onDragLeave={stopAutoScroll}
         onDrop={(e) => {
           e.preventDefault();
           commitDrop();

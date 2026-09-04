@@ -1,7 +1,14 @@
 # Diagnóstico: retomada de sessão do Codex
 
-Status: corrigido. Ver "Correção aplicada" no fim.
-Data: 2026-08-31. Codex local: `codex-cli 0.144.6`. Última versão publicada na época: 0.150.0.
+Status: corrigido e validado contra o Codex 0.153.3. Ver "Validação em 0.153.3" no fim.
+Data: 2026-08-31, revisto em 2026-09-04. Codex local na primeira rodada: `codex-cli 0.144.6`.
+Na validação: `codex-cli 0.153.3`.
+
+> **Aviso ao leitor de 2026-09-04.** A seção "Causa raiz" abaixo aponta o par
+> _rollout id_ / _thread id_ como o culpado. Isso foi deduzido das notas de release e
+> **não se confirmou**. A causa real está em "Validação em 0.153.3", no fim: o Codex
+> trocou a forma como grava o turno do usuário dentro do rollout. As seções antigas
+> ficam como registro do raciocínio.
 
 ## Sintoma
 
@@ -190,22 +197,78 @@ Pontos de atenção:
    precisa de uma passada que troque pelo _thread id_ correspondente, usando o `path` que o
    `thread/list` devolve.
 
-## O que falta validar
+## Validação em 0.153.3 (2026-09-04)
 
-Tudo acima foi verificado no Codex 0.144.6, onde o rollout id ainda é igual ao thread id.
-A correção foi escrita a partir das notas de release e do schema do protocolo, e não contra
-uma máquina com o formato novo. Falta o teste no ambiente que motivou tudo:
+Atualizei o Codex desta máquina de 0.144.6 para 0.153.3 e rodei os quatro passos que
+estavam pendentes. Dois resultados desmentem o diagnóstico anterior.
 
-1. `codex update` (0.150.x) e `codex migrate-rollouts` sem `--apply`, pra ver quantas
-   sessões migram.
-2. Conferir se o id do `thread/list` passou a divergir do uuid do nome do arquivo. É a
-   reprodução direta da causa raiz.
-3. Abrir uma aba de Codex no Carcará, conversar, fechar o app e reabrir. A conversa tem que
-   voltar, e o nome da aba tem que ser o primeiro prompt.
-4. `npm run test:codex` na máquina atualizada.
+### 1. O rollout id NÃO divergiu do thread id
 
-Se o passo 2 confirmar a divergência, vale acrescentar fixture dos dois formatos em
-`electron/codex-sessions.test.js`.
+Copiei os 5 rollouts legados pra um `CODEX_HOME` temporário e rodei
+`codex migrate-rollouts --apply` lá dentro. Os 5 migraram de `legacy` pra `paginated` e
+os arquivos continuaram no disco. O `thread/list` devolveu o mesmo id antes e depois, e
+esse id segue igual ao uuid do nome do arquivo:
+
+```
+ANTES   019ffbd0-4cfb-7252-957b-afdb26a52690 | arquivo=019ffbd0-...-52690 | IGUAL | legacy
+DEPOIS  019ffbd0-4cfb-7252-957b-afdb26a52690 | arquivo=019ffbd0-...-52690 | IGUAL | paginated
+```
+
+Thread nova criada no 0.153.3 nasce `paginated` e também mantém id igual ao do arquivo.
+O `resolveThreadId` / `pickResolvedId` continua no código como seguro contra uma
+divergência futura, mas hoje ele não tem nada pra migrar.
+
+### 2. A causa real: o turno do usuário mudou de forma dentro do rollout
+
+O leitor de disco procurava a string `"user_message"`. Ela sumiu:
+
+```jsonc
+// 0.144.6
+{"type":"event_msg","payload":{"type":"user_message","message":"oi"}}
+// 0.153.3
+{"type":"event_msg","payload":{"type":"item_completed",
+ "item":{"type":"UserMessage","content":[{"type":"text","text":"oi"}]}}}
+```
+
+Sem achar a marca, `rolloutHasUser` devolvia `false` e `sessionTitle` devolvia `null`. O
+`newRollout` então descartava o arquivo da conversa que acabara de nascer, o watcher nunca
+gravava o id, e no restart a aba subia `codex` puro. É a aba em branco que o usuário
+relatou.
+
+O `userText` em `electron/codex-sessions.cjs` passou a entender as duas formas. Não vale
+olhar `response_item` com `role: "user"`: o `<environment_context>` que o Codex injeta no
+começo da conversa também é `role: "user"` e viraria o título da aba.
+
+Medido com o ciclo completo, num `CODEX_HOME` isolado, contra o Codex 0.153.3:
+
+| Caminho                      | Antes do fix             | Depois |
+| ---------------------------- | ------------------------ | ------ |
+| plano A (`codex app-server`) | passa                    | passa  |
+| plano B (leitor de rollout)  | trava no `findNewThread` | passa  |
+
+O plano A já estava salvo porque o `thread/list` entrega o `preview` pronto. Quem só tinha
+o plano B, como a v0.1.13 publicada, ficava sem conversa nenhuma.
+
+### 3. O ciclo inteiro virou teste
+
+`scripts/codex-resume.e2e.cjs` (`npm run test:codex-e2e`) sobe o `codex` de verdade num
+pty, manda um prompt, chama as mesmas funções que o `main.js` chama, mata o pty sem
+encerrar gracioso e confere que `codex resume <id>` traz a conversa de volta. Com
+`--plano-b` ele repete tudo pelo leitor de rollout. Pula sozinho sem `codex` no PATH ou
+sem `auth.json`.
+
+Duas armadilhas que o teste documenta:
+
+- `os.tmpdir()` no Windows volta o caminho 8.3 (`C:\Users\YGORAN~1\...`) e o Codex resolve
+  o caminho longo. Sem `fs.realpathSync.native`, a chave `[projects.<caminho>]` do
+  `config.toml` não casa e a TUI para na pergunta de confiança da pasta.
+- `thread/list` sem `sourceKinds` só devolve fontes interativas. Sessão criada por
+  `codex exec` não aparece, o que invalida um teste montado em cima do `exec`.
+
+### 4. Suíte
+
+`npm test` (347), `npm run test:codex` e `npm run test:codex-e2e` nos dois planos, todos
+verdes no 0.153.3.
 
 ## Fontes
 

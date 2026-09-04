@@ -13,6 +13,11 @@
 //
 // Custa UM turno pequeno de modelo (o prompt é "responda apenas <marca>"). Pula sozinho
 // quando não há `codex` no PATH ou quando não há login (`auth.json`), pra não quebrar CI.
+//
+// Ruído esperado no Windows: matar um pty faz o node-pty subir um agente auxiliar que
+// às vezes cospe "Error: AttachConsole failed". É do node-pty, não do teste — quem manda
+// é a última linha ("codex-resume e2e OK") e o código de saída. O pty fica no ConPTY
+// padrão de propósito: é o mesmo que o app usa (electron/remote/localPty.cjs).
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -48,7 +53,12 @@ if (!fs.existsSync(realAuth)) {
 }
 
 // ---- ambiente isolado -------------------------------------------------------
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'carcara-codex-e2e-'));
+// realpath.native porque no Windows o os.tmpdir() volta no formato 8.3
+// (C:\Users\YGORAN~1\...) e o Codex resolve o caminho longo. Sem isso a chave
+// [projects.<caminho>] do config.toml não casa, a TUI para na pergunta de confiança da
+// pasta e nada acontece. Vale a mesma lição pro app: caminho de projeto tem que ser o
+// resolvido, senão o `cwd` do thread/list não bate com o do Carcará.
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'carcara-codex-e2e-')));
 const codexHome = path.join(root, 'codex-home');
 const proj = path.join(root, 'proj');
 fs.mkdirSync(codexHome, { recursive: true });
@@ -63,10 +73,17 @@ fs.writeFileSync(
   'utf8',
 );
 process.env.CODEX_HOME = codexHome;
-delete process.env.CARCARA_CODEX_APP_SERVER; // o plano A é justamente o que se quer testar
+// `--plano-b` roda o mesmo ciclo pelo leitor de rollout em disco, que é o fallback e era
+// o único caminho até a 0.1.13. Serve pra medir, contra o Codex instalado, se o plano B
+// ainda dá conta sozinho. O padrão é o plano A (app-server), que é o caminho suportado.
+const planoB = process.argv.includes('--plano-b');
+if (planoB) process.env.CARCARA_CODEX_APP_SERVER = '0';
+else delete process.env.CARCARA_CODEX_APP_SERVER;
+const viaEsperado = planoB ? 'rollout' : 'app';
 
 log('CODEX_HOME =', codexHome);
 log('projeto    =', proj);
+log('plano      =', planoB ? 'B (leitor de rollout)' : 'A (app-server)');
 
 const repo = path.join(__dirname, '..');
 const codex = require(path.join(repo, 'electron', 'codex-sessions.cjs'));
@@ -126,16 +143,24 @@ async function waitFor(fn, { timeout = 180000, every = 1500, what = 'condicao' }
   // 1. Snapshot ANTES de escrever o comando no pty, como o `term:ensure` faz.
   const snap = await codex.snapshotThreads(proj);
   log('  snapshot via =', snap.via, '| threads antes =', snap.ids.size);
-  if (snap.via !== 'app') fail(`esperava snapshot pelo app-server, veio "${snap.via}"`);
+  if (snap.via !== viaEsperado) fail(`esperava snapshot via "${viaEsperado}", veio "${snap.via}"`);
   if (snap.ids.size !== 0) fail('CODEX_HOME novo deveria comecar sem thread');
 
   // 2. Sobe o codex interativo e manda um prompt.
   const t1 = openPty('codex');
-  await waitFor(() => /shortcuts|Ctrl\+/i.test(t1.text()), {
-    timeout: 90000,
-    every: 1000,
-    what: 'a TUI do codex subir',
-  });
+  await waitFor(
+    () => {
+      const tela = t1.text();
+      // CODEX_HOME novo: pode cair na pergunta de confiança da pasta antes do compositor.
+      if (/trust the contents|confia no conte/i.test(tela) && !t1.trusted) {
+        t1.trusted = true;
+        t1.p.write('1\r');
+        return false;
+      }
+      return /shortcuts|Ctrl\+/i.test(tela);
+    },
+    { timeout: 90000, every: 1000, what: 'a TUI do codex subir' },
+  );
   log('  TUI do codex subiu');
   await sleep(1500);
   t1.p.write(PROMPT);

@@ -14,12 +14,17 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ### Corrigido
 
-- **Conversas do Codex voltando em branco para quem atualizou o Codex:** da versão 0.148 em diante o
-  Codex passou a guardar o histórico de outro jeito e trocou o código que identifica cada conversa.
-  O Carcará ainda procurava pelo código antigo, então reabria a aba do zero mesmo com a conversa
-  inteira salva no computador. Agora ele pergunta ao próprio Codex qual é a conversa de cada aba, o
-  que funciona nos dois formatos, e converte sozinho os códigos antigos que já estavam guardados.
-  Em versão de Codex que não tem esse recurso, ele continua lendo o histórico como antes.
+- **Não dava para copiar texto do markdown na aba Código:** ao apertar Ctrl, a seleção sumia e o
+  Ctrl+C não copiava nada, obrigando a abrir o arquivo em outro editor. O preview de markdown era
+  reconstruído do zero a cada re-render da tela, e o navegador descarta a seleção quando os
+  elementos somem. Agora o preview é remendado no lugar, a seleção fica de pé e o Ctrl+C copia.
+- **Conversas do Codex voltando em branco para quem atualizou o Codex:** as versões novas do Codex
+  mudaram o jeito de anotar a sua mensagem no arquivo de histórico. O Carcará procurava a anotação
+  antiga, não achava nenhuma, e concluía que a aba estava vazia. Reabria do zero mesmo com a
+  conversa inteira salva no computador. Agora ele pergunta ao próprio Codex qual é a conversa de
+  cada aba, e o leitor de reserva, usado quando essa pergunta não é possível, entende as duas
+  formas de anotação. Conferido de ponta a ponta contra o Codex 0.153.3, abrindo uma conversa de
+  verdade, fechando na marra e reabrindo.
 - **Aba de Codex que nunca ganhava nome nem voltava depois de fechada:** quando o Codex abria um
   subagente junto com a conversa principal, o Carcará via duas conversas nascendo ao mesmo tempo,
   não sabia qual era a da aba e desistia de identificar. Agora ele reconhece subagente e cópia de
