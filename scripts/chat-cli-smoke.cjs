@@ -185,5 +185,14 @@ eq(
   ['--continue', '-p', 'de novo'],
   'agy com histórico: --continue -p <prompt>',
 );
+eq(
+  agy.buildArgs({ prompt: 'oi', yolo: true }),
+  ['--dangerously-skip-permissions', '-p', 'oi'],
+  'agy com yolo pula as permissões',
+);
+ok(
+  !agy.buildArgs({ prompt: 'oi' }).includes('--dangerously-skip-permissions'),
+  'agy sem yolo pede permissão',
+);
 
 console.log(`OK — ${n} asserts passaram (chat-cli.cjs)`);

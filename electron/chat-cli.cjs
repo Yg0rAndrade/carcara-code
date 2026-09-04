@@ -227,9 +227,12 @@ const ADAPTERS = {
     bin: 'agy',
     mode: 'perTurn',
     text: true, // agy só tem `-p` (texto puro), sem JSON — stdout vira eventos de texto
-    buildArgs: ({ prompt, hasHistory } = {}) => {
+    buildArgs: ({ prompt, hasHistory, yolo } = {}) => {
       const a = [];
       if (hasHistory) a.push('--continue'); // retoma a conversa mais recente
+      // Mesma preferência do modo terminal (Configurações › IAs): sem ela o agy pararia
+      // pedindo permissão num processo que não tem para onde perguntar.
+      if (yolo) a.push('--dangerously-skip-permissions');
       a.push('-p', String(prompt ?? ''));
       return a;
     },

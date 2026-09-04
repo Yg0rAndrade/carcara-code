@@ -56,6 +56,19 @@ describe('buildResumeCommand', () => {
       'codex resume xy12',
     );
   });
+  it('agyYolo acrescenta o --dangerously-skip-permissions do agy', () => {
+    expect(buildResumeCommand('agy', {}, '', { agyYolo: true })).toBe(
+      'agy --dangerously-skip-permissions',
+    );
+    expect(buildResumeCommand('agy', { resume: { agy: 'abc123' } }, '', { agyYolo: true })).toBe(
+      'agy --conversation=abc123 --dangerously-skip-permissions',
+    );
+    expect(buildResumeCommand('agy', {}, '', { agyYolo: false })).toBe('agy');
+  });
+  it('agyYolo não vaza pras outras CLIs', () => {
+    expect(buildResumeCommand('codex', {}, '', { agyYolo: true })).toBe('codex');
+    expect(buildResumeCommand('claude', {}, '', { agyYolo: true })).toBe('claude');
+  });
   it('custom usa a string do projeto (ou claude se vazia)', () => {
     expect(buildResumeCommand('custom', {}, 'gemini')).toBe('gemini');
     expect(buildResumeCommand('custom', {}, '  ')).toBe('claude');

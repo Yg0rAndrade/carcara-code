@@ -32,6 +32,7 @@ import {
   GitBranch,
   Container,
   Fish,
+  ShieldOff,
 } from 'lucide-react';
 import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
@@ -347,6 +348,7 @@ export function SettingsModal({
   const [confirmInstall, setConfirmInstall] = useState(null); // key da CLI ausente a confirmar
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
+  const [agyYolo, setAgyYolo] = useState(false); // Antigravity sobe sem pedir permissão
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
   const [wordWrap, setWordWrap] = useState(false); // quebrar linhas longas no editor (estilo VS Code)
   const [shells, setShells] = useState([]); // shells instalados detectados no main { id, label }
@@ -363,6 +365,10 @@ export function SettingsModal({
     window.api
       .getNotify()
       .then((r) => setNotify(r?.enabled !== false))
+      .catch(() => {});
+    window.api
+      .getAgyYolo?.()
+      .then((r) => setAgyYolo(r?.enabled === true))
       .catch(() => {});
     // Shells instalados + escolha atual (detecção roda no main).
     window.api
@@ -390,6 +396,16 @@ export function SettingsModal({
         setShellPref(r.current || 'auto');
       })
       .catch(() => {});
+  };
+
+  // Vale pras PRÓXIMAS abas do Antigravity: o comando é montado quando a aba sobe, e
+  // uma sessão já aberta continua com a flag que tinha ao nascer.
+  const toggleAgyYolo = () => {
+    setAgyYolo((v) => {
+      const next = !v;
+      window.api.setAgyYolo?.(next);
+      return next;
+    });
   };
 
   const toggleNotify = () => {
@@ -667,6 +683,35 @@ export function SettingsModal({
                     </span>
                     {t('settings.aiIntroPost')}
                   </p>
+
+                  {/* Preferência do Antigravity, e não de um projeto: o `agy` tem um modo
+                      de aprovar tudo sozinho, e quem liga isso liga pra máquina inteira.
+                      Fica antes da lista porque é o único ajuste global desta aba. */}
+                  <div className="mt-4 flex items-start justify-between gap-4 rounded-lg border p-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                        <CliBadge optKey="agy" small /> {t('settings.agyYoloTitle')}
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t('settings.agyYoloHelp')}
+                      </p>
+                      <code className="mt-2 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                        agy --dangerously-skip-permissions
+                      </code>
+                      {agyYolo && (
+                        <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
+                          <ShieldOff aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                          {t('settings.agyYoloWarn')}
+                        </p>
+                      )}
+                    </div>
+                    <Switch
+                      checked={agyYolo}
+                      onCheckedChange={toggleAgyYolo}
+                      title={agyYolo ? t('settings.agyYoloOn') : t('settings.agyYoloOff')}
+                      className="mt-0.5"
+                    />
+                  </div>
 
                   {/* O card "Chat em vez do terminal" (beta) saiu daqui: o painel ainda está em
                       construção. A fiação continua no chatModeContext, atrás do flag

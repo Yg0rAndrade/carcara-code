@@ -29,11 +29,17 @@ function effectiveCli(sessionMeta, ais) {
 }
 
 // Comando das CLIs não-claude (com resume quando há id salvo em sessionMeta.resume).
-function buildResumeCommand(cli, sessionMeta, custom) {
+// `opts.agyYolo` vem da preferência global do Antigravity (Configurações › IAs) e
+// acrescenta o `--dangerously-skip-permissions` do próprio agy: ele aprova sozinho
+// cada pedido de ferramenta, em vez de parar a cada um esperando um sim.
+function buildResumeCommand(cli, sessionMeta, custom, opts = {}) {
   const s = sessionMeta || {};
   const r = s.resume || {};
   if (cli === 'opencode') return r.opencode ? `opencode --session ${r.opencode}` : 'opencode';
-  if (cli === 'agy') return r.agy ? `agy --conversation=${r.agy}` : 'agy';
+  if (cli === 'agy') {
+    const base = r.agy ? `agy --conversation=${r.agy}` : 'agy';
+    return opts.agyYolo ? `${base} --dangerously-skip-permissions` : base;
+  }
   if (cli === 'codex') return r.codex ? `codex resume ${r.codex}` : 'codex';
   if (cli === 'custom') return (custom || '').trim() || 'claude';
   if (cli === 'carcara') return ''; // motor headless (OpenCode) via CarcaraChat, sem terminal

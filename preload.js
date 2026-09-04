@@ -113,6 +113,11 @@ contextBridge.exposeInMainWorld('api', {
   setActiveProject: (projectPath) => ipcRenderer.send('activity:setActive', { projectPath }),
   getNotify: () => ipcRenderer.invoke('notify:get'),
   setNotify: (enabled) => ipcRenderer.invoke('notify:set', { enabled }),
+
+  // Antigravity sem pedir permissão (--dangerously-skip-permissions). Preferência
+  // global, lida a cada nova aba que sobe o `agy`.
+  getAgyYolo: () => ipcRenderer.invoke('agyYolo:get'),
+  setAgyYolo: (enabled) => ipcRenderer.invoke('agyYolo:set', { enabled }),
   getLang: () => ipcRenderer.invoke('lang:get'),
   setLang: (lang) => ipcRenderer.invoke('lang:set', { lang }),
 

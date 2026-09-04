@@ -5,6 +5,13 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Antigravity sem pedir permissão:** um interruptor novo em Configurações › IAs sobe o Antigravity
+  com o `--dangerously-skip-permissions` dele. Ligado, o `agy` aprova sozinho cada pedido de
+  ferramenta em vez de parar a cada um esperando um sim. Vem desligado e vale para as próximas abas
+  que subirem o Antigravity, não para as que já estão abertas.
+
 ### Corrigido
 
 - **Conversas do Codex voltando em branco para quem atualizou o Codex:** da versão 0.148 em diante o

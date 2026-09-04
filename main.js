@@ -757,7 +757,11 @@ async function buildLaunchCommand(sessionId, projectPath) {
     // (capture:true), pra permitir o resume no próximo restart.
     return { cmd: reader.cmd, capture: true, histId: null, cli };
   }
-  return { cmd: aiCli.buildResumeCommand(cli, s, custom), capture: false, cli };
+  return {
+    cmd: aiCli.buildResumeCommand(cli, s, custom, { agyYolo: agyYoloEnabled(c) }),
+    capture: false,
+    cli,
+  };
 }
 
 // Salva o id real da conversa (Claude/Codex) amarrado à aba, pra retomar no restart.
@@ -2571,7 +2575,12 @@ function ensurePersistentChat(sessionId, projectPath, adapter) {
 // --- Por turno (codex/agy): 1 processo por mensagem ---
 function runChatTurn(sessionId, projectPath, adapter, text) {
   const resumeId = chatResumeIdFor(sessionId, projectPath, adapter.cli);
-  const args = adapter.buildArgs({ resumeId, prompt: text, hasHistory: chatSeen.has(sessionId) });
+  const args = adapter.buildArgs({
+    resumeId,
+    prompt: text,
+    hasHistory: chatSeen.has(sessionId),
+    yolo: adapter.cli === 'agy' && agyYoloEnabled(),
+  });
   const proc = spawn(adapter.bin, args, chatSpawnOpts(projectPath, false));
   chatTurnProcs.set(sessionId, proc);
   let buf = '';
@@ -2911,6 +2920,14 @@ function notifyEnabled() {
   return loadConfig().notify !== false; // padrão: ligado
 }
 
+// Antigravity sem parar pra pedir permissão: sobe o `agy` com o
+// `--dangerously-skip-permissions` da própria CLI. Padrão DESLIGADO — quem liga é o
+// usuário, nas Configurações › IAs, sabendo que a partir dali o agy edita arquivo e
+// roda comando sem confirmar nada. Aceita um config já carregado pra não reler o disco.
+function agyYoloEnabled(cfg) {
+  return (cfg || loadConfig()).agyYolo === true;
+}
+
 function emitActivity(entry, state, extra) {
   safeSend('activity:state', {
     projectPath: entry.projectPath,
@@ -3000,6 +3017,13 @@ function activityOnData(entry, data) {
 // o projeto que você está olhando.
 ipcMain.on('activity:setActive', (evt, { projectPath }) => {
   activeProjectPath = projectPath || null;
+});
+ipcMain.handle('agyYolo:get', () => ({ enabled: agyYoloEnabled() }));
+ipcMain.handle('agyYolo:set', (evt, { enabled }) => {
+  const c = loadConfig();
+  c.agyYolo = !!enabled;
+  saveConfig(c);
+  return { ok: true };
 });
 ipcMain.handle('notify:get', () => ({ enabled: notifyEnabled() }));
 ipcMain.handle('notify:set', (evt, { enabled }) => {
