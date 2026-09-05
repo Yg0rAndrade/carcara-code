@@ -318,8 +318,21 @@ describe('idFromPath', () => {
     ).toBe(ID_A);
   });
 
+  // REGRESSÃO: este bloco só tinha caminho de Windows e passava no meu Windows, mas o
+  // idFromPath usava path.basename, que só entende o separador do sistema ANFITRIÃO. No
+  // Linux e no macOS o caminho voltava inteiro, a âncora ^rollout- nunca casava e o teste
+  // derrubava a CI e o build de macOS da v0.1.14. Os dois separadores ficam aqui pra
+  // sempre: o parser não pode depender de onde está rodando.
+  it('tira o uuid tanto de caminho do Windows quanto de POSIX', () => {
+    const nome = 'rollout-2026-08-13T12-48-50-' + ID_A + '.jsonl';
+    expect(codex.idFromPath('C:\\x\\sessions\\2026\\08\\13\\' + nome)).toBe(ID_A);
+    expect(codex.idFromPath('/home/dev/.codex/sessions/2026/08/13/' + nome)).toBe(ID_A);
+    expect(codex.idFromPath(nome)).toBe(ID_A);
+  });
+
   it('caminho que não é rollout, ou vazio, → null', () => {
     expect(codex.idFromPath('C:\\x\\state_5.sqlite')).toBeNull();
+    expect(codex.idFromPath('/home/dev/state_5.sqlite')).toBeNull();
     expect(codex.idFromPath(null)).toBeNull();
   });
 });

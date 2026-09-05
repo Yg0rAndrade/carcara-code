@@ -286,8 +286,17 @@ const appServer = require('./codex-app-server.cjs');
 
 // Uuid embutido no caminho de um rollout. É o que liga o id antigo (gravado no config
 // pelo 0.1.13, raspado do nome do arquivo) ao thread id novo da mesma conversa.
+// Ultimo segmento de um caminho, aceitando os DOIS separadores. Nao usa path.basename
+// de proposito: ele so entende o separador do sistema ANFITRIAO, entao um caminho do
+// Windows lido no Linux/macOS voltava inteiro e a ancora ^rollout- nunca casava. O
+// mesmo cuidado que o normPath ja tinha logo acima.
+function lastSegment(p) {
+  const parts = String(p).split(/[\\/]+/);
+  return parts[parts.length - 1] || '';
+}
+
 function idFromPath(p) {
-  const m = p ? ROLLOUT_RE.exec(path.basename(String(p))) : null;
+  const m = p ? ROLLOUT_RE.exec(lastSegment(p)) : null;
   return m ? m[1] : null;
 }
 
