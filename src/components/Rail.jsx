@@ -120,7 +120,7 @@ export function Rail({
     el.scrollTop += dy;
     autoScrollRef.current.raf = requestAnimationFrame(tickAutoScroll);
   };
-  const AUTO_SCROLL_EDGE = 46; // px de borda sensível
+  const AUTO_SCROLL_EDGE = 36; // px de borda sensível (menos de uma linha de ícone)
   const AUTO_SCROLL_MAX = 16; // px por quadro no limite
   const onListDragOver = (e) => {
     e.preventDefault();
@@ -563,7 +563,11 @@ export function Rail({
         ref={listRef}
         className="no-scrollbar flex min-h-0 flex-1 flex-wrap content-start justify-center gap-2.5 overflow-y-auto px-2 py-1.5"
         onDragOver={onListDragOver}
-        onDragLeave={stopAutoScroll}
+        onDragLeave={(e) => {
+          // dragleave sobe dos filhos também; só para quando o cursor saiu MESMO da
+          // lista, senão a rolagem engasgava a cada ícone que o ponteiro cruzava.
+          if (!e.currentTarget.contains(e.relatedTarget)) stopAutoScroll();
+        }}
         onDrop={(e) => {
           e.preventDefault();
           commitDrop();

@@ -7,6 +7,21 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ### Adicionado
 
+- **Comando de run por projeto:** a aba **Projetos** ganhou, por projeto, a escolha entre
+  **Automático** e **Personalizado** para o comando que sobe o Preview, mais um interruptor de
+  **abrir o Preview automaticamente**. Antes o comando era adivinhado do `package.json` e ninguém
+  podia interferir, o que travava todo projeto cujo "rodar" não é um servidor web. O caso gritante
+  era abrir o próprio Carcará dentro do Carcará: o comando de dev dele sobe o Electron, não um site,
+  e o Preview ficava para sempre procurando a porta. No modo Automático a tela agora mostra qual
+  comando a detecção resolveu. No Personalizado você escreve a linha, e pode pôr `{port}` onde a
+  porta entra (ela também continua chegando em `PORT`).
+- **Escolha da IA ao adicionar um projeto:** depois de selecionar a pasta, o app pergunta quais IAs
+  aquele projeto vai usar, já marcando as que estão instaladas na máquina. Antes todo projeto novo
+  nascia em Claude Code por padrão, e quem não tem o Claude instalado só descobria isso quando a
+  primeira aba tentava subir um comando que não existe.
+- **Arrastar uma tarefa do Kanban para o chat:** passar o mouse num card mostra uma alça; arraste
+  por ela e solte no terminal do chat que o título e o corpo da tarefa colam no prompt, do mesmo
+  jeito que arrastar um arquivo já colava o caminho. Mover o card entre colunas continua igual.
 - **Antigravity sem pedir permissão:** um interruptor novo em Configurações › IAs sobe o Antigravity
   com o `--dangerously-skip-permissions` dele. Ligado, o `agy` aprova sozinho cada pedido de
   ferramenta em vez de parar a cada um esperando um sim. Vem desligado e vale para as próximas abas
@@ -14,6 +29,16 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 
 ### Corrigido
 
+- **Arrastar um projeto para dentro do outro virava reordenação:** ao parar no centro de um ícone
+  para criar ou entrar numa pasta, a barra deslizava o projeto arrastado para aquela posição antes
+  da hora. O ícone de destino saía de baixo do cursor e a pasta nunca abria. Agora, com o cursor no
+  centro de um alvo, o deslize espera.
+- **Barra de projetos que não rolava durante o arraste:** em lista longa, arrastar um projeto para
+  um lugar fora da parte visível era impossível. Encostar no topo ou no fim da barra durante o
+  arraste agora rola sozinho. Trocar de projeto pela busca também traz o ícone ativo para o campo de
+  visão.
+- **Anel do projeto ativo cortado no primeiro ícone:** o anel laranja é desenhado por fora do ícone e
+  o primeiro da lista ficava colado no limite da área de rolagem, perdendo um pedaço em cima.
 - **Não dava para copiar texto do markdown na aba Código:** ao apertar Ctrl, a seleção sumia e o
   Ctrl+C não copiava nada, obrigando a abrir o arquivo em outro editor. O preview de markdown era
   reconstruído do zero a cada re-render da tela, e o navegador descarta a seleção quando os

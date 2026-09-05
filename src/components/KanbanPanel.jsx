@@ -19,11 +19,13 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   TrashIcon,
+  GripVerticalIcon,
 } from 'lucide-react';
 import { EmptyState } from './ui/empty-state.jsx';
 import { Button } from './ui/button.jsx';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
+import { TASK_MIME, formatDroppedTask } from '@/lib/dragPaths.js';
 import {
   parseBoard,
   moveCard,
@@ -197,9 +199,15 @@ function InlineTitle({ raw }) {
   );
 }
 
-// Sem handle: o card inteiro é a alça. Sem checkbox na face — concluir é uma ação
-// deliberada, mora no modal (e o card ficaria disputando alvo de clique com ela).
-function Card({ card, index, column, onOpen }) {
+// Sem handle PRA MOVER: o card inteiro é a alça. Sem checkbox na face — concluir é uma
+// ação deliberada, mora no modal (e o card ficaria disputando alvo de clique com ela).
+//
+// A única alça é a de EXPORTAR (o grip que aparece no hover), e ela existe porque os
+// dois arrastos vivem em mundos diferentes: mover card é dnd-kit (pointer-based, imune
+// ao bug de <webview> — ver o topo do arquivo), enquanto soltar no terminal exige o
+// arrasto NATIVO do HTML, que é o único que carrega dataTransfer. Marcar o card inteiro
+// como `draggable` colocaria os dois disputando o mesmo mousedown.
+function Card({ card, index, column, onOpen, t }) {
   const { ref, isDragging } = useSortable({
     id: card.id,
     index,
@@ -218,12 +226,35 @@ function Card({ card, index, column, onOpen }) {
       className={cn(
         // select-none: sem isto o arraste pinta o texto do card de azul no meio do
         // caminho, que foi o sintoma de quando o sensor estava morto.
-        'select-none rounded-md border bg-card p-2 text-[13px] shadow-sm transition-colors hover:border-primary/40',
+        'group relative select-none rounded-md border bg-card p-2 text-[13px] shadow-sm transition-colors hover:border-primary/40',
         isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab',
         card.done && 'opacity-60',
       )}
     >
-      <div className={cn('leading-snug text-muted-foreground', card.done && 'line-through')}>
+      {/* Alça de arrastar a tarefa pro terminal do chat. O stopPropagation no ponteiro é
+          o que impede o dnd-kit de acordar e o modal de abrir: sem ele os dois arrastos
+          brigam pelo mesmo gesto e nenhum funciona direito. */}
+      <span
+        draggable
+        title={t('kanban.drag_to_chat')}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        onDragStart={(e) => {
+          e.stopPropagation();
+          try {
+            // 'copyMove' e não 'move': o terminal solta com dropEffect 'copy' e o
+            // Chromium anula o drop quando a origem não permite — mesma pegadinha
+            // documentada no onTreeDragStart da árvore de arquivos.
+            e.dataTransfer.effectAllowed = 'copyMove';
+            e.dataTransfer.setData(TASK_MIME, formatDroppedTask(card.titleRaw, card.bodyRaw));
+          } catch {}
+        }}
+        className="absolute right-0.5 top-0.5 hidden cursor-grab text-muted-foreground/50 hover:text-foreground group-hover:block [&_svg]:size-3.5"
+      >
+        <GripVerticalIcon />
+      </span>
+      <div className={cn('pr-4 leading-snug text-muted-foreground', card.done && 'line-through')}>
         <InlineTitle raw={card.titleRaw} />
       </div>
       {bodyLines > 0 && (
@@ -448,7 +479,7 @@ function Column({ col, cards, showDone, onOpen, onAdd, onColor, onRename, onDele
           />
         )}
         {cards.map((card, i) => (
-          <Card key={card.id} card={card} index={i} column={col.name} onOpen={onOpen} />
+          <Card key={card.id} card={card} index={i} column={col.name} onOpen={onOpen} t={t} />
         ))}
         {cards.length === 0 && !adding && (
           <div className="rounded-md border border-dashed py-6 text-center text-[11px] text-muted-foreground/60">

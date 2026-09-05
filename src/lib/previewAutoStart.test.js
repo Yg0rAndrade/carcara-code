@@ -69,3 +69,34 @@ describe('decideAutoStart', () => {
     );
   });
 });
+
+// "Abrir o Preview automaticamente" desligado no projeto (Configurações › Projetos).
+// O caso que motivou o interruptor: projeto cujo comando de dev não sobe site nenhum.
+describe('decideAutoStart com auto-start desligado', () => {
+  it('não sobe servidor sozinho', () => {
+    const d = decideAutoStart({ ...NEXT, running: false, handled: false, autoStart: false });
+    expect(d.action).toBe('empty');
+    expect(d.markHandled).toBe(true);
+  });
+
+  it('servidor que a pessoa subiu na mão continua aparecendo', () => {
+    expect(
+      decideAutoStart({
+        ...NEXT,
+        running: true,
+        statusUrl: 'http://localhost:8082',
+        autoStart: false,
+      }).action,
+    ).toBe('show');
+    expect(decideAutoStart({ ...NEXT, hasUrl: true, autoStart: false }).action).toBe('show');
+  });
+
+  it('servidor subindo sem porta ainda: acompanha, não ignora', () => {
+    expect(decideAutoStart({ ...NEXT, running: true, autoStart: false }).action).toBe('attach');
+  });
+
+  it('ligado (padrão) mantém o comportamento de sempre', () => {
+    expect(decideAutoStart({ ...NEXT, running: false, handled: false }).action).toBe('start');
+    expect(decideAutoStart({ ...NEXT, running: false, autoStart: true }).action).toBe('start');
+  });
+});

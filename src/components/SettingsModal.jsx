@@ -338,6 +338,7 @@ export function SettingsModal({
   const [projects, setProjects] = useState([]);
   const [sel, setSel] = useState({}); // path -> { ais, custom }
   const [ports, setPorts] = useState({}); // path -> { staticPort, currentPort, draft, error }
+  const [runs, setRuns] = useState({}); // path -> { mode, command, autoStart, detected }
   // path -> { loading, scanned, list: [{port,pid,name,isPreview}] }
   const [openPorts, setOpenPorts] = useState({});
   const [killTarget, setKillTarget] = useState(null); // { path, port, name }
@@ -471,6 +472,10 @@ export function SettingsModal({
         }),
       );
       setPorts(Object.fromEntries(portEntries));
+      const runEntries = await Promise.all(
+        list.map(async (p) => [p.path, (await window.api.getRun(p.path)) || {}]),
+      );
+      setRuns(Object.fromEntries(runEntries));
     })();
   }, [open]);
 
@@ -580,6 +585,24 @@ export function SettingsModal({
         error: res.warnWellKnown ? t('settings.portWellKnown') : '',
       },
     }));
+  };
+
+  // --- Comando de run por projeto (automatico vs. personalizado) ---
+  const runEntry = (path) =>
+    runs[path] || { mode: 'auto', command: '', autoStart: true, detected: null };
+  // Grava e adota a resposta do main: ele normaliza (comando vazio volta pro automatico) e
+  // recalcula o `detected`, entao a tela nunca fica mostrando um estado que o disco nao tem.
+  const saveRun = async (path, patch) => {
+    const next = { ...runEntry(path), ...patch };
+    setRuns((s) => ({ ...s, [path]: next })); // otimista: o campo nao pode piscar ao digitar
+    const res = (await window.api.setRun(path, next)) || {};
+    if (res.ok)
+      setRuns((s) => ({
+        ...s,
+        // Mantem o texto que a pessoa digitou mesmo no modo automatico (o main guarda), pra
+        // alternar entre os dois modos nao apagar o comando dela.
+        [path]: { ...s[path], ...res, command: next.command },
+      }));
   };
 
   // Varre as portas abertas do projeto sob demanda (sem polling); clicar no ✕ de um chip
@@ -857,6 +880,92 @@ export function SettingsModal({
                                 {t('settings.aiMinOne')}
                               </p>
                             )}
+
+                            {/* Como este projeto roda: o comando que sobe o Preview e se
+                                ele sobe sozinho. Antes o comando era adivinhado do
+                                package.json e não dava pra interferir — o que quebrava em
+                                todo projeto cujo "rodar" não é um servidor web. */}
+                            {(() => {
+                              const re = runEntry(p.path);
+                              const custom = re.mode === 'custom';
+                              return (
+                                <div className="mt-3 border-t pt-3">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="flex-1 text-[13px] font-medium">
+                                      {t('settings.runCommand')}
+                                    </span>
+                                    <div className="flex overflow-hidden rounded-md border">
+                                      {['auto', 'custom'].map((m) => (
+                                        <button
+                                          key={m}
+                                          type="button"
+                                          aria-pressed={re.mode === m}
+                                          onClick={() => saveRun(p.path, { mode: m })}
+                                          className={cn(
+                                            'px-2.5 py-1 text-[12px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                            re.mode === m && 'bg-primary text-primary-foreground',
+                                          )}
+                                        >
+                                          {t(
+                                            m === 'auto'
+                                              ? 'settings.runModeAuto'
+                                              : 'settings.runModeCustom',
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {custom ? (
+                                    <>
+                                      <Input
+                                        value={re.command || ''}
+                                        onChange={(e) =>
+                                          setRuns((s) => ({
+                                            ...s,
+                                            [p.path]: {
+                                              ...runEntry(p.path),
+                                              command: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                        onBlur={() => saveRun(p.path, {})}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') saveRun(p.path, {});
+                                        }}
+                                        placeholder={t('settings.runCommandPlaceholder')}
+                                        aria-label={t('settings.runCommand')}
+                                        className="mt-2 h-8 font-mono text-xs"
+                                      />
+                                      <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                        {t('settings.runCommandHint')}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    // Mostra o que o automático resolveu: sem isto ele é uma
+                                    // caixa-preta e ninguém sabe por que o Preview não sobe.
+                                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                      {re.detected
+                                        ? t('settings.runDetected', { cmd: re.detected })
+                                        : t('settings.runDetectedNone')}
+                                    </p>
+                                  )}
+
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <Switch
+                                      checked={re.autoStart !== false}
+                                      onCheckedChange={(v) => saveRun(p.path, { autoStart: v })}
+                                    />
+                                    <span className="flex-1 text-[13px] font-medium">
+                                      {t('settings.runAutoStart')}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                    {t('settings.runAutoStartHint')}
+                                  </p>
+                                </div>
+                              );
+                            })()}
 
                             {/* Portas do projeto: fixa (o que ele VAI usar) e no ar (o que ele
                                 está usando agora) — dois assuntos irmãos, lado a lado, em vez de

@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatDroppedPaths,
+  formatDroppedTask,
   MOVE_MIME,
+  TASK_MIME,
   hasExternalFiles,
   externalPathsFromDrop,
   dropPathsText,
+  dropTaskText,
+  dropInsertText,
 } from './dragPaths.js';
 
 describe('MOVE_MIME', () => {
@@ -86,5 +90,83 @@ describe('dropPathsText', () => {
 
   it('nada arrastável → string vazia', () => {
     expect(dropPathsText({ getData: () => '', files: [] }, () => '')).toBe('');
+  });
+});
+
+describe('TASK_MIME', () => {
+  it('é um tipo próprio, separado do da árvore', () => {
+    expect(TASK_MIME).toBe('application/x-ygor-task');
+    expect(TASK_MIME).not.toBe(MOVE_MIME);
+  });
+});
+
+describe('formatDroppedTask', () => {
+  it('junta título e corpo, tirando a indentação do item de lista', () => {
+    const body = '  primeira\n  segunda\n';
+    expect(formatDroppedTask('**Titulo**', body)).toBe('**Titulo**\nprimeira\nsegunda ');
+  });
+
+  it('mantém o degrau relativo de uma sub-lista', () => {
+    const body = '  pai\n    filho\n';
+    expect(formatDroppedTask('T', body)).toBe('T\npai\n  filho ');
+  });
+
+  it('corpo vazio vira só o título', () => {
+    expect(formatDroppedTask('  Só título  ', '')).toBe('Só título ');
+    expect(formatDroppedTask('T', '   \n\n')).toBe('T ');
+  });
+
+  it('descarta linhas em branco das pontas antes de medir a indentação', () => {
+    expect(formatDroppedTask('T', '\n\n    corpo\n\n')).toBe('T\ncorpo ');
+  });
+
+  it('aceita CRLF', () => {
+    expect(formatDroppedTask('T', '  a\r\n  b')).toBe('T\na\nb ');
+  });
+
+  it('sem título nem corpo devolve string vazia', () => {
+    expect(formatDroppedTask('', '')).toBe('');
+    expect(formatDroppedTask(null, null)).toBe('');
+  });
+});
+
+describe('dropTaskText', () => {
+  it('lê o payload da tarefa', () => {
+    const dt = { getData: (t) => (t === TASK_MIME ? 'T\ncorpo ' : '') };
+    expect(dropTaskText(dt)).toBe('T\ncorpo ');
+  });
+
+  it('drop que não é de tarefa devolve string vazia', () => {
+    expect(dropTaskText({ getData: () => '' })).toBe('');
+    expect(dropTaskText(null)).toBe('');
+    expect(dropTaskText({})).toBe('');
+  });
+
+  it('payload só de espaço não conta como tarefa', () => {
+    expect(dropTaskText({ getData: () => '   ' })).toBe('');
+  });
+});
+
+describe('dropInsertText', () => {
+  it('a tarefa tem prioridade sobre o caminho', () => {
+    const dt = {
+      getData: (t) => (t === TASK_MIME ? 'T\ncorpo ' : 'C:\\a.js'),
+      files: [],
+    };
+    expect(dropInsertText(dt, () => '')).toBe('T\ncorpo ');
+  });
+
+  it('sem tarefa, cai no caminho da árvore', () => {
+    const dt = { getData: (t) => (t === MOVE_MIME ? 'C:\\a.js' : ''), files: [] };
+    expect(dropInsertText(dt, () => '')).toBe('C:\\a.js ');
+  });
+
+  it('sem tarefa nem MIME interno, cai no arquivo do SO', () => {
+    const dt = { getData: () => '', files: [{ __path: 'C:\\a.png' }] };
+    expect(dropInsertText(dt, (f) => f.__path)).toBe('C:\\a.png ');
+  });
+
+  it('nada arrastável → string vazia', () => {
+    expect(dropInsertText({ getData: () => '', files: [] }, () => '')).toBe('');
   });
 });

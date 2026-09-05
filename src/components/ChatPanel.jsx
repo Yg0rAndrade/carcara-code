@@ -34,7 +34,7 @@ import {
 import { cn } from '@/lib/utils';
 import { computeZone, ZONE_STYLE } from '@/lib/dropZones.js';
 import { AiPicker } from './AiPicker.jsx';
-import { MOVE_MIME, hasExternalFiles, dropPathsText } from '@/lib/dragPaths.js';
+import { MOVE_MIME, TASK_MIME, hasExternalFiles, dropInsertText } from '@/lib/dragPaths.js';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
 import { CarcaraChat } from '@/components/CarcaraChat.jsx';
@@ -1207,7 +1207,7 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   };
 
   // --- Arrastar arquivo(s) da árvore pra dentro do terminal ---
-  // Só reage ao tipo customizado da árvore (MOVE_MIME); arrasto de aba usa
+  // Só reage aos tipos customizados nossos (MOVE_MIME/TASK_MIME); arrasto de aba usa
   // 'text/plain' e é ignorado aqui, então os dois convivem sem conflito.
 
   // Rede de segurança: se o arrasto for cancelado (Esc) ou solto fora da janela,
@@ -1224,9 +1224,16 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   }, []);
 
   const onFilePathDragOver = (paneId, e) => {
-    // Aceita tanto o arrasto interno da árvore (MOVE_MIME) quanto arquivo(s) de FORA
-    // do app (Chrome/Explorador/Finder), que chegam como 'Files' no dataTransfer.
-    if (!e.dataTransfer.types.includes(MOVE_MIME) && !hasExternalFiles(e.dataTransfer)) return;
+    // Três origens aceitas: a árvore de arquivos (MOVE_MIME), um card do Kanban
+    // (TASK_MIME) e arquivo(s) de FORA do app (Chrome/Explorador/Finder), que chegam
+    // como 'Files' no dataTransfer. As três terminam no mesmo lugar: texto no prompt.
+    const types = e.dataTransfer.types;
+    if (
+      !types.includes(MOVE_MIME) &&
+      !types.includes(TASK_MIME) &&
+      !hasExternalFiles(e.dataTransfer)
+    )
+      return;
     e.preventDefault();
     try {
       e.dataTransfer.dropEffect = 'copy';
@@ -1241,10 +1248,10 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   };
 
   const onFilePathDrop = (pane, e) => {
-    // Interno (árvore) ou externo (arquivo do SO): o contrato único resolve os dois.
-    // No externo o caminho absoluto vem do webUtils.getPathForFile (via preload).
-    const text = dropPathsText(e.dataTransfer, window.api?.getDroppedPath);
-    if (!text) return; // não é um arrasto de arquivo
+    // Tarefa do Kanban, caminho da árvore ou arquivo do SO: o contrato único resolve os
+    // três. No externo o caminho absoluto vem do webUtils.getPathForFile (via preload).
+    const text = dropInsertText(e.dataTransfer, window.api?.getDroppedPath);
+    if (!text) return; // não é um arrasto que a gente cola
     e.preventDefault();
     e.stopPropagation();
     setFileDropPane(null);

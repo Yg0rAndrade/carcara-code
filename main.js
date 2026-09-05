@@ -33,6 +33,7 @@ const carcara = require('./electron/carcara/manager.cjs');
 const todosCore = require('./electron/claude-todos-core.cjs');
 const { initUpdater } = require('./electron/updater.cjs');
 const phpRuntime = require('./electron/php-runtime.cjs');
+const runCommand = require('./electron/run-command.cjs');
 const { reconcile: reconcileRail } = require('./electron/rail-core.cjs');
 const { LocalPty } = require('./electron/remote/localPty.cjs');
 const platform = require('./electron/platform.cjs');
@@ -888,6 +889,25 @@ ipcMain.handle('port:set', (evt, { projectPath, port }) => {
   saveConfig(c);
   return { ok: true, staticPort: n, warnWellKnown: WELL_KNOWN_PORTS.includes(n) };
 });
+// Comando de run do projeto: modo (automatico/personalizado), a linha personalizada e o
+// interruptor de abrir o Preview sozinho. Espelha o par port:get/port:set.
+ipcMain.handle('run:get', (evt, { projectPath }) => {
+  const run = runConfigFor(projectPath);
+  // `detected` e o que o modo Automatico resolveria agora: a tela mostra essa linha pra
+  // o automatico deixar de ser caixa-preta.
+  return { ...run, detected: detectedCommandLabel(projectPath) };
+});
+ipcMain.handle('run:set', (evt, { projectPath, mode, command, autoStart }) => {
+  const c = loadConfig();
+  c.projectRun = c.projectRun || {};
+  const next = runCommand.normalizeRun({ mode, command, autoStart });
+  // Config no padrao (automatico, abrir sozinho) nao vira entrada no arquivo: sem isso o
+  // config engorda com um objeto por projeto que ninguem configurou.
+  if (next.mode === 'auto' && !next.command && next.autoStart) delete c.projectRun[projectPath];
+  else c.projectRun[projectPath] = next;
+  saveConfig(c);
+  return { ok: true, ...next, detected: detectedCommandLabel(projectPath) };
+});
 // Portas abertas por um projeto (dev servers, filhos de terminal/shell/chat/preview).
 // União com o Preview do app (sempre presente, mesmo que a varredura de árvore não pegue).
 ipcMain.handle('ports:list', async (_e, { projectPath }) => {
@@ -1411,6 +1431,7 @@ ipcMain.handle('projects:list', () => {
         hasPkg: false,
         running: false,
         previewType: null,
+        autoStart: true,
         icon: mr.icon || null,
         color: mr.color || null,
         remote: true,
@@ -1423,12 +1444,16 @@ ipcMain.handle('projects:list', () => {
       hasPkg = true;
     } catch {}
     const m = meta[p] || {};
+    const run = runConfigFor(p, cfg);
     return {
       name: m.name || path.basename(p),
       path: p,
       hasPkg,
       running: runningServers.has(p),
-      previewType: phpRuntime.detectProjectType(p), // node|php|null (preview PHP puro)
+      // Comando escrito pela pessoa vence a deteccao: uma pasta sem package.json e sem PHP
+      // e servivel quando ela mesma disse o que roda ali.
+      previewType: runCommand.isCustom(run) ? 'custom' : phpRuntime.detectProjectType(p),
+      autoStart: run.autoStart, // abrir o Preview sozinho ao entrar no projeto
       icon: m.icon || findFavicon(p), // imagem escolhida à mão vence o favicon
       color: m.color || null, // null → o rail usa colorFor(name)
       remote: false,
@@ -4339,6 +4364,23 @@ function detectDevCommand(projectPath) {
   return { manager: pickPackageManager(projectPath), script, pkg };
 }
 
+// --- Comando de run por projeto (automatico vs. personalizado) ---
+// A parte pura (modo, normalizacao, {port}) mora em electron/run-command.cjs; aqui fica
+// so o que precisa de config e de disco. Ver PLANO-COMANDO-RUN-POR-PROJETO.md.
+function runConfigFor(projectPath, cfg) {
+  const c = cfg || loadConfig();
+  return runCommand.normalizeRun(c.projectRun?.[projectPath]);
+}
+
+// A linha que o modo Automatico resolveria AGORA, pra tela mostrar em vez de esconder.
+// null quando nao ha nada detectavel (nem script no package.json, nem PHP).
+function detectedCommandLabel(projectPath) {
+  const cmd = detectDevCommand(projectPath);
+  if (cmd) return `${cmd.manager} run ${cmd.script}`;
+  if (phpRuntime.detectProjectType(projectPath) === 'php') return 'php -S';
+  return null;
+}
+
 function hasNodeModules(p) {
   try {
     fs.accessSync(path.join(p, 'node_modules'));
@@ -4633,11 +4675,49 @@ async function startPhpPreview(projectPath, decision) {
   return { running: true, starting: true, cmd: `php ${args.join(' ')}` };
 }
 
+// Sobe o Preview pelo comando que a PESSOA cadastrou (Configuracoes > Projetos), em vez
+// do script adivinhado no package.json. Existe porque a deteccao universal quebra em todo
+// projeto cujo "rodar" nao e um servidor web: o caso que motivou isto e abrir o proprio
+// Carcara dentro do Carcara, onde `npm run dev` sobe o Electron e o Preview ficava
+// eternamente procurando a porta.
+//
+// A porta continua sendo NOSSA escolha (fixa ou livre), mas nao da pra injetar --port numa
+// linha arbitraria: vai no ambiente (PORT) e, pra quem precisa dela na linha, o {port} do
+// comando e trocado aqui. Sem instalar dependencia: o comando pode nem ser de Node.
+async function startCustomPreview(projectPath, decision, run) {
+  const resolved = await resolveStartPort(projectPath, decision);
+  if (resolved.conflict) return { portConflict: true, port: resolved.port };
+  const port = resolved.port;
+
+  const entry = { proc: null, url: null, port: null, log: '' };
+  runningServers.set(projectPath, entry);
+  entry.chosenPort = port;
+
+  const line = runCommand.customCommandFor(run, port);
+  console.log(`[preview] ${path.basename(projectPath)} -> porta ${port} | ${line}`);
+  sendPhase(projectPath, `Porta escolhida: ${port}`);
+  sendPhase(projectPath, `Subindo (comando do projeto): ${line}`);
+
+  const env = { ...process.env, PORT: String(port), BROWSER: 'none', FORCE_COLOR: '1' };
+  // Linha inteira pro shell (`shell: true` com string): o comando vem escrito a mao, com
+  // aspas e operadores que so o shell sabe separar.
+  const proc = spawn(line, { cwd: projectPath, shell: true, env });
+  superviseServer({ projectPath, entry, proc, port });
+
+  return { running: true, starting: true, cmd: line };
+}
+
 ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
   if (runningServers.has(projectPath)) {
     const e = runningServers.get(projectPath);
     if (e.url) safeSend('preview:ready', { projectPath, url: e.url });
     return { running: true, url: e.url };
+  }
+  // Comando escrito pela pessoa vence qualquer deteccao, inclusive a de PHP: se ela
+  // digitou o que roda ali, adivinhar por cima seria ignorar a decisao dela.
+  const run = runConfigFor(projectPath);
+  if (runCommand.isCustom(run)) {
+    return startCustomPreview(projectPath, decision, run);
   }
   // Ramifica por tipo de projeto. Node é o fluxo de sempre (abaixo, INTOCADO).
   const projectType = phpRuntime.detectProjectType(projectPath);
@@ -4685,8 +4765,19 @@ ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
   sendPhase(projectPath, `Subindo: ${cmd.manager} ${args.join(' ')}`);
 
   const env = { ...process.env, PORT: String(port), BROWSER: 'none', FORCE_COLOR: '1' };
-  const startedAt = Date.now();
   const proc = spawn(cmd.manager, args, { cwd: projectPath, shell: true, env });
+  superviseServer({ projectPath, entry, proc, port });
+
+  return { running: true, starting: true, cmd: `${cmd.manager} ${args.join(' ')}` };
+});
+
+// Vigia um dev server que acabou de subir: acumula o log, procura a porta e avisa o
+// renderer quando o site responde. Compartilhado pelo fluxo de sempre (script do
+// package.json) e pelo comando personalizado do projeto - os dois sobem processos
+// diferentes, mas a espera pela porta e a saida sao identicas. O caminho de PHP tem a
+// propria copia (mensagem de erro de VC redist), de proposito.
+function superviseServer({ projectPath, entry, proc, port }) {
+  const startedAt = Date.now();
   entry.proc = proc;
 
   const markReady = (foundPort) => {
@@ -4756,9 +4847,7 @@ ipcMain.handle('preview:start', async (evt, { projectPath, decision }) => {
     safeSend('preview:exit', { projectPath });
   });
   proc.on('error', (e) => sendLog(projectPath, '\n[erro ao iniciar] ' + e.message + '\n'));
-
-  return { running: true, starting: true, cmd: `${cmd.manager} ${args.join(' ')}` };
-});
+}
 
 // Retorna o log já acumulado (pra reexibir quando o projeto é reaberto).
 ipcMain.handle('preview:log:get', (evt, { projectPath }) => {

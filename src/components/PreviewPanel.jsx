@@ -1373,6 +1373,9 @@ export function PreviewPanel({
         previewType: active.previewType,
         handled: autoStartedRef.current.has(active.path),
         sameProject: prevPath === active.path,
+        // Ausente no objeto antigo (projeto remoto, config nunca gravada) = ligado, que
+        // e o comportamento que o app sempre teve.
+        autoStart: active.autoStart !== false,
       });
       if (markHandled) autoStartedRef.current.add(active.path);
       if (action === 'keep') return; // log do erro de quem caiu continua à mostra
@@ -2040,9 +2043,12 @@ export function PreviewPanel({
               ) : (
                 <div className="absolute inset-0">
                   <EmptyState>
-                    {active.previewType != null
-                      ? t('preview.no_preview')
-                      : t('preview.no_preview_server')}
+                    {active.previewType == null
+                      ? t('preview.no_preview_server')
+                      : active.autoStart === false
+                        ? // Auto-start desligado neste projeto: nao e falha, e escolha.
+                          t('preview.no_preview_manual')
+                        : t('preview.no_preview')}
                     <Button
                       variant="secondary"
                       size="sm"

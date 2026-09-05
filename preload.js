@@ -46,6 +46,8 @@ contextBridge.exposeInMainWorld('api', {
   // Porta fixa por projeto (opcional).
   getPort: (projectPath) => ipcRenderer.invoke('port:get', { projectPath }),
   setPort: (projectPath, port) => ipcRenderer.invoke('port:set', { projectPath, port }),
+  getRun: (projectPath) => ipcRenderer.invoke('run:get', { projectPath }),
+  setRun: (projectPath, run) => ipcRenderer.invoke('run:set', { projectPath, ...run }),
   // Portas em LISTEN que pertencem ao projeto (terminais/preview e filhos). Sob demanda.
   listPorts: (projectPath) => ipcRenderer.invoke('ports:list', { projectPath }),
   killPort: (port) => ipcRenderer.invoke('ports:kill', { port }),

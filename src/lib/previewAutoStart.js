@@ -19,6 +19,7 @@
 //   previewType — null = projeto sem servidor pra subir
 //   handled     — este projeto já passou por este efeito nesta sessão
 //   sameProject — é re-run no mesmo projeto (não troca de projeto)
+//   autoStart   — o projeto quer o Preview subindo sozinho (Configurações › Projetos)
 //
 // Saída:
 //   action: 'show'   — tem URL: mostra o site
@@ -34,6 +35,7 @@ export function decideAutoStart({
   previewType = null,
   handled = false,
   sameProject = false,
+  autoStart = true,
 } = {}) {
   if (hasUrl) return { action: 'show', markHandled: true };
   if (running && statusUrl) return { action: 'show', markHandled: true };
@@ -41,6 +43,10 @@ export function decideAutoStart({
   if (previewType == null) return { action: 'empty', markHandled: running };
   // De pé, mas ainda sem porta: acompanha o que já está subindo — nunca sobe outro.
   if (running) return { action: 'attach', markHandled: true };
+  // Auto-start desligado no projeto: não sobe nada sozinho. Marca como tratado pra o
+  // botão Iniciar continuar sendo o único caminho, mesmo se o efeito re-rodar. Vale só
+  // pra este ramo: quem já está no ar continua sendo mostrado normalmente acima.
+  if (!autoStart) return { action: 'empty', markHandled: true };
   // Fora do ar e já tratado: o usuário parou, ou o servidor caiu. NÃO relança.
   // Num re-run do mesmo projeto nem mexe no modo, senão o log com o erro de quem
   // caiu some da tela justo quando o usuário precisa lê-lo.

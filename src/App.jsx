@@ -39,6 +39,7 @@ import { ResizeBar } from './components/ui/resize-bar.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { SetupScreen } from './components/SetupScreen.jsx';
 import { RemoteProjectModal } from '@/components/RemoteProjectModal.jsx';
+import { NewProjectAiModal } from '@/components/NewProjectAiModal.jsx';
 import { UpdatePill } from './components/UpdatePill.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
@@ -79,6 +80,9 @@ export default function App() {
   const [setupOpen, setSetupOpen] = useState(false);
   // Modal de "adicionar projeto remoto (SSH)" — aberto pelo menu do botão "+" do Rail.
   const [remoteOpen, setRemoteOpen] = useState(false);
+  // Pastas recém-adicionadas esperando a escolha de IA (modal). Array vindo do main,
+  // guardado no estado pra a referência ficar estável entre renders.
+  const [newProjectPaths, setNewProjectPaths] = useState([]);
   const closeSetup = () => {
     window.api.markSetupDone();
     setSetupOpen(false);
@@ -443,8 +447,12 @@ export default function App() {
   }, []);
 
   const addProjects = async () => {
-    await window.api.addProjects();
+    const res = await window.api.addProjects();
     reload();
+    // Pasta nova entrou: pergunta a IA na hora. Sem isso o projeto nascia em Claude Code
+    // pelo padrão do main, e quem não tem o Claude só descobria quando a primeira aba
+    // tentava subir um comando inexistente.
+    if (res?.paths?.length) setNewProjectPaths(res.paths);
   };
 
   // Abre um arquivo na aba "Código" do projeto ativo (vindo da paleta de comandos).
@@ -1005,6 +1013,10 @@ export default function App() {
         onClose={() => {
           setSettingsOpen(false);
           setSettingsAiInstall(null);
+          // A tela de Configuracoes mexe em coisas que a LISTA de projetos carrega
+          // (comando de run, abrir sozinho, porta fixa). Sem reler aqui, o objeto do
+          // projeto ativo fica velho e a mudanca so valeria no proximo boot.
+          reload();
         }}
       />
       <SetupScreen open={setupOpen} onClose={closeSetup} />
@@ -1012,6 +1024,16 @@ export default function App() {
         open={remoteOpen}
         onClose={() => setRemoteOpen(false)}
         onAdded={() => reload()}
+      />
+      <NewProjectAiModal
+        paths={newProjectPaths}
+        onClose={() => setNewProjectPaths([])}
+        onOpenInstall={(key) => {
+          setNewProjectPaths([]);
+          setSettingsAiInstall(key);
+          setSettingsTab('clis');
+          setSettingsOpen(true);
+        }}
       />
       <CommandPalette
         open={paletteOpen}
