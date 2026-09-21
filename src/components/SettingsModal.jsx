@@ -39,8 +39,9 @@ import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
 import { useDependencyStatus, DependencyCards } from './SetupScreen.jsx';
+import { ProjectAiChips } from './ProjectAiChips.jsx';
 import { cn } from '@/lib/utils';
-import { AI_OPTIONS, OPT, CliBadge } from '@/lib/aiOptions.jsx';
+import { OPT, CliBadge } from '@/lib/aiOptions.jsx';
 import { filterAndSortProjects } from '@/lib/projectFilter.js';
 import ygorPhoto from '@/assets/ygor/ygor-andrade.jpg';
 import { useT, useLang } from '@/lib/i18n';
@@ -505,15 +506,6 @@ export function SettingsModal({
       alive = false;
     };
   }, [open]);
-  // carcara não é uma CLI do catálogo (o motor OpenCode se auto-instala sob demanda),
-  // então é sempre "disponível" — nunca cai no fluxo de instalação. Ver [[carcara-add-ai-integration-points]].
-  const isInstalled = (key) =>
-    key === 'custom' ||
-    key === 'shell' ||
-    key === 'carcara' ||
-    !installedKeys ||
-    installedKeys.has(key);
-
   if (!open) return null;
 
   const toggle = (path, key) => {
@@ -834,52 +826,16 @@ export function SettingsModal({
                           </div>
 
                           <div className="p-3">
-                            <div className="flex flex-wrap gap-2">
-                              {AI_OPTIONS.filter((opt) => !opt.hidden).map((opt) => {
-                                const active = cur.ais.includes(opt.key);
-                                const missing = !isInstalled(opt.key);
-                                return (
-                                  <button
-                                    key={opt.key}
-                                    type="button"
-                                    aria-pressed={active}
-                                    onClick={() =>
-                                      missing ? setConfirmInstall(opt.key) : toggle(p.path, opt.key)
-                                    }
-                                    title={missing ? t('settings.aiClickToInstall') : t(opt.desc)}
-                                    className={cn(
-                                      // Altura fixa: os chips têm rótulos de tamanhos bem
-                                      // diferentes e, sem isso, a linha ficava serrilhada.
-                                      'flex h-9 items-center gap-2 rounded-md border px-2.5 text-[13px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                                      active && 'border-primary bg-muted ring-1 ring-primary',
-                                      missing && 'border-dashed opacity-60 grayscale',
-                                    )}
-                                  >
-                                    <CliBadge optKey={opt.key} />
-                                    {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
-                                    {missing && <span className="text-[11px]">⬇</span>}
-                                    {active && !missing && (
-                                      <Check className="size-3.5 text-primary" />
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {cur.ais.includes('custom') && (
-                              <Input
-                                value={cur.custom || ''}
-                                onChange={(e) => onCustom(p.path, e.target.value)}
-                                placeholder={t('settings.aiCustomPlaceholder')}
-                                className="mt-2.5 h-8 font-mono text-xs"
-                              />
-                            )}
-                            {/* O aviso só aparece quando explica algo: com uma IA marcada, ela
-                                não desmarca. Antes ele se repetia em TODO card, virando ruído. */}
-                            {cur.ais.length === 1 && (
-                              <p className="mt-2 text-[11px] text-muted-foreground">
-                                {t('settings.aiMinOne')}
-                              </p>
-                            )}
+                            {/* Aqui, clicar numa CLI ausente NÃO marca: abre a instalação.
+                                É o único lugar do app que faz isso — daí o onMissing. */}
+                            <ProjectAiChips
+                              ais={cur.ais}
+                              custom={cur.custom}
+                              installed={installedKeys}
+                              onToggle={(k) => toggle(p.path, k)}
+                              onCustom={(v) => onCustom(p.path, v)}
+                              onMissing={(k) => setConfirmInstall(k)}
+                            />
 
                             {/* Como este projeto roda: o comando que sobe o Preview e se
                                 ele sobe sozinho. Antes o comando era adivinhado do

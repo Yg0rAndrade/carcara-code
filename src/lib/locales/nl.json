@@ -49,7 +49,11 @@
     "menu_folder_rename": "Map hernoemen",
     "menu_folder_dissolve": "Map opheffen",
     "rename_save": "Opslaan",
-    "rename_cancel": "Annuleren"
+    "rename_cancel": "Annuleren",
+    "tab_general": "Algemeen",
+    "tab_ai": "AI",
+    "ai_hint": "Welke AI-CLI's dit project aanbiedt bij een nieuw tabblad.",
+    "ai_loading": "Laden…"
   },
   "app": {
     "no_project_selected": "Selecteer een project",
@@ -184,7 +188,8 @@
     "search_clear": "Wissen",
     "no_results": "Geen bestanden gevonden.",
     "empty": "Open een project.",
-    "link_title": "{name} — snelkoppeling (opent in Verkenner)"
+    "link_title": "{name} — snelkoppeling (opent in Verkenner)",
+    "refresh": "Bestanden opnieuw laden"
   },
   "code": {
     "tabs_select_file": "Selecteer een bestand",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Verwijderen met {n} taak/taken?",
     "column_menu": "Kolomopties",
     "rename_hint": "Dubbelklik om te hernoemen"
+  },
+  "remotePreview": {
+    "title": "Voorbeeld via SSH",
+    "subtitle": "Kies de poort waarop je server daar luistert. Carcará opent een tunnel en toont het hier alsof het lokaal is.",
+    "detected": "Luisterende poorten op de server",
+    "rescan": "Opnieuw zoeken",
+    "scanning": "Zoeken naar open poorten…",
+    "none": "Geen poort luistert. Start je server in de terminal en zoek opnieuw.",
+    "unknown_proc": "onbekend proces",
+    "loopback": "alleen localhost",
+    "manual": "Of typ de poort",
+    "open": "Openen",
+    "hint": "De tunnel luistert alleen op jouw machine (127.0.0.1) en sluit zodra je het project verwijdert of de app afsluit.",
+    "bad_port": "Ongeldige poort.",
+    "change_port": "Poort wijzigen",
+    "pick": "poort"
   }
 }

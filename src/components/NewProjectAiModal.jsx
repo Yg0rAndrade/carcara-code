@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Check, Download } from 'lucide-react';
-import { AI_OPTIONS, OPT, CliBadge } from '@/lib/aiOptions.jsx';
-import { alwaysAvailable, baseName, missingChosen, preselect } from '@/lib/newProjectAi.js';
+import { OPT } from '@/lib/aiOptions.jsx';
+import { baseName, missingChosen, preselect } from '@/lib/newProjectAi.js';
+import { ProjectAiChips, PICKABLE_AIS } from './ProjectAiChips.jsx';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useT } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 
 // Escolha da IA logo depois de adicionar uma pasta de projeto.
 //
@@ -17,7 +15,6 @@ import { cn } from '@/lib/utils';
 // `paths` são só as pastas que ENTRARAM agora (o main devolve isso em projects:add).
 // Fechar sem salvar é permitido: o projeto fica no padrão e a pessoa ajusta em
 // Configurações › IA por projeto.
-const PICKABLE = AI_OPTIONS.filter((o) => !o.hidden);
 
 export function NewProjectAiModal({ paths = [], onClose, onOpenInstall }) {
   const t = useT();
@@ -37,7 +34,7 @@ export function NewProjectAiModal({ paths = [], onClose, onOpenInstall }) {
       .then((set) => {
         if (!alive || !set) return;
         setInstalled(set);
-        const base = preselect(PICKABLE, set);
+        const base = preselect(PICKABLE_AIS, set);
         setSel(Object.fromEntries(paths.map((p) => [p, { ais: [...base], custom: '' }])));
       });
     return () => {
@@ -99,40 +96,16 @@ export function NewProjectAiModal({ paths = [], onClose, onOpenInstall }) {
                   </div>
                 )}
                 <div className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {PICKABLE.map((opt) => {
-                      const active = c.ais.includes(opt.key);
-                      const missing =
-                        !alwaysAvailable(opt.key) && installed && !installed.has(opt.key);
-                      return (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => toggle(p, opt.key)}
-                          title={missing ? t('settings.aiNotInstalled') : t(opt.desc)}
-                          className={cn(
-                            'flex h-9 items-center gap-2 rounded-md border px-2.5 text-[13px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                            active && 'border-primary bg-muted ring-1 ring-primary',
-                            missing && 'border-dashed opacity-60 grayscale',
-                          )}
-                        >
-                          <CliBadge optKey={opt.key} />
-                          {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
-                          {missing && <Download aria-hidden="true" className="size-3" />}
-                          {active && <Check aria-hidden="true" className="size-3.5 text-primary" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {c.ais.includes('custom') && (
-                    <Input
-                      value={c.custom || ''}
-                      onChange={(e) => setCustom(p, e.target.value)}
-                      placeholder={t('settings.aiCustomPlaceholder')}
-                      className="mt-2.5 h-8 font-mono text-xs"
-                    />
-                  )}
+                  {/* Aqui o aviso de "mínimo uma" não cabe: o botão Salvar já fica
+                      travado até todo projeto ter pelo menos uma IA marcada. */}
+                  <ProjectAiChips
+                    ais={c.ais}
+                    custom={c.custom}
+                    installed={installed}
+                    onToggle={(k) => toggle(p, k)}
+                    onCustom={(v) => setCustom(p, v)}
+                    showMinOne={false}
+                  />
                 </div>
               </div>
             );

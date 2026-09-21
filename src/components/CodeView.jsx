@@ -39,6 +39,7 @@ import {
   Sheet,
   Music,
   Loader2,
+  RotateCw,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -491,6 +492,31 @@ export function CodeView({ active, openRequest, visible = true }) {
 
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
+  // Relê do disco/servidor as abas abertas que NÃO têm edição pendente: o Claude (ou
+  // qualquer coisa rodando fora do app) pode ter reescrito o arquivo. Aba suja é
+  // preservada — o trabalho da pessoa nunca é sobrescrito por um refresh.
+  const reloadOpenTabs = useCallback(() => {
+    for (const tb of tabsRef.current) {
+      if (tb.dirty || tb.image || tb.notice) continue;
+      window.api.readFile(tb.path).then((r) => {
+        if (r && !r.error && typeof r.content === 'string') {
+          setTabs((cur) =>
+            cur.map((x) =>
+              x.path === tb.path && !x.dirty && x.content !== r.content
+                ? { ...x, content: r.content }
+                : x,
+            ),
+          );
+        }
+      });
+    }
+  }, []);
+  // Recarregar manual (botão do topo da árvore). É o ÚNICO caminho no projeto remoto:
+  // o `fs:watch` não observa nada por SFTP, então lá nada se atualiza sozinho.
+  const reloadTree = useCallback(() => {
+    bump();
+    reloadOpenTabs();
+  }, [reloadOpenTabs]);
   // Observa o projeto ativo no disco: quando algo muda lá fora (ex.: o Claude cria
   // um arquivo), o main avisa por 'fs:changed' e a árvore se recarrega sozinha.
   useEffect(() => {
@@ -498,28 +524,13 @@ export function CodeView({ active, openRequest, visible = true }) {
     window.api.watchDir(active.path);
     const off = window.api.on('fs:changed', () => {
       bump(); // recarrega a árvore
-      // Recarrega do disco as abas locais NÃO-sujas: o Claude/Carcará AI pode ter escrito
-      // o arquivo por fora. Abas com edição não salva (dirty) são preservadas.
-      if (active.remote) return;
-      for (const t of tabsRef.current) {
-        if (t.dirty || t.image || t.notice) continue;
-        window.api.readFile(t.path).then((r) => {
-          if (r && !r.error && typeof r.content === 'string') {
-            setTabs((cur) =>
-              cur.map((x) =>
-                x.path === t.path && !x.dirty && x.content !== r.content
-                  ? { ...x, content: r.content }
-                  : x,
-              ),
-            );
-          }
-        });
-      }
+      // O watcher só existe em projeto local, então aqui as abas são sempre locais.
+      if (!active.remote) reloadOpenTabs();
     });
     return () => {
       off?.();
     };
-  }, [active]);
+  }, [active, reloadOpenTabs]);
   // Busca de arquivos no topo da árvore. Com texto, mostra uma lista achatada de
   // resultados (varredura recursiva no main); vazia, mostra a árvore normal.
   const [query, setQuery] = useState('');
@@ -1087,10 +1098,19 @@ export function CodeView({ active, openRequest, visible = true }) {
       >
         {active ? (
           <>
-            {/* Busca de arquivos: escondida em projeto remoto (SFTP sem busca por ora). */}
-            {!active?.remote && (
-              <div className="shrink-0 border-b p-1.5">
-                <div className="relative">
+            {/* Cabeçalho da árvore. Existe SEMPRE — inclusive no remoto, que antes não
+                tinha cabeçalho nenhum (a busca é escondida lá) e por isso não tinha onde
+                pôr o recarregar. Local: busca. Remoto: o diretório do outro lado. */}
+            <div className="flex shrink-0 items-center gap-1 border-b p-1.5">
+              {active?.remote ? (
+                <span
+                  title={active.path}
+                  className="min-w-0 flex-1 truncate px-1 font-mono text-[11.5px] text-muted-foreground"
+                >
+                  {active.path.replace(/^ssh:\/\/[^/]+/, '') || '/'}
+                </span>
+              ) : (
+                <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <input
                     value={query}
@@ -1113,8 +1133,17 @@ export function CodeView({ active, openRequest, visible = true }) {
                     </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+              <button
+                type="button"
+                onClick={reloadTree}
+                title={t('tree.refresh')}
+                aria-label={t('tree.refresh')}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+              </button>
+            </div>
             <div
               className="min-h-0 flex-1 overflow-auto py-1.5"
               onMouseDown={onTreeMouseDown}

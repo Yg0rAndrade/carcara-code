@@ -89,6 +89,10 @@ const KanbanPanel = lazy(() =>
 );
 // Anotador do print (Fabric.js): code-split — só carrega quando há uma captura pra marcar.
 const AnnotatorModal = lazy(() => import('./AnnotatorModal.jsx'));
+// Escolha da porta do túnel SSH — só existe em projeto remoto, então fica fora do bundle.
+const RemotePreviewStart = lazy(() =>
+  import('./RemotePreviewStart.jsx').then((m) => ({ default: m.RemotePreviewStart })),
+);
 
 // Fallback enquanto o chunk do painel carrega (costuma ser instantâneo no disco).
 function PanelFallback() {
@@ -445,6 +449,11 @@ export function PreviewPanel({
   const urlsRef = useRef(new Map()); // path -> url do servidor de preview (marca "tem server no ar")
   const activePathRef = useRef(null);
   const manualStopRef = useRef(new Set()); // paths parados pelo usuário (botão Parar)
+  // Projeto remoto: porta da VPS que o túnel aberto aponta (path -> porta). A URL do
+  // webview é sempre 127.0.0.1:<efêmera>, então sem isto não dá pra mostrar na UI
+  // QUAL porta de lá está sendo vista.
+  const remotePortRef = useRef(new Map());
+  const [remotePort, setRemotePort] = useState(null);
 
   // --- Helpers do modelo de abas ---
   const getProjTabs = (path) => {
@@ -1176,11 +1185,14 @@ export function PreviewPanel({
   // Flags de view derivadas — hoisted p/ cima porque o efeito de scaffold logo abaixo
   // usa inPreview nas deps (senão dá TDZ: "Cannot access 'inPreview' before initialization").
   const remote = !!active?.remote;
-  const inPreview = !remote && view === 'preview';
+  // Projeto remoto so tem Preview e Codigo. Se um estado salvo pedir outra aba (Git,
+  // API...), cai no Codigo em vez de renderizar nada.
+  const effView = remote && view !== 'preview' ? 'code' : view;
+  const inPreview = effView === 'preview';
 
   // Pasta vazia/só-lixo? Decide se o ramo "empty" mostra o wizard de scaffold.
   useEffect(() => {
-    if (!inPreview || mode !== 'empty' || !active) {
+    if (!inPreview || remote || mode !== 'empty' || !active) {
       setScaffoldProbe(null);
       return;
     }
@@ -1192,7 +1204,7 @@ export function PreviewPanel({
     return () => {
       alive = false;
     };
-  }, [inPreview, mode, active]);
+  }, [inPreview, remote, mode, active]);
 
   // Se trocar de projeto OU de aba com o DevTools aberto, re-encaixa no webview atual.
   useEffect(() => {
@@ -1211,10 +1223,12 @@ export function PreviewPanel({
     const p = active?.path || null;
     stateOwnerRef.current = p;
     const s = (p && uiByProjectRef.current[p]) || null;
-    setView(s?.view ?? 'preview');
+    // Remoto abre no Codigo: o preview de la so existe depois de escolher a porta do
+    // tunel, entao cair nele de cara seria mostrar um formulario no lugar do projeto.
+    setView(s?.view ?? (active?.remote ? 'code' : 'preview'));
     setTermOpen(s?.termOpen ?? false);
     setDevtoolsOpen(s?.devtoolsOpen ?? false);
-  }, [active?.path]);
+  }, [active?.path, active?.remote]);
 
   // Salva o estado do projeto dono atual sempre que muda.
   useEffect(() => {
@@ -1318,7 +1332,19 @@ export function PreviewPanel({
   // Troca de projeto: inicia/retoma o preview do projeto ativo.
   useEffect(() => {
     if (active?.remote) {
-      setView('code');
+      // Nada de auto-start/status: quem sobe o servidor la e a pessoa, pelo terminal.
+      // So reencaixamos a UI no tunel que este projeto ja tiver aberto.
+      activePathRef.current = active.path;
+      refreshTabBar();
+      setRemotePort(remotePortRef.current.get(active.path) ?? null);
+      const u = urlsRef.current.get(active.path);
+      if (u) {
+        setUrl(activeTabOf(active.path)?.url || u);
+        setMode('web');
+      } else {
+        setUrl('');
+        setMode('empty');
+      }
       return;
     }
     let cancelled = false; // efeito desmontou/trocou de projeto: corta o setTimeout e o poller
@@ -1452,6 +1478,22 @@ export function PreviewPanel({
     navigateTo(url);
     e.target.blur();
   };
+
+  // Projeto remoto: o túnel já está de pé e `u` é o http://127.0.0.1:<efêmera> que
+  // desemboca na `port` da VPS. Daqui pra frente é o preview normal — por isso o
+  // caminho reaproveita o mesmo showWebFor/navigateTo do projeto local.
+  const openRemoteUrl = useCallback(
+    (u, port) => {
+      const p = activePathRef.current;
+      if (!p) return;
+      remotePortRef.current.set(p, port);
+      setRemotePort(port);
+      urlsRef.current.set(p, u);
+      if (activeTabOf(p)) navigateTo(u);
+      else showWebFor(p, u);
+    },
+    [navigateTo, showWebFor],
+  );
 
   // --- Ações da tira de abas ---
   const selectTab = useCallback(
@@ -1743,7 +1785,7 @@ export function PreviewPanel({
     }
   };
 
-  const inCode = remote || view === 'code';
+  const inCode = effView === 'code';
   // Uma vez aberto, o CodeView fica MONTADO (só escondido via CSS quando saímos da aba),
   // pra não perder as abas de arquivos abertos ao alternar Código ↔ Preview. O ref garante
   // que ele só monta na 1ª visita (respeitando o lazy-load do CodeMirror), nunca antes.
@@ -1760,18 +1802,16 @@ export function PreviewPanel({
     <>
       {active && (
         <div className="relative z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
-          <Tabs value={remote ? 'code' : view} onValueChange={setView}>
+          <Tabs value={effView} onValueChange={setView}>
             <TabsList className="h-8 gap-0.5 p-0.5">
-              {!remote && (
-                <TabsTrigger
-                  value="preview"
-                  onDragOver={onTabDragOver('preview')}
-                  className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
-                >
-                  <HoverIcon as={EarthIcon} />
-                  {t('preview.tab')}
-                </TabsTrigger>
-              )}
+              <TabsTrigger
+                value="preview"
+                onDragOver={onTabDragOver('preview')}
+                className="h-7 gap-1.5 px-2.5 text-[13px] [&_svg]:size-[15px]"
+              >
+                <HoverIcon as={EarthIcon} />
+                {t('preview.tab')}
+              </TabsTrigger>
               <TabsTrigger
                 value="code"
                 onDragOver={onTabDragOver('code')}
@@ -1806,6 +1846,20 @@ export function PreviewPanel({
                   <ArrowRightIcon />
                 </ToolButton>
               </div>
+              {/* Remoto: a barra mostra 127.0.0.1:<efêmera>, que não diz nada. Este chip
+                  diz QUAL porta da VPS está do outro lado do túnel, e clicar volta pra
+                  escolha (trocar de porta sem sair do Preview). */}
+              {remote && (
+                <button
+                  type="button"
+                  onClick={() => setMode('empty')}
+                  title={t('remotePreview.change_port')}
+                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2 font-mono text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Globe className="size-3.5" aria-hidden="true" />
+                  {remotePort ? ':' + remotePort : t('remotePreview.pick')}
+                </button>
+              )}
               {/* Tamanho de tela (computador/tablet/celular), colado na barra de URL. */}
               <DevicePicker value={viewport} onChange={setViewport} disabled={mode !== 'web'} />
               {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
@@ -2031,8 +2085,14 @@ export function PreviewPanel({
               className="absolute inset-0 m-0 overflow-auto whitespace-pre-wrap break-words bg-background p-3.5 font-mono text-xs leading-relaxed text-muted-foreground"
             />
           )}
+          {inPreview && mode === 'empty' && active && remote && (
+            <LazyPanel label="Preview remoto">
+              <RemotePreviewStart projectPath={active.path} onOpen={openRemoteUrl} />
+            </LazyPanel>
+          )}
           {inPreview &&
             mode === 'empty' &&
+            !remote &&
             (active ? (
               scaffoldProbe?.scaffoldable && scaffoldProbe.path === active.path ? (
                 <ScaffoldWizard

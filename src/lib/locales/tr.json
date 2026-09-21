@@ -49,7 +49,11 @@
     "menu_folder_rename": "Klasörü yeniden adlandır",
     "menu_folder_dissolve": "Klasörü çöz",
     "rename_save": "Kaydet",
-    "rename_cancel": "İptal"
+    "rename_cancel": "İptal",
+    "tab_general": "Genel",
+    "tab_ai": "YZ",
+    "ai_hint": "Yeni bir sekme açtığınızda bu projenin sunduğu YZ komut satırı araçları.",
+    "ai_loading": "Yükleniyor…"
   },
   "app": {
     "no_project_selected": "Bir proje seç",
@@ -184,7 +188,8 @@
     "search_clear": "Temizle",
     "no_results": "Dosya bulunamadı.",
     "empty": "Bir proje aç.",
-    "link_title": "{name} — kısayol (Dosya Gezgini'nde açılır)"
+    "link_title": "{name} — kısayol (Dosya Gezgini'nde açılır)",
+    "refresh": "Dosyaları yenile"
   },
   "code": {
     "tabs_select_file": "Bir dosya seç",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "{n} görevle birlikte silinsin mi?",
     "column_menu": "Sütun seçenekleri",
     "rename_hint": "Yeniden adlandırmak için çift tıklayın"
+  },
+  "remotePreview": {
+    "title": "SSH üzerinden önizleme",
+    "subtitle": "Sunucunuzun orada dinlediği bağlantı noktasını seçin. Carcará bir tünel açar ve burada yerelmiş gibi gösterir.",
+    "detected": "Sunucuda dinleyen bağlantı noktaları",
+    "rescan": "Yeniden ara",
+    "scanning": "Açık bağlantı noktaları aranıyor…",
+    "none": "Dinleyen bağlantı noktası yok. Sunucuyu terminalden başlatıp yeniden arayın.",
+    "unknown_proc": "bilinmeyen süreç",
+    "loopback": "yalnızca localhost",
+    "manual": "Ya da bağlantı noktasını yazın",
+    "open": "Aç",
+    "hint": "Tünel yalnızca kendi makinenizde (127.0.0.1) dinler; projeyi kaldırınca ya da uygulamadan çıkınca kapanır.",
+    "bad_port": "Geçersiz bağlantı noktası.",
+    "change_port": "Bağlantı noktasını değiştir",
+    "pick": "b. noktası"
   }
 }

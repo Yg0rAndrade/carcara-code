@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Settings2, Palette, ImagePlus, Trash2, Undo2, X } from 'lucide-react';
 import { Button } from './ui/button.jsx';
+import { ProjectAiChips, useInstalledAis } from './ProjectAiChips.jsx';
 import { cn } from '@/lib/utils';
 import { colorFor, initials } from '@/lib/projectColor';
 import { useT } from '@/lib/i18n';
@@ -38,7 +39,44 @@ export function ProjectSettingsModal({
 }) {
   const t = useT();
   const [name, setName] = useState('');
+  const [tab, setTab] = useState('general');
   const fileRef = useRef(null);
+
+  // Aba IA: quais CLIs este projeto oferece. Mesmo conteúdo de Configurações › IA por
+  // projeto, só que aqui a pessoa já está olhando o projeto certo — que é como ela
+  // chega nisso na prática (clicou no ícone do projeto, quer mudar a IA DELE).
+  const [ai, setAi] = useState(null); // { ais, custom } | null enquanto carrega
+  const installed = useInstalledAis(!!project);
+  useEffect(() => {
+    // Fechar o modal derruba o `project` pra null: aproveitamos pra limpar, senão
+    // reabrir o MESMO projeto não refaria o getAi e a lista ficaria presa no que
+    // estava — desencontrada de quem mexeu na IA por Configurações.
+    setTab('general');
+    setAi(null);
+    if (!project) return;
+    window.api
+      .getAi(project.path)
+      .then((r) => setAi({ ais: r?.ais || ['claude'], custom: r?.custom || '' }))
+      .catch(() => setAi({ ais: ['claude'], custom: '' }));
+  }, [project?.path]);
+
+  // Grava na hora (igual às Configurações). Nunca zera a lista: sem nenhuma IA o main
+  // cairia no padrão 'claude' e a escolha da pessoa sumiria sem aviso.
+  const toggleAi = (key) =>
+    setAi((cur) => {
+      if (!cur) return cur;
+      const has = cur.ais.includes(key);
+      const ais = has ? cur.ais.filter((k) => k !== key) : [...cur.ais, key];
+      if (ais.length === 0) return cur;
+      window.api.setAi(project.path, ais, cur.custom);
+      return { ...cur, ais };
+    });
+  const setAiCustom = (val) =>
+    setAi((cur) => {
+      if (!cur) return cur;
+      if (cur.ais.includes('custom')) window.api.setAi(project.path, cur.ais, val);
+      return { ...cur, custom: val };
+    });
 
   useEffect(() => {
     if (project) setName(project.name || '');
@@ -145,209 +183,262 @@ export function ProjectSettingsModal({
           </button>
         </div>
 
-        <div className="space-y-5 p-4">
-          {/* Preview do avatar + nome */}
-          <div className="flex items-center gap-3">
-            <span
-              className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border text-base font-bold text-white"
-              style={avatarStyle}
+        {/* Abas: Geral (identidade do projeto) e IA (quais CLIs ele oferece). */}
+        <div className="flex items-center gap-1 border-b px-2 pt-1.5">
+          {[
+            ['general', t('rail.tab_general')],
+            ['ai', t('rail.tab_ai')],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={cn(
+                '-mb-px border-b-2 px-3 py-1.5 text-[13px] transition-colors',
+                tab === key
+                  ? 'border-primary font-medium text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
             >
-              {p.icon ? (
-                <img
-                  src={p.icon}
-                  alt=""
-                  draggable={false}
-                  className="h-full w-full object-contain p-1"
-                />
-              ) : (
-                <span>{initials(name || basename)}</span>
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                {t('rail.name_label')}
-              </label>
-              <input
-                autoFocus
-                value={name}
-                maxLength={NAME_MAX}
-                onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
-                onFocus={(e) => e.target.select()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    close();
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    onClose();
-                  }
-                }}
-                placeholder={basename}
-                className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-              />
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <p className="text-[11px] text-muted-foreground">{t('rail.name_hint')}</p>
-                {name.length > NAME_MAX - 40 && (
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                    {name.length}/{NAME_MAX}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* Cor do avatar: atalhos + seletor livre (ícone nítido, sem gradiente pixelado) */}
-          <div>
-            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-              {t('rail.menu_color')}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {PRESET_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => onSetColor?.(p, c)}
-                  title={c}
-                  className={cn(
-                    'h-6 w-6 rounded-full border border-black/10 transition-transform hover:scale-110',
-                    p.color === c && 'ring-2 ring-primary ring-offset-2 ring-offset-card',
-                  )}
-                  style={{ background: c }}
-                />
-              ))}
-              {/* Cor livre: a casa vira um input nativo de cor. Ícone vetorial (nítido em
-                  qualquer tamanho), no lugar do antigo conic-gradient que pixelava. */}
-              <label
-                title={t('rail.menu_color_custom')}
-                className={cn(
-                  'relative grid h-6 w-6 cursor-pointer place-items-center rounded-full transition-transform hover:scale-110',
-                  isCustomColor
-                    ? 'border border-black/10 ring-2 ring-primary ring-offset-2 ring-offset-card'
-                    : 'border border-dashed border-muted-foreground/40',
-                )}
-                style={isCustomColor ? { background: p.color } : undefined}
-              >
-                <Palette
-                  className={cn(
-                    'size-3.5',
-                    isCustomColor ? 'text-white/90' : 'text-muted-foreground',
-                  )}
-                />
-                <input
-                  type="color"
-                  value={isCustomColor ? p.color : '#3b82f6'}
-                  onChange={(e) => onSetColor?.(p, e.target.value)}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* Imagem: enviar / remover. Só aceita imagem (validado no onImageChosen). */}
-          <div>
-            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-              {t('rail.icon_label')}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                <ImagePlus /> {t('rail.menu_image')}
-              </Button>
-              {p.icon && (
-                <Button variant="ghost" size="sm" onClick={() => onSetIcon?.(p, '')}>
-                  <Trash2 /> {t('rail.menu_image_remove')}
-                </Button>
-              )}
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">{t('rail.image_hint')}</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onImageChosen}
-            />
-          </div>
-
-          {/* Conexão SSH (só projeto remoto): endereço em leitura + trocar credenciais. */}
-          {p.remote && (
-            <div className="border-t pt-4">
-              <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-                {t('rail.ssh_section')}
-              </div>
-              {ssh && (
-                <p className="mb-2 text-[12px] text-muted-foreground">
-                  {ssh.user}@{ssh.host}:{ssh.port} · {ssh.remoteDir}
+        {tab === 'ai' ? (
+          <div className="p-4">
+            {ai === null ? (
+              <p className="py-6 text-center text-[12.5px] text-muted-foreground">
+                {t('rail.ai_loading')}
+              </p>
+            ) : (
+              <>
+                <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
+                  {t('rail.ai_hint')}
                 </p>
-              )}
-              {sshAuth !== 'key' ? (
-                <input
-                  type="password"
-                  className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-                  placeholder={t('remote.ph_password')}
-                  value={sshSecret}
-                  onChange={(e) => {
-                    setSshSecret(e.target.value);
-                    setSshAuth('password');
-                  }}
+                <ProjectAiChips
+                  ais={ai.ais}
+                  custom={ai.custom}
+                  installed={installed}
+                  onToggle={toggleAi}
+                  onCustom={setAiCustom}
                 />
-              ) : (
-                <>
-                  <input
-                    className="mb-2 w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-                    placeholder={t('remote.ph_keypath')}
-                    value={sshKeyPath}
-                    onChange={(e) => setSshKeyPath(e.target.value)}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-5 p-4">
+            {/* Preview do avatar + nome */}
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border text-base font-bold text-white"
+                style={avatarStyle}
+              >
+                {p.icon ? (
+                  <img
+                    src={p.icon}
+                    alt=""
+                    draggable={false}
+                    className="h-full w-full object-contain p-1"
                   />
+                ) : (
+                  <span>{initials(name || basename)}</span>
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                  {t('rail.name_label')}
+                </label>
+                <input
+                  autoFocus
+                  value={name}
+                  maxLength={NAME_MAX}
+                  onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      close();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      onClose();
+                    }
+                  }}
+                  placeholder={basename}
+                  className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                />
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">{t('rail.name_hint')}</p>
+                  {name.length > NAME_MAX - 40 && (
+                    <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                      {name.length}/{NAME_MAX}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Cor do avatar: atalhos + seletor livre (ícone nítido, sem gradiente pixelado) */}
+            <div>
+              <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                {t('rail.menu_color')}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => onSetColor?.(p, c)}
+                    title={c}
+                    className={cn(
+                      'h-6 w-6 rounded-full border border-black/10 transition-transform hover:scale-110',
+                      p.color === c && 'ring-2 ring-primary ring-offset-2 ring-offset-card',
+                    )}
+                    style={{ background: c }}
+                  />
+                ))}
+                {/* Cor livre: a casa vira um input nativo de cor. Ícone vetorial (nítido em
+                  qualquer tamanho), no lugar do antigo conic-gradient que pixelava. */}
+                <label
+                  title={t('rail.menu_color_custom')}
+                  className={cn(
+                    'relative grid h-6 w-6 cursor-pointer place-items-center rounded-full transition-transform hover:scale-110',
+                    isCustomColor
+                      ? 'border border-black/10 ring-2 ring-primary ring-offset-2 ring-offset-card'
+                      : 'border border-dashed border-muted-foreground/40',
+                  )}
+                  style={isCustomColor ? { background: p.color } : undefined}
+                >
+                  <Palette
+                    className={cn(
+                      'size-3.5',
+                      isCustomColor ? 'text-white/90' : 'text-muted-foreground',
+                    )}
+                  />
+                  <input
+                    type="color"
+                    value={isCustomColor ? p.color : '#3b82f6'}
+                    onChange={(e) => onSetColor?.(p, e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Imagem: enviar / remover. Só aceita imagem (validado no onImageChosen). */}
+            <div>
+              <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                {t('rail.icon_label')}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+                  <ImagePlus /> {t('rail.menu_image')}
+                </Button>
+                {p.icon && (
+                  <Button variant="ghost" size="sm" onClick={() => onSetIcon?.(p, '')}>
+                    <Trash2 /> {t('rail.menu_image_remove')}
+                  </Button>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">{t('rail.image_hint')}</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onImageChosen}
+              />
+            </div>
+
+            {/* Conexão SSH (só projeto remoto): endereço em leitura + trocar credenciais. */}
+            {p.remote && (
+              <div className="border-t pt-4">
+                <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                  {t('rail.ssh_section')}
+                </div>
+                {ssh && (
+                  <p className="mb-2 text-[12px] text-muted-foreground">
+                    {ssh.user}@{ssh.host}:{ssh.port} · {ssh.remoteDir}
+                  </p>
+                )}
+                {sshAuth !== 'key' ? (
                   <input
                     type="password"
                     className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-                    placeholder={t('remote.ph_passphrase')}
+                    placeholder={t('remote.ph_password')}
                     value={sshSecret}
-                    onChange={(e) => setSshSecret(e.target.value)}
+                    onChange={(e) => {
+                      setSshSecret(e.target.value);
+                      setSshAuth('password');
+                    }}
                   />
-                </>
-              )}
-              <div className="mt-1.5 flex items-center gap-3">
-                <button
-                  type="button"
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
-                  onClick={() => setSshAuth(sshAuth === 'key' ? 'password' : 'key')}
-                >
-                  {sshAuth === 'key' ? t('remote.use_password') : t('remote.use_key')}
-                </button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ml-auto h-7"
-                  onClick={saveSsh}
-                  disabled={sshBusy}
-                >
-                  {t('rail.ssh_save_creds')}
-                </Button>
-              </div>
-              {sshMsg && (
-                <p
-                  className={`mt-1.5 text-[12px] ${sshMsg.ok ? 'text-green-600' : 'text-red-500'}`}
-                >
-                  {sshMsg.text}
+                ) : (
+                  <>
+                    <input
+                      className="mb-2 w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                      placeholder={t('remote.ph_keypath')}
+                      value={sshKeyPath}
+                      onChange={(e) => setSshKeyPath(e.target.value)}
+                    />
+                    <input
+                      type="password"
+                      className="w-full rounded border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                      placeholder={t('remote.ph_passphrase')}
+                      value={sshSecret}
+                      onChange={(e) => setSshSecret(e.target.value)}
+                    />
+                  </>
+                )}
+                <div className="mt-1.5 flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => setSshAuth(sshAuth === 'key' ? 'password' : 'key')}
+                  >
+                    {sshAuth === 'key' ? t('remote.use_password') : t('remote.use_key')}
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="ml-auto h-7"
+                    onClick={saveSsh}
+                    disabled={sshBusy}
+                  >
+                    {t('rail.ssh_save_creds')}
+                  </Button>
+                </div>
+                {sshMsg && (
+                  <p
+                    className={`mt-1.5 text-[12px] ${sshMsg.ok ? 'text-green-600' : 'text-red-500'}`}
+                  >
+                    {sshMsg.text}
+                  </p>
+                )}
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  {t('rail.ssh_addr_hint')}
                 </p>
-              )}
-              <p className="mt-1.5 text-[11px] text-muted-foreground">{t('rail.ssh_addr_hint')}</p>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              onResetCustom?.(p);
-              setName(basename);
-            }}
-          >
-            <Undo2 /> {t('rail.menu_reset')}
-          </Button>
+          {tab === 'general' ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onResetCustom?.(p);
+                setName(basename);
+              }}
+            >
+              <Undo2 /> {t('rail.menu_reset')}
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button size="sm" onClick={close}>
             {t('rail.settings_done')}
           </Button>

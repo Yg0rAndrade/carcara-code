@@ -49,7 +49,11 @@
     "menu_folder_rename": "Renombrar carpeta",
     "menu_folder_dissolve": "Desagrupar carpeta",
     "rename_save": "Guardar",
-    "rename_cancel": "Cancelar"
+    "rename_cancel": "Cancelar",
+    "tab_general": "General",
+    "tab_ai": "IA",
+    "ai_hint": "Qué CLIs de IA ofrece este proyecto al abrir una pestaña nueva.",
+    "ai_loading": "Cargando…"
   },
   "app": {
     "no_project_selected": "Selecciona un proyecto",
@@ -184,7 +188,8 @@
     "search_clear": "Limpiar",
     "no_results": "No se encontraron archivos.",
     "empty": "Abre un proyecto.",
-    "link_title": "{name} — acceso directo (abre en el Explorador de archivos)"
+    "link_title": "{name} — acceso directo (abre en el Explorador de archivos)",
+    "refresh": "Recargar archivos"
   },
   "code": {
     "tabs_select_file": "Selecciona un archivo",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "¿Eliminar con {n} tarea(s)?",
     "column_menu": "Opciones de la columna",
     "rename_hint": "Haz doble clic para renombrar"
+  },
+  "remotePreview": {
+    "title": "Vista previa por SSH",
+    "subtitle": "Elige el puerto en el que escucha tu servidor allá. Carcará abre un túnel y lo muestra aquí como si fuera local.",
+    "detected": "Puertos a la escucha en el servidor",
+    "rescan": "Buscar de nuevo",
+    "scanning": "Buscando puertos abiertos…",
+    "none": "Ningún puerto a la escucha. Arranca el servidor en la terminal y busca de nuevo.",
+    "unknown_proc": "proceso desconocido",
+    "loopback": "solo en localhost",
+    "manual": "O escribe el puerto",
+    "open": "Abrir",
+    "hint": "El túnel solo escucha en tu equipo (127.0.0.1) y se cierra al quitar el proyecto o salir de la app.",
+    "bad_port": "Puerto no válido.",
+    "change_port": "Cambiar el puerto",
+    "pick": "puerto"
   }
 }

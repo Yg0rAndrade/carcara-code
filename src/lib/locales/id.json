@@ -49,7 +49,11 @@
     "menu_folder_rename": "Ganti nama folder",
     "menu_folder_dissolve": "Bubarkan folder",
     "rename_save": "Simpan",
-    "rename_cancel": "Batal"
+    "rename_cancel": "Batal",
+    "tab_general": "Umum",
+    "tab_ai": "AI",
+    "ai_hint": "CLI AI mana saja yang ditawarkan proyek ini saat membuka tab baru.",
+    "ai_loading": "Memuat…"
   },
   "app": {
     "no_project_selected": "Pilih proyek",
@@ -184,7 +188,8 @@
     "search_clear": "Bersihkan",
     "no_results": "File tidak ditemukan.",
     "empty": "Buka sebuah proyek.",
-    "link_title": "{name} — pintasan (buka di File Explorer)"
+    "link_title": "{name} — pintasan (buka di File Explorer)",
+    "refresh": "Muat ulang berkas"
   },
   "code": {
     "tabs_select_file": "Pilih file",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Hapus beserta {n} tugas?",
     "column_menu": "Opsi kolom",
     "rename_hint": "Klik dua kali untuk ganti nama"
+  },
+  "remotePreview": {
+    "title": "Pratinjau lewat SSH",
+    "subtitle": "Pilih port tempat server Anda mendengarkan di sana. Carcará membuka terowongan dan menampilkannya di sini seolah-olah lokal.",
+    "detected": "Port yang mendengarkan di server",
+    "rescan": "Cari lagi",
+    "scanning": "Mencari port yang terbuka…",
+    "none": "Tidak ada port yang mendengarkan. Jalankan server di terminal lalu cari lagi.",
+    "unknown_proc": "proses tidak dikenal",
+    "loopback": "hanya localhost",
+    "manual": "Atau ketik portnya",
+    "open": "Buka",
+    "hint": "Terowongan hanya mendengarkan di komputer Anda (127.0.0.1) dan tertutup saat proyek dihapus atau aplikasi ditutup.",
+    "bad_port": "Port tidak valid.",
+    "change_port": "Ganti port",
+    "pick": "port"
   }
 }

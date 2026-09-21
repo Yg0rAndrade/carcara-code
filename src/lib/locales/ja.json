@@ -49,7 +49,11 @@
     "menu_folder_rename": "フォルダー名を変更",
     "menu_folder_dissolve": "フォルダーを解除",
     "rename_save": "保存",
-    "rename_cancel": "キャンセル"
+    "rename_cancel": "キャンセル",
+    "tab_general": "一般",
+    "tab_ai": "AI",
+    "ai_hint": "新しいタブを開くときに、このプロジェクトで選べる AI CLI です。",
+    "ai_loading": "読み込み中…"
   },
   "app": {
     "no_project_selected": "プロジェクトを選択してください",
@@ -184,7 +188,8 @@
     "search_clear": "クリア",
     "no_results": "ファイルが見つかりません。",
     "empty": "プロジェクトを開いてください。",
-    "link_title": "{name} — ショートカット（エクスプローラーで開きます）"
+    "link_title": "{name} — ショートカット（エクスプローラーで開きます）",
+    "refresh": "ファイルを再読み込み"
   },
   "code": {
     "tabs_select_file": "ファイルを選択",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "{n} 件のタスクごと削除しますか？",
     "column_menu": "列のオプション",
     "rename_hint": "ダブルクリックで名前を変更"
+  },
+  "remotePreview": {
+    "title": "SSH 経由のプレビュー",
+    "subtitle": "向こうでサーバーが待ち受けているポートを選んでください。Carcará がトンネルを開き、ローカルのようにここに表示します。",
+    "detected": "サーバーで待ち受け中のポート",
+    "rescan": "再検索",
+    "scanning": "開いているポートを探しています…",
+    "none": "待ち受け中のポートがありません。ターミナルでサーバーを起動してから再検索してください。",
+    "unknown_proc": "不明なプロセス",
+    "loopback": "localhost のみ",
+    "manual": "またはポートを入力",
+    "open": "開く",
+    "hint": "トンネルはこの端末（127.0.0.1）でのみ待ち受け、プロジェクトを削除するかアプリを終了すると閉じます。",
+    "bad_port": "無効なポートです。",
+    "change_port": "ポートを変更",
+    "pick": "ポート"
   }
 }

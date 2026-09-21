@@ -49,7 +49,11 @@
     "menu_folder_rename": "Renomear pasta",
     "menu_folder_dissolve": "Desfazer pasta",
     "rename_save": "Salvar",
-    "rename_cancel": "Cancelar"
+    "rename_cancel": "Cancelar",
+    "tab_general": "Geral",
+    "tab_ai": "IA",
+    "ai_hint": "Quais CLIs de IA este projeto oferece ao abrir uma aba nova.",
+    "ai_loading": "Carregando…"
   },
   "app": {
     "no_project_selected": "Selecione um projeto",
@@ -184,7 +188,8 @@
     "search_clear": "Limpar",
     "no_results": "Nenhum arquivo encontrado.",
     "empty": "Abra um projeto.",
-    "link_title": "{name} — atalho (abre no Explorador de Arquivos)"
+    "link_title": "{name} — atalho (abre no Explorador de Arquivos)",
+    "refresh": "Recarregar arquivos"
   },
   "code": {
     "tabs_select_file": "Selecione um arquivo",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Excluir com {n} tarefa(s)?",
     "column_menu": "Opções da coluna",
     "rename_hint": "Clique duas vezes pra renomear"
+  },
+  "remotePreview": {
+    "title": "Preview por SSH",
+    "subtitle": "Escolha a porta em que o seu servidor está escutando lá. O Carcará abre um túnel e mostra aqui como se fosse local.",
+    "detected": "Portas escutando no servidor",
+    "rescan": "Procurar de novo",
+    "scanning": "Procurando portas abertas…",
+    "none": "Nenhuma porta escutando. Suba o servidor pelo terminal e procure de novo.",
+    "unknown_proc": "processo desconhecido",
+    "loopback": "só no localhost",
+    "manual": "Ou digite a porta",
+    "open": "Abrir",
+    "hint": "O túnel escuta só na sua máquina (127.0.0.1) e fecha ao remover o projeto ou sair do app.",
+    "bad_port": "Porta inválida.",
+    "change_port": "Trocar a porta",
+    "pick": "porta"
   }
 }

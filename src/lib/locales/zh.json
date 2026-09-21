@@ -49,7 +49,11 @@
     "menu_folder_rename": "重命名文件夹",
     "menu_folder_dissolve": "取消分组",
     "rename_save": "保存",
-    "rename_cancel": "取消"
+    "rename_cancel": "取消",
+    "tab_general": "常规",
+    "tab_ai": "AI",
+    "ai_hint": "新建标签页时，本项目可选用的 AI 命令行工具。",
+    "ai_loading": "加载中…"
   },
   "app": {
     "no_project_selected": "选择一个项目",
@@ -184,7 +188,8 @@
     "search_clear": "清除",
     "no_results": "未找到文件。",
     "empty": "打开一个项目。",
-    "link_title": "{name} — 快捷方式（在文件资源管理器中打开）"
+    "link_title": "{name} — 快捷方式（在文件资源管理器中打开）",
+    "refresh": "重新加载文件"
   },
   "code": {
     "tabs_select_file": "选择一个文件",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "连同 {n} 个任务一起删除？",
     "column_menu": "列的选项",
     "rename_hint": "双击以重命名"
+  },
+  "remotePreview": {
+    "title": "通过 SSH 预览",
+    "subtitle": "选择服务器在那边监听的端口。Carcará 会打开隧道，像本地一样在这里显示。",
+    "detected": "服务器上正在监听的端口",
+    "rescan": "重新扫描",
+    "scanning": "正在查找开放端口…",
+    "none": "没有端口在监听。请在终端启动服务后重新扫描。",
+    "unknown_proc": "未知进程",
+    "loopback": "仅限 localhost",
+    "manual": "或直接输入端口",
+    "open": "打开",
+    "hint": "隧道只在你的电脑上（127.0.0.1）监听，移除项目或退出应用时自动关闭。",
+    "bad_port": "端口无效。",
+    "change_port": "更换端口",
+    "pick": "端口"
   }
 }

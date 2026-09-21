@@ -55,6 +55,13 @@ function makeConnections(deps) {
     return new Promise((resolve, reject) => {
       let settled = false;
       client.on('ready', () => {
+        // Nagle OFF. Cada tecla digitada no terminal remoto é um pacote de 1 byte, e com
+        // o Nagle ligado (padrão do Node) o SO segura esse byte esperando ter o que
+        // juntar — somando dezenas de ms ao eco, POR TECLA, em cima do RTT que já existe.
+        // O ssh2 não desliga sozinho; este é o método público dele pra isso.
+        try {
+          client.setNoDelay(true);
+        } catch {}
         rec.status = 'connected';
         onStatus(hostKey, 'connected');
         settled = true;

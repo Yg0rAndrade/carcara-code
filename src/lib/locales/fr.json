@@ -49,7 +49,11 @@
     "menu_folder_rename": "Renommer le dossier",
     "menu_folder_dissolve": "Dégrouper le dossier",
     "rename_save": "Enregistrer",
-    "rename_cancel": "Annuler"
+    "rename_cancel": "Annuler",
+    "tab_general": "Général",
+    "tab_ai": "IA",
+    "ai_hint": "Quelles CLI d'IA ce projet propose à l'ouverture d'un nouvel onglet.",
+    "ai_loading": "Chargement…"
   },
   "app": {
     "no_project_selected": "Sélectionnez un projet",
@@ -184,7 +188,8 @@
     "search_clear": "Effacer",
     "no_results": "Aucun fichier trouvé.",
     "empty": "Ouvrez un projet.",
-    "link_title": "{name} — raccourci (ouvre dans l'Explorateur de fichiers)"
+    "link_title": "{name} — raccourci (ouvre dans l'Explorateur de fichiers)",
+    "refresh": "Recharger les fichiers"
   },
   "code": {
     "tabs_select_file": "Sélectionnez un fichier",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Supprimer avec {n} tâche(s) ?",
     "column_menu": "Options de la colonne",
     "rename_hint": "Double-cliquez pour renommer"
+  },
+  "remotePreview": {
+    "title": "Aperçu via SSH",
+    "subtitle": "Choisissez le port sur lequel votre serveur écoute là-bas. Carcará ouvre un tunnel et l'affiche ici comme s'il était local.",
+    "detected": "Ports à l'écoute sur le serveur",
+    "rescan": "Rechercher à nouveau",
+    "scanning": "Recherche des ports ouverts…",
+    "none": "Aucun port à l’écoute. Lancez le serveur dans le terminal puis relancez la recherche.",
+    "unknown_proc": "processus inconnu",
+    "loopback": "localhost uniquement",
+    "manual": "Ou saisissez le port",
+    "open": "Ouvrir",
+    "hint": "Le tunnel n'écoute que sur votre machine (127.0.0.1) et se ferme quand vous retirez le projet ou quittez l'app.",
+    "bad_port": "Port invalide.",
+    "change_port": "Changer de port",
+    "pick": "port"
   }
 }

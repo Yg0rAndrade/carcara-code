@@ -49,7 +49,11 @@
     "menu_folder_rename": "Zmień nazwę folderu",
     "menu_folder_dissolve": "Rozgrupuj folder",
     "rename_save": "Zapisz",
-    "rename_cancel": "Anuluj"
+    "rename_cancel": "Anuluj",
+    "tab_general": "Ogólne",
+    "tab_ai": "AI",
+    "ai_hint": "Które CLI AI oferuje ten projekt przy otwieraniu nowej karty.",
+    "ai_loading": "Wczytywanie…"
   },
   "app": {
     "no_project_selected": "Wybierz projekt",
@@ -184,7 +188,8 @@
     "search_clear": "Wyczyść",
     "no_results": "Nie znaleziono plików.",
     "empty": "Otwórz projekt.",
-    "link_title": "{name} — skrót (otwiera w Eksploratorze plików)"
+    "link_title": "{name} — skrót (otwiera w Eksploratorze plików)",
+    "refresh": "Odśwież pliki"
   },
   "code": {
     "tabs_select_file": "Wybierz plik",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Usunąć z {n} zadaniami?",
     "column_menu": "Opcje kolumny",
     "rename_hint": "Kliknij dwukrotnie, aby zmienić nazwę"
+  },
+  "remotePreview": {
+    "title": "Podgląd przez SSH",
+    "subtitle": "Wybierz port, na którym nasłuchuje tam twój serwer. Carcará otworzy tunel i pokaże go tutaj jak lokalny.",
+    "detected": "Porty nasłuchujące na serwerze",
+    "rescan": "Szukaj ponownie",
+    "scanning": "Szukanie otwartych portów…",
+    "none": "Żaden port nie nasłuchuje. Uruchom serwer w terminalu i poszukaj ponownie.",
+    "unknown_proc": "nieznany proces",
+    "loopback": "tylko localhost",
+    "manual": "Albo wpisz port",
+    "open": "Otwórz",
+    "hint": "Tunel nasłuchuje tylko na twoim komputerze (127.0.0.1) i zamyka się po usunięciu projektu lub zamknięciu aplikacji.",
+    "bad_port": "Nieprawidłowy port.",
+    "change_port": "Zmień port",
+    "pick": "port"
   }
 }

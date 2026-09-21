@@ -167,6 +167,13 @@ contextBridge.exposeInMainWorld('api', {
   testRemote: (profile, secret) => ipcRenderer.invoke('remote:test', { profile, secret }),
   sshConfigHosts: () => ipcRenderer.invoke('ssh:configHosts'),
   reconnectRemote: (projectPath) => ipcRenderer.invoke('remote:reconnect', { projectPath }),
+  // Preview remoto: portas em escuta na VPS e o túnel (ssh -L) que as traz pro webview.
+  remotePorts: (projectPath) => ipcRenderer.invoke('remote:ports', { projectPath }),
+  openRemoteTunnel: (projectPath, port) =>
+    ipcRenderer.invoke('remote:tunnel:open', { projectPath, port }),
+  closeRemoteTunnel: (projectPath, port) =>
+    ipcRenderer.invoke('remote:tunnel:close', { projectPath, port }),
+  remoteTunnels: (projectPath) => ipcRenderer.invoke('remote:tunnel:list', { projectPath }),
 
   // Git (source control)
   gitIsRepo: (projectPath) => ipcRenderer.invoke('git:isRepo', { projectPath }),

@@ -19,6 +19,7 @@ const { spawn } = require('child_process');
 const { Readable } = require('stream');
 const crypto = require('crypto');
 const http = require('http');
+const net = require('net');
 const detectPort = require('detect-port');
 const mcpCore = require('./electron/mcp-core.cjs');
 const mcpOauth = require('./electron/mcp-oauth.cjs');
@@ -45,6 +46,8 @@ const { makeSecretStore } = require('./electron/remote/secretStore.cjs');
 const { makeKnownHosts } = require('./electron/remote/knownHosts.cjs');
 const { makeConnections } = require('./electron/remote/connections.cjs');
 const { makeRemoteFs } = require('./electron/remote/remoteFs.cjs');
+const { makeTunnels } = require('./electron/remote/tunnel.cjs');
+const remotePorts = require('./electron/remote/remotePorts.cjs');
 const { Client: SshClient } = require('ssh2');
 const { scanPortsForRoots, parseNetstatListening } = require('./electron/port-scan.cjs');
 
@@ -61,6 +64,7 @@ let secretStore = null;
 let knownHosts = null;
 let connections = null;
 let remoteFs = null;
+let tunnels = null;
 
 const APP_NAME = 'Carcará Code';
 const APP_ICON = path.join(__dirname, 'build', 'icon.png');
@@ -259,6 +263,9 @@ function cleanup() {
     mcpCore.mcpDisconnectAll();
   } catch {}
   try {
+    tunnels.closeAll();
+  } catch {}
+  try {
     connections.endAll();
   } catch {}
 }
@@ -423,6 +430,8 @@ app.whenReady().then(async () => {
     getSftp: (hk) => connections.sftp(hk),
     isBinaryExt: isBinaryExtForRead,
   });
+  // Encaminhamento de portas (o `ssh -L` do preview remoto), sobre a MESMA conexão.
+  tunnels = makeTunnels({ net, connFor: (hk) => connections.connFor(hk) });
   registerMediaProtocol();
   // Remove o menu de aplicação padrão do Electron. A barra já fica escondida, mas os
   // ACELERADORES do menu padrão seguem ativos — e o Ctrl+V do "Edit → Paste" (role:
@@ -1282,6 +1291,57 @@ ipcMain.handle('remote:reconnect', async (evt, { projectPath }) => {
   }
 });
 
+// ---------- Preview remoto: portas da VPS + tuneis (o `ssh -L` do app) ----------
+// O <webview> nao fala SSH, mas fala http://127.0.0.1:<porta>. Entao listamos o que
+// esta em escuta LA e abrimos um tunel por cima da conexao que o projeto ja tem.
+
+ipcMain.handle('remote:ports', async (evt, { projectPath }) => {
+  if (!isRemote(projectPath)) return { error: 'projeto nao e remoto' };
+  try {
+    const client = await connections.connFor(hostKey(projectPath));
+    const out = await new Promise((resolve, reject) => {
+      client.exec(remotePorts.LIST_CMD, (err, stream) => {
+        if (err) return reject(err);
+        let buf = '';
+        // Teto de tempo: servidor lento (ou comando que nao fecha) nao trava a UI.
+        const timer = setTimeout(() => resolve(buf), 6000);
+        stream.on('data', (d) => {
+          buf += d.toString('utf8');
+        });
+        // Precisa drenar: stderr cheio e sem leitor trava o canal.
+        stream.stderr.on('data', () => {});
+        stream.on('close', () => {
+          clearTimeout(timer);
+          resolve(buf);
+        });
+      });
+    });
+    return { ports: remotePorts.parseListening(out) };
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+});
+
+ipcMain.handle('remote:tunnel:open', async (evt, { projectPath, port }) => {
+  if (!isRemote(projectPath)) return { error: 'projeto nao e remoto' };
+  try {
+    const { localPort, reused } = await tunnels.open(hostKey(projectPath), port);
+    return { ok: true, localPort, reused, url: `http://127.0.0.1:${localPort}` };
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+});
+
+ipcMain.handle('remote:tunnel:close', (evt, { projectPath, port }) => {
+  if (!isRemote(projectPath)) return { ok: false };
+  return { ok: tunnels.close(hostKey(projectPath), port) };
+});
+
+ipcMain.handle('remote:tunnel:list', (evt, { projectPath }) => {
+  if (!isRemote(projectPath)) return { tunnels: [] };
+  return { tunnels: tunnels.list(hostKey(projectPath)) };
+});
+
 // Remove um projeto da lista (não apaga nada do disco).
 ipcMain.handle('projects:remove', (evt, { projectPath }) => {
   const cfg = loadConfig();
@@ -1299,6 +1359,9 @@ ipcMain.handle('projects:remove', (evt, { projectPath }) => {
   if (cfg.projectMeta) delete cfg.projectMeta[projectPath];
   if (isRemote(projectPath)) {
     const hk = hostKey(projectPath);
+    try {
+      tunnels.closeHost(hk);
+    } catch {}
     try {
       connections.end(hk);
     } catch {}

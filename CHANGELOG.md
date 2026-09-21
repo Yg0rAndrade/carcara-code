@@ -3,6 +3,30 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [Nao lancado]
+
+### Adicionado
+
+- **Preview do servidor remoto (SSH):** projeto remoto agora tem a aba **Preview**. Ela lista as
+  portas que estao em escuta NA VPS (`ss`/`netstat`, com o nome do processo) ou aceita a porta
+  digitada, abre um tunel por cima da conexao SSH que o projeto ja mantem — o mesmo que o `ssh -L` —
+  e mostra a pagina aqui como se fosse local: abas, barra de URL, DevTools, print, tudo igual. O
+  tunel escuta so em `127.0.0.1` (a porta da VPS nunca fica exposta na sua rede) e fecha ao remover
+  o projeto ou sair do app. Um chip na barra diz qual porta de la esta do outro lado e deixa trocar.
+- **Recarregar a arvore de arquivos:** botao no topo da arvore. Importa principalmente no projeto
+  remoto, que nao tem observador de arquivos (o SFTP nao avisa quando algo muda) e por isso nao
+  atualizava sozinho — nao havia sequer onde por o botao, porque o cabecalho da arvore so existia
+  em projeto local. Recarrega tambem as abas abertas que nao tem edicao pendente.
+- **Aba IA nas configuracoes do projeto:** clicar no icone do projeto › Configuracoes agora tem
+  **Geral** e **IA**. A escolha das CLIs daquele projeto passa a estar onde a pessoa ja esta
+  olhando, em vez de so em Configuracoes › IA por projeto (que continua funcionando).
+
+### Corrigido
+
+- **Digitacao menos travada no terminal remoto:** a conexao SSH passa a desligar o algoritmo de
+  Nagle (`setNoDelay`). Sem isso, cada tecla — um pacote de 1 byte — ficava retida no sistema
+  esperando ter o que juntar, somando atraso ao eco em cima da latencia que ja existe ate a VPS.
+
 ## [0.1.14] — 2026-09-04
 
 ### Adicionado

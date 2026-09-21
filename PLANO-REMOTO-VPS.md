@@ -75,11 +75,30 @@ VPS. Mitigação possível sem reescrever nada: `setNoDelay(true)` no socket do 
 ssh2 não faz isso sozinho), que tira o atraso do algoritmo de Nagle em pacotes de 1 byte.
 O resto (eco local preditivo, estilo mosh) é projeto à parte.
 
-## Ordem de execução
+## Situação (21/09/2026)
 
-1. tunnel.cjs + remotePorts.cjs + testes
-2. main.js/preload.js
-3. PreviewPanel
-4. CodeView (T1)
-5. ProjectAiChips + ProjectSettingsModal + SettingsModal + NewProjectAiModal (T3)
-6. i18n (18 locales) + `npm run build` + bateria de testes
+Tudo implementado e verificado na bateria automática:
+
+- [x] `electron/remote/tunnel.cjs` + `remotePorts.cjs` + 14 testes novos
+- [x] IPC (`remote:ports`, `remote:tunnel:open|close|list`) + `preload.js`
+- [x] `PreviewPanel` liberado no remoto + `RemotePreviewStart.jsx`
+- [x] Refresh da árvore (`CodeView`)
+- [x] `ProjectAiChips` (DRY) + aba IA no `ProjectSettingsModal`
+- [x] `setNoDelay` no ssh2 (T4)
+- [x] i18n nos 18 idiomas, `npm run build`, `npm test` (404), `test:i18n`,
+      `test:platform`, `test:release`, `eslint` (0 erros), `prettier --check`
+
+**Falta:** ver rodando de verdade contra a VPS. Não foi feito nesta sessão porque o app
+está aberto com uma sessão viva do Claude Code e o `main.js` não tem trava de instância
+única — subir um segundo Electron compartilharia o mesmo `userData` (config, segredos
+SSH, known_hosts), com "último a escrever vence".
+
+Roteiro do teste manual, com o app reaberto:
+
+1. Projeto remoto → aba **Preview** → a lista deve trazer as portas da VPS (o `sshd` na 22
+   aparece; é sinal de que o `ss` rodou).
+2. Subir um dev server lá pelo terminal → **Procurar de novo** → clicar na porta.
+3. Conferir que a página carrega, que o DevTools e o print funcionam, e que o chip da
+   barra mostra `:<porta da VPS>`.
+4. Árvore: criar um arquivo pelo terminal remoto e clicar em **Recarregar arquivos**.
+5. Ícone do projeto → Configurações → aba **IA**.

@@ -49,7 +49,11 @@
     "menu_folder_rename": "Rinomina cartella",
     "menu_folder_dissolve": "Sciogli cartella",
     "rename_save": "Salva",
-    "rename_cancel": "Annulla"
+    "rename_cancel": "Annulla",
+    "tab_general": "Generale",
+    "tab_ai": "IA",
+    "ai_hint": "Quali CLI di IA offre questo progetto quando apri una nuova scheda.",
+    "ai_loading": "Caricamento…"
   },
   "app": {
     "no_project_selected": "Seleziona un progetto",
@@ -184,7 +188,8 @@
     "search_clear": "Cancella",
     "no_results": "Nessun file trovato.",
     "empty": "Apri un progetto.",
-    "link_title": "{name} — collegamento (apre in Esplora file)"
+    "link_title": "{name} — collegamento (apre in Esplora file)",
+    "refresh": "Ricarica i file"
   },
   "code": {
     "tabs_select_file": "Seleziona un file",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Eliminare con {n} attività?",
     "column_menu": "Opzioni della colonna",
     "rename_hint": "Doppio clic per rinominare"
+  },
+  "remotePreview": {
+    "title": "Anteprima via SSH",
+    "subtitle": "Scegli la porta su cui il tuo server è in ascolto laggiù. Carcará apre un tunnel e la mostra qui come se fosse locale.",
+    "detected": "Porte in ascolto sul server",
+    "rescan": "Cerca di nuovo",
+    "scanning": "Ricerca delle porte aperte…",
+    "none": "Nessuna porta in ascolto. Avvia il server dal terminale e cerca di nuovo.",
+    "unknown_proc": "processo sconosciuto",
+    "loopback": "solo localhost",
+    "manual": "Oppure digita la porta",
+    "open": "Apri",
+    "hint": "Il tunnel ascolta solo sulla tua macchina (127.0.0.1) e si chiude quando rimuovi il progetto o esci dall'app.",
+    "bad_port": "Porta non valida.",
+    "change_port": "Cambia porta",
+    "pick": "porta"
   }
 }

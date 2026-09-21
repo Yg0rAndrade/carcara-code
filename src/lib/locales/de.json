@@ -49,7 +49,11 @@
     "menu_folder_rename": "Ordner umbenennen",
     "menu_folder_dissolve": "Ordner auflösen",
     "rename_save": "Speichern",
-    "rename_cancel": "Abbrechen"
+    "rename_cancel": "Abbrechen",
+    "tab_general": "Allgemein",
+    "tab_ai": "KI",
+    "ai_hint": "Welche KI-CLIs dieses Projekt beim Öffnen eines neuen Tabs anbietet.",
+    "ai_loading": "Wird geladen…"
   },
   "app": {
     "no_project_selected": "Projekt auswählen",
@@ -184,7 +188,8 @@
     "search_clear": "Leeren",
     "no_results": "Keine Dateien gefunden.",
     "empty": "Öffne ein Projekt.",
-    "link_title": "{name} — Verknüpfung (öffnet im Datei-Explorer)"
+    "link_title": "{name} — Verknüpfung (öffnet im Datei-Explorer)",
+    "refresh": "Dateien neu laden"
   },
   "code": {
     "tabs_select_file": "Datei auswählen",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Mit {n} Aufgabe(n) löschen?",
     "column_menu": "Spaltenoptionen",
     "rename_hint": "Zum Umbenennen doppelklicken"
+  },
+  "remotePreview": {
+    "title": "Vorschau über SSH",
+    "subtitle": "Wähle den Port, auf dem dein Server dort lauscht. Carcará öffnet einen Tunnel und zeigt ihn hier wie lokal an.",
+    "detected": "Lauschende Ports auf dem Server",
+    "rescan": "Erneut suchen",
+    "scanning": "Suche nach offenen Ports…",
+    "none": "Kein Port lauscht. Starte den Server im Terminal und suche erneut.",
+    "unknown_proc": "unbekannter Prozess",
+    "loopback": "nur localhost",
+    "manual": "Oder Port eingeben",
+    "open": "Öffnen",
+    "hint": "Der Tunnel lauscht nur auf deinem Rechner (127.0.0.1) und schließt sich, wenn du das Projekt entfernst oder die App beendest.",
+    "bad_port": "Ungültiger Port.",
+    "change_port": "Port wechseln",
+    "pick": "Port"
   }
 }

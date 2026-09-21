@@ -49,7 +49,11 @@
     "menu_folder_rename": "Đổi tên thư mục",
     "menu_folder_dissolve": "Bỏ nhóm thư mục",
     "rename_save": "Lưu",
-    "rename_cancel": "Hủy"
+    "rename_cancel": "Hủy",
+    "tab_general": "Chung",
+    "tab_ai": "AI",
+    "ai_hint": "Những CLI AI mà dự án này cung cấp khi bạn mở thẻ mới.",
+    "ai_loading": "Đang tải…"
   },
   "app": {
     "no_project_selected": "Chọn một dự án",
@@ -184,7 +188,8 @@
     "search_clear": "Xóa",
     "no_results": "Không tìm thấy tệp nào.",
     "empty": "Mở một dự án.",
-    "link_title": "{name} — lối tắt (mở trong File Explorer)"
+    "link_title": "{name} — lối tắt (mở trong File Explorer)",
+    "refresh": "Tải lại tệp"
   },
   "code": {
     "tabs_select_file": "Chọn một tệp",
@@ -890,5 +895,21 @@
     "delete_column_confirm": "Xóa cùng {n} tác vụ?",
     "column_menu": "Tùy chọn cột",
     "rename_hint": "Nhấp đúp để đổi tên"
+  },
+  "remotePreview": {
+    "title": "Xem trước qua SSH",
+    "subtitle": "Chọn cổng mà máy chủ của bạn đang lắng nghe ở đó. Carcará mở một đường hầm và hiển thị tại đây như thể nó là cục bộ.",
+    "detected": "Cổng đang lắng nghe trên máy chủ",
+    "rescan": "Tìm lại",
+    "scanning": "Đang tìm cổng đang mở…",
+    "none": "Không có cổng nào đang lắng nghe. Hãy khởi động máy chủ trong terminal rồi tìm lại.",
+    "unknown_proc": "tiến trình không rõ",
+    "loopback": "chỉ localhost",
+    "manual": "Hoặc nhập cổng",
+    "open": "Mở",
+    "hint": "Đường hầm chỉ lắng nghe trên máy của bạn (127.0.0.1) và đóng lại khi bạn gỡ dự án hoặc thoát ứng dụng.",
+    "bad_port": "Cổng không hợp lệ.",
+    "change_port": "Đổi cổng",
+    "pick": "cổng"
   }
 }
