@@ -3,7 +3,7 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
-## [Nao lancado]
+## [0.1.15] — 2026-10-01
 
 ### Adicionado
 
