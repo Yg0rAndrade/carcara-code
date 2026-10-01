@@ -9,6 +9,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -40,8 +41,10 @@ import {
   Music,
   Loader2,
   RotateCw,
+  GripVertical,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
+import { useTextScale, scaledPx } from '@/lib/textScale';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import CodeMirror from '@uiw/react-codemirror';
 import { vscodeLight, vscodeDark } from '@uiw/codemirror-theme-vscode';
@@ -105,7 +108,7 @@ function isCsv(name) {
 // Visual do editor: fonte maior, mais espaçada.
 // Só fonte/espaçamento; as cores e o fundo vêm do tema (vscodeLight/vscodeDark).
 const editorTheme = EditorView.theme({
-  '&': { fontSize: '13.5px', height: '100%' },
+  '&': { fontSize: 'calc(13.5px * var(--text-scale, 1))', height: '100%' },
   '.cm-scroller': {
     fontFamily: 'ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace',
     lineHeight: '1.7',
@@ -146,6 +149,18 @@ function langFor(name) {
 
 // ---------- Visualizacao/edicao de codigo ----------
 const FileTreeCtx = createContext(null);
+
+// Medidas da árvore a partir da letra: linha, ícone, seta e recuo crescem juntos, senão
+// uma letra maior fica espremida numa linha de 22px.
+function treeMetrics(fontSize) {
+  return {
+    fontSize,
+    rowPx: Math.round(fontSize * 1.72), // 14px -> 24px, a altura de linha do VS Code
+    iconPx: Math.round(fontSize + 2),
+    chevronPx: Math.round(fontSize),
+    indentPx: Math.round(fontSize * 0.9),
+  };
+}
 
 // Diálogo de confirmação no estilo do app (substitui o window.confirm do sistema).
 function ConfirmDialog({
@@ -601,6 +616,42 @@ export function CodeView({ active, openRequest, visible = true }) {
   );
   const [treeResizing, setTreeResizing] = useState(false);
   const codeRowRef = useRef(null);
+  // Lado da árvore (esquerda/direita): arrastada pela alça de seis pontinhos do
+  // cabeçalho, o mesmo gesto que troca o chat e o rail de lado (startLayoutDrag, App.jsx).
+  const [treeSide, setTreeSide] = useState(() =>
+    localStorage.getItem('codeTreeSide') === 'right' ? 'right' : 'left',
+  );
+  const treeRight = treeSide === 'right';
+  const [treeMoveZone, setTreeMoveZone] = useState(null); // null | 'left' | 'right'
+  const startTreeMove = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = codeRowRef.current.getBoundingClientRect();
+    const zoneAt = (x) => (x < rect.left + rect.width / 2 ? 'left' : 'right');
+    let zone = zoneAt(e.clientX);
+    setTreeMoveZone(zone);
+    document.body.style.cursor = 'grabbing';
+    const onMove = (ev) => {
+      const z = zoneAt(ev.clientX);
+      if (z !== zone) {
+        zone = z;
+        setTreeMoveZone(z);
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      localStorage.setItem('codeTreeSide', zone);
+      setTreeSide(zone);
+      setTreeMoveZone(null);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  // Letra da árvore: 14px na escala do "Tamanho do texto" (Configurações > Aparência).
+  const textScale = useTextScale();
+  const treePrefs = useMemo(() => treeMetrics(scaledPx(14, textScale)), [textScale]);
 
   const startTreeResize = (e) => {
     e.preventDefault();
@@ -608,7 +659,9 @@ export function CodeView({ active, openRequest, visible = true }) {
     setTreeResizing(true);
     document.body.style.cursor = 'col-resize';
     const onMove = (ev) => {
-      const w = Math.max(160, Math.min(ev.clientX - rect.left, rect.width - 280));
+      // Árvore à direita: a largura conta a partir da borda direita.
+      const raw = treeRight ? rect.right - ev.clientX : ev.clientX - rect.left;
+      const w = Math.max(160, Math.min(raw, rect.width - 280));
       setTreeWidth(w);
     };
     const onUp = () => {
@@ -773,6 +826,7 @@ export function CodeView({ active, openRequest, visible = true }) {
   }, [revealPaths]);
 
   const actions = {
+    refresh: () => reloadTree(),
     reveal: (it) => window.api.revealItem(it.path),
     revealInTree,
     copyPath: (it) => window.api.copyText(it.path),
@@ -1062,11 +1116,15 @@ export function CodeView({ active, openRequest, visible = true }) {
   }, [active, tabs, clip, visible]);
 
   return (
-    <div ref={codeRowRef} className="absolute inset-0 flex bg-background">
+    <div
+      ref={codeRowRef}
+      className={cn('absolute inset-0 flex bg-background', treeRight && 'flex-row-reverse')}
+    >
       <div
         style={{ width: treeWidth }}
         className={cn(
-          'flex shrink-0 flex-col border-r transition-colors',
+          'flex shrink-0 flex-col transition-colors',
+          treeRight ? 'border-l' : 'border-r',
           treeDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/40',
         )}
         onDragOver={(e) => {
@@ -1098,10 +1156,17 @@ export function CodeView({ active, openRequest, visible = true }) {
       >
         {active ? (
           <>
-            {/* Cabeçalho da árvore. Existe SEMPRE — inclusive no remoto, que antes não
-                tinha cabeçalho nenhum (a busca é escondida lá) e por isso não tinha onde
-                pôr o recarregar. Local: busca. Remoto: o diretório do outro lado. */}
+            {/* Cabeçalho da árvore. Existe SEMPRE — inclusive no remoto (a busca é
+                escondida lá), pra alça de mover ter onde morar. Local: busca. Remoto: o
+                diretório do outro lado. Recarregar fica no menu do botão direito. */}
             <div className="flex shrink-0 items-center gap-1 border-b p-1.5">
+              <span
+                onMouseDown={startTreeMove}
+                title={t('tree.move_tooltip')}
+                className="grid size-7 shrink-0 cursor-grab place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing [&_svg]:size-[15px]"
+              >
+                <GripVertical />
+              </span>
               {active?.remote ? (
                 <span
                   title={active.path}
@@ -1120,7 +1185,8 @@ export function CodeView({ active, openRequest, visible = true }) {
                     }}
                     placeholder={t('tree.search_placeholder')}
                     spellCheck={false}
-                    className="h-7 w-full rounded-md border bg-background pl-7 pr-7 text-[13px] outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+                    style={{ fontSize: treePrefs.fontSize }}
+                    className="h-8 w-full rounded-md border bg-background pl-7 pr-7 outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
                   />
                   {query && (
                     <button
@@ -1134,15 +1200,6 @@ export function CodeView({ active, openRequest, visible = true }) {
                   )}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={reloadTree}
-                title={t('tree.refresh')}
-                aria-label={t('tree.refresh')}
-                className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <RotateCw className="h-3.5 w-3.5" />
-              </button>
             </div>
             <div
               className="min-h-0 flex-1 overflow-auto py-1.5"
@@ -1184,8 +1241,9 @@ export function CodeView({ active, openRequest, visible = true }) {
                           );
                         }}
                         title={r.rel}
+                        style={{ fontSize: treePrefs.fontSize, minHeight: treePrefs.rowPx }}
                         className={cn(
-                          'flex w-full items-center gap-1.5 px-2 py-[3px] text-left text-[13px] hover:bg-muted',
+                          'flex w-full items-center gap-1.5 px-2 text-left hover:bg-muted',
                           isSel && 'bg-accent',
                         )}
                       >
@@ -1193,11 +1251,12 @@ export function CodeView({ active, openRequest, visible = true }) {
                           src={fileIconUrl(r.name)}
                           alt=""
                           draggable={false}
-                          className="h-4 w-4 shrink-0"
+                          className="shrink-0"
+                          style={{ width: treePrefs.iconPx, height: treePrefs.iconPx }}
                         />
                         <span className="shrink-0 truncate">{r.name}</span>
                         {dir && (
-                          <span className="ml-auto truncate pl-2 text-[11px] text-muted-foreground">
+                          <span className="ml-auto truncate pl-2 text-[0.85em] text-muted-foreground">
                             {dir}
                           </span>
                         )}
@@ -1231,6 +1290,7 @@ export function CodeView({ active, openRequest, visible = true }) {
                     canDropItems,
                     onDropMove: dropMove,
                     clearTreeDragOver: () => setTreeDragOver(false),
+                    prefs: treePrefs,
                   }}
                 >
                   <Tree dirPath={active.path} depth={0} />
@@ -1265,7 +1325,14 @@ export function CodeView({ active, openRequest, visible = true }) {
         selItems={selItems}
         onClose={() => setMenu(null)}
       />
-      <div className="flex min-w-0 flex-1 flex-col shadow-[inset_7px_0_14px_-12px_rgba(0,0,0,0.22)]">
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col',
+          treeRight
+            ? 'shadow-[inset_-7px_0_14px_-12px_rgba(0,0,0,0.22)]'
+            : 'shadow-[inset_7px_0_14px_-12px_rgba(0,0,0,0.22)]',
+        )}
+      >
         <div className="flex h-9 shrink-0 items-center border-b bg-card">
           {tabs.length ? (
             <>
@@ -1554,6 +1621,26 @@ export function CodeView({ active, openRequest, visible = true }) {
         </div>
       </div>
       {treeResizing && <div className="fixed inset-0 z-50 cursor-col-resize" />}
+      {treeMoveZone && (
+        // Arrastando a árvore: realça onde ela vai cair (metade esquerda ou direita).
+        <div className="fixed inset-0 z-50 cursor-grabbing">
+          {(() => {
+            const r = codeRowRef.current?.getBoundingClientRect();
+            if (!r) return null;
+            return (
+              <div
+                className="pointer-events-none absolute border-2 border-primary bg-primary/15 transition-all duration-75"
+                style={{
+                  top: r.top,
+                  height: r.height,
+                  width: treeWidth,
+                  left: treeMoveZone === 'left' ? r.left : r.right - treeWidth,
+                }}
+              />
+            );
+          })()}
+        </div>
+      )}
       <ConfirmDialog
         open={!!delItems?.length}
         title={t('delete.confirm_title')}
@@ -1855,8 +1942,9 @@ function MediaFallback({ name }) {
   );
 }
 
-function Tree({ dirPath, depth }) {
-  const { refresh } = useContext(FileTreeCtx);
+// `dim`: a pasta-mãe é ignorada pelo git, então tudo aqui dentro também fica em cinza.
+function Tree({ dirPath, depth, dim = false }) {
+  const { refresh, prefs } = useContext(FileTreeCtx);
   const [items, setItems] = useState(null);
   useEffect(() => {
     let alive = true;
@@ -1871,16 +1959,21 @@ function Tree({ dirPath, depth }) {
   // mostra um spinner no lugar da pasta vazia.
   if (!items)
     return (
-      <div className="flex items-center py-1" style={{ paddingLeft: depth * 12 + 8 }}>
+      <div className="flex items-center py-1" style={{ paddingLeft: depth * prefs.indentPx + 8 }}>
         <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
       </div>
     );
-  return items.map((it) => <TreeNode key={it.path} item={it} depth={depth} />);
+  return items.map((it) => <TreeNode key={it.path} item={it} depth={depth} dim={dim} />);
 }
 
-function TreeNode({ item, depth }) {
+function TreeNode({ item, depth, dim }) {
   const t = useT();
   const ctx = useContext(FileTreeCtx);
+  const { prefs } = ctx;
+  // Ignorado pelo git (ou dentro de pasta ignorada): cinza, como no Explorer do VS Code.
+  const ignored = dim || !!item.ignored;
+  const pad = depth * prefs.indentPx + 8;
+  const chev = { width: prefs.chevronPx, height: prefs.chevronPx };
   const [open, setOpen] = useState(false);
   const [over, setOver] = useState(false);
   // "Localizar na árvore": se esta pasta está no caminho até o alvo, abre-se. Fica
@@ -1936,12 +2029,13 @@ function TreeNode({ item, depth }) {
           }
         }}
         className={cn(
-          'flex cursor-pointer select-none items-center gap-1.5 py-[3px] pr-2 text-[13px] hover:bg-muted',
+          'flex cursor-pointer select-none items-center gap-1.5 pr-2 hover:bg-muted',
           isSel && 'bg-accent',
+          ignored && !isSel && 'text-muted-foreground',
           isCut && 'opacity-50',
           over && 'bg-primary/10 ring-1 ring-inset ring-primary/50',
         )}
-        style={{ paddingLeft: depth * 12 + 8 }}
+        style={{ paddingLeft: pad, minHeight: prefs.rowPx, fontSize: prefs.fontSize }}
         onClick={(e) => {
           ctx.onNodeClick(e, item);
           if (e.shiftKey || e.ctrlKey || e.metaKey) return; // seleção múltipla: não abre/expande
@@ -1959,22 +2053,22 @@ function TreeNode({ item, depth }) {
         title={item.isLink ? t('tree.link_title', { name: item.name }) : item.name}
       >
         {item.isLink ? (
-          <Link2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <Link2 className="shrink-0 text-primary" style={chev} />
         ) : item.isDir ? (
           open ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ChevronDown className="shrink-0 text-muted-foreground" style={chev} />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ChevronRight className="shrink-0 text-muted-foreground" style={chev} />
           )
         ) : (
-          <span className="w-3.5 shrink-0" />
+          <span className="shrink-0" style={{ width: prefs.chevronPx }} />
         )}
-        <span className="relative shrink-0">
+        <span className={cn('relative shrink-0', ignored && 'opacity-60')}>
           <img
             src={item.isDir ? folderIconUrl(item.name, open) : fileIconUrl(item.name)}
             alt=""
             draggable={false}
-            className="h-4 w-4"
+            style={{ width: prefs.iconPx, height: prefs.iconPx }}
           />
           {item.isLink && (
             // Selo de "atalho" no canto, estilo Windows, pra deixar claro que é um link.
@@ -1993,13 +2087,24 @@ function TreeNode({ item, depth }) {
               else if (e.key === 'Escape') ctx.cancelRename();
             }}
             onBlur={(e) => ctx.commitRename(item, e.target.value)}
-            className="min-w-0 flex-1 rounded border bg-background px-1 text-[13px] outline-none focus:ring-1 focus:ring-ring"
+            className="min-w-0 flex-1 rounded border bg-background px-1 outline-none focus:ring-1 focus:ring-ring"
           />
         ) : (
           <span className="truncate">{item.name}</span>
         )}
       </div>
-      {item.isDir && open && <Tree dirPath={item.path} depth={depth + 1} />}
+      {item.isDir && open && (
+        // Guia de indentação: linha fina alinhada com a seta desta pasta, descendo por
+        // todos os filhos. Mostra de relance quem está dentro de quem.
+        <div className="relative">
+          <Tree dirPath={item.path} depth={depth + 1} dim={ignored} />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 w-px bg-border"
+            style={{ left: pad + Math.floor(prefs.chevronPx / 2) }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -2056,6 +2161,9 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
       className="fixed z-50 min-w-[200px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
       style={{ left: x, top: y }}
     >
+      {/* Recarrega a árvore e as abas abertas (no remoto, relê pelo SFTP). */}
+      <MenuItem icon={RotateCw} label={t('tree.refresh')} onClick={run(actions.refresh)} />
+      <div className="my-1 border-t" />
       {fromSearch && (
         // Só nos resultados da busca: leva o arquivo pra sua posição na árvore.
         <>

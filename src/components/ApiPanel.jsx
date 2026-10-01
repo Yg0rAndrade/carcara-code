@@ -36,7 +36,7 @@ const SNIPPETS = [
 ];
 
 const editorTheme = EditorView.theme({
-  '&': { fontSize: '13px', height: '100%' },
+  '&': { fontSize: 'calc(13px * var(--text-scale, 1))', height: '100%' },
   '.cm-scroller': {
     fontFamily: 'ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace',
     lineHeight: '1.6',

@@ -189,7 +189,8 @@
     "no_results": "파일을 찾을 수 없습니다.",
     "empty": "프로젝트를 여세요.",
     "link_title": "{name} — 바로가기 (파일 탐색기에서 열림)",
-    "refresh": "파일 새로 고침"
+    "refresh": "파일 새로 고침",
+    "move_tooltip": "드래그해서 트리를 반대쪽으로 이동"
   },
   "code": {
     "tabs_select_file": "파일 선택",
@@ -785,7 +786,11 @@
     "checkUpdates": "업데이트 확인",
     "contributeTitle": "수정 사항을 제출하고 싶으신가요?",
     "contributeBody": "Carcará Code는 오픈 소스입니다. 버그를 고쳤거나 무언가를 개선했다면 GitHub에서 Pull Request를 열어 주세요 — 여러분의 기여를 환영합니다.",
-    "contributeButton": "GitHub에서 기여하기"
+    "contributeButton": "GitHub에서 기여하기",
+    "textSizeTitle": "글자 크기",
+    "textSizeHelp": "글자만 키웁니다(채팅, 파일 트리, 편집기, 터미널). 나머지 크기는 그대로라 화면은 100%로 두고 더 크게 읽을 수 있습니다.",
+    "textSizeSmaller": "글자 작게",
+    "textSizeLarger": "글자 크게"
   },
   "aiPicker": {
     "title": "이 탭의 AI 선택",

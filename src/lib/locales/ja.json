@@ -189,7 +189,8 @@
     "no_results": "ファイルが見つかりません。",
     "empty": "プロジェクトを開いてください。",
     "link_title": "{name} — ショートカット（エクスプローラーで開きます）",
-    "refresh": "ファイルを再読み込み"
+    "refresh": "ファイルを再読み込み",
+    "move_tooltip": "ドラッグしてツリーを反対側へ移動"
   },
   "code": {
     "tabs_select_file": "ファイルを選択",
@@ -785,7 +786,11 @@
     "checkUpdates": "更新を確認",
     "contributeTitle": "修正を提出したいですか？",
     "contributeBody": "Carcará Code はオープンソースです。バグを直したり何かを改善したりしたら、GitHub で Pull Request を開いてください — あなたの貢献を歓迎します。",
-    "contributeButton": "GitHub で貢献する"
+    "contributeButton": "GitHub で貢献する",
+    "textSizeTitle": "文字サイズ",
+    "textSizeHelp": "文字だけを大きくします（チャット、ファイルツリー、エディター、ターミナル）。ほかの部分のサイズは変わらないので、画面は100%のまま読みやすくできます。",
+    "textSizeSmaller": "文字を小さく",
+    "textSizeLarger": "文字を大きく"
   },
   "aiPicker": {
     "title": "このタブの AI を選択",

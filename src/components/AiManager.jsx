@@ -18,7 +18,12 @@ import { useT } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme.jsx';
 import { CliBadge, OPT } from '@/lib/aiOptions.jsx';
 import { AiManagerSkeleton } from './AiManagerSkeleton.jsx';
-import { TERM_THEMES, baseTerminalOptions, attachCopyPaste } from '@/lib/xtermShared';
+import {
+  TERM_THEMES,
+  baseTerminalOptions,
+  attachCopyPaste,
+  followTextScale,
+} from '@/lib/xtermShared';
 import { cn } from '@/lib/utils';
 
 const LABEL = (key) => OPT[key]?.label ?? key;
@@ -227,9 +232,11 @@ export default function AiManager({ initialInstallKey = null }) {
     // não disparam o resize do window, igual ao ShellView.
     const ro = new ResizeObserver(onResize);
     ro.observe(node);
+    const offScale = followTextScale(() => [term], onResize);
     return () => {
       window.removeEventListener('resize', onResize);
       ro.disconnect();
+      offScale();
       offData && offData();
       term.dispose();
       termRef.current = null;

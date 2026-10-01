@@ -189,7 +189,8 @@
     "no_results": "Không tìm thấy tệp nào.",
     "empty": "Mở một dự án.",
     "link_title": "{name} — lối tắt (mở trong File Explorer)",
-    "refresh": "Tải lại tệp"
+    "refresh": "Tải lại tệp",
+    "move_tooltip": "Kéo để chuyển cây sang phía bên kia"
   },
   "code": {
     "tabs_select_file": "Chọn một tệp",
@@ -785,7 +786,11 @@
     "checkUpdates": "Kiểm tra cập nhật",
     "contributeTitle": "Muốn gửi một bản sửa lỗi?",
     "contributeBody": "Carcará Code là mã nguồn mở. Nếu bạn đã sửa một lỗi hoặc cải thiện điều gì đó, hãy mở một Pull Request trên GitHub — đóng góp của bạn luôn được hoan nghênh.",
-    "contributeButton": "Đóng góp trên GitHub"
+    "contributeButton": "Đóng góp trên GitHub",
+    "textSizeTitle": "Cỡ chữ",
+    "textSizeHelp": "Chỉ phóng to chữ (chat, cây thư mục, trình soạn thảo, terminal), không đổi kích thước phần còn lại. Màn hình vẫn 100% mà chữ to hơn.",
+    "textSizeSmaller": "Chữ nhỏ hơn",
+    "textSizeLarger": "Chữ lớn hơn"
   },
   "aiPicker": {
     "title": "Chọn AI cho thẻ này",

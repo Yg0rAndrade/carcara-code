@@ -189,7 +189,8 @@
     "no_results": "Keine Dateien gefunden.",
     "empty": "Öffne ein Projekt.",
     "link_title": "{name} — Verknüpfung (öffnet im Datei-Explorer)",
-    "refresh": "Dateien neu laden"
+    "refresh": "Dateien neu laden",
+    "move_tooltip": "Ziehen, um den Baum auf die andere Seite zu verschieben"
   },
   "code": {
     "tabs_select_file": "Datei auswählen",
@@ -785,7 +786,11 @@
     "checkUpdates": "Nach Updates suchen",
     "contributeTitle": "Möchtest du einen Fix einreichen?",
     "contributeBody": "Carcará Code ist Open Source. Wenn du einen Fehler behoben oder etwas verbessert hast, öffne einen Pull Request auf GitHub — dein Beitrag ist willkommen.",
-    "contributeButton": "Auf GitHub beitragen"
+    "contributeButton": "Auf GitHub beitragen",
+    "textSizeTitle": "Textgröße",
+    "textSizeHelp": "Vergrößert nur die Schrift (Chat, Dateibaum, Editor, Terminal), ohne den Rest zu skalieren. Der Bildschirm bleibt bei 100 %, der Text wird größer.",
+    "textSizeSmaller": "Kleinerer Text",
+    "textSizeLarger": "Größerer Text"
   },
   "aiPicker": {
     "title": "Wähle die KI dieses Tabs",

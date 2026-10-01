@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 // Paleta compartilhada com o terminal livre (ShellView) e o do Gerenciar IAs.
-import { TERM_THEMES, terminalSurface } from '@/lib/xtermShared';
+import { TERM_THEMES, terminalSurface, followTextScale } from '@/lib/xtermShared';
+import { scaledPx } from '@/lib/textScale';
 import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
@@ -798,6 +799,13 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
     window.api.applyClaudeTheme(terminalTheme);
   }, [terminalTheme]);
 
+  // Tamanho do texto (Configurações > Aparência) vale também pro terminal do chat.
+  useEffect(
+    () => followTextScale(() => [...termsRef.current.values()].map((t) => t.term), scheduleRefit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   // Listeners de IPC (uma vez só) — roteados por sessionId.
   useEffect(() => {
     window.api.on('term:data', ({ sessionId, data }) => {
@@ -910,7 +918,7 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
     container.appendChild(el);
 
     const term = new Terminal({
-      fontSize: 13,
+      fontSize: scaledPx(13),
       fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
       theme: TERM_THEMES[themeRef.current],
       cursorBlink: true,

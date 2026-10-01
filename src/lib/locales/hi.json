@@ -189,7 +189,8 @@
     "no_results": "कोई फ़ाइल नहीं मिली।",
     "empty": "एक प्रोजेक्ट खोलें।",
     "link_title": "{name} — शॉर्टकट (File Explorer में खुलता है)",
-    "refresh": "फ़ाइलें फिर से लोड करें"
+    "refresh": "फ़ाइलें फिर से लोड करें",
+    "move_tooltip": "ट्री को दूसरी ओर ले जाने के लिए खींचें"
   },
   "code": {
     "tabs_select_file": "एक फ़ाइल चुनें",
@@ -785,7 +786,11 @@
     "checkUpdates": "अपडेट की जाँच करें",
     "contributeTitle": "कोई फ़िक्स सबमिट करना चाहते हैं?",
     "contributeBody": "Carcará Code ओपन सोर्स है। अगर आपने कोई बग ठीक किया या कुछ बेहतर किया, तो GitHub पर एक Pull Request खोलें — आपके योगदान का स्वागत है।",
-    "contributeButton": "GitHub पर योगदान करें"
+    "contributeButton": "GitHub पर योगदान करें",
+    "textSizeTitle": "टेक्स्ट का आकार",
+    "textSizeHelp": "सिर्फ़ अक्षर बड़े करता है (चैट, फ़ाइल ट्री, एडिटर, टर्मिनल), बाकी का आकार नहीं बदलता। स्क्रीन 100% पर रहती है और पढ़ना बड़ा होता है।",
+    "textSizeSmaller": "छोटा टेक्स्ट",
+    "textSizeLarger": "बड़ा टेक्स्ट"
   },
   "aiPicker": {
     "title": "इस टैब का AI चुनें",

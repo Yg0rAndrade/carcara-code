@@ -189,7 +189,8 @@
     "no_results": "Nessun file trovato.",
     "empty": "Apri un progetto.",
     "link_title": "{name} — collegamento (apre in Esplora file)",
-    "refresh": "Ricarica i file"
+    "refresh": "Ricarica i file",
+    "move_tooltip": "Trascina per spostare l'albero dall'altra parte"
   },
   "code": {
     "tabs_select_file": "Seleziona un file",
@@ -785,7 +786,11 @@
     "checkUpdates": "Controlla aggiornamenti",
     "contributeTitle": "Vuoi proporre una correzione?",
     "contributeBody": "Carcará Code è open source. Se hai corretto un bug o migliorato qualcosa, apri una Pull Request su GitHub — il tuo contributo è benvenuto.",
-    "contributeButton": "Contribuisci su GitHub"
+    "contributeButton": "Contribuisci su GitHub",
+    "textSizeTitle": "Dimensione del testo",
+    "textSizeHelp": "Ingrandisce solo il testo (chat, albero dei file, editor, terminale) senza cambiare la dimensione del resto. Lo schermo resta al 100% e si legge più grande.",
+    "textSizeSmaller": "Testo più piccolo",
+    "textSizeLarger": "Testo più grande"
   },
   "aiPicker": {
     "title": "Scegli l'AI di questa scheda",

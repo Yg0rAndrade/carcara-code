@@ -189,7 +189,8 @@
     "no_results": "Aucun fichier trouvé.",
     "empty": "Ouvrez un projet.",
     "link_title": "{name} — raccourci (ouvre dans l'Explorateur de fichiers)",
-    "refresh": "Recharger les fichiers"
+    "refresh": "Recharger les fichiers",
+    "move_tooltip": "Faites glisser pour déplacer l'arborescence de l'autre côté"
   },
   "code": {
     "tabs_select_file": "Sélectionnez un fichier",
@@ -785,7 +786,11 @@
     "checkUpdates": "Rechercher des mises à jour",
     "contributeTitle": "Envie de proposer une correction ?",
     "contributeBody": "Carcará Code est open source. Si vous avez corrigé un bug ou amélioré quelque chose, ouvrez une Pull Request sur GitHub — votre contribution est la bienvenue.",
-    "contributeButton": "Contribuer sur GitHub"
+    "contributeButton": "Contribuer sur GitHub",
+    "textSizeTitle": "Taille du texte",
+    "textSizeHelp": "Agrandit seulement le texte (chat, arborescence, éditeur, terminal) sans changer la taille du reste. L'écran peut rester à 100 % avec une lecture plus grande.",
+    "textSizeSmaller": "Texte plus petit",
+    "textSizeLarger": "Texte plus grand"
   },
   "aiPicker": {
     "title": "Choisir l'IA de cet onglet",

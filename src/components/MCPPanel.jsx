@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 
 const editorTheme = EditorView.theme({
-  '&': { fontSize: '13px', height: '100%' },
+  '&': { fontSize: 'calc(13px * var(--text-scale, 1))', height: '100%' },
   '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.6' },
 });
 

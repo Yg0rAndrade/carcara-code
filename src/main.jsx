@@ -6,6 +6,10 @@ import { LayoutProvider } from './lib/layoutContext.jsx';
 import { ChatModeProvider } from './lib/chatModeContext.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import './index.css';
+import { applyTextScale } from './lib/textScale';
+
+// Tamanho do texto salvo (Configurações > Aparência) antes do 1º render: sem piscar.
+applyTextScale();
 
 window.addEventListener('error', (e) => {
   console.error('GLOBAL ERROR:', e.message, '\n', e.error && e.error.stack);

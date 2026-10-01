@@ -1,6 +1,7 @@
 // Peças comuns dos terminais do app (o livre por projeto, no ShellView, e o do
 // "Gerenciar IAs"). Só o que os dois precisam compartilhar de verdade: a paleta por
 // tema e a semântica de copiar/colar — a parte fácil de errar.
+import { scaledPx, onTextScale } from './textScale';
 
 export const TERM_THEMES = {
   light: {
@@ -64,10 +65,19 @@ export function terminalSurface(terminalTheme) {
   return { className: key, style: { background: TERM_THEMES[key].background } };
 }
 
+// Tamanho do texto mudou nas Configurações: aplica a nova letra nos terminais e deixa
+// o painel remedir (o refit dele também avisa o PTY do novo cols/rows).
+export function followTextScale(getTerms, refit) {
+  return onTextScale((s) => {
+    for (const term of getTerms()) term.options.fontSize = scaledPx(13, s);
+    refit();
+  });
+}
+
 // Opções base de um terminal do app. `theme` é a chave 'light' | 'dark'.
 export function baseTerminalOptions(theme) {
   return {
-    fontSize: 13,
+    fontSize: scaledPx(13), // acompanha o tamanho do texto (lib/textScale)
     fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
     theme: TERM_THEMES[theme] || TERM_THEMES.dark,
     cursorBlink: true,

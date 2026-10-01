@@ -189,7 +189,8 @@
     "no_results": "Dosya bulunamadı.",
     "empty": "Bir proje aç.",
     "link_title": "{name} — kısayol (Dosya Gezgini'nde açılır)",
-    "refresh": "Dosyaları yenile"
+    "refresh": "Dosyaları yenile",
+    "move_tooltip": "Ağacı diğer tarafa taşımak için sürükleyin"
   },
   "code": {
     "tabs_select_file": "Bir dosya seç",
@@ -785,7 +786,11 @@
     "checkUpdates": "Güncellemeleri kontrol et",
     "contributeTitle": "Bir düzeltme göndermek ister misin?",
     "contributeBody": "Carcará Code açık kaynaklıdır. Bir hatayı düzelttiysen veya bir şeyi geliştirdiysen, GitHub'da bir Pull Request aç — katkın memnuniyetle karşılanır.",
-    "contributeButton": "GitHub'da katkıda bulun"
+    "contributeButton": "GitHub'da katkıda bulun",
+    "textSizeTitle": "Yazı boyutu",
+    "textSizeHelp": "Yalnızca yazıyı büyütür (sohbet, dosya ağacı, düzenleyici, terminal), geri kalanın boyutu değişmez. Ekran %100 kalır, yazı daha büyük olur.",
+    "textSizeSmaller": "Daha küçük yazı",
+    "textSizeLarger": "Daha büyük yazı"
   },
   "aiPicker": {
     "title": "Bu sekmenin yapay zekasını seç",

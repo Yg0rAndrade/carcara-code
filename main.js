@@ -16,6 +16,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
+const { ignoredNames } = require('./electron/git-ignored.cjs');
 const { Readable } = require('stream');
 const crypto = require('crypto');
 const http = require('http');
@@ -1642,7 +1643,7 @@ ipcMain.handle('fs:dir', async (evt, { dirPath }) => {
   } catch {
     return [];
   }
-  return ents
+  const list = ents
     .filter((en) => !(en.isDirectory() && IGNORE_DIRS.has(en.name)))
     .map((en) => {
       const p = path.join(dirPath, en.name);
@@ -1661,6 +1662,9 @@ ipcMain.handle('fs:dir', async (evt, { dirPath }) => {
       return { name: en.name, path: p, isDir, isLink };
     })
     .sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1));
+  // Marca o que o git ignora — a árvore pinta em cinza (ver electron/git-ignored.cjs).
+  const ignored = await ignoredNames(dirPath, list);
+  return list.map((it) => ({ ...it, ignored: ignored.has(it.name) }));
 });
 
 // Observa o projeto ativo e avisa o renderer quando algo muda no disco (ex.: o

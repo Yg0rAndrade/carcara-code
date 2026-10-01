@@ -189,7 +189,8 @@
     "no_results": "ไม่พบไฟล์",
     "empty": "เปิดโปรเจกต์",
     "link_title": "{name} — ทางลัด (เปิดใน File Explorer)",
-    "refresh": "โหลดไฟล์ใหม่"
+    "refresh": "โหลดไฟล์ใหม่",
+    "move_tooltip": "ลากเพื่อย้ายต้นไม้ไปอีกด้าน"
   },
   "code": {
     "tabs_select_file": "เลือกไฟล์",
@@ -785,7 +786,11 @@
     "checkUpdates": "ตรวจสอบการอัปเดต",
     "contributeTitle": "อยากส่งการแก้ไขไหม?",
     "contributeBody": "Carcará Code เป็นโอเพนซอร์ส หากคุณแก้บั๊กหรือปรับปรุงอะไรบางอย่าง เปิด Pull Request บน GitHub — ยินดีต้อนรับการมีส่วนร่วมของคุณ",
-    "contributeButton": "มีส่วนร่วมบน GitHub"
+    "contributeButton": "มีส่วนร่วมบน GitHub",
+    "textSizeTitle": "ขนาดตัวอักษร",
+    "textSizeHelp": "ขยายเฉพาะตัวอักษร (แชต ต้นไม้ไฟล์ ตัวแก้ไข เทอร์มินัล) โดยไม่เปลี่ยนขนาดส่วนอื่น หน้าจออยู่ที่ 100% แต่อ่านได้ใหญ่ขึ้น",
+    "textSizeSmaller": "ตัวอักษรเล็กลง",
+    "textSizeLarger": "ตัวอักษรใหญ่ขึ้น"
   },
   "aiPicker": {
     "title": "เลือก AI ของแท็บนี้",

@@ -14,6 +14,7 @@ import {
   baseTerminalOptions,
   attachCopyPaste,
   terminalSurface,
+  followTextScale,
 } from '@/lib/xtermShared';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
 import {
@@ -135,6 +136,13 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
     themeRef.current = terminalTheme;
     for (const [, te] of termsRef.current) te.term.options.theme = TERM_THEMES[terminalTheme];
   }, [terminalTheme]);
+
+  // Tamanho do texto (Configurações > Aparência): letra nova em todos os terminais.
+  useEffect(
+    () => followTextScale(() => [...termsRef.current.values()].map((te) => te.term), scheduleRefit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   // Listeners de IPC (com limpeza — o componente remonta a cada abrir do painel).
   useEffect(() => {

@@ -189,7 +189,8 @@
     "no_results": "未找到文件。",
     "empty": "打开一个项目。",
     "link_title": "{name} — 快捷方式（在文件资源管理器中打开）",
-    "refresh": "重新加载文件"
+    "refresh": "重新加载文件",
+    "move_tooltip": "拖动以将文件树移到另一侧"
   },
   "code": {
     "tabs_select_file": "选择一个文件",
@@ -785,7 +786,11 @@
     "checkUpdates": "检查更新",
     "contributeTitle": "想提交一个修复？",
     "contributeBody": "Carcará Code 是开源的。如果你修复了 bug 或改进了某处，请在 GitHub 上发起 Pull Request — 欢迎你的贡献。",
-    "contributeButton": "在 GitHub 上贡献"
+    "contributeButton": "在 GitHub 上贡献",
+    "textSizeTitle": "文字大小",
+    "textSizeHelp": "只放大文字（聊天、文件树、编辑器、终端），其他部分大小不变。屏幕保持 100%，文字更大。",
+    "textSizeSmaller": "缩小文字",
+    "textSizeLarger": "放大文字"
   },
   "aiPicker": {
     "title": "选择此标签页的 AI",

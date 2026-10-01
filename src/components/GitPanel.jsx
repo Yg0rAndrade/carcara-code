@@ -35,7 +35,7 @@ import { useT } from '@/lib/i18n';
 import { remoteToWebUrl } from '@/lib/remoteUrl.js';
 
 const diffEditorTheme = EditorView.theme({
-  '&': { fontSize: '12.5px', height: '100%' },
+  '&': { fontSize: 'calc(12.5px * var(--text-scale, 1))', height: '100%' },
   '.cm-scroller': {
     fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
     lineHeight: '1.6',

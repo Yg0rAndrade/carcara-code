@@ -189,7 +189,8 @@
     "no_results": "لم يُعثر على ملفات.",
     "empty": "افتح مشروعًا.",
     "link_title": "{name} — اختصار (يُفتح في مستكشف الملفات)",
-    "refresh": "إعادة تحميل الملفات"
+    "refresh": "إعادة تحميل الملفات",
+    "move_tooltip": "اسحب لنقل الشجرة إلى الجانب الآخر"
   },
   "code": {
     "tabs_select_file": "اختر ملفًا",
@@ -785,7 +786,11 @@
     "checkUpdates": "التحقق من التحديثات",
     "contributeTitle": "تريد إرسال إصلاح؟",
     "contributeBody": "Carcará Code مفتوح المصدر. إن أصلحت خطأً أو حسّنت شيئًا، افتح Pull Request على GitHub — مساهمتك مرحّب بها.",
-    "contributeButton": "ساهم على GitHub"
+    "contributeButton": "ساهم على GitHub",
+    "textSizeTitle": "حجم النص",
+    "textSizeHelp": "يكبّر النص فقط (الدردشة، شجرة الملفات، المحرر، الطرفية) دون تغيير حجم باقي العناصر. تبقى الشاشة على 100% ويصبح النص أكبر.",
+    "textSizeSmaller": "نص أصغر",
+    "textSizeLarger": "نص أكبر"
   },
   "aiPicker": {
     "title": "اختر الذكاء الاصطناعي لهذا التبويب",

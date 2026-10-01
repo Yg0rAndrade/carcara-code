@@ -189,7 +189,8 @@
     "no_results": "No files found.",
     "empty": "Open a project.",
     "link_title": "{name} — shortcut (opens in File Explorer)",
-    "refresh": "Reload files"
+    "refresh": "Refresh",
+    "move_tooltip": "Drag to move the tree to the other side"
   },
   "code": {
     "tabs_select_file": "Select a file",
@@ -785,7 +786,11 @@
     "checkUpdates": "Check for updates",
     "contributeTitle": "Want to submit a fix?",
     "contributeBody": "Carcará Code is open source. If you fixed a bug or improved something, open a Pull Request on GitHub — your contribution is welcome.",
-    "contributeButton": "Contribute on GitHub"
+    "contributeButton": "Contribute on GitHub",
+    "textSizeTitle": "Text size",
+    "textSizeHelp": "Makes only the text bigger (chat, file tree, editor, terminal) without resizing everything else. Keep the screen at 100% and read larger.",
+    "textSizeSmaller": "Smaller text",
+    "textSizeLarger": "Larger text"
   },
   "aiPicker": {
     "title": "Choose this tab's AI",

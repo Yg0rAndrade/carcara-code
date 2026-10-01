@@ -189,7 +189,8 @@
     "no_results": "Geen bestanden gevonden.",
     "empty": "Open een project.",
     "link_title": "{name} — snelkoppeling (opent in Verkenner)",
-    "refresh": "Bestanden opnieuw laden"
+    "refresh": "Bestanden opnieuw laden",
+    "move_tooltip": "Sleep om de boom naar de andere kant te verplaatsen"
   },
   "code": {
     "tabs_select_file": "Selecteer een bestand",
@@ -785,7 +786,11 @@
     "checkUpdates": "Controleren op updates",
     "contributeTitle": "Wil je een fix indienen?",
     "contributeBody": "Carcará Code is open source. Als je een bug hebt gerepareerd of iets hebt verbeterd, open een Pull Request op GitHub — je bijdrage is welkom.",
-    "contributeButton": "Bijdragen op GitHub"
+    "contributeButton": "Bijdragen op GitHub",
+    "textSizeTitle": "Tekstgrootte",
+    "textSizeHelp": "Maakt alleen de tekst groter (chat, bestandsboom, editor, terminal) zonder de rest te schalen. Het scherm blijft op 100% en je leest groter.",
+    "textSizeSmaller": "Kleinere tekst",
+    "textSizeLarger": "Grotere tekst"
   },
   "aiPicker": {
     "title": "Kies de AI van dit tabblad",

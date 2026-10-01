@@ -33,7 +33,9 @@ import {
   Container,
   Fish,
   ShieldOff,
+  ALargeSmall,
 } from 'lucide-react';
+import { readTextScale, stepTextScale, TEXT_SCALE_STEPS } from '@/lib/textScale';
 import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
 import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
@@ -353,6 +355,7 @@ export function SettingsModal({
   const [agyYolo, setAgyYolo] = useState(false); // Antigravity sobe sem pedir permissão
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
   const [wordWrap, setWordWrap] = useState(false); // quebrar linhas longas no editor (estilo VS Code)
+  const [textScale, setTextScale] = useState(readTextScale); // tamanho do texto, sem zoom
   const [shells, setShells] = useState([]); // shells instalados detectados no main { id, label }
   const [shellPref, setShellPref] = useState('auto'); // shell escolhido ('auto' = padrão do SO)
   // Detecta as dependências (Node/Git) só quando a aba está aberta — mesmo motor da tela de preparo.
@@ -364,6 +367,7 @@ export function SettingsModal({
     setZoom(Number(localStorage.getItem('appZoom')) || window.api.getZoom() || 1);
     setAutoSave(localStorage.getItem('codeAutoSave') === '1');
     setWordWrap(localStorage.getItem('codeWordWrap') === '1');
+    setTextScale(readTextScale());
     window.api
       .getNotify()
       .then((r) => setNotify(r?.enabled !== false))
@@ -1236,6 +1240,52 @@ export function SettingsModal({
                     type="button"
                     onClick={() => applyZoom('reset')}
                     disabled={zoom === 1}
+                    title={t('settings.zoomReset')}
+                    className={cn(OPTION_BTN.base, 'px-3')}
+                  >
+                    <RotateCcw aria-hidden="true" className="size-3.5" />{' '}
+                    {t('settings.zoomResetLabel')}
+                  </button>
+                </div>
+
+                <SectionHead
+                  className="mt-8"
+                  icon={<ALargeSmall />}
+                  title={t('settings.textSizeTitle')}
+                  help={t('settings.textSizeHelp')}
+                />
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTextScale(stepTextScale('out'))}
+                    disabled={textScale <= TEXT_SCALE_STEPS[0]}
+                    title={t('settings.textSizeSmaller')}
+                    aria-label={t('settings.textSizeSmaller')}
+                    className={OPTION_BTN.icon}
+                  >
+                    <span aria-hidden="true" className="text-xs font-semibold">
+                      A−
+                    </span>
+                  </button>
+                  <div className="grid h-11 w-16 place-items-center rounded-md border bg-muted/40 text-sm font-medium tabular-nums">
+                    {Math.round(textScale * 100)}%
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTextScale(stepTextScale('in'))}
+                    disabled={textScale >= TEXT_SCALE_STEPS[TEXT_SCALE_STEPS.length - 1]}
+                    title={t('settings.textSizeLarger')}
+                    aria-label={t('settings.textSizeLarger')}
+                    className={OPTION_BTN.icon}
+                  >
+                    <span aria-hidden="true" className="text-base font-semibold">
+                      A+
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTextScale(stepTextScale('reset'))}
+                    disabled={textScale === 1}
                     title={t('settings.zoomReset')}
                     className={cn(OPTION_BTN.base, 'px-3')}
                   >

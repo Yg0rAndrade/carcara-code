@@ -189,7 +189,8 @@
     "no_results": "File tidak ditemukan.",
     "empty": "Buka sebuah proyek.",
     "link_title": "{name} — pintasan (buka di File Explorer)",
-    "refresh": "Muat ulang berkas"
+    "refresh": "Muat ulang berkas",
+    "move_tooltip": "Seret untuk memindahkan pohon ke sisi lain"
   },
   "code": {
     "tabs_select_file": "Pilih file",
@@ -785,7 +786,11 @@
     "checkUpdates": "Periksa pembaruan",
     "contributeTitle": "Ingin mengirim perbaikan?",
     "contributeBody": "Carcará Code bersifat sumber terbuka. Jika Anda memperbaiki bug atau menyempurnakan sesuatu, buka Pull Request di GitHub — kontribusi Anda kami sambut.",
-    "contributeButton": "Berkontribusi di GitHub"
+    "contributeButton": "Berkontribusi di GitHub",
+    "textSizeTitle": "Ukuran teks",
+    "textSizeHelp": "Hanya memperbesar teks (chat, pohon file, editor, terminal) tanpa mengubah ukuran yang lain. Layar tetap 100% dan teks lebih besar.",
+    "textSizeSmaller": "Teks lebih kecil",
+    "textSizeLarger": "Teks lebih besar"
   },
   "aiPicker": {
     "title": "Pilih AI untuk tab ini",
