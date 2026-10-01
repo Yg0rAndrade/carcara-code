@@ -76,15 +76,18 @@ export function dissolveFolder(rail, folderId) {
 
 // --- helpers internos de applyDrop ---
 
-// Remove um path de onde quer que esteja (topo ou dentro de pasta). Pastas que ficam
-// vazias são descartadas. Devolve um rail novo.
+// Remove um path de onde quer que esteja (topo ou dentro de pasta). A pasta que PERDEU
+// o item e ficou vazia é descartada; pasta que já era vazia (criada pelo "+") fica —
+// senão ela some antes de receber o drop e soltar nela vira no-op.
+// Devolve um rail novo.
 function removePath(rail, path) {
   const out = [];
   for (const it of rail) {
     if (it.type === 'folder') {
       const children = it.children.filter((c) => c !== path);
-      if (children.length > 0) out.push({ ...it, children });
-      // pasta vazia é descartada
+      const lostChild = children.length < it.children.length;
+      if (children.length > 0 || !lostChild) out.push({ ...it, children });
+      // pasta esvaziada por este remove é descartada
     } else if (it.type === 'project' && it.path === path) {
       // dropa o projeto solto
     } else {

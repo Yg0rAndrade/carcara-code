@@ -114,4 +114,36 @@ describe('applyDrop', () => {
     });
     expect(out).toEqual([P('/a'), P('/b')]); // pasta f1 sumiu ao esvaziar
   });
+  // REGRESSÃO: pasta criada pelo "+" nasce vazia; soltar um projeto nela era no-op
+  // porque removePath descartava TODA pasta vazia, inclusive a de destino.
+  it('merge numa pasta VAZIA (criada pelo +) move o projeto pra dentro', () => {
+    const rail = [P('/a'), F('f1', [])];
+    const out = applyDrop(rail, {
+      dragPath: '/a',
+      targetKind: 'folder',
+      targetFolderId: 'f1',
+      zone: 'merge',
+    });
+    expect(out).toEqual([F('f1', ['/a'])]);
+  });
+  it('reorder sobre uma pasta vazia não a descarta', () => {
+    const rail = [P('/a'), F('f1', [])];
+    const out = applyDrop(rail, {
+      dragPath: '/a',
+      targetKind: 'folder',
+      targetFolderId: 'f1',
+      zone: 'reorder',
+    });
+    expect(out).toEqual([P('/a'), F('f1', [])]);
+  });
+  it('mover um projeto não descarta OUTRA pasta vazia', () => {
+    const rail = [F('f1', []), P('/a'), P('/b')];
+    const out = applyDrop(rail, {
+      dragPath: '/a',
+      targetKind: 'project',
+      targetPath: '/b',
+      zone: 'reorder',
+    });
+    expect(out).toEqual([F('f1', []), P('/a'), P('/b')]);
+  });
 });

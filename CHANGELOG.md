@@ -13,7 +13,7 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
   e mostra a pagina aqui como se fosse local: abas, barra de URL, DevTools, print, tudo igual. O
   tunel escuta so em `127.0.0.1` (a porta da VPS nunca fica exposta na sua rede) e fecha ao remover
   o projeto ou sair do app. Um chip na barra diz qual porta de la esta do outro lado e deixa trocar.
-- **Recarregar a arvore de arquivos:** botao no topo da arvore. Importa principalmente no projeto
+- **Recarregar a arvore de arquivos:** item **Atualizar** no menu do botao direito da arvore. Importa principalmente no projeto
   remoto, que nao tem observador de arquivos (o SFTP nao avisa quando algo muda) e por isso nao
   atualizava sozinho — nao havia sequer onde por o botao, porque o cabecalho da arvore so existia
   em projeto local. Recarrega tambem as abas abertas que nao tem edicao pendente.
@@ -21,8 +21,19 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
   **Geral** e **IA**. A escolha das CLIs daquele projeto passa a estar onde a pessoa ja esta
   olhando, em vez de so em Configuracoes › IA por projeto (que continua funcionando).
 
+- **Tamanho do texto:** Configuracoes › Aparencia ganhou um controle que aumenta so a letra (chat,
+  arvore de arquivos, editor e terminais), sem mexer no tamanho do resto da interface. Da pra
+  deixar a tela em 100% e ler maior.
+- **Arvore de arquivos no outro lado:** arraste a alca de seis pontinhos no cabecalho da arvore para
+  a metade esquerda ou direita da aba Codigo, igual ao gesto que ja troca o chat e a barra de lado.
+- **Itens ignorados pelo git em cinza:** na arvore, o que o `.gitignore` (e os excludes do git)
+  ignora fica esmaecido, como no Explorer do VS Code — `.env`, `*.log`, `dist/` saem do caminho do olho.
+
 ### Corrigido
 
+- **Soltar um projeto numa pasta vazia da barra nao fazia nada:** a pasta criada pelo `+` nasce
+  vazia e era descartada pela limpeza de pastas vazias antes de receber o projeto, entao o drop virava
+  um no-op silencioso. Agora so some a pasta que acabou de perder o ultimo filho.
 - **Digitacao menos travada no terminal remoto:** a conexao SSH passa a desligar o algoritmo de
   Nagle (`setNoDelay`). Sem isso, cada tecla — um pacote de 1 byte — ficava retida no sistema
   esperando ter o que juntar, somando atraso ao eco em cima da latencia que ja existe ate a VPS.
