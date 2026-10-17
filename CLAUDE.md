@@ -17,6 +17,9 @@ com chat e preview lado a lado. Usa a assinatura do Claude, nunca a API.
 - Edições em `src/` só aparecem depois de `npm run build` (o app carrega de `dist/`).
 - O app pode estar rodando com uma sessão viva do Claude Code — não force relaunch sem confirmar.
 - Para abrir o Electron de dentro de um terminal do Claude, limpe `ELECTRON_RUN_AS_NODE`.
+- `electron/plugins/<id>/` são plugins LOCAIS (repos próprios, ignorados pelo git); o
+  contrato está em `electron/plugins/README.md`. Os testes deles NÃO rodam no `npm test`
+  do Carcará (cada plugin tem o seu).
 - Ao lançar uma nova versão, atualizar `CHANGELOG.md` (padrão Keep a Changelog) com o
   diff do que mudou da versão anterior para a atual, antes do commit `chore(release): x.y.z`.
 
