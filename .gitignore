@@ -35,3 +35,6 @@ tarefa.md
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Engenharia reversa (uso pessoal, codigo proprietario - nunca commitar)
+reverse/
