@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-// Modo do painel de chat: 'cli' (terminal Claude Code real, padrão) ou 'chat'
-// (UI assistant-ui, experimental). Espelha o padrão do layoutContext: mira em
+// Modo do painel de chat: 'cli' (terminal Claude Code real, padrão), 'chat'
+// (UI assistant-ui, experimental) ou 'plugin:<id>'. Espelha o padrão do layoutContext: mira em
 // localStorage pra ler síncrono no boot (sem piscar) e re-sincroniza com o
 // config.json (fonte da verdade) ao montar.
 const LKEY = 'chatMode:v1';
@@ -13,7 +13,13 @@ const LKEY = 'chatMode:v1';
 // pronto, basta ligar este flag de volta e devolver o card na aba "Projetos".
 const CHAT_MODE_ENABLED = false;
 
-const modeOf = (v) => (CHAT_MODE_ENABLED && v === 'chat' ? 'chat' : 'cli');
+// 'plugin:<id>' = visual de chat de um plugin local (electron/plugins/). Fica fora do
+// flag acima: só existe se o plugin estiver instalado, e o main (fonte da verdade) devolve
+// 'cli' quando ele some.
+const modeOf = (v) => {
+  if (typeof v === 'string' && v.startsWith('plugin:')) return v;
+  return CHAT_MODE_ENABLED && v === 'chat' ? 'chat' : 'cli';
+};
 
 function readMirror() {
   try {

@@ -11,6 +11,7 @@ const {
   Notification,
   protocol,
   safeStorage,
+  net: electronNet,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -40,6 +41,7 @@ const { reconcile: reconcileRail } = require('./electron/rail-core.cjs');
 const { LocalPty } = require('./electron/remote/localPty.cjs');
 const platform = require('./electron/platform.cjs');
 const { decideWindowOpen } = require('./electron/window-open.cjs');
+const pluginHost = require('./electron/plugin-host.cjs');
 const { isRemote, parseSshUri, buildSshUri, hostKey } = require('./electron/remote/sshUri.cjs');
 const { parseSshConfig } = require('./electron/remote/sshConfig.cjs');
 const { SshShell } = require('./electron/remote/sshShell.cjs');
@@ -98,11 +100,15 @@ app.userAgentFallback = app.userAgentFallback
 
 // Protocolo interno pra servir áudio/vídeo com streaming + Range (seek). Precisa ser
 // registrado como privilegiado ANTES do app ficar pronto. 'stream' habilita o range.
+// Plugins locais (electron/plugins/, fora do repo) podem pedir schemes próprios; o
+// registerSchemesAsPrivileged só pode ser chamado UMA vez, então vão juntos aqui.
+const plugins = pluginHost.discover(path.join(__dirname, 'electron', 'plugins'), console.error);
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'ygc-media',
     privileges: { secure: true, stream: true, supportFetchAPI: true, bypassCSP: true },
   },
+  ...pluginHost.schemes(plugins),
 ]);
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
@@ -260,6 +266,7 @@ function cleanup() {
   try {
     codexAppServer.shutdown(); // senão o `codex app-server` fica de pé depois da janela
   } catch {}
+  pluginHost.dispose(plugins);
   try {
     mcpCore.mcpDisconnectAll();
   } catch {}
@@ -434,6 +441,7 @@ app.whenReady().then(async () => {
   // Encaminhamento de portas (o `ssh -L` do preview remoto), sobre a MESMA conexão.
   tunnels = makeTunnels({ net, connFor: (hk) => connections.connFor(hk) });
   registerMediaProtocol();
+  activatePlugins();
   // Remove o menu de aplicação padrão do Electron. A barra já fica escondida, mas os
   // ACELERADORES do menu padrão seguem ativos — e o Ctrl+V do "Edit → Paste" (role:
   // paste) dispara webContents.paste() ALÉM da colagem nativa do navegador, gerando
@@ -3073,16 +3081,22 @@ function activityIdle(entry) {
 }
 
 function maybeNotifyDone(entry, asking) {
+  const name = path.basename(entry.projectPath);
+  const body = asking ? tn('notify_asking', { name }) : tn('notify_done', { name });
+  showProjectNotification(entry.projectPath, body, entry.sessionId);
+}
+
+// Notificação nativa de um projeto: respeita a preferência, não avisa se você já está
+// olhando o projeto, agrupa rajadas e, no clique, traz a janela e abre o projeto.
+function showProjectNotification(projectPath, body, sessionId) {
   if (!notifyEnabled()) return;
   const focused = mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused();
-  if (focused && activeProjectPath === entry.projectPath) return; // você já está olhando
+  if (focused && activeProjectPath === projectPath) return; // você já está olhando
   const now = Date.now();
-  if (now - (lastNotifyAt.get(entry.projectPath) || 0) < 1500) return; // coalesce por projeto
-  lastNotifyAt.set(entry.projectPath, now);
+  if (now - (lastNotifyAt.get(projectPath) || 0) < 1500) return; // coalesce por projeto
+  lastNotifyAt.set(projectPath, now);
   try {
     if (Notification && !Notification.isSupported()) return;
-    const name = path.basename(entry.projectPath);
-    const body = asking ? tn('notify_asking', { name }) : tn('notify_done', { name });
     const n = new Notification({ title: tn('notify_title'), body });
     n.on('click', () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -3090,7 +3104,7 @@ function maybeNotifyDone(entry, asking) {
         mainWindow.show();
         mainWindow.focus();
       }
-      safeSend('activity:focus', { projectPath: entry.projectPath, sessionId: entry.sessionId });
+      safeSend('activity:focus', { projectPath, sessionId });
     });
     n.show();
   } catch {}
@@ -3163,7 +3177,31 @@ ipcMain.handle('shell:rescan', async () => {
 // ---- Modo do painel de chat: 'cli' (terminal Claude Code real, padrão) ou 'chat'
 // (UI assistant-ui, experimental). Global, no config.json. ADITIVO: só decide qual
 // componente o renderer monta no painel esquerdo; o terminal (term:*) não muda em nada.
-const chatModeOf = (v) => (v === 'chat' ? 'chat' : 'cli');
+const chatModeOf = (v) => pluginHost.chatModeOf(plugins, v);
+// ---- Plugins locais (ver electron/plugin-host.cjs). Só o essencial passa pelo contexto:
+// o plugin não enxerga o config.json, só pergunta se uma pasta é de projeto aberto.
+function activatePlugins() {
+  pluginHost.activate(plugins, {
+    protocol,
+    ipcMain,
+    net: electronNet,
+    shell,
+    webContents,
+    userDataDir: app.getPath('userData'),
+    baseEnv: cleanEnv,
+    log: (...a) => console.log(...a),
+    isProjectPath: (p) =>
+      (loadConfig().projects || []).some((r) => mediaCore.isWithinRoots(p, [r])),
+    openFileInApp: (p) => safeSend('plugin:open-file', { path: p, name: path.basename(p) }),
+    notify: (projectPath, body) => showProjectNotification(projectPath, String(body || '')),
+  });
+}
+ipcMain.handle('plugins:list', () => pluginHost.list(plugins));
+ipcMain.handle('plugins:chatView', (evt, { id, projectPath, tabId }) =>
+  pluginHost.chatView(plugins, id, { projectPath, tabId }),
+);
+ipcMain.on('plugins:theme', (evt, tokens) => pluginHost.setTheme(plugins, tokens));
+
 ipcMain.handle('chatMode:get', () => ({ mode: chatModeOf(loadConfig().chatMode) }));
 ipcMain.handle('chatMode:set', (evt, { mode }) => {
   const c = loadConfig();

@@ -657,6 +657,9 @@
     "agyYoloWarn": "عند التفعيل، يعدّل agy الملفات وينفّذ الأوامر دون سؤالك.",
     "agyYoloOn": "تخطّي طلبات الإذن",
     "agyYoloOff": "طلبات الإذن مفعّلة",
+    "chatViewTitle": "عرض علامات تبويب Claude",
+    "chatViewHelp": "طريقة عرض علامات تبويب Claude Code. الطرفية هي الافتراضية؛ والخيارات الأخرى تأتي من إضافات مثبتة على هذا الجهاز.",
+    "chatViewTerminal": "الطرفية",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "طرفية عادية بلا أي ذكاء اصطناعي — مجرد صدفة النظام داخل المشروع.",
     "aiCustomDesc": "عيّن الأمر يدويًا.",
@@ -916,5 +919,10 @@
     "bad_port": "منفذ غير صالح.",
     "change_port": "تغيير المنفذ",
     "pick": "منفذ"
+  },
+  "pluginChat": {
+    "loading": "جارٍ تحميل المحادثة…",
+    "error": "تعذّر فتح المحادثة",
+    "retry": "إعادة المحاولة"
   }
 }

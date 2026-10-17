@@ -63,11 +63,13 @@
       "!.claude/**",
       "!.superpowers/**",
       "!docs/**",
-      "!release/**"
+      "!release/**",
+      "!reverse/**"
     ],
     "npmRebuild": false,
     "asarUnpack": [
-      "**/node_modules/node-pty/**"
+      "**/node_modules/node-pty/**",
+      "**/node_modules/@anthropic-ai/claude-agent-sdk-*/**"
     ],
     "win": {
       "target": "nsis",

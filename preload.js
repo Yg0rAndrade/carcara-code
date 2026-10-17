@@ -126,6 +126,11 @@ contextBridge.exposeInMainWorld('api', {
   // Modo do painel de chat: 'cli' (terminal real, padrão) ou 'chat' (UI assistant-ui)
   getChatMode: () => ipcRenderer.invoke('chatMode:get'),
   setChatMode: (mode) => ipcRenderer.invoke('chatMode:set', { mode }),
+  // Plugins locais (electron/plugins/): visuais de chat alternativos pras abas do Claude.
+  listPlugins: () => ipcRenderer.invoke('plugins:list'),
+  pluginChatView: (id, projectPath, tabId) =>
+    ipcRenderer.invoke('plugins:chatView', { id, projectPath, tabId }),
+  pluginTheme: (tokens) => ipcRenderer.send('plugins:theme', tokens),
 
   // Ponte de chat headless (assistant-ui ↔ `claude -p` stream-json). Os eventos chegam
   // pelo push 'chat:event' via on(...). Additivo — não substitui o terminal (term:*).

@@ -657,6 +657,9 @@
     "agyYoloWarn": "Açıkken agy dosyaları düzenler ve komutları size sormadan çalıştırır.",
     "agyYoloOn": "İzinler atlanıyor",
     "agyYoloOff": "İzinler etkin",
+    "chatViewTitle": "Claude sekmelerinin görünümü",
+    "chatViewHelp": "Claude Code sekmelerinin nasıl gösterileceği. Varsayılan terminaldir; diğer seçenekler bu bilgisayarda kurulu eklentilerden gelir.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Hiç yapay zeka olmayan sade bir terminal — sadece projedeki sistem kabuğu.",
     "aiCustomDesc": "Komutu elle ayarla.",
@@ -916,5 +919,10 @@
     "bad_port": "Geçersiz bağlantı noktası.",
     "change_port": "Bağlantı noktasını değiştir",
     "pick": "b. noktası"
+  },
+  "pluginChat": {
+    "loading": "Sohbet yükleniyor…",
+    "error": "Sohbet açılamadı",
+    "retry": "Tekrar dene"
   }
 }

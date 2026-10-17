@@ -38,6 +38,7 @@ import { AiPicker } from './AiPicker.jsx';
 import { MOVE_MIME, TASK_MIME, hasExternalFiles, dropInsertText } from '@/lib/dragPaths.js';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
+import { PluginChatView } from './PluginChatView.jsx';
 import { CarcaraChat } from '@/components/CarcaraChat.jsx';
 
 // IAs com adapter de chat na ponte (chat-cli.cjs). As demais seguem no terminal xterm.
@@ -736,6 +737,10 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   const cliOf = (sid) => sessions.find((s) => s.id === sid)?.cli;
   const isChatSession = (sid) => chatMode === 'chat' && CHAT_CLIS.includes(cliOf(sid));
   const isCarcaraSession = (sid) => cliOf(sid) === 'carcara';
+  // Modo 'plugin:<id>': as abas do Claude usam o visual de chat de um plugin local
+  // (PluginChatView) em vez do terminal. As outras IAs seguem no terminal.
+  const chatPlugin = chatMode.startsWith('plugin:') ? chatMode.slice('plugin:'.length) : null;
+  const isPluginSession = (sid) => !!chatPlugin && cliOf(sid) === 'claude';
   // Atividade do Claude POR SESSÃO: sessionId -> 'working' | 'asking' | 'attention'.
   // É o detalhe fino (qual aba) que o rail (agregado por projeto) não mostra.
   const [sessionActivity, setSessionActivity] = useState({});
@@ -1028,7 +1033,7 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
         let te = termsRef.current.get(sid);
         // Sessão em modo chat: não cria/mostra o xterm (o overlay do AssistantChat cobre
         // o container). Esconde um terminal já criado, se existir, sem matá-lo.
-        if (isActive && (isChatSession(sid) || isCarcaraSession(sid))) {
+        if (isActive && (isChatSession(sid) || isCarcaraSession(sid) || isPluginSession(sid))) {
           if (te) te.el.style.display = 'none';
           continue;
         }
@@ -1417,6 +1422,21 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
               <CarcaraChat sessionId={p.active} projectPath={activeProject} />
             </div>
           )}
+          {/* Visual de plugin: TODAS as abas do Claude do pane ficam montadas (só a ativa
+              aparece), pra trocar de aba não matar a conversa em andamento. */}
+          {p.tabs.filter(isPluginSession).map((sid) => (
+            <div
+              key={sid}
+              className={'absolute inset-0 ' + (sid === p.active ? 'z-10' : 'pointer-events-none')}
+            >
+              <PluginChatView
+                pluginId={chatPlugin}
+                projectPath={activeProject}
+                tabId={sid}
+                visible={sid === p.active}
+              />
+            </div>
+          ))}
           {dragSid && (
             <div
               className="absolute inset-0 z-20"

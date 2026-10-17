@@ -38,3 +38,7 @@ Thumbs.db
 
 # Engenharia reversa (uso pessoal, codigo proprietario - nunca commitar)
 reverse/
+
+# Plugins locais: cada um é um repositório próprio (ver electron/plugins/README.md)
+electron/plugins/*
+!electron/plugins/README.md

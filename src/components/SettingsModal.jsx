@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { readTextScale, stepTextScale, TEXT_SCALE_STEPS } from '@/lib/textScale';
 import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
+import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
@@ -353,6 +354,8 @@ export function SettingsModal({
   const [zoom, setZoom] = useState(1); // fator de zoom da janela (1 = 100%)
   const [notify, setNotify] = useState(true); // notificar quando o Claude termina
   const [agyYolo, setAgyYolo] = useState(false); // Antigravity sobe sem pedir permissão
+  const [chatPlugins, setChatPlugins] = useState([]); // plugins locais com visual de chat
+  const { chatMode, setChatMode } = useChatMode();
   const [autoSave, setAutoSave] = useState(false); // salvar arquivos do editor automaticamente
   const [wordWrap, setWordWrap] = useState(false); // quebrar linhas longas no editor (estilo VS Code)
   const [textScale, setTextScale] = useState(readTextScale); // tamanho do texto, sem zoom
@@ -368,6 +371,10 @@ export function SettingsModal({
     setAutoSave(localStorage.getItem('codeAutoSave') === '1');
     setWordWrap(localStorage.getItem('codeWordWrap') === '1');
     setTextScale(readTextScale());
+    window.api
+      .listPlugins?.()
+      .then((list) => setChatPlugins(Array.isArray(list) ? list : []))
+      .catch(() => {});
     window.api
       .getNotify()
       .then((r) => setNotify(r?.enabled !== false))
@@ -731,6 +738,42 @@ export function SettingsModal({
                       className="mt-0.5"
                     />
                   </div>
+
+                  {/* Visual das abas do Claude. Só aparece com plugin local instalado
+                      (electron/plugins/); sem plugin, o Carcará é só terminal, como sempre. */}
+                  {chatPlugins.length > 0 && (
+                    <div className="mt-4 rounded-lg border p-4">
+                      <div className="text-[13px] font-medium">{t('settings.chatViewTitle')}</div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t('settings.chatViewHelp')}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2" role="radiogroup">
+                        {[
+                          { mode: 'cli', label: t('settings.chatViewTerminal') },
+                          ...chatPlugins.map((pl) => ({
+                            mode: `plugin:${pl.id}`,
+                            label: pl.label,
+                            title: pl.description,
+                          })),
+                        ].map((o) => (
+                          <button
+                            key={o.mode}
+                            type="button"
+                            role="radio"
+                            aria-checked={chatMode === o.mode}
+                            title={o.title}
+                            onClick={() => setChatMode(o.mode)}
+                            className={cn(
+                              'rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted',
+                              chatMode === o.mode && 'border-primary bg-primary/10 text-foreground',
+                            )}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* O card "Chat em vez do terminal" (beta) saiu daqui: o painel ainda está em
                       construção. A fiação continua no chatModeContext, atrás do flag

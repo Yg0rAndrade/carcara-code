@@ -657,6 +657,9 @@
     "agyYoloWarn": "켜면 agy가 확인 없이 파일을 수정하고 명령을 실행합니다.",
     "agyYoloOn": "권한 확인 건너뜀",
     "agyYoloOff": "권한 확인 사용",
+    "chatViewTitle": "Claude 탭 보기",
+    "chatViewHelp": "Claude Code 탭을 표시하는 방식입니다. 기본값은 터미널이며, 다른 옵션은 이 컴퓨터에 설치된 플러그인에서 제공됩니다.",
+    "chatViewTerminal": "터미널",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "AI가 전혀 없는 일반 터미널 — 프로젝트 안의 시스템 셸입니다.",
     "aiCustomDesc": "명령을 직접 설정하세요.",
@@ -916,5 +919,10 @@
     "bad_port": "잘못된 포트입니다.",
     "change_port": "포트 바꾸기",
     "pick": "포트"
+  },
+  "pluginChat": {
+    "loading": "채팅 불러오는 중…",
+    "error": "채팅을 열 수 없습니다",
+    "retry": "다시 시도"
   }
 }

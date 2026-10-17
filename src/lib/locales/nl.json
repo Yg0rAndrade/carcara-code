@@ -657,6 +657,9 @@
     "agyYoloWarn": "Aan bewerkt agy bestanden en voert opdrachten uit zonder het eerst te vragen.",
     "agyYoloOn": "Toestemming overgeslagen",
     "agyYoloOff": "Toestemming actief",
+    "chatViewTitle": "Weergave van Claude-tabbladen",
+    "chatViewHelp": "Hoe Claude Code-tabbladen worden getoond. De terminal is de standaard; de andere opties komen van plug-ins op deze computer.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Een gewone terminal, helemaal geen AI — gewoon de systeemshell in het project.",
     "aiCustomDesc": "Stel de opdracht handmatig in.",
@@ -916,5 +919,10 @@
     "bad_port": "Ongeldige poort.",
     "change_port": "Poort wijzigen",
     "pick": "poort"
+  },
+  "pluginChat": {
+    "loading": "Chat laden…",
+    "error": "Kon de chat niet openen",
+    "retry": "Opnieuw proberen"
   }
 }

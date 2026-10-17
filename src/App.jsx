@@ -457,6 +457,12 @@ export default function App() {
 
   // Abre um arquivo na aba "Código" do projeto ativo (vindo da paleta de comandos).
   const openFileFromPalette = (file) => previewControls.current?.openFile?.(file);
+  // Plugin de chat pediu pra abrir um arquivo (ex.: link de arquivo numa resposta):
+  // mesmo caminho da paleta, na aba "Código".
+  useEffect(
+    () => window.api.on('plugin:open-file', (file) => previewControls.current?.openFile?.(file)),
+    [],
+  );
 
   // Comandos da paleta (Ctrl+K). Trocar de projeto, abas do painel, servidor,
   // sessão de chat, tema e configurações. As ações de painel/servidor passam pelo

@@ -15,6 +15,15 @@ export default defineConfig({
     environment: 'node',
     // `**/` cobre também node_modules/dist dentro das worktrees em .claude/worktrees/*
     // (o CI roda em checkout limpo, sem worktrees; isto alinha o run local).
-    exclude: ['**/node_modules/**', '**/dist/**', '**/release/**', '.claude/**', '.superpowers/**'],
+    // electron/plugins/: plugins locais são repositórios próprios, com testes próprios.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/release/**',
+      '.claude/**',
+      '.superpowers/**',
+      'electron/plugins/**',
+      'reverse/**',
+    ],
   },
 });

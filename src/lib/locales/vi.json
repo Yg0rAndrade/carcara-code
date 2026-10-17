@@ -657,6 +657,9 @@
     "agyYoloWarn": "Khi bật, agy sửa tệp và chạy lệnh mà không hỏi bạn.",
     "agyYoloOn": "Đã bỏ qua quyền",
     "agyYoloOff": "Quyền đang bật",
+    "chatViewTitle": "Giao diện tab Claude",
+    "chatViewHelp": "Cách hiển thị các tab Claude Code. Mặc định là terminal; các lựa chọn khác đến từ plugin cài trên máy này.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Một terminal thuần, hoàn toàn không có AI — chỉ là shell hệ thống trong dự án.",
     "aiCustomDesc": "Đặt lệnh thủ công.",
@@ -916,5 +919,10 @@
     "bad_port": "Cổng không hợp lệ.",
     "change_port": "Đổi cổng",
     "pick": "cổng"
+  },
+  "pluginChat": {
+    "loading": "Đang tải cuộc trò chuyện…",
+    "error": "Không mở được cuộc trò chuyện",
+    "retry": "Thử lại"
   }
 }

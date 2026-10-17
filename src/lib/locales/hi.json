@@ -657,6 +657,9 @@
     "agyYoloWarn": "चालू होने पर agy बिना पूछे फ़ाइलें बदलता है और कमांड चलाता है।",
     "agyYoloOn": "अनुमति छोड़ी गई",
     "agyYoloOff": "अनुमति चालू",
+    "chatViewTitle": "Claude टैब का दृश्य",
+    "chatViewHelp": "Claude Code टैब कैसे दिखें। टर्मिनल डिफ़ॉल्ट है; बाकी विकल्प इस कंप्यूटर पर इंस्टॉल प्लगइन से आते हैं।",
+    "chatViewTerminal": "टर्मिनल",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "एक साधारण टर्मिनल, कोई AI नहीं — बस प्रोजेक्ट में सिस्टम शेल।",
     "aiCustomDesc": "कमांड मैन्युअल रूप से सेट करें।",
@@ -916,5 +919,10 @@
     "bad_port": "अमान्य पोर्ट।",
     "change_port": "पोर्ट बदलें",
     "pick": "पोर्ट"
+  },
+  "pluginChat": {
+    "loading": "चैट लोड हो रही है…",
+    "error": "चैट नहीं खुल सकी",
+    "retry": "फिर कोशिश करें"
   }
 }

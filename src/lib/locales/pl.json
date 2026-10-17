@@ -657,6 +657,9 @@
     "agyYoloWarn": "Włączone, agy edytuje pliki i uruchamia polecenia bez pytania.",
     "agyYoloOn": "Zgody pominięte",
     "agyYoloOff": "Zgody aktywne",
+    "chatViewTitle": "Widok kart Claude",
+    "chatViewHelp": "Jak wyświetlane są karty Claude Code. Domyślny jest terminal; pozostałe opcje pochodzą z wtyczek zainstalowanych na tym komputerze.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Zwykły terminal, bez żadnej AI — po prostu systemowa powłoka w projekcie.",
     "aiCustomDesc": "Ustaw polecenie ręcznie.",
@@ -916,5 +919,10 @@
     "bad_port": "Nieprawidłowy port.",
     "change_port": "Zmień port",
     "pick": "port"
+  },
+  "pluginChat": {
+    "loading": "Ładowanie czatu…",
+    "error": "Nie udało się otworzyć czatu",
+    "retry": "Spróbuj ponownie"
   }
 }

@@ -657,6 +657,9 @@
     "agyYoloWarn": "开启后，agy 会直接修改文件并执行命令，不再征求你的同意。",
     "agyYoloOn": "已跳过权限确认",
     "agyYoloOff": "保留权限确认",
+    "chatViewTitle": "Claude 标签页视图",
+    "chatViewHelp": "Claude Code 标签页的显示方式。默认是终端；其他选项来自本机安装的插件。",
+    "chatViewTerminal": "终端",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "纯终端，完全没有 AI — 只是项目中的系统 shell。",
     "aiCustomDesc": "手动设置命令。",
@@ -916,5 +919,10 @@
     "bad_port": "端口无效。",
     "change_port": "更换端口",
     "pick": "端口"
+  },
+  "pluginChat": {
+    "loading": "正在加载聊天…",
+    "error": "无法打开聊天",
+    "retry": "重试"
   }
 }

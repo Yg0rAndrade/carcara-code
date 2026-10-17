@@ -657,6 +657,9 @@
     "agyYoloWarn": "เมื่อเปิดใช้ agy จะแก้ไขไฟล์และรันคำสั่งโดยไม่ถามคุณ",
     "agyYoloOn": "ข้ามการขออนุญาต",
     "agyYoloOff": "ขออนุญาตตามปกติ",
+    "chatViewTitle": "มุมมองแท็บ Claude",
+    "chatViewHelp": "วิธีแสดงแท็บ Claude Code ค่าเริ่มต้นคือเทอร์มินัล ตัวเลือกอื่นมาจากปลั๊กอินที่ติดตั้งในเครื่องนี้",
+    "chatViewTerminal": "เทอร์มินัล",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "เทอร์มินัลธรรมดา ไม่มี AI เลย — แค่เชลล์ของระบบในโปรเจกต์",
     "aiCustomDesc": "ตั้งค่าคำสั่งด้วยตนเอง",
@@ -916,5 +919,10 @@
     "bad_port": "พอร์ตไม่ถูกต้อง",
     "change_port": "เปลี่ยนพอร์ต",
     "pick": "พอร์ต"
+  },
+  "pluginChat": {
+    "loading": "กำลังโหลดแชต…",
+    "error": "เปิดแชตไม่ได้",
+    "retry": "ลองอีกครั้ง"
   }
 }

@@ -657,6 +657,9 @@
     "agyYoloWarn": "Saat aktif, agy menyunting berkas dan menjalankan perintah tanpa bertanya.",
     "agyYoloOn": "Izin dilewati",
     "agyYoloOff": "Izin aktif",
+    "chatViewTitle": "Tampilan tab Claude",
+    "chatViewHelp": "Cara tab Claude Code ditampilkan. Terminal adalah bawaan; opsi lain berasal dari plugin yang terpasang di komputer ini.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Terminal biasa, tanpa AI sama sekali — hanya shell sistem di proyek.",
     "aiCustomDesc": "Atur perintah secara manual.",
@@ -916,5 +919,10 @@
     "bad_port": "Port tidak valid.",
     "change_port": "Ganti port",
     "pick": "port"
+  },
+  "pluginChat": {
+    "loading": "Memuat obrolan…",
+    "error": "Tidak bisa membuka obrolan",
+    "retry": "Coba lagi"
   }
 }

@@ -657,6 +657,9 @@
     "agyYoloWarn": "Attivo, agy modifica file ed esegue comandi senza chiederti nulla.",
     "agyYoloOn": "Permessi ignorati",
     "agyYoloOff": "Permessi attivi",
+    "chatViewTitle": "Vista delle schede di Claude",
+    "chatViewHelp": "Come vengono mostrate le schede di Claude Code. Il terminale è il predefinito; le altre opzioni vengono da plugin installati su questo computer.",
+    "chatViewTerminal": "Terminale",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Un terminale semplice, senza alcuna AI — solo la shell di sistema nel progetto.",
     "aiCustomDesc": "Imposta il comando manualmente.",
@@ -916,5 +919,10 @@
     "bad_port": "Porta non valida.",
     "change_port": "Cambia porta",
     "pick": "porta"
+  },
+  "pluginChat": {
+    "loading": "Caricamento della chat…",
+    "error": "Impossibile aprire la chat",
+    "retry": "Riprova"
   }
 }

@@ -657,6 +657,9 @@
     "agyYoloWarn": "有効にすると、agy は確認なしでファイルを編集しコマンドを実行します。",
     "agyYoloOn": "権限確認をスキップ",
     "agyYoloOff": "権限確認あり",
+    "chatViewTitle": "Claude タブの表示",
+    "chatViewHelp": "Claude Code タブの表示方法。既定はターミナルです。ほかの選択肢はこのマシンにインストールされたプラグインによるものです。",
+    "chatViewTerminal": "ターミナル",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "AI のない素のターミナル — プロジェクト内のシステムシェルだけです。",
     "aiCustomDesc": "コマンドを手動で設定します。",
@@ -916,5 +919,10 @@
     "bad_port": "無効なポートです。",
     "change_port": "ポートを変更",
     "pick": "ポート"
+  },
+  "pluginChat": {
+    "loading": "チャットを読み込み中…",
+    "error": "チャットを開けませんでした",
+    "retry": "再試行"
   }
 }

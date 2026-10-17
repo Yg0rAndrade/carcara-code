@@ -657,6 +657,9 @@
     "agyYoloWarn": "Aktiviert bearbeitet agy Dateien und führt Befehle aus, ohne vorher zu fragen.",
     "agyYoloOn": "Berechtigungsabfragen übersprungen",
     "agyYoloOff": "Berechtigungsabfragen aktiv",
+    "chatViewTitle": "Ansicht der Claude-Tabs",
+    "chatViewHelp": "Wie Claude-Code-Tabs dargestellt werden. Standard ist das Terminal; die anderen Optionen stammen von auf diesem Rechner installierten Plugins.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Ein einfaches Terminal, gar keine KI — nur die System-Shell im Projekt.",
     "aiCustomDesc": "Den Befehl manuell festlegen.",
@@ -916,5 +919,10 @@
     "bad_port": "Ungültiger Port.",
     "change_port": "Port wechseln",
     "pick": "Port"
+  },
+  "pluginChat": {
+    "loading": "Chat wird geladen…",
+    "error": "Chat konnte nicht geöffnet werden",
+    "retry": "Erneut versuchen"
   }
 }

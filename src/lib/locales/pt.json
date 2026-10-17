@@ -657,6 +657,9 @@
     "agyYoloWarn": "Ligado, o agy edita arquivos e roda comandos sem perguntar antes.",
     "agyYoloOn": "Permissões dispensadas",
     "agyYoloOff": "Permissões ativas",
+    "chatViewTitle": "Visual das abas do Claude",
+    "chatViewHelp": "Como as abas do Claude Code são desenhadas. O terminal é o padrão; as outras opções vêm de plugins instalados nesta máquina.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "IA embutida com motor OpenCode · sem terminal, sem setup.",
     "aiShellDesc": "Um terminal comum, sem nenhuma IA — só o shell do sistema no projeto.",
     "aiCustomDesc": "Defina o comando manualmente.",
@@ -916,5 +919,10 @@
     "bad_port": "Porta inválida.",
     "change_port": "Trocar a porta",
     "pick": "porta"
+  },
+  "pluginChat": {
+    "loading": "Carregando o chat…",
+    "error": "Não deu pra abrir o chat",
+    "retry": "Tentar de novo"
   }
 }

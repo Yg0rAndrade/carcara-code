@@ -657,6 +657,9 @@
     "agyYoloWarn": "Activé, agy modifie des fichiers et exécute des commandes sans vous demander.",
     "agyYoloOn": "Autorisations ignorées",
     "agyYoloOff": "Autorisations actives",
+    "chatViewTitle": "Affichage des onglets Claude",
+    "chatViewHelp": "Comment les onglets Claude Code sont affichés. Le terminal est l'option par défaut ; les autres viennent de plugins installés sur cette machine.",
+    "chatViewTerminal": "Terminal",
     "aiCarcaraDesc": "Built-in AI powered by OpenCode · no terminal, no setup.",
     "aiShellDesc": "Un terminal simple, sans aucune IA — juste le shell système dans le projet.",
     "aiCustomDesc": "Définissez la commande manuellement.",
@@ -916,5 +919,10 @@
     "bad_port": "Port invalide.",
     "change_port": "Changer de port",
     "pick": "port"
+  },
+  "pluginChat": {
+    "loading": "Chargement du chat…",
+    "error": "Impossible d'ouvrir le chat",
+    "retry": "Réessayer"
   }
 }
