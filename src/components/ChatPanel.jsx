@@ -38,7 +38,7 @@ import { AiPicker } from './AiPicker.jsx';
 import { MOVE_MIME, TASK_MIME, hasExternalFiles, dropInsertText } from '@/lib/dragPaths.js';
 import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
-import { PluginChatView } from './PluginChatView.jsx';
+import { PluginViewLayer } from './PluginChatView.jsx';
 import { CarcaraChat } from '@/components/CarcaraChat.jsx';
 
 // IAs com adapter de chat na ponte (chat-cli.cjs). As demais seguem no terminal xterm.
@@ -741,6 +741,13 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
   // (PluginChatView) em vez do terminal. As outras IAs seguem no terminal.
   const chatPlugin = chatMode.startsWith('plugin:') ? chatMode.slice('plugin:'.length) : null;
   const isPluginSession = (sid) => !!chatPlugin && cliOf(sid) === 'claude';
+  // Chats de plugin abertos nesta execução, de qualquer projeto: [{ key, project, sid }].
+  // Ficam vivos ao trocar de projeto (ver PluginViewLayer); saem ao fechar a aba.
+  const [pluginViews, setPluginViews] = useState([]);
+  const pluginSlots = useRef(new Map()); // key -> slot da aba ativa no pane
+  const pluginTitles = useRef(new Map()); // key -> último título gravado
+  const pluginKey = (project, sid) => `${project}
+${sid}`;
   // Atividade do Claude POR SESSÃO: sessionId -> 'working' | 'asking' | 'attention'.
   // É o detalhe fino (qual aba) que o rail (agregado por projeto) não mostra.
   const [sessionActivity, setSessionActivity] = useState({});
@@ -1053,6 +1060,22 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
     scheduleRefit();
   }, [layout, activeProject, sessions, projectAis, chatMode]);
 
+  // Registra os chats de plugin das abas do projeto ativo (os de outros projetos ficam).
+  useEffect(() => {
+    if (!chatPlugin) return setPluginViews([]);
+    if (!activeProject || !layout) return;
+    const add = allPanes(layout)
+      .flatMap((p) => p.tabs)
+      .filter(isPluginSession)
+      .map((sid) => ({ key: pluginKey(activeProject, sid), project: activeProject, sid }));
+    setPluginViews((cur) => {
+      const have = new Set(cur.map((v) => v.key));
+      const fresh = add.filter((v) => !have.has(v.key));
+      return fresh.length ? [...cur, ...fresh] : cur;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout, activeProject, sessions, chatPlugin]);
+
   // Reajusta os terminais visíveis quando o painel inteiro muda de tamanho.
   useEffect(() => {
     let raf = 0;
@@ -1147,6 +1170,8 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
       t.el.remove();
       termsRef.current.delete(sessionId);
     }
+    const key = pluginKey(activeProject, sessionId);
+    setPluginViews((cur) => cur.filter((v) => v.key !== key));
     setSessions((cur) => cur.filter((s) => s.id !== sessionId));
     commitLayout(closeSessionInTree(layoutRef.current, sessionId));
   };
@@ -1180,6 +1205,19 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
     // ou "Untitled"), então usa a resposta em vez do rascunho.
     const applied = (res && res.name) || name;
     setSessions((cur) => cur.map((s) => (s.id === sid ? { ...s, name: applied } : s)));
+  };
+
+  // Título vindo do visual de plugin: fixa como nome da aba (vence o aiTitle do main,
+  // que no modo plugin é de outra sessão). Só grava quando muda.
+  // O chat manda o título a cada mudança de estado: só grava quando muda.
+  const onPluginTitle = (project, sid, name) => {
+    const key = pluginKey(project, sid);
+    if (pluginTitles.current.get(key) === name) return;
+    pluginTitles.current.set(key, name);
+    if (project === projectRef.current) {
+      setSessions((list) => list.map((s) => (s.id === sid ? { ...s, name } : s)));
+    }
+    window.api.sessionsRename(project, sid, name);
   };
 
   // --- Arrastar e soltar abas ---
@@ -1422,21 +1460,17 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
               <CarcaraChat sessionId={p.active} projectPath={activeProject} />
             </div>
           )}
-          {/* Visual de plugin: TODAS as abas do Claude do pane ficam montadas (só a ativa
-              aparece), pra trocar de aba não matar a conversa em andamento. */}
-          {p.tabs.filter(isPluginSession).map((sid) => (
+          {/* Visual de plugin: só o lugar da aba ativa; o chat vem da PluginViewLayer. */}
+          {isPluginSession(p.active) && (
             <div
-              key={sid}
-              className={'absolute inset-0 ' + (sid === p.active ? 'z-10' : 'pointer-events-none')}
-            >
-              <PluginChatView
-                pluginId={chatPlugin}
-                projectPath={activeProject}
-                tabId={sid}
-                visible={sid === p.active}
-              />
-            </div>
-          ))}
+              ref={(el) => {
+                const key = pluginKey(activeProject, p.active);
+                if (el) pluginSlots.current.set(key, el);
+                else pluginSlots.current.delete(key);
+              }}
+              className="pointer-events-none absolute inset-0"
+            />
+          )}
           {dragSid && (
             <div
               className="absolute inset-0 z-20"
@@ -1494,6 +1528,16 @@ export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, o
           </div>
         )}
         {activeProject && layout && renderNode(layout)}
+        {chatPlugin && (
+          <PluginViewLayer
+            pluginId={chatPlugin}
+            views={pluginViews}
+            slotsRef={pluginSlots}
+            hostRef={hostRef}
+            onTitle={onPluginTitle}
+            deps={[layout, activeProject, sessions]}
+          />
+        )}
       </div>
       {tabMenu && (
         <>

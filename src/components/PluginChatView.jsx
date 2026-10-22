@@ -2,9 +2,10 @@
 // página e o preload que o plugin indica. O Carcará não sabe o que roda lá dentro; só
 // pede a página (plugins:chatView), monta e repassa o tema atual.
 //
-// Fica montado enquanto a aba existir no projeto aberto (escondido quando inativo), pra
-// trocar de aba não derrubar a conversa em andamento.
-import { useEffect, useRef, useState } from 'react';
+// Um <webview> recarrega a página quando muda de lugar no DOM (e o plugin derruba a
+// conversa junto). Por isso os chats moram numa camada fixa (PluginViewLayer) por cima
+// dos panes: trocar de projeto, aba ou pane só esconde ou reposiciona.
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Loader2, RotateCw } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme.jsx';
@@ -44,12 +45,14 @@ function readThemeTokens(el) {
   return out;
 }
 
-export function PluginChatView({ pluginId, projectPath, tabId, visible }) {
+export function PluginChatView({ pluginId, projectPath, tabId, visible, onTitle }) {
   const t = useT();
   const { theme } = useTheme();
   const hostRef = useRef(null);
   const [state, setState] = useState({ status: 'loading', error: '' });
   const [attempt, setAttempt] = useState(0);
+  const onTitleRef = useRef(onTitle);
+  onTitleRef.current = onTitle;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -68,6 +71,12 @@ export function PluginChatView({ pluginId, projectPath, tabId, visible }) {
         view.setAttribute('src', src);
         view.className = 'absolute inset-0 h-full w-full';
         view.addEventListener('dom-ready', () => alive && setState({ status: 'ready', error: '' }));
+        // O preload do plugin pode mandar o título da conversa (ipcRenderer.sendToHost).
+        view.addEventListener('ipc-message', (e) => {
+          if (alive && e.channel === 'carcara:title' && typeof e.args[0] === 'string') {
+            onTitleRef.current?.(e.args[0]);
+          }
+        });
         host.appendChild(view);
       })
       .catch((err) => {
@@ -112,4 +121,55 @@ export function PluginChatView({ pluginId, projectPath, tabId, visible }) {
       )}
     </div>
   );
+}
+
+// Camada com os chats de plugin de TODOS os projetos abertos nesta execução. Cada pane
+// marca o lugar da aba ativa com um slot (slotsRef: key -> elemento); a view com slot
+// aparece em cima dele, as outras ficam escondidas e vivas.
+export function PluginViewLayer({ pluginId, views, slotsRef, hostRef, onTitle, deps }) {
+  const [rects, setRects] = useState({});
+
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return undefined;
+    const measure = () => {
+      const base = host.getBoundingClientRect();
+      const next = {};
+      for (const [key, el] of slotsRef.current) {
+        const r = el.getBoundingClientRect();
+        next[key] = {
+          left: r.left - base.left,
+          top: r.top - base.top,
+          width: r.width,
+          height: r.height,
+        };
+      }
+      setRects((cur) => (JSON.stringify(cur) === JSON.stringify(next) ? cur : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(host);
+    for (const el of slotsRef.current.values()) ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [views, ...deps]);
+
+  return views.map((v) => {
+    const r = rects[v.key];
+    return (
+      <div
+        key={v.key}
+        className={'absolute ' + (r ? 'z-10' : 'pointer-events-none')}
+        style={r || { inset: 0 }}
+      >
+        <PluginChatView
+          pluginId={pluginId}
+          projectPath={v.project}
+          tabId={v.sid}
+          visible={!!r}
+          onTitle={(name) => onTitle(v.project, v.sid, name)}
+        />
+      </div>
+    );
+  });
 }

@@ -42,6 +42,8 @@ Instância devolvida por `activate`:
 - `chatView({ projectPath, tabId })` → `Promise<{ src, preload }>`: URL da página e preload
   (`file://`) do `<webview>` daquela aba. Pode demorar (ex.: download na primeira vez); o
   renderer mostra "carregando" enquanto isso.
+  O preload pode chamar `ipcRenderer.sendToHost('carcara:title', titulo)`: o título vira o
+  nome da aba no Carcará.
 - `setTheme(tokens)` (opcional): tokens do tema atual (`background`, `foreground`,
   `primary`… no formato do shadcn, mais `fontUi`, `fontMono` e `dark`).
 - `dispose()` (opcional): chamado ao fechar o app.
