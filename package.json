@@ -195,5 +195,16 @@
     "tailwindcss-animate": "^1.0.7",
     "tldraw": "^5.1.1",
     "xlsx": "^0.18.5"
+  },
+  "allowScripts": {
+    "canvas@3.2.3": true,
+    "core-js@2.6.12": true,
+    "cpu-features@0.0.10": true,
+    "electron@33.4.11": true,
+    "electron-winstaller@5.4.0": true,
+    "node-pty@1.1.0": true,
+    "protobufjs@7.6.4": true,
+    "protobufjs@8.6.4": true,
+    "ssh2@1.17.0": true
   }
 }
