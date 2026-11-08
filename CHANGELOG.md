@@ -3,6 +3,32 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.16] — 2026-11-08
+
+### Adicionado
+
+- **Fechar todas as sessões:** menu **⋯** no cabeçalho do chat. Como isso derruba o que estiver
+  rodando, pede um segundo clique ("Confirmar: fechar N sessões"). O projeto nunca fica sem sessão:
+  uma nova abre antes de as antigas fecharem.
+- **Fechar todas as abas de arquivo:** botão na barra de abas da aba Código. Aba com edição não
+  salva continua aberta, para nada se perder sem querer.
+- **Menu do botão direito na aba de arquivo:** Atualizar, Revelar na árvore, Fechar e Fechar todas.
+  O **Atualizar** relê o arquivo do disco e cobre também imagem, PDF e mídia, que o recarregamento
+  automático não alcança. Fica desabilitado se a aba tem edição não salva.
+- **Plugins locais (experimental):** suporte a plugins em `electron/plugins/<id>/`, com visual de
+  chat alternativo para as abas do Claude, ativado nas Configurações. Os chats de plugin moram numa
+  camada fixa, então trocar de projeto não recarrega a sessão, e o título aparece na aba.
+- **Logo em SVG e PNG** e documento de cores do projeto, na pasta `brand/`.
+
+### Alterado
+
+- **Paleta de comandos mais larga:** de 560 px para 640 px.
+
+### Corrigido
+
+- **Instalação com npm 12:** os scripts de instalação que o npm 12 bloqueia por padrão (Electron,
+  `node-pty`, `ssh2` e outros) agora estão liberados no `package.json`.
+
 ## [0.1.15] — 2026-10-01
 
 ### Adicionado
