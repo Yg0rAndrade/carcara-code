@@ -165,7 +165,10 @@
     "tabs_rename": "Đổi tên",
     "tabs_rename_hint": "Nhấp chuột phải để đổi tên",
     "new": "Phiên mới",
-    "untitled": "Chưa đặt tên"
+    "untitled": "Chưa đặt tên",
+    "close_all": "Đóng tất cả phiên",
+    "close_all_confirm": "Xác nhận: đóng {count} phiên",
+    "menu": "Tùy chọn phiên"
   },
   "chat": {
     "empty": "Nhấp vào một dự án để mở Claude Code tại đây."
@@ -219,7 +222,9 @@
     "empty": "Chọn một tệp từ cây thư mục.",
     "binary_notice": "Tệp nhị phân — không thể chỉnh sửa.",
     "media_unsupported": "Định dạng phương tiện không được trình phát tích hợp hỗ trợ.",
-    "error_notice": "Lỗi:"
+    "error_notice": "Lỗi:",
+    "tabs_close_all": "Đóng tất cả tab",
+    "tabs_close_all_tip": "Đóng tất cả tab (tab có thay đổi chưa lưu vẫn mở)"
   },
   "env": {
     "editor_title": "Trình chỉnh sửa biến môi trường an toàn — giá trị đã che",

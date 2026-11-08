@@ -1138,6 +1138,8 @@ ${sid}`;
         const pane = focusedPaneRef.current || firstPane(layoutRef.current)?.id;
         if (pane) addSession(pane);
       },
+      sessionCount: () => sessions.length,
+      closeAllSessions,
     };
   }
 
@@ -1161,6 +1163,20 @@ ${sid}`;
   const closeSession = async (e, sessionId) => {
     e.stopPropagation();
     if (!activeProject || sessions.length <= 1) return;
+    await dropSession(sessionId);
+  };
+
+  // Fecha todas as abas do projeto. O projeto nunca fica sem sessão: abre uma nova no
+  // pane em foco e só então fecha as antigas (os demais panes somem junto).
+  async function closeAllSessions() {
+    const pane = focusedPaneRef.current || firstPane(layoutRef.current)?.id;
+    if (!activeProject || !pane) return;
+    const old = sessions.map((s) => s.id);
+    await addSession(pane);
+    for (const id of old) await dropSession(id);
+  }
+
+  async function dropSession(sessionId) {
     await window.api.sessionsClose(activeProject, sessionId);
     const t = termsRef.current.get(sessionId);
     if (t) {
@@ -1174,7 +1190,7 @@ ${sid}`;
     setPluginViews((cur) => cur.filter((v) => v.key !== key));
     setSessions((cur) => cur.filter((s) => s.id !== sessionId));
     commitLayout(closeSessionInTree(layoutRef.current, sessionId));
-  };
+  }
 
   // --- Menu de contexto da aba (botão direito) ---
   const openTabMenu = (sid, e) => {

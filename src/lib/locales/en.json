@@ -165,7 +165,10 @@
     "tabs_rename": "Rename",
     "tabs_rename_hint": "Right-click to rename",
     "new": "New session",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "close_all": "Close all sessions",
+    "close_all_confirm": "Confirm: close {count} sessions",
+    "menu": "Session options"
   },
   "chat": {
     "empty": "Click a project to open Claude Code here."
@@ -219,7 +222,9 @@
     "empty": "Select a file from the tree.",
     "binary_notice": "Binary file — not editable.",
     "media_unsupported": "Media format not supported by the built-in player.",
-    "error_notice": "Error:"
+    "error_notice": "Error:",
+    "tabs_close_all": "Close all tabs",
+    "tabs_close_all_tip": "Close all tabs (tabs with unsaved changes stay open)"
   },
   "env": {
     "editor_title": "Secure environment editor — values masked",

@@ -165,7 +165,10 @@
     "tabs_rename": "Renomear",
     "tabs_rename_hint": "Botão direito para renomear",
     "new": "Nova sessão",
-    "untitled": "Sem título"
+    "untitled": "Sem título",
+    "close_all": "Fechar todas as sessões",
+    "close_all_confirm": "Confirmar: fechar {count} sessões",
+    "menu": "Opções das sessões"
   },
   "chat": {
     "empty": "Clique num projeto pra abrir o Claude Code aqui."
@@ -219,7 +222,9 @@
     "empty": "Selecione um arquivo na árvore.",
     "binary_notice": "Arquivo binário — não editável.",
     "media_unsupported": "Formato de mídia não suportado pelo player embutido.",
-    "error_notice": "Erro:"
+    "error_notice": "Erro:",
+    "tabs_close_all": "Fechar todas as abas",
+    "tabs_close_all_tip": "Fechar todas as abas (as com alterações não salvas ficam abertas)"
   },
   "env": {
     "editor_title": "Editor seguro de ambiente — valores mascarados",

@@ -165,7 +165,10 @@
     "tabs_rename": "Renommer",
     "tabs_rename_hint": "Clic droit pour renommer",
     "new": "Nouvelle session",
-    "untitled": "Sans titre"
+    "untitled": "Sans titre",
+    "close_all": "Fermer toutes les sessions",
+    "close_all_confirm": "Confirmer : fermer {count} sessions",
+    "menu": "Options des sessions"
   },
   "chat": {
     "empty": "Cliquez sur un projet pour ouvrir Claude Code ici."
@@ -219,7 +222,9 @@
     "empty": "Sélectionnez un fichier dans l'arborescence.",
     "binary_notice": "Fichier binaire — non modifiable.",
     "media_unsupported": "Format multimédia non pris en charge par le lecteur intégré.",
-    "error_notice": "Erreur :"
+    "error_notice": "Erreur :",
+    "tabs_close_all": "Fermer tous les onglets",
+    "tabs_close_all_tip": "Fermer tous les onglets (ceux avec des modifications non enregistrées restent ouverts)"
   },
   "env": {
     "editor_title": "Éditeur d'environnement sécurisé — valeurs masquées",

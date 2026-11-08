@@ -165,7 +165,10 @@
     "tabs_rename": "Yeniden adlandır",
     "tabs_rename_hint": "Yeniden adlandırmak için sağ tıkla",
     "new": "Yeni oturum",
-    "untitled": "Adsız"
+    "untitled": "Adsız",
+    "close_all": "Tüm oturumları kapat",
+    "close_all_confirm": "Onayla: {count} oturumu kapat",
+    "menu": "Oturum seçenekleri"
   },
   "chat": {
     "empty": "Claude Code'u burada açmak için bir projeye tıkla."
@@ -219,7 +222,9 @@
     "empty": "Ağaçtan bir dosya seç.",
     "binary_notice": "İkili dosya — düzenlenemez.",
     "media_unsupported": "Yerleşik oynatıcı bu medya biçimini desteklemiyor.",
-    "error_notice": "Hata:"
+    "error_notice": "Hata:",
+    "tabs_close_all": "Tüm sekmeleri kapat",
+    "tabs_close_all_tip": "Tüm sekmeleri kapat (kaydedilmemiş değişiklik içerenler açık kalır)"
   },
   "env": {
     "editor_title": "Güvenli ortam düzenleyicisi — değerler maskeli",

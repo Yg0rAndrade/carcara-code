@@ -27,6 +27,7 @@ import { RefreshCCWIcon } from './components/ui/refresh-ccw.jsx';
 import { XIcon } from './components/ui/x.jsx';
 import { Rail } from './components/Rail.jsx';
 import { ChatPanel } from './components/ChatPanel.jsx';
+import { SessionsMenu } from './components/SessionsMenu.jsx';
 import { PreviewPanel } from './components/PreviewPanel.jsx';
 import { CommandPalette } from './components/CommandPalette.jsx';
 import {
@@ -815,31 +816,36 @@ export default function App() {
         <span className="truncate text-[15px] font-semibold">
           {active ? active.name : t('app.no_project_selected')}
         </span>
-        {active?.previewType != null && (
+        {active && (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => previewControls.current?.restart?.()}
-              onMouseEnter={() => restartIcon.current?.startAnimation?.()}
-              onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
-              title={t('app.restart_server_tooltip')}
-              className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
-            >
-              <RefreshCCWIcon ref={restartIcon} />
-              {t('app.restart_server_btn')}
-            </button>
-            <button
-              type="button"
-              onClick={() => previewControls.current?.stop?.()}
-              onMouseEnter={() => stopIcon.current?.startAnimation?.()}
-              onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
-              disabled={serverMode === 'empty'}
-              title={t('app.stop_server_tooltip')}
-              className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
-            >
-              <XIcon ref={stopIcon} />
-              {t('app.stop_server_btn')}
-            </button>
+            <SessionsMenu controlsRef={chatControls} />
+            {active.previewType != null && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => previewControls.current?.restart?.()}
+                  onMouseEnter={() => restartIcon.current?.startAnimation?.()}
+                  onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
+                  title={t('app.restart_server_tooltip')}
+                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
+                >
+                  <RefreshCCWIcon ref={restartIcon} />
+                  {t('app.restart_server_btn')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => previewControls.current?.stop?.()}
+                  onMouseEnter={() => stopIcon.current?.startAnimation?.()}
+                  onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
+                  disabled={serverMode === 'empty'}
+                  title={t('app.stop_server_tooltip')}
+                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
+                >
+                  <XIcon ref={stopIcon} />
+                  {t('app.stop_server_btn')}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -165,7 +165,10 @@
     "tabs_rename": "Zmień nazwę",
     "tabs_rename_hint": "Kliknij prawym przyciskiem, aby zmienić nazwę",
     "new": "Nowa sesja",
-    "untitled": "Bez nazwy"
+    "untitled": "Bez nazwy",
+    "close_all": "Zamknij wszystkie sesje",
+    "close_all_confirm": "Potwierdź: zamknij sesje ({count})",
+    "menu": "Opcje sesji"
   },
   "chat": {
     "empty": "Kliknij projekt, aby otworzyć tu Claude Code."
@@ -219,7 +222,9 @@
     "empty": "Wybierz plik z drzewa.",
     "binary_notice": "Plik binarny — nie do edycji.",
     "media_unsupported": "Format multimediów nieobsługiwany przez wbudowany odtwarzacz.",
-    "error_notice": "Błąd:"
+    "error_notice": "Błąd:",
+    "tabs_close_all": "Zamknij wszystkie karty",
+    "tabs_close_all_tip": "Zamknij wszystkie karty (karty z niezapisanymi zmianami pozostaną otwarte)"
   },
   "env": {
     "editor_title": "Bezpieczny edytor środowiska — wartości zamaskowane",

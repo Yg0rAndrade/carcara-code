@@ -132,7 +132,7 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
       onMouseDown={onClose}
     >
       <div
-        className="flex max-h-[70vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover shadow-2xl"
+        className="flex max-h-[70vh] w-[640px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover shadow-2xl"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b px-3.5">

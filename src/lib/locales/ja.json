@@ -165,7 +165,10 @@
     "tabs_rename": "名前を変更",
     "tabs_rename_hint": "右クリックで名前を変更",
     "new": "新しいセッション",
-    "untitled": "無題"
+    "untitled": "無題",
+    "close_all": "すべてのセッションを閉じる",
+    "close_all_confirm": "確認: {count} 件のセッションを閉じる",
+    "menu": "セッションのオプション"
   },
   "chat": {
     "empty": "プロジェクトをクリックすると、ここで Claude Code が開きます。"
@@ -219,7 +222,9 @@
     "empty": "ツリーからファイルを選択してください。",
     "binary_notice": "バイナリファイル — 編集できません。",
     "media_unsupported": "このメディア形式は内蔵プレーヤーで対応していません。",
-    "error_notice": "エラー:"
+    "error_notice": "エラー:",
+    "tabs_close_all": "すべてのタブを閉じる",
+    "tabs_close_all_tip": "すべてのタブを閉じる(未保存の変更があるタブは開いたままです)"
   },
   "env": {
     "editor_title": "安全な環境変数エディター — 値はマスク表示",

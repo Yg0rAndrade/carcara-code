@@ -165,7 +165,10 @@
     "tabs_rename": "Ganti nama",
     "tabs_rename_hint": "Klik kanan untuk mengganti nama",
     "new": "Sesi baru",
-    "untitled": "Tanpa judul"
+    "untitled": "Tanpa judul",
+    "close_all": "Tutup semua sesi",
+    "close_all_confirm": "Konfirmasi: tutup {count} sesi",
+    "menu": "Opsi sesi"
   },
   "chat": {
     "empty": "Klik sebuah proyek untuk membuka Claude Code di sini."
@@ -219,7 +222,9 @@
     "empty": "Pilih file dari pohon.",
     "binary_notice": "File biner — tidak dapat disunting.",
     "media_unsupported": "Format media tidak didukung oleh pemutar bawaan.",
-    "error_notice": "Kesalahan:"
+    "error_notice": "Kesalahan:",
+    "tabs_close_all": "Tutup semua tab",
+    "tabs_close_all_tip": "Tutup semua tab (tab dengan perubahan belum disimpan tetap terbuka)"
   },
   "env": {
     "editor_title": "Editor lingkungan aman — nilai disamarkan",

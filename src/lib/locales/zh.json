@@ -165,7 +165,10 @@
     "tabs_rename": "重命名",
     "tabs_rename_hint": "右键单击可重命名",
     "new": "新建会话",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "close_all": "关闭所有会话",
+    "close_all_confirm": "确认:关闭 {count} 个会话",
+    "menu": "会话选项"
   },
   "chat": {
     "empty": "点击一个项目即可在此打开 Claude Code。"
@@ -219,7 +222,9 @@
     "empty": "从文件树中选择一个文件。",
     "binary_notice": "二进制文件 — 无法编辑。",
     "media_unsupported": "内置播放器不支持该媒体格式。",
-    "error_notice": "错误："
+    "error_notice": "错误：",
+    "tabs_close_all": "关闭所有标签页",
+    "tabs_close_all_tip": "关闭所有标签页(有未保存更改的标签页保持打开)"
   },
   "env": {
     "editor_title": "安全环境变量编辑器 — 值已遮盖",

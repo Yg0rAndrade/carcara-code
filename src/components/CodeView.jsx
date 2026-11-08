@@ -42,6 +42,7 @@ import {
   Loader2,
   RotateCw,
   GripVertical,
+  ListX,
 } from 'lucide-react';
 import { fileIconUrl, folderIconUrl } from '@/lib/fileIcons';
 import { useTextScale, scaledPx } from '@/lib/textScale';
@@ -88,6 +89,20 @@ const Markdown = lazy(() => import('./Markdown.jsx'));
 const XlsxViewer = lazy(() => import('./XlsxViewer.jsx'));
 // Visualizador read-only de HTML (webview), sob demanda.
 const HtmlViewer = lazy(() => import('./HtmlViewer.jsx'));
+
+// Campos de conteúdo de uma aba de arquivo, todos vazios.
+const TAB_BLANK = {
+  content: '',
+  image: null,
+  pdf: null,
+  xlsx: null,
+  video: null,
+  audio: null,
+  csv: false,
+  csvLarge: false,
+  csvMeta: null,
+  notice: null,
+};
 
 function isMarkdown(name) {
   const e = String(name || '')
@@ -373,6 +388,7 @@ export function CodeView({ active, openRequest, visible = true }) {
 
   // Menu de contexto da árvore
   const [menu, setMenu] = useState(null); // { x, y, item }
+  const [tabMenu, setTabMenu] = useState(null); // { x, y, tab } (botão direito numa aba aberta)
   const [clip, setClip] = useState(null); // { path, name, isDir, mode: 'cut' | 'copy' }
   const [delItems, setDelItems] = useState(null); // array de itens aguardando confirmação de exclusão
   const [creating, setCreating] = useState(null); // { destDir, isDir } aguardando o nome do novo item
@@ -877,6 +893,50 @@ export function CodeView({ active, openRequest, visible = true }) {
     removeTabs((t) => t.path === path);
   };
 
+  // Limpa a lista de abas. Aba com edição não salva fica aberta: nada se perde sem querer.
+  const closeAllFiles = () => removeTabs((t) => !t.dirty);
+
+  // Traduz a resposta do readFile nos campos da aba.
+  const readPatch = (r) => {
+    if (r.image) return { image: r.image };
+    if (r.pdf) return { pdf: r.pdf };
+    if (r.video) return { video: r.video };
+    if (r.audio) return { audio: r.audio };
+    if (r.unsupportedMedia) return { notice: t('code.media_unsupported') };
+    // CSV grande: já vem como grade (read-only). Pequeno: texto editável + flag pra
+    // mostrar o botão "Ver como planilha".
+    if (r.csvLarge) return { csvLarge: true, csvMeta: r.xlsx };
+    if (r.csv) return { csv: true, content: r.content };
+    if (r.xlsx) return { xlsx: r.xlsx };
+    if (r.binary) return { notice: t('code.binary_notice') };
+    if (r.error) return { notice: t('code.error_notice') + ' ' + r.error };
+    return { content: r.content };
+  };
+
+  // "Atualizar" da aba: relê o arquivo do disco. Cobre o que o reloadOpenTabs automático
+  // pula (imagem, PDF, mídia). `rev` remonta os visualizadores cuja URL não muda; aba com
+  // edição não salva nunca é sobrescrita.
+  const reloadTab = async (path) => {
+    const tb = tabsRef.current.find((x) => x.path === path);
+    if (!tb || tb.dirty) return;
+    const r = await window.api.readFile(path);
+    setTabs((cur) =>
+      cur.map((x) =>
+        x.path === path && !x.dirty
+          ? { ...x, ...TAB_BLANK, ...readPatch(r), rev: (x.rev || 0) + 1 }
+          : x,
+      ),
+    );
+  };
+
+  const openTabMenu = (e, tab) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const x = Math.min(e.clientX, window.innerWidth - 220);
+    const y = Math.min(e.clientY, window.innerHeight - 200);
+    setTabMenu({ x, y, tab });
+  };
+
   const performDelete = async (items) => {
     setDelItems(null);
     for (const it of items) {
@@ -944,43 +1004,11 @@ export function CodeView({ active, openRequest, visible = true }) {
     // SFTP remoto); o conteúdo entra quando chega, com o spinner no meio até lá.
     setTabs((cur) => [
       ...cur,
-      {
-        path: item.path,
-        name: item.name,
-        content: '',
-        image: null,
-        pdf: null,
-        xlsx: null,
-        video: null,
-        audio: null,
-        csv: false,
-        csvLarge: false,
-        csvMeta: null,
-        notice: null,
-        dirty: false,
-        loading: true,
-      },
+      { ...TAB_BLANK, path: item.path, name: item.name, dirty: false, loading: true },
     ]);
     setActivePath(item.path);
     const r = await window.api.readFile(item.path);
-    const patch = { loading: false };
-    if (r.image) patch.image = r.image;
-    else if (r.pdf) patch.pdf = r.pdf;
-    else if (r.video) patch.video = r.video;
-    else if (r.audio) patch.audio = r.audio;
-    else if (r.unsupportedMedia) patch.notice = t('code.media_unsupported');
-    // CSV grande: já vem como grade (read-only). Pequeno: texto editável + flag pra
-    // mostrar o botão "Ver como planilha".
-    else if (r.csvLarge) {
-      patch.csvLarge = true;
-      patch.csvMeta = r.xlsx;
-    } else if (r.csv) {
-      patch.csv = true;
-      patch.content = r.content;
-    } else if (r.xlsx) patch.xlsx = r.xlsx;
-    else if (r.binary) patch.notice = t('code.binary_notice');
-    else if (r.error) patch.notice = t('code.error_notice') + ' ' + r.error;
-    else patch.content = r.content;
+    const patch = { loading: false, ...readPatch(r) };
     // Só aplica se a aba ainda existir (o usuário pode ter fechado durante o carregamento).
     setTabs((cur) => cur.map((tb) => (tb.path === item.path ? { ...tb, ...patch } : tb)));
   };
@@ -1325,6 +1353,14 @@ export function CodeView({ active, openRequest, visible = true }) {
         selItems={selItems}
         onClose={() => setMenu(null)}
       />
+      <TabMenu
+        menu={tabMenu}
+        onReload={(tab) => reloadTab(tab.path)}
+        onReveal={revealInTree}
+        onCloseTab={(tab) => removeTabs((x) => x.path === tab.path)}
+        onCloseAll={closeAllFiles}
+        onClose={() => setTabMenu(null)}
+      />
       <div
         className={cn(
           'flex min-w-0 flex-1 flex-col',
@@ -1349,6 +1385,7 @@ export function CodeView({ active, openRequest, visible = true }) {
                       onMouseDown={(e) => {
                         if (e.button === 1) closeFile(e, tab.path);
                       }}
+                      onContextMenu={(e) => openTabMenu(e, tab)}
                       title={tab.path}
                       className={cn(
                         'group flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors',
@@ -1383,6 +1420,17 @@ export function CodeView({ active, openRequest, visible = true }) {
                   );
                 })}
               </div>
+              {tabs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={closeAllFiles}
+                  title={t('code.tabs_close_all_tip')}
+                  aria-label={t('code.tabs_close_all')}
+                  className="grid size-7 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+                >
+                  <ListX />
+                </button>
+              )}
               {activeTab &&
                 !activeTab.notice &&
                 !activeTab.image &&
@@ -1532,11 +1580,11 @@ export function CodeView({ active, openRequest, visible = true }) {
           ) : activeTab?.image ? (
             <ImageViewer src={activeTab.image} name={activeTab.name} />
           ) : activeTab?.pdf ? (
-            <PdfViewer src={activeTab.pdf} name={activeTab.name} />
+            <PdfViewer key={activeTab.rev || 0} src={activeTab.pdf} name={activeTab.name} />
           ) : activeTab?.video ? (
-            <VideoViewer src={activeTab.video} name={activeTab.name} />
+            <VideoViewer key={activeTab.rev || 0} src={activeTab.video} name={activeTab.name} />
           ) : activeTab?.audio ? (
-            <AudioViewer src={activeTab.audio} name={activeTab.name} />
+            <AudioViewer key={activeTab.rev || 0} src={activeTab.audio} name={activeTab.name} />
           ) : activeTab?.xlsx ? (
             <Suspense
               fallback={
@@ -2127,11 +2175,11 @@ function MenuItem({ icon: Icon, label, onClick, danger, disabled }) {
   );
 }
 
-function FileMenu({ menu, clip, actions, selItems, onClose }) {
-  const t = useT();
+// Fecha um menu flutuante ao clicar fora, apertar Esc ou redimensionar a janela.
+function useMenuDismiss(open, onClose) {
   const ref = useRef(null);
   useEffect(() => {
-    if (!menu) return;
+    if (!open) return;
     const onDown = (e) => {
       if (ref.current && !ref.current.contains(e.target)) onClose();
     };
@@ -2146,7 +2194,43 @@ function FileMenu({ menu, clip, actions, selItems, onClose }) {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onClose);
     };
-  }, [menu, onClose]);
+  }, [open, onClose]);
+  return ref;
+}
+
+// Botão direito numa aba de arquivo aberta.
+function TabMenu({ menu, onReload, onReveal, onCloseTab, onCloseAll, onClose }) {
+  const t = useT();
+  const ref = useMenuDismiss(!!menu, onClose);
+  if (!menu) return null;
+  const { x, y, tab } = menu;
+  const run = (fn) => () => {
+    onClose();
+    fn(tab);
+  };
+  return (
+    <div
+      ref={ref}
+      className="fixed z-50 min-w-[200px] overflow-hidden rounded-md border bg-background py-1 shadow-md"
+      style={{ left: x, top: y }}
+    >
+      <MenuItem
+        icon={RotateCw}
+        label={t('tree.refresh')}
+        onClick={run(onReload)}
+        disabled={tab.dirty}
+      />
+      <MenuItem icon={FolderTree} label={t('contextMenu.revealInTree')} onClick={run(onReveal)} />
+      <div className="my-1 border-t" />
+      <MenuItem icon={X} label={t('code.tabs_close')} onClick={run(onCloseTab)} />
+      <MenuItem icon={ListX} label={t('code.tabs_close_all')} onClick={run(onCloseAll)} />
+    </div>
+  );
+}
+
+function FileMenu({ menu, clip, actions, selItems, onClose }) {
+  const t = useT();
+  const ref = useMenuDismiss(!!menu, onClose);
   if (!menu) return null;
   const { x, y, item, fromSearch } = menu;
   const run = (fn) => () => {

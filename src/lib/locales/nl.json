@@ -165,7 +165,10 @@
     "tabs_rename": "Hernoemen",
     "tabs_rename_hint": "Klik met rechts om te hernoemen",
     "new": "Nieuwe sessie",
-    "untitled": "Naamloos"
+    "untitled": "Naamloos",
+    "close_all": "Alle sessies sluiten",
+    "close_all_confirm": "Bevestigen: {count} sessies sluiten",
+    "menu": "Sessie-opties"
   },
   "chat": {
     "empty": "Klik op een project om Claude Code hier te openen."
@@ -219,7 +222,9 @@
     "empty": "Selecteer een bestand in de boomstructuur.",
     "binary_notice": "Binair bestand — niet bewerkbaar.",
     "media_unsupported": "Media-indeling niet ondersteund door de ingebouwde speler.",
-    "error_notice": "Fout:"
+    "error_notice": "Fout:",
+    "tabs_close_all": "Alle tabbladen sluiten",
+    "tabs_close_all_tip": "Alle tabbladen sluiten (tabbladen met niet-opgeslagen wijzigingen blijven open)"
   },
   "env": {
     "editor_title": "Veilige omgevingseditor — waarden gemaskeerd",
