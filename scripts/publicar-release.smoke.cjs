@@ -62,7 +62,9 @@ function rodar({ assetsNaRelease = ASSETS, falhas = 1, files = GLOBS } = {}) {
     });
     return { ok: true, saida };
   } catch (erro) {
-    return { ok: false, saida: String(erro.stdout || '') + String(erro.stderr || '') };
+    // Sem `bash` no PATH não há stdout nem stderr: só o `message` diz o que houve (ENOENT).
+    const saida = String(erro.stdout || '') + String(erro.stderr || '');
+    return { ok: false, saida: saida || String(erro.message) };
   }
 }
 

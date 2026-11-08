@@ -15,6 +15,9 @@ export default [
       'coverage/**',
       '.claude/**',
       '.superpowers/**',
+      // Locais e fora do git: plugins têm repo próprio, reverse/ é engenharia reversa.
+      'reverse/**',
+      'electron/plugins/*/**',
     ],
   },
   js.configs.recommended,
