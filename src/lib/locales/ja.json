@@ -167,6 +167,7 @@
     "new": "新しいセッション",
     "untitled": "無題",
     "close_all": "すべてのセッションを閉じる",
+    "close_others": "他のセッションをすべて閉じる",
     "close_all_confirm": "確認: {count} 件のセッションを閉じる",
     "menu": "セッションのオプション"
   },

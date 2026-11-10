@@ -167,6 +167,7 @@
     "new": "Neue Sitzung",
     "untitled": "Ohne Titel",
     "close_all": "Alle Sitzungen schließen",
+    "close_others": "Alle anderen schließen",
     "close_all_confirm": "Bestätigen: {count} Sitzungen schließen",
     "menu": "Sitzungsoptionen"
   },

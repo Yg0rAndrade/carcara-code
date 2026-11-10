@@ -167,6 +167,7 @@
     "new": "Nova sessão",
     "untitled": "Sem título",
     "close_all": "Fechar todas as sessões",
+    "close_others": "Fechar todas as outras",
     "close_all_confirm": "Confirmar: fechar {count} sessões",
     "menu": "Opções das sessões"
   },

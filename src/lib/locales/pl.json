@@ -167,6 +167,7 @@
     "new": "Nowa sesja",
     "untitled": "Bez nazwy",
     "close_all": "Zamknij wszystkie sesje",
+    "close_others": "Zamknij wszystkie pozostałe",
     "close_all_confirm": "Potwierdź: zamknij sesje ({count})",
     "menu": "Opcje sesji"
   },

@@ -167,6 +167,7 @@
     "new": "새 세션",
     "untitled": "제목 없음",
     "close_all": "모든 세션 닫기",
+    "close_others": "다른 세션 모두 닫기",
     "close_all_confirm": "확인: 세션 {count}개 닫기",
     "menu": "세션 옵션"
   },

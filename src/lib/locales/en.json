@@ -167,6 +167,7 @@
     "new": "New session",
     "untitled": "Untitled",
     "close_all": "Close all sessions",
+    "close_others": "Close all others",
     "close_all_confirm": "Confirm: close {count} sessions",
     "menu": "Session options"
   },

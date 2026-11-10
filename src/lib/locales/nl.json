@@ -167,6 +167,7 @@
     "new": "Nieuwe sessie",
     "untitled": "Naamloos",
     "close_all": "Alle sessies sluiten",
+    "close_others": "Alle andere sluiten",
     "close_all_confirm": "Bevestigen: {count} sessies sluiten",
     "menu": "Sessie-opties"
   },

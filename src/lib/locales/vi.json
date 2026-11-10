@@ -167,6 +167,7 @@
     "new": "Phiên mới",
     "untitled": "Chưa đặt tên",
     "close_all": "Đóng tất cả phiên",
+    "close_others": "Đóng tất cả phiên khác",
     "close_all_confirm": "Xác nhận: đóng {count} phiên",
     "menu": "Tùy chọn phiên"
   },

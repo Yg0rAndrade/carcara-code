@@ -776,6 +776,7 @@ ${sid}`;
 
   const sessionNames = new Map(sessions.map((s) => [s.id, s.name]));
   const canClose = sessions.length > 1;
+  const othersCount = sessions.length - 1;
 
   const saveTimer = useRef(0);
   const scheduleSave = () => {
@@ -1174,6 +1175,17 @@ ${sid}`;
     const old = sessions.map((s) => s.id);
     await addSession(pane);
     for (const id of old) await dropSession(id);
+  }
+
+  // Deixa só esta aba aberta. Os demais panes somem junto e o foco fica nela.
+  async function closeOtherSessions(keepId) {
+    if (!activeProject) return;
+    const others = sessions.filter((s) => s.id !== keepId).map((s) => s.id);
+    for (const id of others) await dropSession(id);
+    const pane = firstPane(layoutRef.current);
+    if (pane) setFocusedPane(pane.id);
+    focusSession(keepId);
+    assumeSession(keepId);
   }
 
   async function dropSession(sessionId) {
@@ -1592,6 +1604,26 @@ ${sid}`;
                 }}
               >
                 {t('session.tabs_close')}
+              </button>
+            )}
+            {canClose && (
+              <button
+                type="button"
+                className="flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left text-red-500 hover:bg-muted"
+                onClick={() => {
+                  // Fechar várias derruba o que estiver rodando: pede um segundo clique.
+                  if (othersCount > 1 && !tabMenu.confirmOthers) {
+                    setTabMenu({ ...tabMenu, confirmOthers: true });
+                    return;
+                  }
+                  const sid = tabMenu.sid;
+                  closeTabMenu();
+                  closeOtherSessions(sid);
+                }}
+              >
+                {tabMenu.confirmOthers
+                  ? t('session.close_all_confirm', { count: othersCount })
+                  : t('session.close_others')}
               </button>
             )}
           </div>

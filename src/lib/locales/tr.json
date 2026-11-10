@@ -167,6 +167,7 @@
     "new": "Yeni oturum",
     "untitled": "Adsız",
     "close_all": "Tüm oturumları kapat",
+    "close_others": "Diğerlerinin tümünü kapat",
     "close_all_confirm": "Onayla: {count} oturumu kapat",
     "menu": "Oturum seçenekleri"
   },

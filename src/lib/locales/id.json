@@ -167,6 +167,7 @@
     "new": "Sesi baru",
     "untitled": "Tanpa judul",
     "close_all": "Tutup semua sesi",
+    "close_others": "Tutup semua yang lain",
     "close_all_confirm": "Konfirmasi: tutup {count} sesi",
     "menu": "Opsi sesi"
   },

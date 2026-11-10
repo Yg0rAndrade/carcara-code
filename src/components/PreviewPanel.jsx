@@ -412,6 +412,7 @@ export function PreviewPanel({
   const [viewport, setViewport] = useState(
     () => localStorage.getItem('previewViewport') || 'desktop',
   ); // desktop | tablet | mobile
+  const [viewportPicks, setViewportPicks] = useState(0); // cliques no seletor (dispara o reload)
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
   // "Olhando um site de verdade": aba Preview + servidor no ar. TODO recurso que age sobre
@@ -1593,6 +1594,15 @@ export function PreviewPanel({
       } catch {}
     }
   };
+  // Escolher um dispositivo recarrega a página, pra ela não ficar presa no layout anterior.
+  // Vem depois dos efeitos que aplicam o tamanho e o toque: o reload já nasce no modo novo.
+  useEffect(() => {
+    if (!viewportPicks) return;
+    try {
+      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
+      w?.reload();
+    } catch {}
+  }, [viewportPicks]);
   // Atalhos de hard reload (Ctrl+F5 / Ctrl+Shift+R / Cmd+Shift+R), só valem "olhando um
   // site" (mesmo gate do Ctrl+F acima). Lê tudo por ref pra não precisar de deps e não
   // correr risco de webview/path desatualizados. F5 puro continua sendo reload normal.
@@ -1861,7 +1871,14 @@ export function PreviewPanel({
                 </button>
               )}
               {/* Tamanho de tela (computador/tablet/celular), colado na barra de URL. */}
-              <DevicePicker value={viewport} onChange={setViewport} disabled={mode !== 'web'} />
+              <DevicePicker
+                value={viewport}
+                onChange={(v) => {
+                  setViewport(v);
+                  setViewportPicks((n) => n + 1);
+                }}
+                disabled={mode !== 'web'}
+              />
               {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
               <div className="relative flex-1">
                 <ReloadButton onClick={reload} disabled={mode !== 'web'} />
