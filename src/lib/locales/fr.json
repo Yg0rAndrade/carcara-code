@@ -47,6 +47,8 @@
     "add_folder_hint": "Pour créer un dossier, glissez un projet sur un autre et maintenez au centre.",
     "folder_open_tooltip": "Ouvrir/réduire le dossier",
     "menu_folder_rename": "Renommer le dossier",
+    "menu_folder_color": "Couleur",
+    "folder_color_none": "Sans couleur",
     "menu_folder_dissolve": "Dégrouper le dossier",
     "rename_save": "Enregistrer",
     "rename_cancel": "Annuler",
@@ -168,7 +170,9 @@
     "untitled": "Sans titre",
     "close_all": "Fermer toutes les sessions",
     "close_others": "Fermer toutes les autres",
-    "close_all_confirm": "Confirmer : fermer {count} sessions",
+    "close_confirm_title": "Fermer {count} sessions ?",
+    "close_confirm_body": "Tout ce qui y tourne sera arrêté.",
+    "close_confirm_action": "Fermer les sessions",
     "menu": "Options des sessions"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Taille du texte",
     "textSizeHelp": "Agrandit seulement le texte (chat, arborescence, éditeur, terminal) sans changer la taille du reste. L'écran peut rester à 100 % avec une lecture plus grande.",
     "textSizeSmaller": "Texte plus petit",
-    "textSizeLarger": "Texte plus grand"
+    "textSizeLarger": "Texte plus grand",
+    "back": "Retour"
   },
   "aiPicker": {
     "title": "Choisir l'IA de cet onglet",
@@ -930,5 +935,9 @@
     "loading": "Chargement du chat…",
     "error": "Impossible d'ouvrir le chat",
     "retry": "Réessayer"
+  },
+  "titlebar": {
+    "toggle_rail": "Afficher ou masquer la barre des projets",
+    "projects": "Projets"
   }
 }

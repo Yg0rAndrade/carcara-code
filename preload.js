@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('api', {
 
   getConfig: () => ipcRenderer.invoke('config:get'),
 
+  // Barra de título própria: recuo do semáforo (Mac) e cores dos botões nativos.
+  titleBarInfo: () => ipcRenderer.invoke('window:titlebar'),
+  setTitleBarColors: (colors) => ipcRenderer.invoke('window:titlebar-colors', colors),
+
   // Versão do app, pra mostrar no rail e na tela Sobre.
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
 

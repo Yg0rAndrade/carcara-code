@@ -128,11 +128,13 @@ export function CommandPalette({ open, onClose, commands, activePath, onOpenFile
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-[1px]"
+      // Desce do topo, colada na barra de título (como o Quick Open do VS Code), em vez de
+      // surgir no meio da tela.
+      className="fixed inset-x-0 bottom-0 top-[var(--titlebar-h,0px)] z-[70] flex items-start justify-center bg-black/15 pt-1.5"
       onMouseDown={onClose}
     >
       <div
-        className="flex max-h-[70vh] w-[640px] max-w-[92vw] flex-col overflow-hidden rounded-xl border bg-popover shadow-2xl"
+        className="flex max-h-[70vh] w-[640px] max-w-[92vw] flex-col overflow-hidden rounded-lg border bg-popover shadow-2xl duration-150 animate-in fade-in slide-in-from-top-2"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b px-3.5">

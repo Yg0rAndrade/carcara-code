@@ -28,6 +28,7 @@ import { XIcon } from './components/ui/x.jsx';
 import { Rail } from './components/Rail.jsx';
 import { ChatPanel } from './components/ChatPanel.jsx';
 import { SessionsMenu } from './components/SessionsMenu.jsx';
+import { TitleBar } from './components/TitleBar.jsx';
 import { PreviewPanel } from './components/PreviewPanel.jsx';
 import { CommandPalette } from './components/CommandPalette.jsx';
 import {
@@ -50,7 +51,14 @@ import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
 import { useLayout } from './lib/layoutContext.jsx';
 import { resolveLayout } from './lib/layout.js';
-import { toggleCollapse, renameFolder, dissolveFolder, applyDrop, addFolder } from './lib/railTree';
+import {
+  toggleCollapse,
+  renameFolder,
+  setFolderColor,
+  dissolveFolder,
+  applyDrop,
+  addFolder,
+} from './lib/railTree';
 import { shouldShowChangelog } from './lib/changelog.js';
 
 export default function App() {
@@ -97,6 +105,24 @@ export default function App() {
   };
   const [railWidth, setRailWidth] = useState(() => Number(localStorage.getItem('railWidth')) || 64);
   const [railResizing, setRailResizing] = useState(false);
+  // Rail escondido pelo botão da barra de título. Preferência do usuário: try/catch porque
+  // o localStorage pode falhar (perfil bloqueado) e o app tem de abrir assim mesmo.
+  const [railHidden, setRailHidden] = useState(() => {
+    try {
+      return localStorage.getItem('railHidden') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleRail = () =>
+    setRailHidden((h) => {
+      try {
+        localStorage.setItem('railHidden', h ? '0' : '1');
+      } catch {}
+      return !h;
+    });
+  const shownRailWidth = railHidden ? 0 : railWidth;
+  const [terminalOpen, setTerminalOpen] = useState(false); // espelha o terminal do Preview
   // Coluna do chat: recolhe pra ganhar espaço no preview. O react-resizable-panels
   // lembra a largura anterior, então expand() restaura o tamanho que estava antes.
   const chatPanelRef = useRef(null);
@@ -237,13 +263,13 @@ export default function App() {
   const railFirst = eff.railSide === 'left';
   // Posição da "bolinha" de reabrir o chat: colada na borda EXTERNA do chat.
   const expandStyle = claudeLeft
-    ? { left: Math.max(0, (railFirst ? railWidth : 0) - 14) }
-    : { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) };
+    ? { left: Math.max(0, (railFirst ? shownRailWidth : 0) - 14) }
+    : { right: Math.max(0, (railFirst ? 0 : shownRailWidth) - 14) };
   // Espelho do expandStyle pra a bolinha de reabrir o Preview, que fica na borda
   // EXTERNA oposta (o Preview vive do lado contrário ao chat).
   const expandStylePreview = claudeLeft
-    ? { right: Math.max(0, (railFirst ? 0 : railWidth) - 14) }
-    : { left: Math.max(0, (railFirst ? railWidth : 0) - 14) };
+    ? { right: Math.max(0, (railFirst ? 0 : shownRailWidth) - 14) }
+    : { left: Math.max(0, (railFirst ? shownRailWidth : 0) - 14) };
 
   // Arrastar o painel do Claude (por projeto) ou o rail (global) de lado. NÃO usamos
   // HTML5 drag-and-drop: no Electron ele não inicia de forma confiável num "punho" só
@@ -741,12 +767,12 @@ export default function App() {
       // react-resizable-panels dá o tamanho em % do grupo; o grupo ocupa a janela menos
       // o rail. Cai pra 34% se o ref ainda não existir.
       const pct = chatPanelRef.current?.getSize?.() || 34;
-      const band = Math.round((pct / 100) * (window.innerWidth - railWidth));
+      const band = Math.round((pct / 100) * (window.innerWidth - shownRailWidth));
       const railOnLeft = eff.railSide === 'left';
       dropStyle =
         dragZone === 'left'
-          ? { left: railOnLeft ? railWidth : 0, top: 0, bottom: 0, width: band }
-          : { right: railOnLeft ? 0 : railWidth, top: 0, bottom: 0, width: band };
+          ? { left: railOnLeft ? shownRailWidth : 0, top: 0, bottom: 0, width: band }
+          : { right: railOnLeft ? 0 : shownRailWidth, top: 0, bottom: 0, width: band };
     }
   }
 
@@ -771,6 +797,7 @@ export default function App() {
       }
       onRenameFolder={(id, name) => persistRail(renameFolder(rail, id, name))}
       onDissolveFolder={(id) => persistRail(dissolveFolder(rail, id))}
+      onFolderColor={(id, color) => persistRail(setFolderColor(rail, id, color))}
       onRename={renameProject}
       onSetColor={setProjectColor}
       onSetIcon={setProjectIcon}
@@ -779,6 +806,7 @@ export default function App() {
       onSearch={() => setPaletteOpen(true)}
       onRailGrab={(e) => startLayoutDrag('rail', e)}
       width={railWidth}
+      resizing={railResizing}
       version={appVersion}
       update={update}
       onOpenAbout={() => {
@@ -914,6 +942,7 @@ export default function App() {
           chatSession={chatSession}
           onProjectsChanged={reload}
           controlsRef={previewControls}
+          onTerminalChange={setTerminalOpen}
           onModeChange={setServerMode}
           onNewChatSession={() => chatControls.current?.newSession?.()}
         />
@@ -922,152 +951,176 @@ export default function App() {
   );
 
   return (
-    <div className="relative flex h-screen bg-background text-foreground">
-      {railFirst && (
-        <>
-          {railEl}
-          {barEl}
-        </>
-      )}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {claudeLeft ? (
-          <>
-            {chatPanel}
-            {handleEl}
-            {previewPanel}
-          </>
-        ) : (
-          <>
-            {previewPanel}
-            {handleEl}
-            {chatPanel}
-          </>
-        )}
-      </ResizablePanelGroup>
-      {!railFirst && (
-        <>
-          {barEl}
-          {railEl}
-        </>
-      )}
-
-      {pendingRemove && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onMouseDown={() => setPendingRemove(null)}
-        >
-          <div
-            className="w-[340px] rounded-lg border bg-background p-5 shadow-xl"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-sm font-semibold">{t('app.remove_project_title')}</h2>
-            <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              {t('app.remove_project_message', { name: pendingRemove.name })}
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>
-                {t('app.cancel_button')}
-              </Button>
-              <Button variant="destructive" size="sm" onClick={confirmRemove}>
-                {t('app.remove_button')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bolinha de reabrir o chat: colada na borda externa do chat (segue o lado). */}
-      {chatCollapsed && (
-        <button
-          type="button"
-          onClick={() => chatPanelRef.current?.expand()}
-          style={expandStyle}
-          title={t('app.expand_chat_tooltip')}
-          className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {claudeLeft ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
-      )}
-
-      {/* Bolinha de reabrir o Preview: borda externa oposta (segue o lado). Fica em
-          top-2/3 pra casar com o botão que a recolheu (a bolinha DE BAIXO da divisória),
-          espelhando a bolinha do chat que reabre em top-1/3. */}
-      {previewCollapsed && (
-        <button
-          type="button"
-          onClick={() => previewPanelRef.current?.expand()}
-          style={expandStylePreview}
-          title={t('app.expand_preview_tooltip')}
-          className="absolute top-2/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {claudeLeft ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
-      )}
-
-      {!pillDismissed && (
-        <UpdatePill
-          update={update}
-          onDownload={() => window.api.updateDownload()}
-          onInstall={() => window.api.updateInstall()}
-          onRetry={() => window.api.updateCheck()}
-          onDismiss={() => setPillDismissed(true)}
-        />
-      )}
-      <SettingsModal
-        open={settingsOpen}
-        initialTab={settingsTab}
-        initialInstall={settingsAiInstall}
-        appVersion={appVersion}
-        update={update}
-        onUpdateCheck={() => window.api.updateCheck()}
-        onUpdateDownload={() => window.api.updateDownload()}
-        onUpdateInstall={() => window.api.updateInstall()}
-        onClose={() => {
-          setSettingsOpen(false);
-          setSettingsAiInstall(null);
-          // A tela de Configuracoes mexe em coisas que a LISTA de projetos carrega
-          // (comando de run, abrir sozinho, porta fixa). Sem reler aqui, o objeto do
-          // projeto ativo fica velho e a mudanca so valeria no proximo boot.
-          reload();
-        }}
-      />
-      <SetupScreen open={setupOpen} onClose={closeSetup} />
-      <RemoteProjectModal
-        open={remoteOpen}
-        onClose={() => setRemoteOpen(false)}
-        onAdded={() => reload()}
-      />
-      <NewProjectAiModal
-        paths={newProjectPaths}
-        onClose={() => setNewProjectPaths([])}
-        onOpenInstall={(key) => {
-          setNewProjectPaths([]);
-          setSettingsAiInstall(key);
-          setSettingsTab('clis');
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <TitleBar
+        active={active}
+        onAdd={addProjects}
+        onAddFolder={() => persistRail(addFolder(rail))}
+        onAddRemote={() => setRemoteOpen(true)}
+        railHidden={railHidden}
+        onToggleRail={toggleRail}
+        terminalOpen={terminalOpen}
+        onToggleTerminal={() => previewControls.current?.toggleTerminal?.()}
+        onOpenSettingsTab={(tab) => {
+          setSettingsTab(tab);
           setSettingsOpen(true);
         }}
       />
-      <CommandPalette
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        commands={commands}
-        activePath={active?.path || null}
-        onOpenFile={openFileFromPalette}
-      />
-      {/* Overlay durante o arraste: cobre a janela (inclusive o webview do Preview) pra o
-          mousemove continuar caindo na host, e mostra o realce da metade onde vai cair. */}
-      {dragMode && (
-        <div className="fixed inset-0 z-50 cursor-grabbing">
-          {dropStyle && (
-            <div
-              className="pointer-events-none absolute border-2 border-primary bg-primary/15 transition-all duration-75"
-              style={dropStyle}
-            />
+      <div className="relative flex min-h-0 flex-1">
+        {railFirst && !railHidden && (
+          <>
+            {railEl}
+            {barEl}
+          </>
+        )}
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          {claudeLeft ? (
+            <>
+              {chatPanel}
+              {handleEl}
+              {previewPanel}
+            </>
+          ) : (
+            <>
+              {previewPanel}
+              {handleEl}
+              {chatPanel}
+            </>
           )}
-        </div>
-      )}
-      {railResizing && <div className="fixed inset-0 z-50 cursor-col-resize" />}
-      <Toaster />
+        </ResizablePanelGroup>
+        {!railFirst && !railHidden && (
+          <>
+            {barEl}
+            {railEl}
+          </>
+        )}
+
+        {pendingRemove && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onMouseDown={() => setPendingRemove(null)}
+          >
+            <div
+              className="w-[340px] rounded-lg border bg-background p-5 shadow-xl"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-sm font-semibold">{t('app.remove_project_title')}</h2>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                {t('app.remove_project_message', { name: pendingRemove.name })}
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setPendingRemove(null)}>
+                  {t('app.cancel_button')}
+                </Button>
+                <Button variant="destructive" size="sm" onClick={confirmRemove}>
+                  {t('app.remove_button')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bolinha de reabrir o chat: colada na borda externa do chat (segue o lado). */}
+        {chatCollapsed && (
+          <button
+            type="button"
+            onClick={() => chatPanelRef.current?.expand()}
+            style={expandStyle}
+            title={t('app.expand_chat_tooltip')}
+            className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {claudeLeft ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+        )}
+
+        {/* Bolinha de reabrir o Preview: borda externa oposta (segue o lado). Fica em
+          top-2/3 pra casar com o botão que a recolheu (a bolinha DE BAIXO da divisória),
+          espelhando a bolinha do chat que reabre em top-1/3. */}
+        {previewCollapsed && (
+          <button
+            type="button"
+            onClick={() => previewPanelRef.current?.expand()}
+            style={expandStylePreview}
+            title={t('app.expand_preview_tooltip')}
+            className="absolute top-2/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {claudeLeft ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        )}
+
+        {!pillDismissed && (
+          <UpdatePill
+            update={update}
+            onDownload={() => window.api.updateDownload()}
+            onInstall={() => window.api.updateInstall()}
+            onRetry={() => window.api.updateCheck()}
+            onDismiss={() => setPillDismissed(true)}
+          />
+        )}
+        <SettingsModal
+          open={settingsOpen}
+          initialTab={settingsTab}
+          initialInstall={settingsAiInstall}
+          appVersion={appVersion}
+          update={update}
+          onUpdateCheck={() => window.api.updateCheck()}
+          onUpdateDownload={() => window.api.updateDownload()}
+          onUpdateInstall={() => window.api.updateInstall()}
+          onClose={() => {
+            setSettingsOpen(false);
+            setSettingsAiInstall(null);
+            // A tela de Configuracoes mexe em coisas que a LISTA de projetos carrega
+            // (comando de run, abrir sozinho, porta fixa). Sem reler aqui, o objeto do
+            // projeto ativo fica velho e a mudanca so valeria no proximo boot.
+            reload();
+          }}
+        />
+        <SetupScreen open={setupOpen} onClose={closeSetup} />
+        <RemoteProjectModal
+          open={remoteOpen}
+          onClose={() => setRemoteOpen(false)}
+          onAdded={() => reload()}
+        />
+        <NewProjectAiModal
+          paths={newProjectPaths}
+          onClose={() => setNewProjectPaths([])}
+          onOpenInstall={(key) => {
+            setNewProjectPaths([]);
+            setSettingsAiInstall(key);
+            setSettingsTab('clis');
+            setSettingsOpen(true);
+          }}
+        />
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          commands={commands}
+          activePath={active?.path || null}
+          onOpenFile={openFileFromPalette}
+        />
+        {/* Overlay durante o arraste: cobre a janela (inclusive o webview do Preview) pra o
+          mousemove continuar caindo na host, e mostra o realce da metade onde vai cair. */}
+        {dragMode && (
+          <div className="fixed inset-0 z-50 cursor-grabbing">
+            {dropStyle && (
+              <div
+                className="pointer-events-none absolute border-2 border-primary bg-primary/15 transition-all duration-75"
+                style={dropStyle}
+              />
+            )}
+          </div>
+        )}
+        {railResizing && <div className="fixed inset-0 z-50 cursor-col-resize" />}
+        <Toaster />
+      </div>
     </div>
   );
 }

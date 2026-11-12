@@ -47,6 +47,8 @@
     "add_folder_hint": "Um einen Ordner zu erstellen, ziehe ein Projekt auf ein anderes und halte es über dessen Mitte.",
     "folder_open_tooltip": "Ordner öffnen/einklappen",
     "menu_folder_rename": "Ordner umbenennen",
+    "menu_folder_color": "Farbe",
+    "folder_color_none": "Keine Farbe",
     "menu_folder_dissolve": "Ordner auflösen",
     "rename_save": "Speichern",
     "rename_cancel": "Abbrechen",
@@ -168,7 +170,9 @@
     "untitled": "Ohne Titel",
     "close_all": "Alle Sitzungen schließen",
     "close_others": "Alle anderen schließen",
-    "close_all_confirm": "Bestätigen: {count} Sitzungen schließen",
+    "close_confirm_title": "{count} Sitzungen schließen?",
+    "close_confirm_body": "Alles, was darin läuft, wird beendet.",
+    "close_confirm_action": "Sitzungen schließen",
     "menu": "Sitzungsoptionen"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Textgröße",
     "textSizeHelp": "Vergrößert nur die Schrift (Chat, Dateibaum, Editor, Terminal), ohne den Rest zu skalieren. Der Bildschirm bleibt bei 100 %, der Text wird größer.",
     "textSizeSmaller": "Kleinerer Text",
-    "textSizeLarger": "Größerer Text"
+    "textSizeLarger": "Größerer Text",
+    "back": "Zurück"
   },
   "aiPicker": {
     "title": "Wähle die KI dieses Tabs",
@@ -930,5 +935,9 @@
     "loading": "Chat wird geladen…",
     "error": "Chat konnte nicht geöffnet werden",
     "retry": "Erneut versuchen"
+  },
+  "titlebar": {
+    "toggle_rail": "Projektleiste ein- oder ausblenden",
+    "projects": "Projekte"
   }
 }

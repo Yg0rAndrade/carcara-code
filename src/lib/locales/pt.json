@@ -47,6 +47,8 @@
     "add_folder_hint": "Para criar uma pasta, arraste um projeto para cima de outro e segure no centro.",
     "folder_open_tooltip": "Abrir/recolher pasta",
     "menu_folder_rename": "Renomear pasta",
+    "menu_folder_color": "Cor",
+    "folder_color_none": "Sem cor",
     "menu_folder_dissolve": "Desfazer pasta",
     "rename_save": "Salvar",
     "rename_cancel": "Cancelar",
@@ -168,7 +170,9 @@
     "untitled": "Sem título",
     "close_all": "Fechar todas as sessões",
     "close_others": "Fechar todas as outras",
-    "close_all_confirm": "Confirmar: fechar {count} sessões",
+    "close_confirm_title": "Fechar {count} sessões?",
+    "close_confirm_body": "O que estiver rodando nelas será encerrado.",
+    "close_confirm_action": "Fechar sessões",
     "menu": "Opções das sessões"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Tamanho do texto",
     "textSizeHelp": "Aumenta só a letra (chat, árvore de arquivos, editor, terminal), sem mexer no tamanho do resto. Dá pra deixar a tela em 100% e ler maior.",
     "textSizeSmaller": "Diminuir o texto",
-    "textSizeLarger": "Aumentar o texto"
+    "textSizeLarger": "Aumentar o texto",
+    "back": "Voltar"
   },
   "aiPicker": {
     "title": "Escolha a IA desta aba",
@@ -930,5 +935,9 @@
     "loading": "Carregando o chat…",
     "error": "Não deu pra abrir o chat",
     "retry": "Tentar de novo"
+  },
+  "titlebar": {
+    "toggle_rail": "Mostrar ou esconder a barra de projetos",
+    "projects": "Projetos"
   }
 }

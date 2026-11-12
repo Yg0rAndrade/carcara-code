@@ -350,6 +350,9 @@ function createWindow() {
     icon: APP_ICON,
     backgroundColor: '#191615',
     autoHideMenuBar: true,
+    // Nasce com as últimas cores do tema (config.json): sem isso, os botões nativos
+    // aparecem com a cor padrão até a página carregar e mandar as dela.
+    ...platform.titleBarFor(undefined, loadConfig().titleBarColors || {}).window,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -686,6 +689,33 @@ ipcMain.handle('config:get', () => loadConfig());
 // Tela de preparo do 1º uso: a flag mora no config.json (userData), não no localStorage —
 // o localStorage do renderer pode ser limpo (cache/origin) e a tela voltava a cada abertura.
 ipcMain.handle('setup:isDone', () => !!loadConfig().setupDone);
+
+// Barra de título própria (TitleBar.jsx): quanto recuar à esquerda (semáforo do Mac) e
+// as cores dos botões nativos, que seguem o tema do app.
+ipcMain.handle('window:titlebar', () => {
+  const { overlay, insetLeft, height } = platform.titleBarFor();
+  return { overlay, insetLeft, height };
+});
+// Como o VS Code (windowImpl.updateWindowControls): manda SEMPRE fundo, símbolo e altura
+// juntos. O fundo é fixo (transparente, ver platform.titleBarFor); só o símbolo segue o
+// tema, em hex opaco (o renderer compõe em titleBarColors.js).
+const HEX6 = /^#[0-9a-f]{6}$/i;
+ipcMain.handle('window:titlebar-colors', (evt, { symbolColor } = {}) => {
+  const win = BrowserWindow.fromWebContents(evt.sender);
+  const tb = platform.titleBarFor(undefined, { symbolColor });
+  if (!win || !tb.overlay || !HEX6.test(symbolColor)) return false;
+  try {
+    win.setTitleBarOverlay(tb.window.titleBarOverlay);
+  } catch {
+    return false;
+  }
+  const cfg = loadConfig();
+  if (cfg.titleBarColors?.symbolColor !== symbolColor) {
+    cfg.titleBarColors = { symbolColor };
+    saveConfig(cfg);
+  }
+  return true;
+});
 ipcMain.handle('setup:markDone', () => {
   const c = loadConfig();
   c.setupDone = true;
@@ -771,6 +801,13 @@ async function buildLaunchCommand(sessionId, projectPath) {
       }
       return { cmd: reader.resumeCmd(cid), capture: false, histId: cid, cli };
     }
+    // CLI que aceita fixar o id da conversa nova (claude --session-id): não precisa
+    // adivinhar pelo histórico em disco. O id só vai pro config quando a conversa
+    // existir de fato (watcher), senão o modo chat tentaria retomar uma conversa vazia.
+    if (reader.newSession) {
+      const fresh = reader.newSession();
+      return { cmd: fresh.cmd, capture: false, histId: fresh.id, cli };
+    }
     // Sem conversa válida (aba nova, ou "morta" sem mensagens) → sobe a CLI pura, sem
     // flag de retomada. O id real é capturado depois, do histórico em disco
     // (capture:true), pra permitir o resume no próximo restart.
@@ -824,6 +861,18 @@ async function readSessionTitleFor(projectPath, s) {
   return reader ? readSessionTitle(projectPath, s.cli || 'claude', reader.getId(s)) : null;
 }
 
+// O id de conversa já está amarrado a OUTRA aba deste projeto (no config ou num pty vivo)?
+function historyIdClaimed(projectPath, sessionId, cli, histId) {
+  const reader = readerFor(cli);
+  const list = loadConfig().sessions?.[projectPath] || [];
+  if (list.some((s) => s.id !== sessionId && reader?.getId(s) === histId)) return true;
+  for (const t of terminals.values()) {
+    if (t.sessionId !== sessionId && t.projectPath === projectPath && t.histId === histId)
+      return true;
+  }
+  return false;
+}
+
 // Vigia o histórico em disco de uma sessão (claude/codex): (1) se ainda não sabemos o
 // id real da conversa, acha o arquivo novo que apareceu depois do launch; (2) lê o
 // título e renomeia a aba. Roda a cada ~1.5s enquanto o pty viver.
@@ -842,7 +891,9 @@ async function startSessionWatcher(entry, capture) {
     try {
       if (!e.histId && e.preSnapshot) {
         const found = await reader.findNew(e.projectPath, e.preSnapshot);
-        if (found) {
+        // Conversa que já é de outra aba (ex.: a aba vizinha mandou a 1ª mensagem
+        // depois do nosso snapshot) não é nossa: sem isto a aba herdava o nome dela.
+        if (found && !historyIdClaimed(e.projectPath, e.sessionId, e.cli, found)) {
           e.histId = found;
           saveHistoryId(e.projectPath, e.sessionId, e.cli, found);
         }
@@ -851,6 +902,8 @@ async function startSessionWatcher(entry, capture) {
         const title = await readSessionTitle(e.projectPath, e.cli, e.histId);
         if (title && title !== e.lastTitle) {
           e.lastTitle = title;
+          // Tem título = a conversa já existe em disco: amarra o id à aba (idempotente).
+          saveHistoryId(e.projectPath, e.sessionId, e.cli, e.histId);
           applySessionTitle(e.projectPath, e.sessionId, title);
         }
       }

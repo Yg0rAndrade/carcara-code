@@ -375,6 +375,7 @@ export function PreviewPanel({
   chatSession,
   onProjectsChanged,
   controlsRef,
+  onTerminalChange,
   onModeChange,
   onNewChatSession,
 }) {
@@ -1727,7 +1728,18 @@ export function PreviewPanel({
     setView('code');
   }, []);
 
-  if (controlsRef) controlsRef.current = { stop, restart, setView, openFile };
+  if (controlsRef)
+    controlsRef.current = {
+      stop,
+      restart,
+      setView,
+      openFile,
+      toggleTerminal: () => setTermOpen((o) => !o),
+    };
+  // Avisa o App (botão do terminal na barra de título) quando o terminal abre ou fecha.
+  useEffect(() => {
+    onTerminalChange?.(termOpen);
+  }, [termOpen, onTerminalChange]);
   useEffect(() => {
     onModeChange?.(mode);
   }, [mode, onModeChange]);

@@ -8,9 +8,9 @@ import {
   GripHorizontal,
   Pencil,
   Undo2,
-  ChevronDown,
   FolderPlus,
   Folder as FolderIcon,
+  FolderOpen,
   Settings2,
   Server,
 } from 'lucide-react';
@@ -20,7 +20,7 @@ import { RailFolderIcon } from './RailFolder.jsx';
 import { ProjectSettingsModal } from './ProjectSettingsModal.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
-import { buildRows } from '@/lib/railTree';
+import { buildRows, FOLDER_COLORS } from '@/lib/railTree';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { hasPendingUpdate } from '@/lib/updateView';
@@ -43,6 +43,7 @@ export function Rail({
   onApplyDrop,
   onRenameFolder,
   onDissolveFolder,
+  onFolderColor,
   onRename,
   onSetColor,
   onSetIcon,
@@ -51,11 +52,16 @@ export function Rail({
   onSearch,
   onRailGrab,
   width = 64,
+  resizing = false,
   version = '',
   update,
   onOpenAbout,
 }) {
   const t = useT();
+  // Arrastando a borda do rail, os ícones pulam direto pro lugar novo: com a animação de
+  // layout ligada, cada movimento do mouse disparava uma mola e os ícones vinham "arrastados"
+  // atrás da largura.
+  const lay = (v) => (resizing ? false : v);
   const [menu, setMenu] = useState(null); // menu de projeto { x, y, project }
   const [folderMenu, setFolderMenu] = useState(null); // menu de pasta { x, y, folder }
   const [addMenu, setAddMenu] = useState(null); // popover do "+" { left, bottom } (fixed) | null
@@ -342,12 +348,14 @@ export function Rail({
   const openFolderMenu = (e, f) => {
     e.preventDefault();
     const x = Math.min(e.clientX, window.innerWidth - 200);
-    const y = Math.min(e.clientY, window.innerHeight - 110);
+    const y = Math.min(e.clientY, window.innerHeight - 170);
     setFolderMenu({ x, y, folder: f });
   };
 
   // Botão/entrada de um projeto (solto ou dentro de pasta). indented = filho de pasta.
-  const renderProject = (p, { indented = false } = {}) => {
+  // grouped = filho dentro do contêiner da pasta aberta (a borda do grupo já mostra a
+  // hierarquia, então não precisa da linha vertical de indentação).
+  const renderProject = (p, { indented = false, grouped = false } = {}) => {
     const isMergeTarget = over?.key === p.path && over?.zone === 'merge';
     const el = (
       <button
@@ -443,7 +451,7 @@ export function Rail({
         )}
       </button>
     );
-    return indented ? (
+    return indented && !grouped ? (
       <div className="flex basis-full items-center justify-center gap-1">
         <span className="h-[42px] w-px shrink-0 rounded bg-border" />
         {el}
@@ -454,6 +462,8 @@ export function Rail({
   };
 
   // Ícone da pasta (fechada ou aberta). Nome vive no tooltip (hover) e no modal de renomear.
+  // Tamanho FIXO nos dois estados (42×42): trocar só o miolo (crossfade) evita o salto
+  // de altura que fazia a animação de abrir/fechar engasgar.
   const renderFolder = (row) => {
     const f = row.folder;
     const open = !f.collapsed;
@@ -477,19 +487,33 @@ export function Rail({
         }}
         onMouseLeave={() => setTip(null)}
         className={cn(
-          'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border transition-all hover:-translate-y-0.5 active:cursor-grabbing',
-          open && 'ring-2 ring-primary/50',
+          'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 active:cursor-grabbing',
+          open && 'border-transparent hover:bg-muted',
           drag?.folderId === f.id && 'opacity-40',
           isMergeTarget && 'scale-105 ring-2 ring-primary',
         )}
+        style={!open && f.color ? { borderColor: f.color } : undefined}
       >
-        <RailFolderIcon
-          previews={row.previews}
-          count={row.count}
-          open={open}
-          moreLabel={t('rail.folder_more', { n: row.count - 3 })}
+        <span
+          className={cn(
+            'absolute inset-0 rounded-[inherit] transition-all duration-200',
+            open ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
+          )}
+        >
+          <RailFolderIcon
+            previews={row.previews}
+            count={row.count}
+            moreLabel={t('rail.folder_more', { n: row.count - 3 })}
+          />
+        </span>
+        <FolderOpen
+          className={cn(
+            'size-6 transition-all duration-200',
+            open ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
+            !f.color && 'text-primary',
+          )}
+          style={f.color ? { color: f.color } : undefined}
         />
-        {open && <ChevronDown className="absolute -bottom-1 h-3 w-3 text-primary" />}
       </button>
     );
   };
@@ -538,6 +562,9 @@ export function Rail({
     }
   }
 
+  // Índices de linhas-filho já desenhadas dentro do contêiner da pasta aberta.
+  const consumed = new Set();
+
   return (
     <nav style={{ width }} className="flex shrink-0 flex-col overflow-hidden border-r bg-card py-3">
       <div className="flex shrink-0 flex-col items-center px-2">
@@ -574,18 +601,80 @@ export function Rail({
         }}
       >
         <AnimatePresence initial={false}>
-          {displayRows.map((row) => {
+          {displayRows.map((row, i) => {
+            if (row.kind === 'child' && consumed.has(i)) return null;
             if (row.kind === 'folder') {
+              const open = !row.folder.collapsed;
+              // Filhos contíguos da pasta aberta vão DENTRO do contêiner dela.
+              const kids = [];
+              if (open) {
+                for (let j = i + 1; j < displayRows.length; j++) {
+                  const r = displayRows[j];
+                  if (r.kind !== 'child' || r.folderId !== row.folder.id) break;
+                  kids.push(r);
+                  consumed.add(j);
+                }
+              }
+              const c = row.folder.color;
+              // Contêiner do grupo: mesma caixa aberta ou fechada (só a borda/fundo
+              // acendem), e os filhos entram/saem animando a ALTURA de um bloco só. Assim
+              // fechar não deixa "espaço flutuando" nem distorce a borda (layout só de
+              // posição, sem escala).
               return (
                 <motion.div
-                  layout
+                  layout={lay('position')}
                   key={row.key}
-                  className="basis-full flex justify-center"
+                  // Fechada, a pasta flui na grade como um projeto; aberta, o grupo ocupa a
+                  // linha inteira (e os filhos se espalham dentro dele).
+                  className={cn(
+                    'flex flex-col items-center rounded-2xl border p-0.5 transition-[background-color,border-color] duration-200',
+                    open ? 'basis-full' : 'basis-auto',
+                  )}
+                  style={{
+                    borderColor: open
+                      ? c
+                        ? `color-mix(in srgb, ${c} 55%, transparent)`
+                        : 'hsl(var(--border))'
+                      : 'transparent',
+                    background: open
+                      ? c
+                        ? `color-mix(in srgb, ${c} 12%, transparent)`
+                        : 'hsl(var(--muted) / 0.4)'
+                      : 'transparent',
+                  }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {renderFolder(row)}
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <motion.div
+                        key="kids"
+                        className="w-full overflow-hidden"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                      >
+                        <div className="flex flex-wrap justify-center gap-2 pb-1 pt-2">
+                          {kids.map((k) => (
+                            <motion.div
+                              layout={lay('position')}
+                              key={k.key}
+                              className="flex justify-center"
+                            >
+                              {renderProject(
+                                { ...k.project, __folderId: k.folderId },
+                                { indented: true, grouped: true },
+                              )}
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               );
             }
@@ -607,7 +696,7 @@ export function Rail({
                 };
             return (
               <motion.div
-                layout
+                layout={lay(true)}
                 key={row.key}
                 className={cn('flex justify-center', indented ? 'basis-full' : 'basis-auto')}
                 initial={anim.initial}
@@ -739,6 +828,10 @@ export function Rail({
           setFolderMenu(null);
           onDissolveFolder?.(f.id);
         }}
+        onColor={(f, color) => {
+          setFolderMenu(null);
+          onFolderColor?.(f.id, color);
+        }}
       />
 
       {/* Tooltip do nome da pasta (o nome não cabe no ícone). Fixed → escapa o overflow. */}
@@ -844,7 +937,7 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
 }
 
 // Menu de contexto de pasta: renomear e desfazer (solta os filhos; não apaga nada).
-function FolderMenu({ menu, onClose, onRename, onDissolve }) {
+function FolderMenu({ menu, onClose, onRename, onDissolve, onColor }) {
   const t = useT();
   const ref = useRef(null);
   useEffect(() => {
@@ -880,6 +973,39 @@ function FolderMenu({ menu, onClose, onRename, onDissolve }) {
         <Pencil className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_folder_rename')}</span>
       </button>
+      {/* Cor da pasta: pinta a borda e o fundo do grupo pra achar a pasta de relance. */}
+      <div className="px-3 pb-1.5 pt-1">
+        <div className="mb-1.5 text-[11px] text-muted-foreground">
+          {t('rail.menu_folder_color')}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            title={t('rail.folder_color_none')}
+            aria-label={t('rail.folder_color_none')}
+            onClick={() => onColor(f, null)}
+            className={cn(
+              'relative size-5 overflow-hidden rounded-full border bg-background',
+              !f.color && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
+            )}
+          >
+            <span className="absolute left-1/2 top-1/2 h-px w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-red-500" />
+          </button>
+          {FOLDER_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-label={c}
+              onClick={() => onColor(f, c)}
+              className={cn(
+                'size-5 rounded-full',
+                f.color === c && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
+              )}
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+      </div>
       <button
         type="button"
         onClick={() => onDissolve(f)}

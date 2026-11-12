@@ -15,6 +15,9 @@
 //                                         pro id que a CLI aceita hoje
 //   resumeCmd(id)                      -> comando que retoma a conversa
 //   cmd                                -> comando de conversa NOVA
+//   newSession()                       -> OPCIONAL: { id, cmd } de conversa nova com id
+//                                         FIXADO no lançamento. Quem tem isto não precisa
+//                                         adivinhar o id pelo snapshot/findNew.
 //   historyExists(id, projectPath)     -> o histórico existe e tem conversa de verdade?
 //   snapshot(projectPath)              -> estado opaco do "antes de lançar"
 //   findNew(projectPath, snap)         -> id que apareceu depois do snapshot (ou null)
@@ -23,6 +26,7 @@
 // Tudo que consulta histórico pode devolver Promise: o leitor do codex fala com o
 // `codex app-server`, que é assíncrono. O main.js dá `await` em todos, e no leitor do
 // claude, que segue síncrono, o await passa reto.
+const crypto = require('crypto');
 const claudeSessions = require('./claude-sessions.cjs');
 const codexSessions = require('./codex-sessions.cjs');
 
@@ -36,6 +40,12 @@ const READERS = {
     legacyId: (tabId) => (claudeSessions.historyExists(tabId) ? tabId : null),
     resumeCmd: (id) => `claude --resume ${id}`,
     cmd: 'claude',
+    // `--session-id` fixa o id da conversa: a aba nunca é amarrada ao transcript de
+    // OUTRA aba que por acaso nasceu depois do snapshot (bug: aba herdava o nome).
+    newSession: () => {
+      const id = crypto.randomUUID();
+      return { id, cmd: `claude --session-id ${id}` };
+    },
     historyExists: (id) => claudeSessions.historyExists(id),
     snapshot: (projectPath) => claudeSessions.snapshot(projectPath),
     findNew: (projectPath, snap) => claudeSessions.newTranscript(projectPath, snap),

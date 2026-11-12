@@ -99,6 +99,19 @@ eq(
   'aplica defaults de shape na pasta',
 );
 
+// Cor de pasta: só #rrggbb sobrevive à reconciliação.
+{
+  const r = reconcile(
+    [
+      { type: 'folder', id: 'f1', name: '', children: ['/a'], color: '#3B82F6' },
+      { type: 'folder', id: 'f2', name: '', children: ['/b'], color: 'red;background:url(x)' },
+    ],
+    ['/a', '/b'],
+  );
+  eq(r[0].color, '#3B82F6', 'cor válida é mantida');
+  assert(!('color' in r[1]), 'cor inválida é descartada');
+}
+
 if (fail) {
   console.error(`\n${fail} asserção(ões) falharam.`);
   process.exit(1);

@@ -47,6 +47,8 @@
     "add_folder_hint": "Aby utworzyć folder, przeciągnij projekt na inny i przytrzymaj na jego środku.",
     "folder_open_tooltip": "Otwórz/zwiń folder",
     "menu_folder_rename": "Zmień nazwę folderu",
+    "menu_folder_color": "Kolor",
+    "folder_color_none": "Bez koloru",
     "menu_folder_dissolve": "Rozgrupuj folder",
     "rename_save": "Zapisz",
     "rename_cancel": "Anuluj",
@@ -168,7 +170,9 @@
     "untitled": "Bez nazwy",
     "close_all": "Zamknij wszystkie sesje",
     "close_others": "Zamknij wszystkie pozostałe",
-    "close_all_confirm": "Potwierdź: zamknij sesje ({count})",
+    "close_confirm_title": "Zamknąć sesje ({count})?",
+    "close_confirm_body": "Wszystko, co w nich działa, zostanie zatrzymane.",
+    "close_confirm_action": "Zamknij sesje",
     "menu": "Opcje sesji"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Rozmiar tekstu",
     "textSizeHelp": "Powiększa tylko tekst (czat, drzewo plików, edytor, terminal), bez zmiany rozmiaru reszty. Ekran zostaje na 100%, a tekst jest większy.",
     "textSizeSmaller": "Mniejszy tekst",
-    "textSizeLarger": "Większy tekst"
+    "textSizeLarger": "Większy tekst",
+    "back": "Wstecz"
   },
   "aiPicker": {
     "title": "Wybierz AI dla tej karty",
@@ -930,5 +935,9 @@
     "loading": "Ładowanie czatu…",
     "error": "Nie udało się otworzyć czatu",
     "retry": "Spróbuj ponownie"
+  },
+  "titlebar": {
+    "toggle_rail": "Pokaż lub ukryj pasek projektów",
+    "projects": "Projekty"
   }
 }

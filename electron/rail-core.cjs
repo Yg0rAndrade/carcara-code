@@ -3,7 +3,8 @@
 //
 // Item shapes:
 //   { type: 'project', path: string }
-//   { type: 'folder', id: string, name: string, collapsed: boolean, children: string[] }
+//   { type: 'folder', id: string, name: string, collapsed: boolean, children: string[],
+//     color?: '#rrggbb' }
 //
 // Invariantes garantidas por reconcile():
 //   - só paths que existem em `projects`;
@@ -36,6 +37,10 @@ function reconcile(rail, projects) {
         name: typeof raw.name === 'string' ? raw.name : '',
         collapsed: raw.collapsed === true,
         children,
+        // Cor opcional da pasta: só #rrggbb (nada de CSS arbitrário vindo do config).
+        ...(typeof raw.color === 'string' && /^#[0-9a-f]{6}$/i.test(raw.color)
+          ? { color: raw.color }
+          : {}),
       });
     } else {
       // trata qualquer coisa não-folder como projeto

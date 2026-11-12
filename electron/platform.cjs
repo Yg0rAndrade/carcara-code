@@ -85,6 +85,35 @@ const TABLE = {
   },
 };
 
+// Barra de título própria: o app desenha a barra e o SO só os botões da janela. Win/Linux:
+// overlay nativo à direita (mantém o Snap Layouts do Windows 11). Fundo dos botões
+// TRANSPARENTE (como o SquadOS Studio): a barra do app aparece inteira por trás deles, sem
+// bloco de outra cor nem a linha de baixo cortada; só a cor do símbolo segue o tema.
+// Mac: semáforo à esquerda, sem overlay; o app reserva o espaço.
+const TITLE_BAR_HEIGHT = 36;
+const TITLE_BAR_TRANSPARENT = '#00000000';
+function titleBarFor(platform = process.platform, colors = {}) {
+  const { symbolColor = '#e6e1dc' } = colors;
+  const color = TITLE_BAR_TRANSPARENT;
+  if (platform === 'darwin') {
+    return {
+      window: { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 11 } },
+      overlay: false,
+      insetLeft: 78,
+      height: TITLE_BAR_HEIGHT,
+    };
+  }
+  return {
+    window: {
+      titleBarStyle: 'hidden',
+      titleBarOverlay: { color, symbolColor, height: TITLE_BAR_HEIGHT },
+    },
+    overlay: true,
+    insetLeft: 0,
+    height: TITLE_BAR_HEIGHT,
+  };
+}
+
 function tableFor(platform = process.platform) {
   return TABLE[platform] || TABLE.linux;
 }
@@ -179,6 +208,9 @@ module.exports = {
   appIdFor,
   fixLoginPath,
   macMenuTemplate,
+  titleBarFor,
+  TITLE_BAR_HEIGHT,
+  TITLE_BAR_TRANSPARENT,
   isWin,
   isMac,
   isLinux,

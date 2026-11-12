@@ -47,6 +47,8 @@
     "add_folder_hint": "フォルダーを作るには、プロジェクトを別のプロジェクトの中央にドラッグして少し押さえてください。",
     "folder_open_tooltip": "フォルダーを開く/折りたたむ",
     "menu_folder_rename": "フォルダー名を変更",
+    "menu_folder_color": "色",
+    "folder_color_none": "色なし",
     "menu_folder_dissolve": "フォルダーを解除",
     "rename_save": "保存",
     "rename_cancel": "キャンセル",
@@ -168,7 +170,9 @@
     "untitled": "無題",
     "close_all": "すべてのセッションを閉じる",
     "close_others": "他のセッションをすべて閉じる",
-    "close_all_confirm": "確認: {count} 件のセッションを閉じる",
+    "close_confirm_title": "{count} 件のセッションを閉じますか?",
+    "close_confirm_body": "実行中の処理はすべて停止します。",
+    "close_confirm_action": "セッションを閉じる",
     "menu": "セッションのオプション"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "文字サイズ",
     "textSizeHelp": "文字だけを大きくします（チャット、ファイルツリー、エディター、ターミナル）。ほかの部分のサイズは変わらないので、画面は100%のまま読みやすくできます。",
     "textSizeSmaller": "文字を小さく",
-    "textSizeLarger": "文字を大きく"
+    "textSizeLarger": "文字を大きく",
+    "back": "戻る"
   },
   "aiPicker": {
     "title": "このタブの AI を選択",
@@ -930,5 +935,9 @@
     "loading": "チャットを読み込み中…",
     "error": "チャットを開けませんでした",
     "retry": "再試行"
+  },
+  "titlebar": {
+    "toggle_rail": "プロジェクトバーの表示/非表示",
+    "projects": "プロジェクト"
   }
 }

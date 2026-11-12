@@ -1,24 +1,24 @@
 // Menu discreto das sessões do projeto, no cabeçalho do chat (à esquerda do "Reiniciar").
-// Fechar todas derruba o que estiver rodando, então pede um segundo clique pra confirmar.
+// Fechar todas derruba o que estiver rodando, então confirma num modal com a lista das abas.
 import { useState } from 'react';
 import { Ellipsis } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
+import { CloseSessionsModal } from './CloseSessionsModal.jsx';
 
 export function SessionsMenu({ controlsRef }) {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmNames, setConfirmNames] = useState(null); // nomes no modal, ou null
   const count = open ? controlsRef.current?.sessionCount?.() || 0 : 0;
 
-  const close = () => {
-    setOpen(false);
-    setConfirming(false);
-  };
+  const close = () => setOpen(false);
   const onCloseAll = () => {
-    if (!confirming) return setConfirming(true);
     close();
-    return controlsRef.current?.closeAllSessions?.();
+    setConfirmNames(controlsRef.current?.sessionNames?.() || []);
+  };
+  const confirmCloseAll = () => {
+    setConfirmNames(null);
+    controlsRef.current?.closeAllSessions?.();
   };
 
   return (
@@ -42,16 +42,18 @@ export function SessionsMenu({ controlsRef }) {
               type="button"
               disabled={count < 2}
               onClick={onCloseAll}
-              className={cn(
-                'flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left hover:bg-muted disabled:pointer-events-none disabled:opacity-40',
-                confirming && 'text-red-500',
-              )}
+              className="flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
             >
-              {confirming ? t('session.close_all_confirm', { count }) : t('session.close_all')}
+              {t('session.close_all')}
             </button>
           </div>
         </>
       )}
+      <CloseSessionsModal
+        names={confirmNames}
+        onConfirm={confirmCloseAll}
+        onClose={() => setConfirmNames(null)}
+      />
     </div>
   );
 }

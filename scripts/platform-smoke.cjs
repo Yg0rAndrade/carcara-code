@@ -196,6 +196,26 @@ assert(
 );
 console.log('scaffold-core OK');
 
+// Barra de título: overlay nativo no Win/Linux, semáforo com espaço reservado no Mac.
+const {
+  titleBarFor,
+  TITLE_BAR_HEIGHT,
+  TITLE_BAR_TRANSPARENT,
+} = require('../electron/platform.cjs');
+for (const os of ['win32', 'linux']) {
+  const tb = titleBarFor(os, { symbolColor: '#000000' });
+  assert(tb.overlay === true && tb.insetLeft === 0, `titleBar ${os}: overlay, sem recuo`);
+  assert(tb.window.titleBarOverlay.height === TITLE_BAR_HEIGHT, `titleBar ${os}: altura`);
+  assert(
+    tb.window.titleBarOverlay.color === TITLE_BAR_TRANSPARENT,
+    `titleBar ${os}: fundo transparente`,
+  );
+  assert(tb.window.titleBarOverlay.symbolColor === '#000000', `titleBar ${os}: símbolo repassado`);
+}
+const mac = titleBarFor('darwin');
+assert(mac.overlay === false && !mac.window.titleBarOverlay, 'titleBar darwin: sem overlay');
+assert(mac.insetLeft > 0 && mac.window.trafficLightPosition, 'titleBar darwin: semáforo');
+
 // fixLoginPath é no-op seguro fora de darwin/linux (não lança, retorna false)
 const { fixLoginPath } = require('../electron/platform.cjs');
 (async () => {

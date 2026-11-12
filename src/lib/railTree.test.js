@@ -4,6 +4,7 @@ import {
   buildRows,
   toggleCollapse,
   renameFolder,
+  setFolderColor,
   dissolveFolder,
   applyDrop,
 } from './railTree.js';
@@ -59,6 +60,18 @@ describe('renameFolder', () => {
   it('troca o nome da pasta certa', () => {
     const out = renameFolder([F('f1', ['/a'])], 'f1', 'Clientes');
     expect(out[0].name).toBe('Clientes');
+  });
+});
+
+describe('setFolderColor', () => {
+  it('pinta só a pasta certa', () => {
+    const out = setFolderColor([F('f1', ['/a']), F('f2', ['/b'])], 'f2', '#3b82f6');
+    expect(out[0].color).toBeUndefined();
+    expect(out[1].color).toBe('#3b82f6');
+  });
+  it('null remove a cor', () => {
+    const out = setFolderColor([F('f1', ['/a'], { color: '#ef4444' })], 'f1', null);
+    expect('color' in out[0]).toBe(false);
   });
 });
 

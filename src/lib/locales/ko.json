@@ -47,6 +47,8 @@
     "add_folder_hint": "폴더를 만들려면 프로젝트를 다른 프로젝트 위로 끌어 중앙에서 잠시 멈추세요.",
     "folder_open_tooltip": "폴더 열기/접기",
     "menu_folder_rename": "폴더 이름 바꾸기",
+    "menu_folder_color": "색상",
+    "folder_color_none": "색상 없음",
     "menu_folder_dissolve": "폴더 해제",
     "rename_save": "저장",
     "rename_cancel": "취소",
@@ -168,7 +170,9 @@
     "untitled": "제목 없음",
     "close_all": "모든 세션 닫기",
     "close_others": "다른 세션 모두 닫기",
-    "close_all_confirm": "확인: 세션 {count}개 닫기",
+    "close_confirm_title": "세션 {count}개를 닫을까요?",
+    "close_confirm_body": "실행 중인 작업은 모두 중지됩니다.",
+    "close_confirm_action": "세션 닫기",
     "menu": "세션 옵션"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "글자 크기",
     "textSizeHelp": "글자만 키웁니다(채팅, 파일 트리, 편집기, 터미널). 나머지 크기는 그대로라 화면은 100%로 두고 더 크게 읽을 수 있습니다.",
     "textSizeSmaller": "글자 작게",
-    "textSizeLarger": "글자 크게"
+    "textSizeLarger": "글자 크게",
+    "back": "뒤로"
   },
   "aiPicker": {
     "title": "이 탭의 AI 선택",
@@ -930,5 +935,9 @@
     "loading": "채팅 불러오는 중…",
     "error": "채팅을 열 수 없습니다",
     "retry": "다시 시도"
+  },
+  "titlebar": {
+    "toggle_rail": "프로젝트 바 표시/숨기기",
+    "projects": "프로젝트"
   }
 }

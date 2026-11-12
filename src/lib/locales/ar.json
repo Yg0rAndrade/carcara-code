@@ -47,6 +47,8 @@
     "add_folder_hint": "لإنشاء مجلد، اسحب مشروعًا فوق آخر وأبقِه في منتصفه.",
     "folder_open_tooltip": "فتح/طي المجلد",
     "menu_folder_rename": "إعادة تسمية المجلد",
+    "menu_folder_color": "اللون",
+    "folder_color_none": "بدون لون",
     "menu_folder_dissolve": "إلغاء تجميع المجلد",
     "rename_save": "حفظ",
     "rename_cancel": "إلغاء",
@@ -168,7 +170,9 @@
     "untitled": "بدون عنوان",
     "close_all": "إغلاق كل الجلسات",
     "close_others": "إغلاق كل الجلسات الأخرى",
-    "close_all_confirm": "تأكيد: إغلاق الجلسات ({count})",
+    "close_confirm_title": "إغلاق {count} جلسات؟",
+    "close_confirm_body": "سيتم إيقاف كل ما يعمل فيها.",
+    "close_confirm_action": "إغلاق الجلسات",
     "menu": "خيارات الجلسات"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "حجم النص",
     "textSizeHelp": "يكبّر النص فقط (الدردشة، شجرة الملفات، المحرر، الطرفية) دون تغيير حجم باقي العناصر. تبقى الشاشة على 100% ويصبح النص أكبر.",
     "textSizeSmaller": "نص أصغر",
-    "textSizeLarger": "نص أكبر"
+    "textSizeLarger": "نص أكبر",
+    "back": "رجوع"
   },
   "aiPicker": {
     "title": "اختر الذكاء الاصطناعي لهذا التبويب",
@@ -930,5 +935,9 @@
     "loading": "جارٍ تحميل المحادثة…",
     "error": "تعذّر فتح المحادثة",
     "retry": "إعادة المحاولة"
+  },
+  "titlebar": {
+    "toggle_rail": "إظهار شريط المشاريع أو إخفاؤه",
+    "projects": "المشاريع"
   }
 }

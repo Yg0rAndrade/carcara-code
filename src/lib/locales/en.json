@@ -47,6 +47,8 @@
     "add_folder_hint": "To create a folder, drag a project onto another and hold on its center.",
     "folder_open_tooltip": "Open/collapse folder",
     "menu_folder_rename": "Rename folder",
+    "menu_folder_color": "Color",
+    "folder_color_none": "No color",
     "menu_folder_dissolve": "Ungroup folder",
     "rename_save": "Save",
     "rename_cancel": "Cancel",
@@ -168,7 +170,9 @@
     "untitled": "Untitled",
     "close_all": "Close all sessions",
     "close_others": "Close all others",
-    "close_all_confirm": "Confirm: close {count} sessions",
+    "close_confirm_title": "Close {count} sessions?",
+    "close_confirm_body": "Anything running in them will be stopped.",
+    "close_confirm_action": "Close sessions",
     "menu": "Session options"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Text size",
     "textSizeHelp": "Makes only the text bigger (chat, file tree, editor, terminal) without resizing everything else. Keep the screen at 100% and read larger.",
     "textSizeSmaller": "Smaller text",
-    "textSizeLarger": "Larger text"
+    "textSizeLarger": "Larger text",
+    "back": "Back"
   },
   "aiPicker": {
     "title": "Choose this tab's AI",
@@ -930,5 +935,9 @@
     "loading": "Loading chat…",
     "error": "Couldn't open the chat",
     "retry": "Try again"
+  },
+  "titlebar": {
+    "toggle_rail": "Show or hide the project bar",
+    "projects": "Projects"
   }
 }

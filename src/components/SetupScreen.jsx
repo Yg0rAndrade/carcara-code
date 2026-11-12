@@ -171,7 +171,8 @@ export function SetupScreen({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-background">
+    // Começa abaixo da barra de título (ver TitleBar.jsx): ali os cliques não chegam.
+    <div className="fixed inset-x-0 bottom-0 top-[var(--titlebar-h,0px)] z-[60] flex flex-col overflow-y-auto bg-background">
       <div className="mx-auto w-full max-w-2xl px-6 py-12">
         <div className="eyebrow text-primary">{t('setup.badge')}</div>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t('setup.title_main')}</h1>

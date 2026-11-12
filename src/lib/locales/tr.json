@@ -47,6 +47,8 @@
     "add_folder_hint": "Klasör oluşturmak için bir projeyi diğerinin üzerine sürükleyip ortasında bekle.",
     "folder_open_tooltip": "Klasörü aç/kapat",
     "menu_folder_rename": "Klasörü yeniden adlandır",
+    "menu_folder_color": "Renk",
+    "folder_color_none": "Renk yok",
     "menu_folder_dissolve": "Klasörü çöz",
     "rename_save": "Kaydet",
     "rename_cancel": "İptal",
@@ -168,7 +170,9 @@
     "untitled": "Adsız",
     "close_all": "Tüm oturumları kapat",
     "close_others": "Diğerlerinin tümünü kapat",
-    "close_all_confirm": "Onayla: {count} oturumu kapat",
+    "close_confirm_title": "{count} oturum kapatılsın mı?",
+    "close_confirm_body": "İçlerinde çalışan her şey durdurulacak.",
+    "close_confirm_action": "Oturumları kapat",
     "menu": "Oturum seçenekleri"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Yazı boyutu",
     "textSizeHelp": "Yalnızca yazıyı büyütür (sohbet, dosya ağacı, düzenleyici, terminal), geri kalanın boyutu değişmez. Ekran %100 kalır, yazı daha büyük olur.",
     "textSizeSmaller": "Daha küçük yazı",
-    "textSizeLarger": "Daha büyük yazı"
+    "textSizeLarger": "Daha büyük yazı",
+    "back": "Geri"
   },
   "aiPicker": {
     "title": "Bu sekmenin yapay zekasını seç",
@@ -930,5 +935,9 @@
     "loading": "Sohbet yükleniyor…",
     "error": "Sohbet açılamadı",
     "retry": "Tekrar dene"
+  },
+  "titlebar": {
+    "toggle_rail": "Proje çubuğunu göster veya gizle",
+    "projects": "Projeler"
   }
 }

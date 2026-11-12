@@ -62,6 +62,27 @@ export function renameFolder(rail, folderId, name) {
   return rail.map((it) => (it.type === 'folder' && it.id === folderId ? { ...it, name } : it));
 }
 
+// Paleta das cores de pasta (o menu mostra estas; o main só aceita #rrggbb).
+export const FOLDER_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#14b8a6',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+];
+
+// color null/undefined = sem cor (remove o campo).
+export function setFolderColor(rail, folderId, color) {
+  return rail.map((it) => {
+    if (it.type !== 'folder' || it.id !== folderId) return it;
+    const { color: _old, ...rest } = it;
+    return color ? { ...rest, color } : rest;
+  });
+}
+
 export function dissolveFolder(rail, folderId) {
   const out = [];
   for (const it of rail) {

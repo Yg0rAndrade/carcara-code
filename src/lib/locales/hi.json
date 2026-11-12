@@ -47,6 +47,8 @@
     "add_folder_hint": "फ़ोल्डर बनाने के लिए, एक प्रोजेक्ट को दूसरे पर खींचें और उसके केंद्र पर रुकें।",
     "folder_open_tooltip": "फ़ोल्डर खोलें/समेटें",
     "menu_folder_rename": "फ़ोल्डर का नाम बदलें",
+    "menu_folder_color": "रंग",
+    "folder_color_none": "कोई रंग नहीं",
     "menu_folder_dissolve": "फ़ोल्डर अनग्रुप करें",
     "rename_save": "सहेजें",
     "rename_cancel": "रद्द करें",
@@ -168,7 +170,9 @@
     "untitled": "बिना शीर्षक",
     "close_all": "सभी सत्र बंद करें",
     "close_others": "अन्य सभी सत्र बंद करें",
-    "close_all_confirm": "पुष्टि करें: {count} सत्र बंद करें",
+    "close_confirm_title": "{count} सत्र बंद करें?",
+    "close_confirm_body": "इनमें जो कुछ भी चल रहा है, वह रुक जाएगा।",
+    "close_confirm_action": "सत्र बंद करें",
     "menu": "सत्र विकल्प"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "टेक्स्ट का आकार",
     "textSizeHelp": "सिर्फ़ अक्षर बड़े करता है (चैट, फ़ाइल ट्री, एडिटर, टर्मिनल), बाकी का आकार नहीं बदलता। स्क्रीन 100% पर रहती है और पढ़ना बड़ा होता है।",
     "textSizeSmaller": "छोटा टेक्स्ट",
-    "textSizeLarger": "बड़ा टेक्स्ट"
+    "textSizeLarger": "बड़ा टेक्स्ट",
+    "back": "वापस"
   },
   "aiPicker": {
     "title": "इस टैब का AI चुनें",
@@ -930,5 +935,9 @@
     "loading": "चैट लोड हो रही है…",
     "error": "चैट नहीं खुल सकी",
     "retry": "फिर कोशिश करें"
+  },
+  "titlebar": {
+    "toggle_rail": "प्रोजेक्ट बार दिखाएँ या छिपाएँ",
+    "projects": "प्रोजेक्ट"
   }
 }

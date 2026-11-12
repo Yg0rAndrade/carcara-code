@@ -47,6 +47,8 @@
     "add_folder_hint": "Om een map te maken, sleep een project op een ander en houd het in het midden vast.",
     "folder_open_tooltip": "Map openen/inklappen",
     "menu_folder_rename": "Map hernoemen",
+    "menu_folder_color": "Kleur",
+    "folder_color_none": "Geen kleur",
     "menu_folder_dissolve": "Map opheffen",
     "rename_save": "Opslaan",
     "rename_cancel": "Annuleren",
@@ -168,7 +170,9 @@
     "untitled": "Naamloos",
     "close_all": "Alle sessies sluiten",
     "close_others": "Alle andere sluiten",
-    "close_all_confirm": "Bevestigen: {count} sessies sluiten",
+    "close_confirm_title": "{count} sessies sluiten?",
+    "close_confirm_body": "Alles wat erin draait wordt gestopt.",
+    "close_confirm_action": "Sessies sluiten",
     "menu": "Sessie-opties"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Tekstgrootte",
     "textSizeHelp": "Maakt alleen de tekst groter (chat, bestandsboom, editor, terminal) zonder de rest te schalen. Het scherm blijft op 100% en je leest groter.",
     "textSizeSmaller": "Kleinere tekst",
-    "textSizeLarger": "Grotere tekst"
+    "textSizeLarger": "Grotere tekst",
+    "back": "Terug"
   },
   "aiPicker": {
     "title": "Kies de AI van dit tabblad",
@@ -930,5 +935,9 @@
     "loading": "Chat laden…",
     "error": "Kon de chat niet openen",
     "retry": "Opnieuw proberen"
+  },
+  "titlebar": {
+    "toggle_rail": "Projectbalk tonen of verbergen",
+    "projects": "Projecten"
   }
 }

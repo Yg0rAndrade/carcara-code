@@ -47,6 +47,8 @@
     "add_folder_hint": "Untuk membuat folder, seret satu proyek ke atas proyek lain dan tahan di tengahnya.",
     "folder_open_tooltip": "Buka/tutup folder",
     "menu_folder_rename": "Ganti nama folder",
+    "menu_folder_color": "Warna",
+    "folder_color_none": "Tanpa warna",
     "menu_folder_dissolve": "Bubarkan folder",
     "rename_save": "Simpan",
     "rename_cancel": "Batal",
@@ -168,7 +170,9 @@
     "untitled": "Tanpa judul",
     "close_all": "Tutup semua sesi",
     "close_others": "Tutup semua yang lain",
-    "close_all_confirm": "Konfirmasi: tutup {count} sesi",
+    "close_confirm_title": "Tutup {count} sesi?",
+    "close_confirm_body": "Semua yang berjalan di dalamnya akan dihentikan.",
+    "close_confirm_action": "Tutup sesi",
     "menu": "Opsi sesi"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Ukuran teks",
     "textSizeHelp": "Hanya memperbesar teks (chat, pohon file, editor, terminal) tanpa mengubah ukuran yang lain. Layar tetap 100% dan teks lebih besar.",
     "textSizeSmaller": "Teks lebih kecil",
-    "textSizeLarger": "Teks lebih besar"
+    "textSizeLarger": "Teks lebih besar",
+    "back": "Kembali"
   },
   "aiPicker": {
     "title": "Pilih AI untuk tab ini",
@@ -930,5 +935,9 @@
     "loading": "Memuat obrolan…",
     "error": "Tidak bisa membuka obrolan",
     "retry": "Coba lagi"
+  },
+  "titlebar": {
+    "toggle_rail": "Tampilkan atau sembunyikan bilah proyek",
+    "projects": "Proyek"
   }
 }

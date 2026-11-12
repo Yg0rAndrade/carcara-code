@@ -47,6 +47,8 @@
     "add_folder_hint": "หากต้องการสร้างโฟลเดอร์ ให้ลากโปรเจกต์ไปวางบนอีกอันแล้วค้างไว้ตรงกลาง",
     "folder_open_tooltip": "เปิด/ยุบโฟลเดอร์",
     "menu_folder_rename": "เปลี่ยนชื่อโฟลเดอร์",
+    "menu_folder_color": "สี",
+    "folder_color_none": "ไม่มีสี",
     "menu_folder_dissolve": "ยกเลิกการจัดกลุ่มโฟลเดอร์",
     "rename_save": "บันทึก",
     "rename_cancel": "ยกเลิก",
@@ -168,7 +170,9 @@
     "untitled": "ไม่มีชื่อ",
     "close_all": "ปิดเซสชันทั้งหมด",
     "close_others": "ปิดเซสชันอื่นทั้งหมด",
-    "close_all_confirm": "ยืนยัน: ปิด {count} เซสชัน",
+    "close_confirm_title": "ปิด {count} เซสชันหรือไม่?",
+    "close_confirm_body": "ทุกอย่างที่กำลังทำงานอยู่จะถูกหยุด",
+    "close_confirm_action": "ปิดเซสชัน",
     "menu": "ตัวเลือกเซสชัน"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "ขนาดตัวอักษร",
     "textSizeHelp": "ขยายเฉพาะตัวอักษร (แชต ต้นไม้ไฟล์ ตัวแก้ไข เทอร์มินัล) โดยไม่เปลี่ยนขนาดส่วนอื่น หน้าจออยู่ที่ 100% แต่อ่านได้ใหญ่ขึ้น",
     "textSizeSmaller": "ตัวอักษรเล็กลง",
-    "textSizeLarger": "ตัวอักษรใหญ่ขึ้น"
+    "textSizeLarger": "ตัวอักษรใหญ่ขึ้น",
+    "back": "กลับ"
   },
   "aiPicker": {
     "title": "เลือก AI ของแท็บนี้",
@@ -930,5 +935,9 @@
     "loading": "กำลังโหลดแชต…",
     "error": "เปิดแชตไม่ได้",
     "retry": "ลองอีกครั้ง"
+  },
+  "titlebar": {
+    "toggle_rail": "แสดงหรือซ่อนแถบโปรเจกต์",
+    "projects": "โปรเจกต์"
   }
 }

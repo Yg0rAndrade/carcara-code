@@ -40,6 +40,7 @@ import { useChatMode } from '@/lib/chatModeContext.jsx';
 import { AssistantChat } from './AssistantChat.jsx';
 import { PluginViewLayer } from './PluginChatView.jsx';
 import { CarcaraChat } from '@/components/CarcaraChat.jsx';
+import { CloseSessionsModal } from './CloseSessionsModal.jsx';
 
 // IAs com adapter de chat na ponte (chat-cli.cjs). As demais seguem no terminal xterm.
 const CHAT_CLIS = ['claude', 'codex', 'agy'];
@@ -770,11 +771,13 @@ ${sid}`;
   const [renameDraft, setRenameDraft] = useState('');
   // Menu de contexto da aba (botão direito): { sid, x, y } em coordenadas de tela.
   const [tabMenu, setTabMenu] = useState(null);
+  const [confirmOthers, setConfirmOthers] = useState(null); // sid a manter (modal "fechar as outras")
 
   const projectRef = useRef(activeProject);
   projectRef.current = activeProject;
 
   const sessionNames = new Map(sessions.map((s) => [s.id, s.name]));
+  const nameOf = (s) => s.name || t('session.untitled');
   const canClose = sessions.length > 1;
   const othersCount = sessions.length - 1;
 
@@ -1140,6 +1143,7 @@ ${sid}`;
         if (pane) addSession(pane);
       },
       sessionCount: () => sessions.length,
+      sessionNames: () => sessions.map(nameOf),
       closeAllSessions,
     };
   }
@@ -1611,24 +1615,28 @@ ${sid}`;
                 type="button"
                 className="flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left text-red-500 hover:bg-muted"
                 onClick={() => {
-                  // Fechar várias derruba o que estiver rodando: pede um segundo clique.
-                  if (othersCount > 1 && !tabMenu.confirmOthers) {
-                    setTabMenu({ ...tabMenu, confirmOthers: true });
-                    return;
-                  }
                   const sid = tabMenu.sid;
                   closeTabMenu();
-                  closeOtherSessions(sid);
+                  // Fechar várias derruba o que estiver rodando: confirma no modal.
+                  if (othersCount > 1) setConfirmOthers(sid);
+                  else closeOtherSessions(sid);
                 }}
               >
-                {tabMenu.confirmOthers
-                  ? t('session.close_all_confirm', { count: othersCount })
-                  : t('session.close_others')}
+                {t('session.close_others')}
               </button>
             )}
           </div>
         </>
       )}
+      <CloseSessionsModal
+        names={confirmOthers ? sessions.filter((s) => s.id !== confirmOthers).map(nameOf) : null}
+        onConfirm={() => {
+          const sid = confirmOthers;
+          setConfirmOthers(null);
+          closeOtherSessions(sid);
+        }}
+        onClose={() => setConfirmOthers(null)}
+      />
     </div>
   );
 }

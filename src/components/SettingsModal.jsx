@@ -34,6 +34,7 @@ import {
   Fish,
   ShieldOff,
   ALargeSmall,
+  ArrowLeft,
 } from 'lucide-react';
 import { readTextScale, stepTextScale, TEXT_SCALE_STEPS } from '@/lib/textScale';
 import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
@@ -632,10 +633,19 @@ export function SettingsModal({
       role="dialog"
       aria-modal="true"
       aria-label={t('settings.title')}
-      className="fixed inset-0 z-50 flex bg-background"
+      // Começa abaixo da barra de título (ver TitleBar.jsx): ali os cliques não chegam.
+      className="fixed inset-x-0 bottom-0 top-[var(--titlebar-h,0px)] z-50 flex bg-background"
     >
       {/* Navegação lateral */}
       <nav className="flex w-52 shrink-0 flex-col gap-0.5 border-r bg-card p-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="mb-1 flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-4"
+        >
+          <ArrowLeft aria-hidden="true" />
+          {t('settings.back')}
+        </button>
         <div className="px-2 py-2 text-base font-semibold">{t('settings.title')}</div>
         <TabButton active={tab === 'ai'} onClick={() => setTab('ai')} icon={<FolderKanban />}>
           {t('settings.tabAi')}

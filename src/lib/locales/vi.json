@@ -47,6 +47,8 @@
     "add_folder_hint": "Để tạo thư mục, hãy kéo một dự án lên dự án khác và giữ ở giữa nó.",
     "folder_open_tooltip": "Mở/thu gọn thư mục",
     "menu_folder_rename": "Đổi tên thư mục",
+    "menu_folder_color": "Màu",
+    "folder_color_none": "Không màu",
     "menu_folder_dissolve": "Bỏ nhóm thư mục",
     "rename_save": "Lưu",
     "rename_cancel": "Hủy",
@@ -168,7 +170,9 @@
     "untitled": "Chưa đặt tên",
     "close_all": "Đóng tất cả phiên",
     "close_others": "Đóng tất cả phiên khác",
-    "close_all_confirm": "Xác nhận: đóng {count} phiên",
+    "close_confirm_title": "Đóng {count} phiên?",
+    "close_confirm_body": "Mọi thứ đang chạy trong đó sẽ bị dừng.",
+    "close_confirm_action": "Đóng phiên",
     "menu": "Tùy chọn phiên"
   },
   "chat": {
@@ -799,7 +803,8 @@
     "textSizeTitle": "Cỡ chữ",
     "textSizeHelp": "Chỉ phóng to chữ (chat, cây thư mục, trình soạn thảo, terminal), không đổi kích thước phần còn lại. Màn hình vẫn 100% mà chữ to hơn.",
     "textSizeSmaller": "Chữ nhỏ hơn",
-    "textSizeLarger": "Chữ lớn hơn"
+    "textSizeLarger": "Chữ lớn hơn",
+    "back": "Quay lại"
   },
   "aiPicker": {
     "title": "Chọn AI cho thẻ này",
@@ -930,5 +935,9 @@
     "loading": "Đang tải cuộc trò chuyện…",
     "error": "Không mở được cuộc trò chuyện",
     "retry": "Thử lại"
+  },
+  "titlebar": {
+    "toggle_rail": "Hiện hoặc ẩn thanh dự án",
+    "projects": "Dự án"
   }
 }
