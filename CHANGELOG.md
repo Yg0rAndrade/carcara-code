@@ -3,6 +3,37 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.18] — a lançar
+
+### Adicionado
+
+- **Preview em aparelhos de verdade:** o modo celular virou um simulador. A página é montada
+  na largura e na altura reais do aparelho e encolhida pra caber inteira no painel, dentro de
+  uma moldura desenhada pelo app (cantos, câmera — ilha, notch ou furinho — e botões
+  laterais). Embaixo aparecem o nome do aparelho e as medidas da área do site.
+- **Grade de aparelhos:** o botão embaixo do celular abre uma grade com miniaturas, busca e
+  um modelo por item — iPhone primeiro (do 11 ao 18 Pro Max, Air e Duo), depois Galaxy,
+  Xiaomi, Motorola e Pixel —, mais o **Personalizado** (largura × altura digitadas). Na
+  primeira vez, um balão de dica aponta pro botão.
+- **Barras do sistema:** barra de status com hora, sinal, Wi-Fi e bateria no desenho do iOS
+  e do Android, na cor do topo do site (como o Safari 26 faz). No iPhone, a barra do Safari
+  embaixo fica grande no início da página e compacta depois de rolar, e empurra o site em
+  vez de cobrir — menus fixos no rodapé continuam clicáveis.
+- **Sem barra de rolagem no celular:** some no modo aparelho, como num celular de verdade.
+- **Temas AMOLED:** o terminal também vai pro preto puro nos temas de fundo preto.
+
+### Alterado
+
+- **Seletor de tamanho de tela:** agora só **Computador** e **Celular**; a escolha do aparelho
+  mora na grade embaixo do celular. Tablets saíram.
+- **Card do QR** fica ao lado do aparelho, junto da nova composição.
+
+### Corrigido
+
+- **Quinas brancas e fio branco** em volta da página no modo celular.
+- **Barras na cor do tema** nos temas claros coloridos (Menta, Céu, Lavanda, Coral).
+- **Erro ao abrir o Preview no modo celular** antes de a página terminar de carregar.
+
 ## [0.1.17] — 2026-11-12
 
 ### Adicionado
