@@ -11,6 +11,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Crosshair, RotateCw, Minus, Plus } from 'lucide-react';
 import { ToolButton } from './ui/tool-button.jsx';
 import { DevicePicker } from './ui/device-picker.jsx';
+import { DeviceFrame } from './ui/device-frame.jsx';
+import { normalizeViewport, resolveDevice } from '@/lib/devices';
 import { fileUrlFor } from '@/lib/htmlPreview';
 import { applyViewport, stepZoom, zoomPercent } from '@/lib/webviewChrome';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
@@ -21,8 +23,8 @@ export default function HtmlViewer({ path }) {
   const t = useT();
   const hostRef = useRef(null);
   const webRef = useRef(null);
-  const [viewport, setViewport] = useState(
-    () => localStorage.getItem('htmlViewerViewport') || 'desktop',
+  const [viewport, setViewport] = useState(() =>
+    normalizeViewport(localStorage.getItem('htmlViewerViewport')),
   );
   const [zoom, setZoom] = useState(0); // nível do Chromium (fator = 1.2 ^ nível)
   const [grabbing, setGrabbing] = useState(false);
@@ -59,7 +61,6 @@ export default function HtmlViewer({ path }) {
     w.style.width = '100%';
     w.style.height = '100%';
     w.style.background = '#fff';
-    applyViewport(w, viewportRef.current); // respeita o dispositivo escolhido já na criação
     // Recarregar/navegar zera o que foi injetado e pode zerar o zoom: re-afirma tudo.
     w.addEventListener('dom-ready', () => {
       try {
@@ -97,6 +98,8 @@ export default function HtmlViewer({ path }) {
       }
     });
     host.appendChild(w);
+    // Depois do append: o encaixe do aparelho mede o pai do webview.
+    applyViewport(w, viewportRef.current);
     webRef.current = w;
     return () => {
       webRef.current = null;
@@ -117,6 +120,20 @@ export default function HtmlViewer({ path }) {
       window.api.previewEmulateTouch(w.getWebContentsId(), touchWanted());
     } catch {}
   }, [viewport, grabbing, touchWanted]);
+
+  // Painel mudou de tamanho: re-encaixa o aparelho e a moldura (mesma conta).
+  const [stageBox, setStageBox] = useState(null);
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver(() => {
+      setStageBox({ width: el.clientWidth, height: el.clientHeight });
+      if (webRef.current) applyViewport(webRef.current, viewportRef.current);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const device = resolveDevice(viewport);
 
   // Zoom da página (o mesmo que o Ctrl +/-/0 já faz com o foco dentro do webview).
   const bumpZoom = (dir) => {
@@ -196,6 +213,7 @@ export default function HtmlViewer({ path }) {
 
       <div className={cn('relative min-h-0 flex-1', viewport !== 'desktop' && 'bg-muted/40')}>
         <div ref={hostRef} className="absolute inset-0" />
+        {device && stageBox && <DeviceFrame dev={device} box={stageBox} />}
         {(grabbing || grabbed) && (
           <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center">
             <div

@@ -1,32 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import {
-  VIEWPORTS,
-  applyViewport,
-  stepZoom,
-  zoomPercent,
-  ZOOM_MIN,
-  ZOOM_MAX,
-} from './webviewChrome.js';
+import { applyViewport, stepZoom, zoomPercent, ZOOM_MIN, ZOOM_MAX } from './webviewChrome.js';
 
 // Dublê do <webview>: só o que applyViewport toca.
 const fakeWebview = () => ({ style: {} });
 
 describe('applyViewport', () => {
-  it('desktop ocupa a área inteira', () => {
+  it('computador ocupa a área inteira', () => {
     const w = fakeWebview();
     applyViewport(w, 'desktop');
-    expect(w.style).toEqual({ width: '100%', left: '0', right: '0', transform: 'none' });
+    expect(w.style).toMatchObject({ width: '100%', height: '100%', transform: 'none' });
   });
 
-  it('celular/tablet viram moldura centralizada de largura fixa', () => {
+  it('aparelho: tamanho real do viewport, escalado pra caber no painel', () => {
+    const w = { style: {}, parentElement: { clientWidth: 1000, clientHeight: 600 } };
+    applyViewport(w, 'iphone-15');
+    expect(w.style.width).toBe('393px');
+    expect(w.style.height).toBe('852px');
+    const s = Number(/scale\(([\d.]+)\)/.exec(w.style.transform)[1]);
+    expect(s).toBeGreaterThan(0);
+    expect(s).toBeLessThan(1);
+  });
+
+  it('modo antigo "mobile" vira um aparelho de verdade', () => {
     const w = fakeWebview();
     applyViewport(w, 'mobile');
-    expect(w.style.width).toBe(VIEWPORTS.mobile + 'px');
-    expect(w.style.left).toBe('50%');
-    expect(w.style.transform).toBe('translateX(-50%)');
+    expect(w.style.width).toBe('393px');
   });
 
-  it('modo desconhecido cai no desktop (nunca some com o webview)', () => {
+  it('modo desconhecido cai no computador (nunca some com o webview)', () => {
     const w = fakeWebview();
     applyViewport(w, 'relogio');
     expect(w.style.width).toBe('100%');

@@ -45,7 +45,9 @@ import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
-import { applyViewport, VIEWPORTS } from '@/lib/webviewChrome';
+import { applyViewport } from '@/lib/webviewChrome';
+import { normalizeViewport, resolveDevice, clampCustom, fitDevice } from '@/lib/devices';
+import { DeviceFrame } from './ui/device-frame.jsx';
 import { applyTabWebviewAttrs } from '@/lib/previewWebview';
 import { decideAutoStart } from '@/lib/previewAutoStart';
 import { rectFromDrag } from '@/lib/screenshot';
@@ -411,9 +413,21 @@ export function PreviewPanel({
   const [canBack, setCanBack] = useState(false); // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
   const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
-  const [viewport, setViewport] = useState(
-    () => localStorage.getItem('previewViewport') || 'desktop',
-  ); // desktop | tablet | mobile
+  const [viewport, setViewport] = useState(() =>
+    normalizeViewport(localStorage.getItem('previewViewport')),
+  ); // 'desktop' | id de aparelho (src/lib/devices.js) | 'custom'
+  // Tamanho do "Personalizado" (largura × altura digitadas no seletor).
+  const [customSize, setCustomSize] = useState(() => {
+    try {
+      return clampCustom(JSON.parse(localStorage.getItem('previewCustomSize') || 'null'));
+    } catch {
+      return clampCustom(null);
+    }
+  });
+  const customRef = useRef(customSize);
+  customRef.current = customSize;
+  // Tamanho do painel do preview: a moldura do aparelho encolhe pra caber nele.
+  const [stageBox, setStageBox] = useState(null);
   const [viewportPicks, setViewportPicks] = useState(0); // cliques no seletor (dispara o reload)
   const viewportRef = useRef(viewport); // leitura síncrona dentro do createTab (deps [])
   viewportRef.current = viewport;
@@ -430,6 +444,7 @@ export function PreviewPanel({
   // <webview>, é da árvore inteira de WebContents — ligava o modo toque na JANELA TODA e
   // punha o cursor de toque do Chromium por cima do app. Ver noHoverScript.js.
   const touchMode = viewport !== 'desktop' && inWeb;
+  const device = resolveDevice(viewport, customSize); // null = computador
   const lan = useLanShare(active?.path, url); // "abrir no celular": botão + card
   const touchModeRef = useRef(touchMode); // leitura síncrona no dom-ready
   touchModeRef.current = touchMode;
@@ -528,8 +543,9 @@ export function PreviewPanel({
       w.style.background = '#fff';
       w.style.display = 'none';
       w._retry = 0;
-      applyViewport(w, viewportRef.current); // respeita o modo escolhido já na criação
       containerRef.current.appendChild(w);
+      // Depois do append: o encaixe do aparelho mede o painel (pai do webview).
+      applyViewport(w, viewportRef.current, customRef.current);
       const tab = {
         id,
         webview: w,
@@ -1274,8 +1290,22 @@ export function PreviewPanel({
   // todos os webviews (os escondidos não atrapalham) e guarda a preferência.
   useEffect(() => {
     localStorage.setItem('previewViewport', viewport);
-    for (const w of allWebviews()) applyViewport(w, viewport);
-  }, [viewport]);
+    localStorage.setItem('previewCustomSize', JSON.stringify(customSize));
+    for (const w of allWebviews()) applyViewport(w, viewport, customSize);
+  }, [viewport, customSize]);
+
+  // Painel mudou de tamanho (janela, divisória, terminal): re-encaixa o aparelho e
+  // atualiza a moldura, que usa a mesma conta (fitDevice).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver(() => {
+      setStageBox({ width: el.clientWidth, height: el.clientHeight });
+      for (const w of allWebviews()) applyViewport(w, viewportRef.current, customRef.current);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Modo celular/tablet — peça 1: APIs de toque e as media queries `(hover: none)` /
   // `(pointer: coarse)`, via `Emulation.setTouchEmulationEnabled` no main. Não mexe no
@@ -1891,6 +1921,8 @@ export function PreviewPanel({
                   setViewport(v);
                   setViewportPicks((n) => n + 1);
                 }}
+                custom={customSize}
+                onCustomChange={setCustomSize}
                 disabled={mode !== 'web'}
               />
               {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
@@ -2008,8 +2040,11 @@ export function PreviewPanel({
             )}
           />
           {/* Moldura de celular/tablet: convite/QR "abrir no celular" no espaço vazio ao lado. */}
-          {inPreview && mode === 'web' && VIEWPORTS[viewport] && (
-            <PhoneShareCard share={lan} frameWidth={VIEWPORTS[viewport]} />
+          {inPreview && mode === 'web' && device && stageBox && (
+            <>
+              <DeviceFrame dev={device} box={stageBox} />
+              <PhoneShareCard share={lan} frameWidth={fitDevice(device, stageBox).frame.w} />
+            </>
           )}
           {/* Borda discreta: foco está dentro do preview → Ctrl +/- zooma o site, não o app. */}
           {inPreview && mode === 'web' && webFocused && (
