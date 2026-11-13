@@ -9,7 +9,6 @@ import { Monitor, Smartphone, Search, Ruler, ChevronUp } from 'lucide-react';
 import { ToolButton } from './tool-button.jsx';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
-import { artUrls } from '@/lib/deviceArt';
 import {
   DEVICE_GROUPS,
   normalizeViewport,
@@ -84,19 +83,6 @@ export function DevicePicker({ value, onChange, disabled }) {
 // Miniatura do aparelho: contorno na proporção real, com a câmera de cada um. Desenhada
 // (não é imagem), na cor do texto — some com o tema.
 function MiniDevice({ d, on }) {
-  const urls = artUrls(d.art);
-  if (urls) {
-    // Foto real do aparelho (Pixel), reduzida.
-    return (
-      <img
-        src={urls.back}
-        alt=""
-        draggable={false}
-        loading="lazy"
-        className={cn('h-[42px] w-auto select-none', !on && 'opacity-90 group-hover:opacity-100')}
-      />
-    );
-  }
   const H = 40;
   const W = Math.max(16, Math.round((H * d.w) / d.h));
   const r = Math.max(3, Math.round((d.radius / d.h) * H) + 3);

@@ -5,7 +5,6 @@
 import { fitDevice } from '@/lib/devices';
 import { Lock, RotateCw, ChevronLeft, ChevronRight, Share, BookOpen, Copy } from 'lucide-react';
 import { toRgb, isLightRgb } from '@/lib/pageChrome';
-import { artUrls } from '@/lib/deviceArt';
 import {
   IosSignal,
   IosWifi,
@@ -85,53 +84,30 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
   const bottomH = g.chrome.bottom; // já é a barra grande ou a compacta (fitDevice)
   const outerRadius = (dev.radius + g.bezel.side / s) * s;
   const label = dev.id === 'custom' ? t('preview.device_custom') : dev.name;
-  // Foto real do aparelho (Pixel, Android Studio/Apache 2.0): substitui a moldura desenhada.
-  // Posicionada pela tela: px da imagem → px do painel (k = escala da imagem).
-  const urls = artUrls(dev.art);
-  const art = urls && dev.art;
-  const k = art ? g.screen.w / art.dw : 0;
   return (
     <div className="pointer-events-none absolute inset-0 z-[5]" aria-hidden="true">
-      {art ? (
-        <img
-          src={urls.back}
-          alt=""
-          draggable={false}
-          className="absolute max-w-none select-none"
-          style={{
-            left: g.screen.x - art.x * k,
-            top: g.screen.y - art.y * k,
-            width: art.cw * k,
-            height: art.ch * k,
-            filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.4))',
-          }}
-        />
-      ) : (
-        <>
-          {/* Corpo: só a borda é pintada; o miolo é a página. Os cantos de dentro (raio da
+      {/* Corpo: só a borda é pintada; o miolo é a página. Os cantos de dentro (raio da
           borda) cobrem as quinas retas do webview. */}
-          <div
-            className="absolute"
-            style={{
-              left: g.frame.x,
-              top: g.frame.y,
-              width: g.frame.w,
-              height: g.frame.h,
-              borderStyle: 'solid',
-              borderColor: BODY,
-              // +1px pra dentro: a borda cobre 1px da tela, senão o arredondamento da escala
-              // deixava um fiozinho da página (branco) aparecendo entre a moldura e a tela.
-              borderLeftWidth: g.bezel.side + 1,
-              borderRightWidth: g.bezel.side + 1,
-              borderTopWidth: g.bezel.top + 1,
-              borderBottomWidth: g.bezel.bottom + 1,
-              borderRadius: outerRadius,
-              // Aro do aparelho (a "bordinha" de metal): prata no iPhone, grafite no Android.
-              boxShadow: `0 0 0 ${Math.max(1, 2 * s)}px ${apple ? '#b9bcc2' : '#3a3b40'}, 0 24px 60px rgba(0,0,0,0.45)`,
-            }}
-          />
-        </>
-      )}
+      <div
+        className="absolute"
+        style={{
+          left: g.frame.x,
+          top: g.frame.y,
+          width: g.frame.w,
+          height: g.frame.h,
+          borderStyle: 'solid',
+          borderColor: BODY,
+          // +1px pra dentro: a borda cobre 1px da tela, senão o arredondamento da escala
+          // deixava um fiozinho da página (branco) aparecendo entre a moldura e a tela.
+          borderLeftWidth: g.bezel.side + 1,
+          borderRightWidth: g.bezel.side + 1,
+          borderTopWidth: g.bezel.top + 1,
+          borderBottomWidth: g.bezel.bottom + 1,
+          borderRadius: outerRadius,
+          // Aro do aparelho (a "bordinha" de metal): prata no iPhone, grafite no Android.
+          boxShadow: `0 0 0 ${Math.max(1, 2 * s)}px ${apple ? '#b9bcc2' : '#3a3b40'}, 0 24px 60px rgba(0,0,0,0.45)`,
+        }}
+      />
       {/* Barra de status: cor do topo do site (theme-color ou o header), ícones claros ou
           escuros conforme o fundo — como o iOS/Android fazem. */}
       {g.chrome.top > 0 && (
@@ -243,16 +219,6 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
           />
         </div>
       )}
-      {/* Máscara da foto real: arredonda os cantos da tela por cima de tudo. */}
-      {art && urls.mask && (
-        <img
-          src={urls.mask}
-          alt=""
-          draggable={false}
-          className="absolute max-w-none select-none"
-          style={{ left: g.screen.x, top: g.screen.y, width: g.screen.w, height: g.screen.h }}
-        />
-      )}
       {/* Câmera / entalhe, presos ao topo da tela (por cima da barra de status). */}
       <div
         className="absolute"
@@ -261,7 +227,7 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
         <Cutout dev={dev} s={s} />
       </div>
       {/* Botões laterais (só celulares): liga/desliga à direita, volume à esquerda. */}
-      {phone && !art && (
+      {phone && (
         <>
           <span
             className="absolute rounded-r"

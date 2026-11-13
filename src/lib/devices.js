@@ -82,29 +82,8 @@ export const DEVICE_GROUPS = [
   },
 ];
 
-// Moldura real (foto do aparelho) dos Pixel, do Android Studio (AOSP, Apache 2.0 — licença em
-// src/assets/devices/LICENSE). Números tirados do arquivo `layout` de cada pasta: tela (dw×dh)
-// e onde ela fica (x, y) dentro da imagem inteira (cw×ch), em px da imagem. As URLs das
-// imagens ficam em src/lib/deviceArt.js (este arquivo é puro, sem import de asset).
-export const DEVICE_ART = {
-  'pixel-5': { dir: 'pixel_5', dw: 1080, dh: 2340, cw: 1211, ch: 2474, x: 60, y: 65 },
-  'pixel-6-pro': { dir: 'pixel_6_pro', dw: 1440, dh: 3120, cw: 1527, ch: 3289, x: 41, y: 72 },
-  'pixel-8': { dir: 'pixel_8', dw: 1080, dh: 2400, cw: 1187, ch: 2513, x: 49, y: 55 },
-  'pixel-10': { dir: 'pixel_10', dw: 1080, dh: 2424, cw: 1198, ch: 2531, x: 59, y: 55 },
-  'pixel-10-pro': { dir: 'pixel_10_pro', dw: 1280, dh: 2856, cw: 1408, ch: 2965, x: 59, y: 60 },
-  'pixel-10-pro-fold-fechado': {
-    dir: 'pixel_10_pro_fold_closed',
-    dw: 1080,
-    dh: 2364,
-    cw: 1236,
-    ch: 2554,
-    x: 84,
-    y: 66,
-  },
-};
-
 export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
-  g.devices.map((d) => ({ ...d, group: g.id, art: DEVICE_ART[d.id] || null })),
+  g.devices.map((d) => ({ ...d, group: g.id })),
 );
 
 // Barras do sistema que ficam FORA da área do site: em cima a barra de status (hora,
@@ -163,13 +142,6 @@ export function resolveDevice(value, custom) {
 // Espessura da moldura (px CSS do aparelho, antes da escala).
 export function bezelOf(dev) {
   if (dev.group === 'custom') return { side: 8, top: 8, bottom: 8 };
-  // Com foto do aparelho: a borda é a da imagem (convertida pra px CSS da tela).
-  if (dev.art) {
-    const a = dev.art;
-    const k = dev.w / a.dw;
-    const side = Math.max(a.x, a.cw - a.dw - a.x) * k;
-    return { side, top: a.y * k, bottom: (a.ch - a.dh - a.y) * k };
-  }
   return { side: 12, top: 12, bottom: 12 };
 }
 
