@@ -33,7 +33,10 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Quinas brancas e fio branco** em volta da página no modo celular.
 - **Barras na cor do tema** nos temas claros coloridos (Menta, Céu, Lavanda, Coral).
 - **Erro ao abrir o Preview no modo celular** antes de a página terminar de carregar.
-- **Contraste nas barras:** elementos das barras com contraste AA em todos os temas.
+- **Contraste AA em todo o app:** textos e ícones legíveis em todos os temas, claros e
+  escuros. As cores de status (erro, sucesso, alerta, informação) passaram a acompanhar o
+  tema, e o texto dos botões preenchidos (vermelho e o destaque de Céu, Menta e Coral)
+  ficou legível.
 
 ## [0.1.17] — 2026-11-12
 
