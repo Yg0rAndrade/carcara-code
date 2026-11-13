@@ -1,11 +1,11 @@
 // Dispositivo do Preview em duas peças:
 // - DevicePicker: botão da barra com só duas opções, Computador e Celular. "Celular" volta
 //   pro último aparelho escolhido (lastDevice).
-// - DeviceList: painel ao lado do celular com os aparelhos (Android e Apple, com as medidas)
-//   e o "Personalizado" (largura × altura digitadas). Catálogo em src/lib/devices.js.
+// - DeviceSwitcher: botão embaixo do aparelho (nome + medidas) que abre a grade de aparelhos
+//   (Android e Apple, com miniaturas) e o "Personalizado" (largura × altura).
 // O DevicePicker também é usado pelo visualizador de HTML da aba Código.
 import { useEffect, useRef, useState } from 'react';
-import { Monitor, Smartphone, Search, Ruler } from 'lucide-react';
+import { Monitor, Smartphone, Search, Ruler, ChevronUp } from 'lucide-react';
 import { ToolButton } from './tool-button.jsx';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
@@ -80,43 +80,67 @@ export function DevicePicker({ value, onChange, disabled }) {
   );
 }
 
-const LIST_W = 260;
-const GAP = 32;
+// Miniatura do aparelho: contorno na proporção real, com a câmera de cada um. Desenhada
+// (não é imagem), na cor do texto — some com o tema.
+function MiniDevice({ d, on }) {
+  const H = 38;
+  const W = Math.max(14, Math.round((H * d.w) / d.h));
+  const r = Math.max(2, Math.round((d.radius / d.h) * H) + 2);
+  return (
+    <span
+      className={cn(
+        'relative block shrink-0 border-[1.5px]',
+        on ? 'border-primary' : 'border-foreground/45 group-hover:border-foreground/70',
+      )}
+      style={{ width: W, height: H, borderRadius: r }}
+    >
+      {d.cutout === 'island' && (
+        <span className="absolute left-1/2 top-[3px] h-[3px] w-[7px] -translate-x-1/2 rounded-full bg-current opacity-60" />
+      )}
+      {d.cutout === 'notch' && (
+        <span className="absolute left-1/2 top-0 h-[3px] w-[9px] -translate-x-1/2 rounded-b-[2px] bg-current opacity-60" />
+      )}
+      {(d.cutout === 'punch' || d.cutout === 'drop') && (
+        <span className="absolute left-1/2 top-[3px] size-[3px] -translate-x-1/2 rounded-full bg-current opacity-60" />
+      )}
+    </span>
+  );
+}
 
-// Painel de aparelhos à direita da moldura. Some se não couber ao lado do celular.
-export function DeviceList({ value, onChange, custom, onCustomChange, frameWidth }) {
+// Botão embaixo do aparelho (nome + medidas da área do site) que abre a grade de
+// aparelhos pra cima. Fica no lugar do rótulo da moldura (DeviceFrame showLabel=false).
+export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geometry, device }) {
   const t = useT();
-  const ref = useRef(null);
-  const [fits, setFits] = useState(false);
+  const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [draft, setDraft] = useState(() => clampCustom(custom));
+  const ref = useRef(null);
   const current = normalizeViewport(value);
-  const selRef = useRef(null);
-
-  useEffect(() => setDraft(clampCustom(custom)), [custom]);
 
   useEffect(() => {
-    const parent = ref.current?.parentElement;
-    if (!parent) return undefined;
-    const check = () => setFits((parent.clientWidth - frameWidth) / 2 >= LIST_W + GAP * 2);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(parent);
-    return () => ro.disconnect();
-  }, [frameWidth]);
-
-  // Traz o aparelho escolhido pra vista ao abrir.
-  useEffect(() => {
-    if (fits) selRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [fits]);
+    if (!open) return undefined;
+    setQ('');
+    setDraft(clampCustom(custom));
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const pick = (v) => {
     rememberDevice(v);
     onChange(v);
+    setOpen(false);
   };
   const applyCustom = () => {
     const c = clampCustom(draft);
-    setDraft(c);
     onCustomChange(c);
     pick('custom');
   };
@@ -127,69 +151,109 @@ export function DeviceList({ value, onChange, custom, onCustomChange, frameWidth
     devices: g.devices.filter((d) => !needle || d.name.toLowerCase().includes(needle)),
   })).filter((g) => g.devices.length);
 
+  const g = geometry;
+  const label = device.id === 'custom' ? t('preview.device_custom') : device.name;
+
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center justify-center"
-      style={{ left: `calc(50% + ${frameWidth / 2}px)`, display: fits ? undefined : 'none' }}
+      className="absolute z-20 -translate-x-1/2"
+      style={{ left: g.frame.x + g.frame.w / 2, top: g.frame.y + g.frame.h + 6 }}
     >
-      <div
-        className="pointer-events-auto flex max-h-[calc(100%-48px)] flex-col overflow-hidden rounded-2xl border bg-background/95 shadow-xl backdrop-blur"
-        style={{ width: LIST_W }}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        title={t('preview.device_change')}
+        className={cn(
+          'flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          open && 'bg-muted text-foreground',
+        )}
       >
-        <div className="flex items-center gap-2 border-b px-3 py-2.5 [&_svg]:size-3.5">
-          <Search className="shrink-0 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('preview.device_search')}
-            className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-          {groups.map((g) => (
-            <div key={g.id} className="mb-1">
-              <div className="px-2 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {t('preview.device_group_' + g.id)}
-              </div>
-              {g.devices.map((d) => {
-                const on = current === d.id;
-                return (
-                  <button
-                    key={d.id}
-                    ref={on ? selRef : undefined}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => pick(d.id)}
-                    className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] hover:bg-muted',
-                      on && 'bg-primary/10 font-medium text-primary',
-                    )}
-                  >
-                    <span className="min-w-0 flex-1 truncate" title={d.name}>
-                      {d.name}
-                    </span>
-                    <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-muted-foreground">
-                      {d.w}×{d.h}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        <form
-          className={cn('border-t px-3 py-2.5 text-[12px]', current === 'custom' && 'bg-primary/5')}
-          onSubmit={(e) => {
-            e.preventDefault();
-            applyCustom();
-          }}
+        <span className="font-medium text-foreground/85">{label}</span>
+        <span className="font-mono tabular-nums" title={t('preview.device_viewport')}>
+          {g.viewport.w} × {g.viewport.h}
+        </span>
+        {g.scale < 0.995 && (
+          <span className="font-mono tabular-nums">· {Math.round(g.scale * 100)}%</span>
+        )}
+        <ChevronUp
+          className={cn('size-3 transition-transform', !open && 'rotate-180')}
+          aria-hidden="true"
+        />
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label={t('preview.device_change')}
+          className="absolute bottom-full left-1/2 mb-2 flex max-h-[min(70vh,560px)] w-[min(560px,calc(100vw-48px))] -translate-x-1/2 flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-[0_16px_48px_rgba(0,0,0,0.35)] duration-150 animate-in fade-in slide-in-from-bottom-1"
         >
-          <div className="mb-1.5 flex items-center gap-1.5 font-medium">
-            <Ruler className="size-3.5 text-muted-foreground" />
-            {t('preview.device_custom')}
+          <div className="flex items-center gap-2 border-b px-3 py-2.5 [&_svg]:size-3.5">
+            <Search className="shrink-0 text-muted-foreground" aria-hidden="true" />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t('preview.device_search')}
+              className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+            />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+            {groups.map((grp) => (
+              <section key={grp.id}>
+                <h3 className="sticky top-0 z-[1] bg-popover pb-1.5 pt-3 text-[12px] font-semibold text-foreground/80">
+                  {t('preview.device_group_' + grp.id)}
+                </h3>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-1.5">
+                  {grp.devices.map((d) => {
+                    const on = current === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => pick(d.id)}
+                        title={`${d.name} · ${d.w} × ${d.h}`}
+                        className={cn(
+                          'group flex min-w-0 flex-col items-center gap-1.5 rounded-lg border px-1.5 pb-1.5 pt-2.5 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                          on ? 'border-primary bg-primary/10' : 'border-transparent',
+                        )}
+                      >
+                        <MiniDevice d={d} on={on} />
+                        <span
+                          className={cn(
+                            'line-clamp-2 text-[11.5px] leading-tight',
+                            on && 'font-medium text-primary',
+                          )}
+                        >
+                          {d.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+            {groups.length === 0 && (
+              <p className="py-6 text-center text-[12px] text-muted-foreground">
+                {t('preview.device_none')}
+              </p>
+            )}
+          </div>
+          <form
+            className={cn(
+              'flex items-center gap-2 border-t px-3 py-2.5 text-[12px]',
+              current === 'custom' && 'bg-primary/5',
+            )}
+            onSubmit={(e) => {
+              e.preventDefault();
+              applyCustom();
+            }}
+          >
+            <Ruler className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="mr-auto font-medium">{t('preview.device_custom')}</span>
             {['w', 'h'].map((k, i) => (
               <span key={k} className="flex items-center gap-1.5">
                 {i === 1 && <span className="text-muted-foreground">×</span>}
@@ -208,15 +272,15 @@ export function DeviceList({ value, onChange, custom, onCustomChange, frameWidth
             <button
               type="submit"
               className={cn(
-                'ml-auto h-7 rounded-md border px-2.5 text-[12px] hover:bg-muted',
+                'h-7 rounded-md border px-2.5 text-[12px] hover:bg-muted',
                 current === 'custom' && 'border-primary text-primary',
               )}
             >
-              OK
+              {t('preview.device_apply')}
             </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

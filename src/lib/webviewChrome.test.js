@@ -15,7 +15,8 @@ describe('applyViewport', () => {
     const w = { style: {}, parentElement: { clientWidth: 1000, clientHeight: 600 } };
     applyViewport(w, 'iphone-15');
     expect(w.style.width).toBe('393px');
-    expect(w.style.height).toBe('852px');
+    // a barra de status (54) e o indicador de gestos (34) ficam fora da área do site
+    expect(w.style.height).toBe(852 - 54 - 34 + 'px');
     const s = Number(/scale\(([\d.]+)\)/.exec(w.style.transform)[1]);
     expect(s).toBeGreaterThan(0);
     expect(s).toBeLessThan(1);

@@ -3,6 +3,7 @@
 // em cima da página. Tudo pointer-events-none: cliques passam direto pro site. Embaixo,
 // o nome do aparelho e as medidas (largura × altura e a escala, quando encolhido).
 import { fitDevice } from '@/lib/devices';
+import { Signal, Wifi, BatteryFull } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const BODY = '#0e0e10'; // corpo do aparelho (igual em todos os temas)
@@ -53,7 +54,8 @@ function Cutout({ dev, s }) {
   return null;
 }
 
-export function DeviceFrame({ dev, box }) {
+// showLabel=false: quem usa desenha o próprio rótulo (o Preview põe ali o botão de trocar).
+export function DeviceFrame({ dev, box, showLabel = true }) {
   const t = useT();
   if (!dev || !box?.width || !box?.height) return null;
   const g = fitDevice(dev, box);
@@ -74,15 +76,64 @@ export function DeviceFrame({ dev, box }) {
           height: g.frame.h,
           borderStyle: 'solid',
           borderColor: BODY,
-          borderLeftWidth: g.bezel.side,
-          borderRightWidth: g.bezel.side,
-          borderTopWidth: g.bezel.top,
-          borderBottomWidth: g.bezel.bottom,
+          // +1px pra dentro: a borda cobre 1px da tela, senão o arredondamento da escala
+          // deixava um fiozinho da página (branco) aparecendo entre a moldura e a tela.
+          borderLeftWidth: g.bezel.side + 1,
+          borderRightWidth: g.bezel.side + 1,
+          borderTopWidth: g.bezel.top + 1,
+          borderBottomWidth: g.bezel.bottom + 1,
           borderRadius: outerRadius,
           boxShadow: '0 0 0 1px rgba(255,255,255,0.09), 0 24px 60px rgba(0,0,0,0.45)',
         }}
       />
-      {/* Câmera / entalhe, presos ao topo da tela. */}
+      {/* Barras do sistema, fora da área do site (chromeOf): status em cima (hora à
+          esquerda, sinal/Wi-Fi/bateria à direita, desviando da câmera) e o indicador de
+          gestos embaixo. Arredondadas no canto da tela, como o vidro do aparelho. */}
+      {g.chrome.top > 0 && (
+        <div
+          className="absolute flex items-center justify-between text-white"
+          style={{
+            left: g.screen.x,
+            top: g.screen.y,
+            width: g.screen.w,
+            height: g.chrome.top,
+            background: '#000',
+            borderTopLeftRadius: dev.radius * s,
+            borderTopRightRadius: dev.radius * s,
+            padding: `${(dev.group === 'apple' ? 6 : 2) * s}px ${(dev.group === 'apple' ? 32 : 18) * s}px 0`,
+            fontSize: 15 * s,
+            fontWeight: 600,
+          }}
+        >
+          <span className="tabular-nums">9:41</span>
+          <span className="flex items-center" style={{ gap: 5 * s }}>
+            <Signal style={{ width: 15 * s, height: 15 * s }} strokeWidth={2.5} />
+            <Wifi style={{ width: 15 * s, height: 15 * s }} strokeWidth={2.5} />
+            <BatteryFull style={{ width: 22 * s, height: 22 * s }} strokeWidth={2} />
+          </span>
+        </div>
+      )}
+      {g.chrome.bottom > 0 && (
+        <div
+          className="absolute flex items-end justify-center"
+          style={{
+            left: g.screen.x,
+            top: g.page.y + g.page.h,
+            width: g.screen.w,
+            height: g.chrome.bottom,
+            background: '#000',
+            borderBottomLeftRadius: dev.radius * s,
+            borderBottomRightRadius: dev.radius * s,
+            paddingBottom: 8 * s,
+          }}
+        >
+          <span
+            className="rounded-full bg-white/90"
+            style={{ width: (dev.group === 'apple' ? 134 : 110) * s, height: 5 * s }}
+          />
+        </div>
+      )}
+      {/* Câmera / entalhe, presos ao topo da tela (por cima da barra de status). */}
       <div
         className="absolute"
         style={{ left: g.screen.x, top: g.screen.y, width: g.screen.w, height: g.screen.h }}
@@ -118,16 +169,18 @@ export function DeviceFrame({ dev, box }) {
         </>
       )}
       {/* Nome + medidas embaixo do aparelho. */}
-      <div
-        className="absolute flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground"
-        style={{ left: g.frame.x + g.frame.w / 2, top: g.frame.y + g.frame.h + 9 }}
-      >
-        {label && <span className="font-medium text-foreground/80">{label}</span>}
-        <span className="font-mono tabular-nums">
-          {dev.w} × {dev.h}
-        </span>
-        {s < 0.995 && <span className="font-mono tabular-nums">· {Math.round(s * 100)}%</span>}
-      </div>
+      {showLabel && (
+        <div
+          className="absolute flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground"
+          style={{ left: g.frame.x + g.frame.w / 2, top: g.frame.y + g.frame.h + 9 }}
+        >
+          {label && <span className="font-medium text-foreground/80">{label}</span>}
+          <span className="font-mono tabular-nums">
+            {dev.w} × {dev.h}
+          </span>
+          {s < 0.995 && <span className="font-mono tabular-nums">· {Math.round(s * 100)}%</span>}
+        </div>
+      )}
     </div>
   );
 }
