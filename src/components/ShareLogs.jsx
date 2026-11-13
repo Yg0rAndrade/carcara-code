@@ -11,9 +11,9 @@ const MAX = 300; // igual ao LAN_LOG_MAX do main
 const hhmmss = (t) => new Date(t).toLocaleTimeString([], { hour12: false });
 
 function statusClass(e) {
-  if (e.kind === 'error' || e.status >= 500) return 'text-red-500';
+  if (e.kind === 'error' || e.status >= 500) return 'text-destructive-ink';
   if (e.status >= 400) return 'text-[hsl(var(--warning))]';
-  if (e.status >= 300) return 'text-sky-500';
+  if (e.status >= 300) return 'text-info-ink';
   return 'text-[hsl(var(--success))]';
 }
 
@@ -65,7 +65,7 @@ export function ShareLogs({ projectPath, width }) {
       >
         <span className="flex-1">{t('lan.logs_title')}</span>
         {errors > 0 && (
-          <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-red-500">
+          <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-destructive-ink">
             {errors}
           </span>
         )}
@@ -94,11 +94,13 @@ export function ShareLogs({ projectPath, width }) {
                 title={e.ip ? `${e.ip}${e.message ? ' — ' + e.message : ''}` : e.message}
                 className="flex items-center gap-2 rounded px-2 py-0.5 hover:bg-muted/60"
               >
-                <span className="shrink-0 text-muted-foreground/70">{hhmmss(e.t)}</span>
+                <span className="shrink-0 text-muted-foreground">{hhmmss(e.t)}</span>
                 {e.kind === 'ws' ? (
                   <>
-                    <Radio className="size-3 shrink-0 text-sky-500" />
-                    <span className="min-w-0 flex-1 truncate text-sky-500">{t('lan.logs_ws')}</span>
+                    <Radio className="size-3 shrink-0 text-info-ink" />
+                    <span className="min-w-0 flex-1 truncate text-info-ink">
+                      {t('lan.logs_ws')}
+                    </span>
                   </>
                 ) : (
                   <>
@@ -109,15 +111,13 @@ export function ShareLogs({ projectPath, width }) {
                     <span
                       className={cn(
                         'min-w-0 flex-1 truncate',
-                        e.kind === 'error' && 'text-red-500',
+                        e.kind === 'error' && 'text-destructive-ink',
                       )}
                     >
                       {e.kind === 'error' ? `${e.url || ''} · ${e.message || ''}` : e.url}
                     </span>
                     {e.kind === 'http' && (
-                      <span className="shrink-0 tabular-nums text-muted-foreground/70">
-                        {e.ms}ms
-                      </span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">{e.ms}ms</span>
                     )}
                   </>
                 )}

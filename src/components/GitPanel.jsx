@@ -45,13 +45,13 @@ const diffEditorTheme = EditorView.theme({
 // Letra/cor/descrição do badge de status por código do git (M/A/D/R/U/?).
 function statusBadge(code, t) {
   const map = {
-    M: ['M', 'text-amber-500', t('git.status_modified')],
-    A: ['A', 'text-emerald-500', t('git.status_added')],
-    D: ['D', 'text-red-500', t('git.status_deleted')],
-    R: ['R', 'text-blue-500', t('git.status_renamed')],
-    C: ['C', 'text-blue-500', t('git.status_copied')],
-    U: ['U', 'text-red-500', t('git.status_conflict')],
-    '?': ['U', 'text-emerald-500', t('git.status_untracked')],
+    M: ['M', 'text-warning-ink', t('git.status_modified')],
+    A: ['A', 'text-success-ink', t('git.status_added')],
+    D: ['D', 'text-destructive-ink', t('git.status_deleted')],
+    R: ['R', 'text-info-ink', t('git.status_renamed')],
+    C: ['C', 'text-info-ink', t('git.status_copied')],
+    U: ['U', 'text-destructive-ink', t('git.status_conflict')],
+    '?': ['U', 'text-success-ink', t('git.status_untracked')],
   };
   return map[code] || [code, 'text-muted-foreground', code];
 }
@@ -84,7 +84,7 @@ function FileRow({ f, area, onClick, onAct, selected, t }) {
           onAct();
         }}
         title={area === 'staged' ? t('git.unstage_file') : t('git.stage_file')}
-        className="grid size-5 shrink-0 cursor-pointer place-items-center rounded text-muted-foreground/50 hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
+        className="grid size-5 shrink-0 cursor-pointer place-items-center rounded text-muted-foreground hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
       >
         {area === 'staged' ? <Minus /> : <Plus />}
       </button>
@@ -218,7 +218,7 @@ export function GitPanel({ active, visible }) {
   // Erro geral.
   if (status && status.ok === false) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-red-500">
+      <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-destructive-ink">
         {t('git.git_error', { error: status.error })}
       </div>
     );
@@ -370,8 +370,8 @@ export function GitPanel({ active, visible }) {
                             }}
                             className="mt-0.5 flex w-full items-start gap-1 rounded px-1 py-0.5 text-left hover:bg-muted [&_svg]:mt-0.5 [&_svg]:size-3 [&_svg]:shrink-0"
                           >
-                            <ExternalLink className="text-primary" />
-                            <span className="break-all font-mono text-[11px] text-primary hover:underline">
+                            <ExternalLink className="text-primary-ink" />
+                            <span className="break-all font-mono text-[11px] text-primary-ink hover:underline">
                               {r.url}
                             </span>
                           </button>
@@ -501,7 +501,7 @@ export function GitPanel({ active, visible }) {
                       <button
                         type="button"
                         onClick={() => setConfirmUnlink(true)}
-                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-500/10 dark:text-red-400 [&_svg]:size-3.5"
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-destructive-ink hover:bg-red-500/10 [&_svg]:size-3.5"
                       >
                         <Link2Off />
                         {t('git.unlink')}
@@ -565,7 +565,7 @@ export function GitPanel({ active, visible }) {
                     className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-muted"
                   >
                     {b === status?.branch ? (
-                      <Check className="size-3.5 text-emerald-500" />
+                      <Check className="size-3.5 text-success-ink" />
                     ) : (
                       <span className="size-3.5" />
                     )}
@@ -666,7 +666,7 @@ export function GitPanel({ active, visible }) {
                   <button
                     type="button"
                     onClick={() => window.api.openExternal('https://github.com/new')}
-                    className="mb-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-primary hover:underline"
+                    className="mb-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-primary-ink hover:underline"
                   >
                     {t('git.create_repo_github')}
                   </button>
@@ -842,7 +842,7 @@ function ErrorCard({ text, onClose, t }) {
     }
   };
   return (
-    <div className="mt-1.5 rounded-md border border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400">
+    <div className="mt-1.5 rounded-md border border-red-500/40 bg-red-500/10 text-destructive-ink">
       <div className="flex items-center gap-1.5 px-2 py-1.5">
         <AlertTriangle className="size-3.5 shrink-0" />
         <span className="flex-1 text-[11px] font-semibold uppercase tracking-wide">
@@ -868,7 +868,7 @@ function ErrorCard({ text, onClose, t }) {
           </button>
         )}
       </div>
-      <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words px-2.5 pb-2 font-mono text-[11.5px] leading-relaxed text-red-700 dark:text-red-300">
+      <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words px-2.5 pb-2 font-mono text-[11.5px] leading-relaxed text-destructive-ink">
         {text}
       </pre>
     </div>
@@ -887,7 +887,7 @@ function Section({ title, count, action, children }) {
             type="button"
             onClick={action.onClick}
             title={action.title}
-            className="grid size-5 cursor-pointer place-items-center rounded text-muted-foreground/50 hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
+            className="grid size-5 cursor-pointer place-items-center rounded text-muted-foreground hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
           >
             {action.icon}
           </button>

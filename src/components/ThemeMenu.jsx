@@ -107,7 +107,7 @@ export function ThemeMenu({ buttonClassName, noDragClassName }) {
                       <span className="min-w-0 flex-1 truncate" title={t(THEME_SWATCH[key].label)}>
                         {shortLabel(t(THEME_SWATCH[key].label))}
                       </span>
-                      {on && <Check className="size-3 shrink-0 text-primary" />}
+                      {on && <Check className="size-3 shrink-0 text-primary-ink" />}
                     </span>
                   </motion.button>
                 );

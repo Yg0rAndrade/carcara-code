@@ -222,7 +222,7 @@ function XlsxViewer({ data, name }) {
     <div className="absolute inset-0 flex flex-col bg-background">
       {/* Barra de informações + aviso de truncamento (raro: só acima do teto de segurança) */}
       <div className="flex h-8 shrink-0 items-center gap-2 border-b bg-card px-3 text-xs text-muted-foreground">
-        <Sheet className="size-3.5 text-primary" />
+        <Sheet className="size-3.5 text-primary-ink" />
         <span className="truncate">{name}</span>
         <span className="opacity-50">·</span>
         <span>{t('xlsx.read_only')}</span>
@@ -231,7 +231,7 @@ function XlsxViewer({ data, name }) {
           {sheet.totalRows} {t('xlsx.rows')}
         </span>
         {sheet?.truncated && (
-          <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
+          <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary-ink">
             {t('xlsx.truncated', {
               shownRows: sheet.shownRows,
               shownCols: sheet.shownCols,

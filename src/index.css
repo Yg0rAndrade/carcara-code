@@ -38,10 +38,10 @@
     --secondary: 220 14.2857% 95.8824%;
     --secondary-foreground: 215 13.7931% 34.1176%;
     --muted: 210 20% 98.0392%;
-    --muted-foreground: 220 8.9362% 46.0784%;
+    --muted-foreground: 220 8.9362% 44.5%;
     --accent: 48 100% 96.0784%;
     --accent-foreground: 22.7273 82.5% 31.3725%;
-    --destructive: 0 84.2365% 60.1961%;
+    --destructive: 0 84.2365% 49%;
     --destructive-foreground: 0 0% 100%;
     /* *-ink = a mesma cor usada como TEXTO/ÍCONE (text-primary-ink, text-destructive-ink).
        A primary/destructive é cor de PREENCHIMENTO; como letra sobre fundo claro ela fica
@@ -50,6 +50,9 @@
        --primary-ink; o teste src/lib/themeContrast.test.js garante a conta. */
     --primary-ink: 37.6923 92.126% 31%;
     --destructive-ink: 0 84.2365% 43%;
+    --success-ink: 142 71% 26.5%;
+    --warning-ink: 45 93% 25.5%;
+    --info-ink: 199 89% 32%;
     /* Âmbar de alerta — "Parar". Mais amarelo que a primary (hue ~45) pra
        separar do laranja da ação principal, sem virar erro (--destructive). */
     --warning: 45 93% 47%;
@@ -82,10 +85,13 @@
     --muted-foreground: 0 0% 63.9216%;
     --accent: 22.7273 82.5% 31.3725%;
     --accent-foreground: 48 96.6387% 76.6667%;
-    --destructive: 0 84.2365% 60.1961%;
+    --destructive: 0 84.2365% 49%;
     --destructive-foreground: 0 0% 100%;
     --primary-ink: 25.4082 88.2883% 56.4706%;
     --destructive-ink: 0 84.2365% 66.5%;
+    --success-ink: 142 64% 47%;
+    --warning-ink: 43 96% 56%;
+    --info-ink: 199 89% 60%;
     /* Âmbar de alerta — "Parar". Mais amarelo que a primary (hue ~43) pra
        separar do laranja da ação principal, sem virar erro (--destructive). */
     --warning: 43 96% 56%;
@@ -158,7 +164,7 @@
     --secondary: 40 30% 89%;
     --secondary-foreground: 28 16% 26%;
     --muted: 40 34% 91.5%;
-    --muted-foreground: 30 12% 40%;
+    --muted-foreground: 30 12% 39%;
     --accent: 44 58% 89%;
     --accent-foreground: 22.7273 82.5% 31.3725%;
     --border: 38 28% 83%;
@@ -174,13 +180,13 @@
     --card-foreground: 218 32% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 218 32% 17%;
-    --primary: 212 90% 50%;
+    --primary: 212 90% 47.5%;
     --primary-ink: 212 90% 42.5%;
     --primary-foreground: 0 0% 100%;
     --secondary: 212 40% 93%;
     --secondary-foreground: 216 28% 30%;
     --muted: 210 45% 95.5%;
-    --muted-foreground: 215 16% 44%;
+    --muted-foreground: 215 16% 43%;
     --accent: 210 90% 94%;
     --accent-foreground: 215 75% 33%;
     --border: 212 32% 88%;
@@ -265,13 +271,13 @@
     --card-foreground: 165 30% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 165 30% 15%;
-    --primary: 160 72% 34%;
+    --primary: 160 72% 30%;
     --primary-ink: 160 72% 27.5%;
     --primary-foreground: 0 0% 100%;
     --secondary: 152 30% 92%;
     --secondary-foreground: 162 24% 26%;
     --muted: 150 32% 95%;
-    --muted-foreground: 160 12% 40%;
+    --muted-foreground: 160 12% 39%;
     --accent: 152 55% 92%;
     --accent-foreground: 162 70% 24%;
     --border: 152 24% 86%;
@@ -293,7 +299,7 @@
     --secondary: 262 35% 93%;
     --secondary-foreground: 262 22% 30%;
     --muted: 262 40% 96%;
-    --muted-foreground: 262 12% 45%;
+    --muted-foreground: 262 12% 44%;
     --accent: 262 80% 95%;
     --accent-foreground: 262 60% 38%;
     --border: 262 28% 88%;
@@ -309,13 +315,13 @@
     --card-foreground: 10 25% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 10 25% 17%;
-    --primary: 4 76% 56%;
+    --primary: 4 76% 50%;
     --primary-ink: 4 76% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 12 45% 93%;
     --secondary-foreground: 8 22% 30%;
     --muted: 14 50% 96%;
-    --muted-foreground: 10 12% 44%;
+    --muted-foreground: 10 12% 42.5%;
     --accent: 8 90% 95%;
     --accent-foreground: 4 65% 38%;
     --border: 12 35% 88%;

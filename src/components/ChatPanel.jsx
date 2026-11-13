@@ -148,7 +148,7 @@ function PromptMd({ text }) {
                   ? 'text-[15px] text-foreground'
                   : level === 2
                     ? 'text-[14px] text-foreground'
-                    : 'text-[13px] text-primary',
+                    : 'text-[13px] text-primary-ink',
               )}
             >
               {renderInline(txt)}
@@ -158,7 +158,7 @@ function PromptMd({ text }) {
         if (/^[-*]\s/.test(t))
           return (
             <div key={i} className="flex gap-1.5 pl-1">
-              <span className="text-primary">•</span>
+              <span className="text-primary-ink">•</span>
               <span>{renderInline(t.replace(/^[-*]\s*/, ''))}</span>
             </div>
           );
@@ -166,7 +166,7 @@ function PromptMd({ text }) {
           const m = t.match(/^(\d+)\.\s*(.*)/);
           return (
             <div key={i} className="flex gap-1.5 pl-1">
-              <span className="shrink-0 text-primary tabular-nums">{m[1]}.</span>
+              <span className="shrink-0 text-primary-ink tabular-nums">{m[1]}.</span>
               <span>{renderInline(m[2])}</span>
             </div>
           );
@@ -407,11 +407,11 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                               className={cn(
                                 'mt-0.5 grid size-6 shrink-0 place-items-center rounded [&_svg]:size-4',
                                 p.fav
-                                  ? 'text-amber-500'
-                                  : 'text-muted-foreground opacity-0 hover:text-amber-500 group-hover:opacity-100',
+                                  ? 'text-warning-ink'
+                                  : 'text-muted-foreground opacity-0 hover:text-warning-ink group-hover:opacity-100',
                               )}
                             >
-                              <Star className={p.fav ? 'fill-amber-500' : ''} />
+                              <Star className={p.fav ? 'fill-warning-ink' : ''} />
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[13.5px] font-medium">
@@ -442,7 +442,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                                   setConfirmDel(p);
                                 }}
                                 title={t('prompts.remove')}
-                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3.5"
+                                className="grid size-7 place-items-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink [&_svg]:size-3.5"
                               >
                                 <Trash2 />
                               </span>
@@ -465,10 +465,10 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                       title={viewing.fav ? t('prompts.unpin') : t('prompts.pin')}
                       className={cn(
                         'grid size-8 shrink-0 place-items-center rounded-md border [&_svg]:size-4',
-                        viewing.fav ? 'text-amber-500' : 'text-muted-foreground hover:bg-muted',
+                        viewing.fav ? 'text-warning-ink' : 'text-muted-foreground hover:bg-muted',
                       )}
                     >
-                      <Star className={viewing.fav ? 'fill-amber-500' : ''} />
+                      <Star className={viewing.fav ? 'fill-warning-ink' : ''} />
                     </button>
                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
                       {viewing.title}
@@ -493,7 +493,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                       type="button"
                       onClick={() => setConfirmDel(viewing)}
                       title={t('prompts.remove')}
-                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive [&_svg]:size-4"
+                      className="grid size-8 place-items-center rounded-md border text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink [&_svg]:size-4"
                     >
                       <Trash2 />
                     </button>
@@ -639,7 +639,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                     <button
                       type="button"
                       onClick={() => setMode('manage')}
-                      className="text-primary hover:underline"
+                      className="text-primary-ink hover:underline"
                     >
                       {items.length === 0 ? t('prompts.picker_create') : t('prompts.picker_open')}
                     </button>
@@ -663,7 +663,7 @@ function PromptMenu({ projectPath, sessionId, onInsert }) {
                       <Star
                         className={cn(
                           'size-3.5 shrink-0',
-                          p.fav ? 'fill-amber-500 text-amber-500' : 'text-transparent',
+                          p.fav ? 'fill-warning-ink text-warning-ink' : 'text-transparent',
                         )}
                       />
                       <span className="min-w-0 flex-1 truncate font-medium">{p.title}</span>
@@ -1602,7 +1602,7 @@ ${sid}`;
             {canClose && (
               <button
                 type="button"
-                className="flex w-full items-center px-3 py-1.5 text-left text-red-500 hover:bg-muted"
+                className="flex w-full items-center px-3 py-1.5 text-left text-destructive-ink hover:bg-muted"
                 onClick={() => {
                   const sid = tabMenu.sid;
                   closeTabMenu();
@@ -1615,7 +1615,7 @@ ${sid}`;
             {canClose && (
               <button
                 type="button"
-                className="flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left text-red-500 hover:bg-muted"
+                className="flex w-full items-center whitespace-nowrap px-3 py-1.5 text-left text-destructive-ink hover:bg-muted"
                 onClick={() => {
                   const sid = tabMenu.sid;
                   closeTabMenu();

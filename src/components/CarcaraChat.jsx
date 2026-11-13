@@ -293,7 +293,7 @@ export function CarcaraChat({ sessionId, projectPath }) {
         }}
       >
         {dragging && (
-          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-lg border-2 border-dashed border-primary/60 bg-background/80 text-sm text-primary">
+          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-lg border-2 border-dashed border-primary/60 bg-background/80 text-sm text-primary-ink">
             {t('carcara.dropHere')}
           </div>
         )}
@@ -379,7 +379,7 @@ function EmptyState() {
   const t = useT();
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <div className="grid size-12 place-items-center rounded-2xl bg-secondary text-primary [&_svg]:size-6">
+      <div className="grid size-12 place-items-center rounded-2xl bg-secondary text-primary-ink [&_svg]:size-6">
         <Sparkles />
       </div>
       <div className="max-w-xs text-[13px] leading-relaxed text-muted-foreground">
@@ -404,7 +404,7 @@ function ToolCall({ toolName, result }) {
   return (
     <div className="rounded-lg border bg-card/60 text-xs">
       <div className="flex items-center gap-2 px-3 py-2">
-        <Wrench className="size-3.5 shrink-0 text-primary" />
+        <Wrench className="size-3.5 shrink-0 text-primary-ink" />
         <span className="font-medium text-foreground">{toolName}</span>
         {result != null && result !== '' && (
           <span className="text-[11px] text-muted-foreground">{String(result)}</span>
@@ -439,8 +439,8 @@ function DiffView({ diff }) {
             key={i}
             className={cn(
               'whitespace-pre px-2',
-              add && 'bg-green-500/10 text-green-600 dark:text-green-400',
-              del && 'bg-red-500/10 text-red-600 dark:text-red-400',
+              add && 'bg-green-500/10 text-success-ink',
+              del && 'bg-red-500/10 text-destructive-ink',
               hunk && 'bg-muted text-muted-foreground',
               !add && !del && !hunk && 'text-muted-foreground',
             )}
@@ -526,7 +526,7 @@ function Composer({ placeholder, attachments, onRemove, onPick, onPaste }) {
         </ThreadPrimitive.If>
         <ThreadPrimitive.If running>
           <ComposerPrimitive.Cancel
-            className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[15px]"
+            className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-destructive-ink transition-colors hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[15px]"
             title={t('carcara.stop')}
           >
             <Square />

@@ -60,7 +60,7 @@ export function AgentSection({ agent, defaultExpanded = true, history = false, n
             {completed}/{total}
           </span>
           {inProgress > 0 && (
-            <span className="rounded-full bg-primary/15 px-2 py-px font-semibold text-primary">
+            <span className="rounded-full bg-primary/15 px-2 py-px font-semibold text-primary-ink">
               {inProgress === 1
                 ? t('todos.active_badge_one')
                 : t('todos.active_badge', { count: inProgress })}
@@ -92,7 +92,7 @@ export function AgentSection({ agent, defaultExpanded = true, history = false, n
                     ~{formatDuration(timing.estimateMs)}
                   </span>
                   <span
-                    className="text-[10px] italic text-muted-foreground/75"
+                    className="text-[10px] italic text-muted-foreground"
                     title={t('todos.estimate_tooltip')}
                   >
                     {t('todos.estimate_label')}
@@ -106,7 +106,7 @@ export function AgentSection({ agent, defaultExpanded = true, history = false, n
               <TodoItem key={i} todo={todo} completedMs={durations[i]} now={now} />
             ))}
             {agent.todos.length === 0 && (
-              <li className="px-3 py-1.5 text-[13px] italic text-muted-foreground/70">
+              <li className="px-3 py-1.5 text-[13px] italic text-muted-foreground">
                 {t('todos.no_todos')}
               </li>
             )}

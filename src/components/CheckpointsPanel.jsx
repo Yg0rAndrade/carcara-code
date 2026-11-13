@@ -116,7 +116,7 @@ export function CheckpointsPanel({ active, visible }) {
           title={t('checkpoint.auto_tooltip')}
           className={cn(
             'flex h-7 items-center gap-1.5 rounded px-2 text-[12px] font-medium transition-colors',
-            autoOn ? 'text-primary hover:bg-muted' : 'text-muted-foreground hover:bg-muted',
+            autoOn ? 'text-primary-ink hover:bg-muted' : 'text-muted-foreground hover:bg-muted',
           )}
         >
           <span
@@ -170,7 +170,7 @@ export function CheckpointsPanel({ active, visible }) {
                   <div className="text-[11px] text-muted-foreground">
                     {ago(cp.ts, t)}
                     {i === 0 && (
-                      <span className="ml-1.5 text-primary">{t('checkpoint.newest')}</span>
+                      <span className="ml-1.5 text-primary-ink">{t('checkpoint.newest')}</span>
                     )}
                   </div>
                 </div>

@@ -22,17 +22,17 @@ export function TodoItem({ todo, completedMs, now }) {
       )}
     >
       {completed ? (
-        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+        <Check className="mt-0.5 size-3.5 shrink-0 text-success-ink" />
       ) : inProgress ? (
-        <LoaderCircle className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary [animation-duration:2.5s]" />
+        <LoaderCircle className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary-ink [animation-duration:2.5s]" />
       ) : (
-        <Circle className="mt-0.5 size-3 shrink-0 text-muted-foreground/50" />
+        <Circle className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
       )}
       <span
         className={cn(
           'min-w-0 flex-1 break-words',
           completed && 'text-muted-foreground line-through opacity-70',
-          inProgress && 'font-semibold text-primary',
+          inProgress && 'font-semibold text-primary-ink',
         )}
       >
         {label}
@@ -41,7 +41,7 @@ export function TodoItem({ todo, completedMs, now }) {
         <span
           className={cn(
             'flex shrink-0 items-center gap-1 text-xs tabular-nums',
-            duration.live ? 'font-semibold text-primary' : 'text-muted-foreground',
+            duration.live ? 'font-semibold text-primary-ink' : 'text-muted-foreground',
           )}
         >
           {duration.live && <Clock className="size-3" />}

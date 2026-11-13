@@ -684,7 +684,7 @@ export function SettingsModal({
                         agy --dangerously-skip-permissions
                       </code>
                       {agyYolo && (
-                        <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
+                        <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive-ink">
                           <ShieldOff aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
                           {t('settings.agyYoloWarn')}
                         </p>
@@ -781,7 +781,7 @@ export function SettingsModal({
                           )}
                           className={cn(
                             'grid size-8 shrink-0 place-items-center rounded-md border transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                            aiSort !== 'default' && 'border-primary text-primary',
+                            aiSort !== 'default' && 'border-primary text-primary-ink',
                           )}
                         >
                           {aiSort === 'desc' ? (
@@ -968,7 +968,9 @@ export function SettingsModal({
                                         <p
                                           className={cn(
                                             'mt-1.5 text-[11px]',
-                                            pe.error ? 'text-destructive' : 'text-muted-foreground',
+                                            pe.error
+                                              ? 'text-destructive-ink'
+                                              : 'text-muted-foreground',
                                           )}
                                         >
                                           {pe.error || t('settings.portHint')}
@@ -1021,7 +1023,7 @@ export function SettingsModal({
                                             <span className="text-muted-foreground">{pt.name}</span>
                                           )}
                                           {pt.isPreview && (
-                                            <span className="rounded bg-primary/15 px-1 text-[9px] text-primary">
+                                            <span className="rounded bg-primary/15 px-1 text-[9px] text-primary-ink">
                                               {t('settings.portsAppTag')}
                                             </span>
                                           )}
@@ -1034,7 +1036,7 @@ export function SettingsModal({
                                                 name: pt.name || String(pt.port),
                                               })
                                             }
-                                            className="text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+                                            className="text-muted-foreground transition-colors hover:text-destructive-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
                                             title={t('settings.portsCloseConfirm')}
                                             aria-label={t('settings.portsCloseTitle', {
                                               port: pt.port,
@@ -1338,7 +1340,8 @@ export function SettingsModal({
                 <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                      <Save className="size-3.5 text-primary" /> {t('settings.codeAutosaveTitle')}
+                      <Save className="size-3.5 text-primary-ink" />{' '}
+                      {t('settings.codeAutosaveTitle')}
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {t('settings.codeAutosaveHelp')}{' '}
@@ -1358,7 +1361,8 @@ export function SettingsModal({
                 <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                      <WrapText className="size-3.5 text-primary" /> {t('settings.codeWrapTitle')}
+                      <WrapText className="size-3.5 text-primary-ink" />{' '}
+                      {t('settings.codeWrapTitle')}
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {t('settings.codeWrapHelp')}
@@ -1378,7 +1382,7 @@ export function SettingsModal({
                 <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                      <Bell className="size-3.5 text-primary" /> {t('settings.notifyTitle')}
+                      <Bell className="size-3.5 text-primary-ink" /> {t('settings.notifyTitle')}
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {t('settings.notifyHelp')}{' '}
@@ -1435,11 +1439,14 @@ export function SettingsModal({
                       >
                         <Icon
                           aria-hidden="true"
-                          className={cn('size-4 shrink-0', active && 'text-primary')}
+                          className={cn('size-4 shrink-0', active && 'text-primary-ink')}
                         />
                         <span className="min-w-0 flex-1 truncate text-left">{s.label}</span>
                         {active && (
-                          <Check aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+                          <Check
+                            aria-hidden="true"
+                            className="size-3.5 shrink-0 text-primary-ink"
+                          />
                         )}
                       </button>
                     );
@@ -1555,7 +1562,7 @@ export function SettingsModal({
                         {v.detail && (
                           <div
                             title={v.detail}
-                            className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-muted-foreground/70"
+                            className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-muted-foreground"
                           >
                             {v.detail}
                           </div>
@@ -1598,7 +1605,7 @@ export function SettingsModal({
                   />
                   <div className="min-w-0">
                     <div className="text-[15px] font-semibold text-foreground">{AUTHOR.name}</div>
-                    <div className="text-xs text-primary">{t(AUTHOR.role)}</div>
+                    <div className="text-xs text-primary-ink">{t(AUTHOR.role)}</div>
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                       {t(AUTHOR.blurb)}
                     </p>
@@ -1615,7 +1622,7 @@ export function SettingsModal({
                       onClick={() => openLink(l.href)}
                       className="group flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-muted"
                     >
-                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary-ink [&_svg]:size-4">
                         <l.Icon />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -1634,7 +1641,8 @@ export function SettingsModal({
                 {/* Agradecimento */}
                 <div className="mt-5 rounded-lg border border-dashed p-4">
                   <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                    <Sparkles className="size-3.5 text-primary" /> {t('settings.aboutThanksTitle')}
+                    <Sparkles className="size-3.5 text-primary-ink" />{' '}
+                    {t('settings.aboutThanksTitle')}
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     {t('settings.aboutThanksBody', { name: AUTHOR.name })}

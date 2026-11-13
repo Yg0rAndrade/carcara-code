@@ -250,7 +250,7 @@ function Card({ card, index, column, onOpen, t }) {
             e.dataTransfer.setData(TASK_MIME, formatDroppedTask(card.titleRaw, card.bodyRaw));
           } catch {}
         }}
-        className="absolute right-0.5 top-0.5 hidden cursor-grab text-muted-foreground/50 hover:text-foreground group-hover:block [&_svg]:size-3.5"
+        className="absolute right-0.5 top-0.5 hidden cursor-grab text-muted-foreground hover:text-foreground group-hover:block [&_svg]:size-3.5"
       >
         <GripVerticalIcon />
       </span>
@@ -258,7 +258,7 @@ function Card({ card, index, column, onOpen, t }) {
         <InlineTitle raw={card.titleRaw} />
       </div>
       {bodyLines > 0 && (
-        <span className="mt-1 block text-[11px] text-muted-foreground/60">≡ {bodyLines}</span>
+        <span className="mt-1 block text-[11px] text-muted-foreground">≡ {bodyLines}</span>
       )}
     </div>
   );
@@ -306,7 +306,7 @@ function ColumnMenu({ col, onRename, onDelete, t }) {
                 onDelete();
                 close();
               }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium text-destructive hover:bg-muted [&_svg]:size-3.5"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium text-destructive-ink hover:bg-muted [&_svg]:size-3.5"
             >
               <TrashIcon />
               {t('kanban.delete_column_confirm', { n: count })}
@@ -323,7 +323,7 @@ function ColumnMenu({ col, onRename, onDelete, t }) {
                 onDelete();
                 close();
               }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-destructive hover:bg-muted [&_svg]:size-3.5"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-destructive-ink hover:bg-muted [&_svg]:size-3.5"
             >
               <TrashIcon />
               {t('kanban.delete_column')}
@@ -437,7 +437,7 @@ function Column({ col, cards, showDone, onOpen, onAdd, onColor, onRename, onDele
         )}
         <span className="text-[11px] text-muted-foreground">{cards.length}</span>
         {hidden > 0 && !showDone && (
-          <span className="text-[11px] text-muted-foreground/60">+{hidden}</span>
+          <span className="text-[11px] text-muted-foreground">+{hidden}</span>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <button
@@ -482,7 +482,7 @@ function Column({ col, cards, showDone, onOpen, onAdd, onColor, onRename, onDele
           <Card key={card.id} card={card} index={i} column={col.name} onOpen={onOpen} t={t} />
         ))}
         {cards.length === 0 && !adding && (
-          <div className="rounded-md border border-dashed py-6 text-center text-[11px] text-muted-foreground/60">
+          <div className="rounded-md border border-dashed py-6 text-center text-[11px] text-muted-foreground">
             {archive ? t('kanban.empty_archive') : t('kanban.empty_column')}
           </div>
         )}
@@ -543,7 +543,7 @@ function CardModal({ card, onClose, onToggle, onRemove, t }) {
               <Markdown text={body} />
             </Suspense>
           ) : (
-            <p className="text-[13px] text-muted-foreground/60">{t('kanban.no_body')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('kanban.no_body')}</p>
           )}
         </div>
         <div className="flex justify-end border-t p-2">
@@ -554,7 +554,7 @@ function CardModal({ card, onClose, onToggle, onRemove, t }) {
               onRemove(card.id);
               onClose();
             }}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive-ink hover:text-destructive-ink"
           >
             {t('kanban.delete_card')}
           </Button>

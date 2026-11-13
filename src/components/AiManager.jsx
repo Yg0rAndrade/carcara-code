@@ -91,7 +91,7 @@ function KebabMenu({ items, label }) {
                   }}
                   className={cn(
                     'block w-full px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-muted',
-                    it.danger && 'text-destructive',
+                    it.danger && 'text-destructive-ink',
                   )}
                 >
                   {it.label}
@@ -393,7 +393,7 @@ export default function AiManager({ initialInstallKey = null }) {
                 <button
                   type="button"
                   onClick={() => window.api.openExternal(entry.docs)}
-                  className="inline-flex shrink-0 items-center gap-1 text-[11px] text-primary hover:underline"
+                  className="inline-flex shrink-0 items-center gap-1 text-[11px] text-primary-ink hover:underline"
                 >
                   <ExternalLink className="size-3" />
                   {t('settings.aiOfficialDocs')}
@@ -411,7 +411,7 @@ export default function AiManager({ initialInstallKey = null }) {
                 <button
                   type="button"
                   onClick={() => window.api.openExternal('ms-settings:appsfeatures')}
-                  className="self-start rounded-md border border-primary px-3 py-1.5 text-[13px] text-primary transition-colors hover:bg-primary/10"
+                  className="self-start rounded-md border border-primary px-3 py-1.5 text-[13px] text-primary-ink transition-colors hover:bg-primary/10"
                 >
                   {t('settings.aiOpenWindowsApps')}
                 </button>

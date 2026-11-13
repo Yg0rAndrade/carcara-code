@@ -150,7 +150,7 @@ export function RemotePreviewStart({ projectPath, onOpen }) {
           </div>
         </div>
 
-        {err && <p className="text-[12px] leading-relaxed text-red-500">{err}</p>}
+        {err && <p className="text-[12px] leading-relaxed text-destructive-ink">{err}</p>}
         <p className="text-[11.5px] leading-relaxed text-muted-foreground">
           {t('remotePreview.hint')}
         </p>

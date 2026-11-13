@@ -520,7 +520,7 @@ export function Rail({
           className={cn(
             'size-5 transition-all duration-200',
             open ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
-            !f.color && 'text-primary',
+            !f.color && 'text-primary-ink',
           )}
           style={f.color ? { color: f.color } : undefined}
         />
@@ -909,7 +909,7 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
       >
         {/* Cores do menu: azul = configurar, verde = (re)iniciar, âmbar = parar
             (--warning, o mesmo do "Parar" do app), vermelho = remover. */}
-        <Settings2 className="h-3.5 w-3.5 shrink-0 text-sky-500" />
+        <Settings2 className="h-3.5 w-3.5 shrink-0 text-info-ink" />
         <span className="truncate">{t('rail.menu_settings')}</span>
       </button>
 
@@ -939,7 +939,7 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
       <button
         type="button"
         onClick={() => onRemove(p)}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-muted"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-destructive-ink hover:bg-muted"
       >
         <Trash2 className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{t('rail.menu_remove_project')}</span>
@@ -1069,7 +1069,7 @@ function FolderRenameModal({ folder, onClose, onRename }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <FolderIcon className="h-4 w-4 text-primary" />
+          <FolderIcon className="h-4 w-4 text-primary-ink" />
           {t('rail.menu_folder_rename')}
         </div>
         <input

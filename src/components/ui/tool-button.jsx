@@ -12,8 +12,9 @@ export function ToolButton({ active, className, children, ...props }) {
         'grid h-7 w-7 place-items-center rounded-md bg-secondary text-muted-foreground transition-colors',
         'hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40',
         '[&_svg]:size-[15px]',
-        // Ativo = brasa, igual à aba selecionada (data-[state=active]:text-primary).
-        active && 'bg-background text-primary shadow-sm hover:bg-background hover:text-primary',
+        // Ativo = brasa, igual à aba selecionada (data-[state=active]:text-primary-ink).
+        active &&
+          'bg-background text-primary-ink shadow-sm hover:bg-background hover:text-primary-ink',
         className,
       )}
       {...props}

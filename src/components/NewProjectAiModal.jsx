@@ -120,7 +120,7 @@ export function NewProjectAiModal({ paths = [], onClose, onOpenInstall }) {
             <button
               type="button"
               onClick={() => onOpenInstall?.(chosenMissing[0])}
-              className="text-primary underline"
+              className="text-primary-ink underline"
             >
               {t('newProjectAi.openInstall')}
             </button>

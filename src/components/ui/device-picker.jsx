@@ -66,7 +66,7 @@ export function DevicePicker({ value, onChange, disabled }) {
                 }}
                 className={cn(
                   'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4',
-                  on && 'font-medium text-primary',
+                  on && 'font-medium text-primary-ink',
                 )}
               >
                 <o.Icon />
@@ -224,7 +224,7 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
           (open || coach) && 'border-primary/60 text-foreground',
         )}
       >
-        <Smartphone className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+        <Smartphone className="size-3.5 shrink-0 text-primary-ink" aria-hidden="true" />
         <span className="font-medium text-foreground">{label}</span>
         <span className="font-mono text-[11px] tabular-nums" title={t('preview.device_viewport')}>
           {g.viewport.w} × {g.viewport.h}
@@ -279,7 +279,7 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
                         <span
                           className={cn(
                             'line-clamp-2 text-[11.5px] leading-tight',
-                            on && 'font-medium text-primary',
+                            on && 'font-medium text-primary-ink',
                           )}
                         >
                           {d.name}
@@ -327,7 +327,7 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
               type="submit"
               className={cn(
                 'h-7 rounded-md border px-2.5 text-[12px] hover:bg-muted',
-                current === 'custom' && 'border-primary text-primary',
+                current === 'custom' && 'border-primary text-primary-ink',
               )}
             >
               {t('preview.device_apply')}

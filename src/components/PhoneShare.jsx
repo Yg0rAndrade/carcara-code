@@ -65,7 +65,7 @@ function ShareDetails({ result, size }) {
   const [copied, setCopied] = useState(false);
   if (result?.error) {
     return (
-      <p className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-[13px] text-red-500">
+      <p className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-[13px] text-destructive-ink">
         {t('lan.error_' + result.error)}
       </p>
     );
@@ -94,7 +94,7 @@ function ShareDetails({ result, size }) {
         </button>
       </div>
       <p className="flex items-start gap-2 text-[13px]">
-        <Wifi className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        <Wifi className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-ink" />
         {t('lan.same_wifi')}
       </p>
     </>
@@ -144,7 +144,7 @@ export function PhoneShareButton({ share, disabled }) {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <QrCode className="h-4 w-4 text-primary" />
+              <QrCode className="h-4 w-4 text-primary-ink" />
               {t('lan.title')}
             </div>
             {share.busy && !share.result && (
@@ -164,7 +164,7 @@ export function PhoneShareButton({ share, disabled }) {
                     share.stop();
                     setOpen(false);
                   }}
-                  className="mr-auto flex items-center gap-1.5 rounded-md border border-red-500/40 px-3 py-1.5 text-[13px] font-medium text-red-500 hover:bg-red-500/10 [&_svg]:size-3.5"
+                  className="mr-auto flex items-center gap-1.5 rounded-md border border-red-500/40 px-3 py-1.5 text-[13px] font-medium text-destructive-ink hover:bg-red-500/10 [&_svg]:size-3.5"
                 >
                   <WifiOff />
                   {t('lan.stop')}
@@ -280,7 +280,7 @@ export function PhoneShareCard({ share, frameWidth, side = 'right' }) {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-60 motion-reduce:animate-none" />
               <span className="relative inline-flex size-2 rounded-full bg-green-500" />
             </span>
-            <span className="text-[12px] font-medium text-green-500">{t('lan.status_on')}</span>
+            <span className="text-[12px] font-medium text-success-ink">{t('lan.status_on')}</span>
           </div>
         ) : (
           <div className="mb-4 pr-6">
@@ -301,14 +301,14 @@ export function PhoneShareCard({ share, frameWidth, side = 'right' }) {
               <QRCodeSVG value={url} size={qr} marginSize={0} />
             </div>
           ) : (
-            <div className="grid size-full place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground/50">
+            <div className="grid size-full place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground">
               <QrCode className="size-16" strokeWidth={1.25} />
             </div>
           )}
         </div>
 
         {error && (
-          <p className="mt-4 rounded-md border border-red-500/40 bg-red-500/10 p-2.5 text-[12px] text-red-500">
+          <p className="mt-4 rounded-md border border-red-500/40 bg-red-500/10 p-2.5 text-[12px] text-destructive-ink">
             {t('lan.error_' + error)}
           </p>
         )}
@@ -325,17 +325,17 @@ export function PhoneShareCard({ share, frameWidth, side = 'right' }) {
                 {url.replace(/^https?:\/\//, '')}
               </span>
               <span className="text-muted-foreground [&_svg]:size-3.5">
-                {copied ? <Check className="text-green-500" /> : <Copy />}
+                {copied ? <Check className="text-success-ink" /> : <Copy />}
               </span>
             </button>
             <p className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-muted-foreground">
-              <Wifi className="mt-0.5 size-3.5 shrink-0 text-primary" />
+              <Wifi className="mt-0.5 size-3.5 shrink-0 text-primary-ink" />
               {t('lan.same_wifi')}
             </p>
             <button
               type="button"
               onClick={share.stop}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 text-[13px] font-medium text-red-500 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 [&_svg]:size-4"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 text-[13px] font-medium text-destructive-ink transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 [&_svg]:size-4"
             >
               <WifiOff />
               {t('lan.stop')}

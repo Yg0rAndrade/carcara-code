@@ -59,7 +59,9 @@ export function ProjectAiChips({
               <CliBadge optKey={opt.key} />
               {opt.key === 'custom' ? t('settings.aiCustomLabel') : opt.label}
               {missing && <Download aria-hidden="true" className="size-3" />}
-              {active && !missing && <Check aria-hidden="true" className="size-3.5 text-primary" />}
+              {active && !missing && (
+                <Check aria-hidden="true" className="size-3.5 text-primary-ink" />
+              )}
             </button>
           );
         })}

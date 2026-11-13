@@ -35,7 +35,7 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
         const label = (
           <label className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium">
             <span className="font-mono">{k}</span>
-            {isReq && <span className="text-primary">*</span>}
+            {isReq && <span className="text-primary-ink">*</span>}
             {p.description && (
               <span className="font-normal text-muted-foreground">— {p.description}</span>
             )}
@@ -72,7 +72,7 @@ export function McpToolForm({ schema, value, onChange, onComplete }) {
                 className="h-3.5 w-3.5 accent-primary"
               />
               <span className="font-mono">{k}</span>
-              {isReq && <span className="text-primary">*</span>}
+              {isReq && <span className="text-primary-ink">*</span>}
             </label>
           );
         }

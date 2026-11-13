@@ -8,10 +8,10 @@ import { useT } from '@/lib/i18n';
 // Nota: o CLI de IA (Claude Code, Codex, OpenCode, Antigravity…) NÃO entra aqui — cada um
 // instala o seu, e nem todo mundo usa o Claude. Aqui ficam só as dependências comuns a todos.
 const LEVELS = {
-  essential: { labelKey: 'setup.level_essential', cls: 'bg-primary/10 text-primary' },
+  essential: { labelKey: 'setup.level_essential', cls: 'bg-primary/10 text-primary-ink' },
   recommended: {
     labelKey: 'setup.level_recommended',
-    cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    cls: 'bg-amber-500/10 text-warning-ink',
   },
 };
 
@@ -64,13 +64,13 @@ function StatusPill({ state }) {
   }
   if (state === true) {
     return (
-      <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+      <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-success-ink">
         <Check className="size-3.5" /> {t('setup.pill_installed')}
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+    <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-warning-ink">
       {t('setup.pill_not_found')}
     </span>
   );
@@ -174,7 +174,7 @@ export function SetupScreen({ open, onClose }) {
     // Começa abaixo da barra de título (ver TitleBar.jsx): ali os cliques não chegam.
     <div className="fixed inset-x-0 bottom-0 top-[var(--titlebar-h,0px)] z-[60] flex flex-col overflow-y-auto bg-background">
       <div className="mx-auto w-full max-w-2xl px-6 py-12">
-        <div className="eyebrow text-primary">{t('setup.badge')}</div>
+        <div className="eyebrow text-primary-ink">{t('setup.badge')}</div>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t('setup.title_main')}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {t('setup.description')}

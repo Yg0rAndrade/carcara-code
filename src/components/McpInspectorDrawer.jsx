@@ -29,13 +29,13 @@ const LOG_LEVELS = [
 // Cor do badge por nível de log (RFC 5424).
 const LEVEL_CLASS = {
   debug: 'text-muted-foreground',
-  info: 'text-sky-500',
+  info: 'text-info-ink',
   notice: 'text-teal-500',
-  warning: 'text-amber-500',
-  error: 'text-red-500',
-  critical: 'text-red-500',
-  alert: 'text-red-600',
-  emergency: 'text-red-600',
+  warning: 'text-warning-ink',
+  error: 'text-destructive-ink',
+  critical: 'text-destructive-ink',
+  alert: 'text-destructive-ink',
+  emergency: 'text-destructive-ink',
 };
 
 const MAX_INLINE = 50_000; // payloads maiores só expandem sob demanda
@@ -52,9 +52,9 @@ function classify(m) {
 }
 
 const TYPE_BADGE = {
-  request: 'text-sky-500',
-  response: 'text-green-500',
-  error: 'text-red-500',
+  request: 'text-info-ink',
+  response: 'text-success-ink',
+  error: 'text-destructive-ink',
   notification: 'text-muted-foreground',
   other: 'text-muted-foreground',
 };
@@ -194,7 +194,7 @@ export function McpInspectorDrawer({
           {traffic.length} {t('mcp.inspector.msgs')}
         </span>
         {truncated > 0 && (
-          <span className="text-[11px] text-amber-500">
+          <span className="text-[11px] text-warning-ink">
             +{truncated} {t('mcp.inspector.truncated')}
           </span>
         )}
@@ -242,7 +242,7 @@ export function McpInspectorDrawer({
           </Button>
           <span className="text-[11px] text-muted-foreground">
             {traffic.length} {t('mcp.inspector.msgs')}
-            {truncated > 0 && <span className="text-amber-500"> +{truncated}</span>}
+            {truncated > 0 && <span className="text-warning-ink"> +{truncated}</span>}
           </span>
         </div>
 
@@ -294,9 +294,9 @@ export function McpInspectorDrawer({
                       return (
                         <JsonRow key={r.seq} payload={r.message} title={r.type}>
                           {r.dir === 'out' ? (
-                            <ArrowRight className="size-3 shrink-0 text-sky-500" />
+                            <ArrowRight className="size-3 shrink-0 text-info-ink" />
                           ) : (
-                            <ArrowLeft className="size-3 shrink-0 text-green-500" />
+                            <ArrowLeft className="size-3 shrink-0 text-success-ink" />
                           )}
                           <span
                             className={cn(

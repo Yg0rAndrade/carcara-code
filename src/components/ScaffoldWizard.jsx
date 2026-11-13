@@ -67,7 +67,7 @@ function StartSkillCta({ projectPath, onNewSession }) {
   return (
     <div className="w-full max-w-xl rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] to-transparent p-4 text-left">
       <div className="flex flex-col items-center gap-4 sm:flex-row">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary-ink">
           <Icon className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1 text-center sm:text-left">
@@ -77,7 +77,7 @@ function StartSkillCta({ projectPath, onNewSession }) {
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {installed ? t('scaffold.skill_ready_hint') : t('scaffold.skill_desc')}
           </p>
-          {state === 'error' && <p className="mt-1 text-xs text-destructive">{errorMsg}</p>}
+          {state === 'error' && <p className="mt-1 text-xs text-destructive-ink">{errorMsg}</p>}
           {!installed && url && (
             <button
               onClick={() => window.api.openExternal(url)}
@@ -208,7 +208,7 @@ export function ScaffoldWizard({ projectPath, junk, onNewSession }) {
   if (view === 'error') {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <AlertTriangle className="text-destructive" />
+        <AlertTriangle className="text-destructive-ink" />
         <div className="font-medium">{t('scaffold.error_title')}</div>
         <div className="max-w-md text-sm text-muted-foreground">{error?.message}</div>
         {error?.log ? (
@@ -236,7 +236,7 @@ export function ScaffoldWizard({ projectPath, junk, onNewSession }) {
   if (view === 'running') {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <Loader2 className="animate-spin text-primary" />
+        <Loader2 className="animate-spin text-primary-ink" />
         <div className="text-sm text-muted-foreground">
           {phase === 'starting' ? t('scaffold.starting') : t('scaffold.creating')}
         </div>
@@ -266,7 +266,7 @@ export function ScaffoldWizard({ projectPath, junk, onNewSession }) {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 overflow-auto p-6">
       <div className="max-w-md text-center">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-ink">
           {t('scaffold.eyebrow')}
         </div>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('scaffold.title')}</h2>
@@ -288,7 +288,7 @@ export function ScaffoldWizard({ projectPath, junk, onNewSession }) {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Info
-                    className="h-4 w-4 text-muted-foreground/50 transition-colors group-hover/info:text-foreground"
+                    className="h-4 w-4 text-muted-foreground transition-colors group-hover/info:text-foreground"
                     aria-label={t('scaffold.info')}
                   />
                   <span

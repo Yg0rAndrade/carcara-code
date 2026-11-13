@@ -39,7 +39,7 @@ export function CloseSessionsModal({ names, keep, onConfirm, onClose }) {
               {t('session.close_keep_label')}
             </div>
             <div className="mb-3 flex items-center gap-2 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-[13px]">
-              <CircleCheck className="h-3.5 w-3.5 shrink-0 text-green-500" />
+              <CircleCheck className="h-3.5 w-3.5 shrink-0 text-success-ink" />
               <span className="truncate font-medium">{keep}</span>
             </div>
             <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -51,7 +51,7 @@ export function CloseSessionsModal({ names, keep, onConfirm, onClose }) {
           {names.map((name, i) => (
             <li key={i} className="flex items-center gap-2 px-3 py-1.5 text-[13px]">
               {keep != null ? (
-                <X className="h-3.5 w-3.5 shrink-0 text-red-500" />
+                <X className="h-3.5 w-3.5 shrink-0 text-destructive-ink" />
               ) : (
                 <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               )}

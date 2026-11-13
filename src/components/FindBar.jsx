@@ -98,7 +98,7 @@ export function FindBar({ webview, nonce, onClose, t }) {
       <span
         className={cn(
           'min-w-[44px] text-right text-xs tabular-nums',
-          result.total ? 'text-muted-foreground' : 'text-muted-foreground/60',
+          result.total ? 'text-muted-foreground' : 'text-muted-foreground',
         )}
       >
         {hasQuery ? `${result.active}/${result.total}` : ''}

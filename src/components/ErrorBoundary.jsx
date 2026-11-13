@@ -44,11 +44,11 @@ function PanelError({ label, error, onRetry }) {
     <div className="absolute inset-0 z-30 flex items-center justify-center overflow-auto bg-background/85 p-6 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-lg border bg-card shadow-xl">
         <div className="flex items-center gap-2.5 border-b px-5 py-3.5">
-          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary [&_svg]:size-4">
+          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary-ink [&_svg]:size-4">
             <Bug />
           </span>
           <div className="min-w-0">
-            <p className="eyebrow text-primary">{tStatic('error.something_broke')}</p>
+            <p className="eyebrow text-primary-ink">{tStatic('error.something_broke')}</p>
             <p className="truncate text-sm font-semibold text-foreground">
               {label || tStatic('error.panel_label')}
             </p>
@@ -63,9 +63,9 @@ function PanelError({ label, error, onRetry }) {
           <div className="mt-3.5 rounded-md border bg-background p-3">
             <div className="flex items-center gap-2 text-[11px]">
               <span className="eyebrow text-muted-foreground">{tStatic('error.code_label')}</span>
-              <code className="select-all font-mono font-semibold text-primary">{code}</code>
+              <code className="select-all font-mono font-semibold text-primary-ink">{code}</code>
             </div>
-            <p className="mt-1.5 break-words font-mono text-xs leading-relaxed text-red-500">
+            <p className="mt-1.5 break-words font-mono text-xs leading-relaxed text-destructive-ink">
               {message}
             </p>
           </div>

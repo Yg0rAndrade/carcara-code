@@ -1845,7 +1845,7 @@ function EnvEditor({ value, onChange }) {
                     type="button"
                     onClick={() => removeRow(i)}
                     title={t('env.variable_remove')}
-                    className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3.5"
+                    className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive-ink group-hover:opacity-100 [&_svg]:size-3.5"
                   >
                     <Trash2 />
                   </button>
@@ -2101,7 +2101,7 @@ function TreeNode({ item, depth, dim }) {
         title={item.isLink ? t('tree.link_title', { name: item.name }) : item.name}
       >
         {item.isLink ? (
-          <Link2 className="shrink-0 text-primary" style={chev} />
+          <Link2 className="shrink-0 text-primary-ink" style={chev} />
         ) : item.isDir ? (
           open ? (
             <ChevronDown className="shrink-0 text-muted-foreground" style={chev} />
@@ -2166,7 +2166,7 @@ function MenuItem({ icon: Icon, label, onClick, danger, disabled }) {
       disabled={disabled}
       className={cn(
         'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted disabled:pointer-events-none disabled:opacity-40',
-        danger && 'text-red-600',
+        danger && 'text-destructive-ink',
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />

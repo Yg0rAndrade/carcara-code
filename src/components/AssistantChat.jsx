@@ -237,12 +237,12 @@ function applyEvent(prev, event, assistantIdRef, nextId) {
 function EmptyState({ label, onBack }) {
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <div className="grid size-12 place-items-center rounded-2xl bg-secondary text-primary [&_svg]:size-6">
+      <div className="grid size-12 place-items-center rounded-2xl bg-secondary text-primary-ink [&_svg]:size-6">
         <MessageSquare />
       </div>
       <div className="max-w-xs text-[13px] leading-relaxed text-muted-foreground">
         Chat conectado ao {label}{' '}
-        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-ink">
           beta
         </span>
         . Manda uma mensagem — usa a sua assinatura, igual ao terminal.
@@ -272,7 +272,7 @@ function ToolCall({ toolName, args, result, isError }) {
   return (
     <div className="rounded-lg border bg-card/60 text-xs">
       <div className="flex items-center gap-2 px-3 py-2">
-        <Wrench className="size-3.5 shrink-0 text-primary" />
+        <Wrench className="size-3.5 shrink-0 text-primary-ink" />
         <span className="font-medium text-foreground">{toolName}</span>
       </div>
       {args != null && Object.keys(args || {}).length > 0 && (
@@ -284,7 +284,7 @@ function ToolCall({ toolName, args, result, isError }) {
         <pre
           className={
             'overflow-x-auto whitespace-pre-wrap break-words border-t px-3 py-2 text-[11px] ' +
-            (isError ? 'text-destructive' : 'text-muted-foreground')
+            (isError ? 'text-destructive-ink' : 'text-muted-foreground')
           }
         >
           {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
@@ -319,7 +319,7 @@ function AssistantMessage() {
 function SystemMessage() {
   return (
     <MessagePrimitive.Root className="flex">
-      <div className="rounded-lg border border-destructive/40 px-3 py-2 text-xs text-destructive">
+      <div className="rounded-lg border border-destructive/40 px-3 py-2 text-xs text-destructive-ink">
         <MessagePrimitive.Parts components={{ Text: PlainText }} />
       </div>
     </MessagePrimitive.Root>
@@ -346,7 +346,7 @@ function Composer() {
         </ThreadPrimitive.If>
         <ThreadPrimitive.If running>
           <ComposerPrimitive.Cancel
-            className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[15px]"
+            className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-destructive-ink transition-colors hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[15px]"
             title="Parar"
           >
             <Square />

@@ -87,7 +87,7 @@ function ToastItem({ t, onDone }) {
                 t.action.onClick?.();
                 close();
               }}
-              className="mt-1.5 text-[12px] font-medium text-primary hover:underline"
+              className="mt-1.5 text-[12px] font-medium text-primary-ink hover:underline"
             >
               {t.action.label}
             </button>
@@ -97,7 +97,7 @@ function ToastItem({ t, onDone }) {
           type="button"
           onClick={close}
           title="Fechar"
-          className="grid size-6 shrink-0 place-items-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
+          className="grid size-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground [&_svg]:size-3.5"
         >
           <X />
         </button>

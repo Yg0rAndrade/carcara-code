@@ -34,7 +34,7 @@ export function McpServerRequestModal({ request, onRespond }) {
         {kind === 'sampling' ? (
           <>
             <div className="flex items-center gap-2 border-b px-4 py-3">
-              <Bot className="size-4 text-primary" />
+              <Bot className="size-4 text-primary-ink" />
               <span className="font-medium">{t('mcp.modal.sampling_title')}</span>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-auto p-4">
@@ -103,7 +103,7 @@ export function McpServerRequestModal({ request, onRespond }) {
         ) : (
           <>
             <div className="flex items-center gap-2 border-b px-4 py-3">
-              <MessageSquareQuote className="size-4 text-primary" />
+              <MessageSquareQuote className="size-4 text-primary-ink" />
               <span className="font-medium">{t('mcp.modal.elicitation_title')}</span>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-auto p-4">

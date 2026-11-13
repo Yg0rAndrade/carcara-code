@@ -22,17 +22,17 @@ const COMPONENTS = {
     <h2 className="mb-1.5 mt-3 text-[14.5px] font-semibold text-foreground first:mt-0" {...p} />
   ),
   h3: ({ node, ...p }) => (
-    <h3 className="mb-1 mt-2.5 text-[13.5px] font-semibold text-primary first:mt-0" {...p} />
+    <h3 className="mb-1 mt-2.5 text-[13.5px] font-semibold text-primary-ink first:mt-0" {...p} />
   ),
   h4: ({ node, ...p }) => (
-    <h4 className="mb-1 mt-2 text-[13px] font-semibold text-primary first:mt-0" {...p} />
+    <h4 className="mb-1 mt-2 text-[13px] font-semibold text-primary-ink first:mt-0" {...p} />
   ),
   p: ({ node, ...p }) => <p className="my-2 first:mt-0 last:mb-0" {...p} />,
   strong: ({ node, ...p }) => <strong className="font-semibold text-foreground" {...p} />,
   em: ({ node, ...p }) => <em className="italic" {...p} />,
   a: ({ node, ...p }) => (
     <a
-      className="text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+      className="text-primary-ink underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
       target="_blank"
       rel="noreferrer"
       {...p}
@@ -41,19 +41,19 @@ const COMPONENTS = {
   ul: ({ node, ...p }) => <ul className="my-2 ml-1 list-none space-y-1" {...p} />,
   ol: ({ node, ...p }) => (
     <ol
-      className="my-2 ml-5 list-decimal space-y-1 marker:text-primary marker:tabular-nums"
+      className="my-2 ml-5 list-decimal space-y-1 marker:text-primary-ink marker:tabular-nums"
       {...p}
     />
   ),
   li: ({ node, children, ...p }) => (
     <li className="relative pl-4 [&>p]:my-0 [ol_&]:pl-0" {...p}>
-      <span className="absolute left-0 top-0 text-primary [ol_&]:hidden">•</span>
+      <span className="absolute left-0 top-0 text-primary-ink [ol_&]:hidden">•</span>
       {children}
     </li>
   ),
   blockquote: ({ node, ...p }) => (
     <blockquote
-      className="my-2 border-l-2 border-primary/50 pl-3 italic text-muted-foreground/90"
+      className="my-2 border-l-2 border-primary/50 pl-3 italic text-muted-foreground"
       {...p}
     />
   ),

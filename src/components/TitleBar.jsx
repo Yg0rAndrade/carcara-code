@@ -48,7 +48,7 @@ function MenuItem({ icon: Icon, checked, disabled, onClick, children }) {
     >
       {Icon ? <Icon className="text-muted-foreground" /> : <span className="w-3.5" />}
       <span className="flex-1 truncate">{children}</span>
-      {checked && <Check className="text-primary" />}
+      {checked && <Check className="text-primary-ink" />}
     </button>
   );
 }

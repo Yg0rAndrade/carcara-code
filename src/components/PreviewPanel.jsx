@@ -151,7 +151,9 @@ function MoreTools({ view, onPick }) {
         title={t('preview.more_tools')}
         className={cn(
           'flex h-7 items-center gap-0.5 rounded-md px-1.5 transition-colors [&_svg]:size-[15px]',
-          active ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          active
+            ? 'text-primary-ink'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         )}
       >
         {active && <HoverIcon as={active.Icon} />}
@@ -169,7 +171,7 @@ function MoreTools({ view, onPick }) {
               }}
               className={cn(
                 'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted [&_svg]:size-4',
-                view === tool.value && 'font-medium text-primary',
+                view === tool.value && 'font-medium text-primary-ink',
               )}
             >
               <HoverIcon as={tool.Icon} />
@@ -229,7 +231,7 @@ function TabChip({ label, favicon, active, onSelect, onClose, closeTitle }) {
           onError={() => setFavBroken(true)}
         />
       ) : (
-        <Globe className={cn('size-3.5 shrink-0', active ? 'text-primary' : 'opacity-50')} />
+        <Globe className={cn('size-3.5 shrink-0', active ? 'text-primary-ink' : 'opacity-50')} />
       )}
       <span className={cn('min-w-0 flex-1 truncate', active && 'font-medium')}>{label}</span>
       <button
@@ -287,7 +289,7 @@ function ReloadButton({ onClick, disabled }) {
       title={ctrlHeld ? t('preview.reload_hard') : t('preview.reload')}
       className={cn(
         'absolute left-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[14px]',
-        ctrlHeld ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+        ctrlHeld ? 'text-primary-ink' : 'text-muted-foreground hover:text-foreground',
       )}
     >
       <RotateCWIcon />

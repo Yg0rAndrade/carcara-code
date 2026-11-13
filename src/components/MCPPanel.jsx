@@ -568,7 +568,7 @@ export function MCPPanel({ active }) {
               )}
               {t('mcp.panel.advanced')}
               {envVars.length > 0 || timeoutMs ? (
-                <span className="ml-1 text-primary">•</span>
+                <span className="ml-1 text-primary-ink">•</span>
               ) : null}
             </button>
             {advOpen && (
@@ -604,7 +604,7 @@ export function MCPPanel({ active }) {
                         <button
                           type="button"
                           onClick={() => setEnvVars((a) => a.filter((_, j) => j !== i))}
-                          className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-red-500 [&_svg]:size-[14px]"
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-destructive-ink [&_svg]:size-[14px]"
                         >
                           <Trash2 />
                         </button>
@@ -647,7 +647,7 @@ export function MCPPanel({ active }) {
                       <button
                         type="button"
                         onClick={() => setRootPaths((a) => a.filter((_, j) => j !== i))}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-red-500 [&_svg]:size-[14px]"
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-destructive-ink [&_svg]:size-[14px]"
                       >
                         <Trash2 />
                       </button>
@@ -727,7 +727,9 @@ export function MCPPanel({ active }) {
               </span>
             </span>
           ) : status === 'error' ? (
-            <span className="truncate text-red-500">{err || t('mcp.panel.failed_to_connect')}</span>
+            <span className="truncate text-destructive-ink">
+              {err || t('mcp.panel.failed_to_connect')}
+            </span>
           ) : (
             <span className="text-muted-foreground">
               {status === 'connecting'
@@ -1000,7 +1002,7 @@ export function MCPPanel({ active }) {
                     <div
                       className={cn(
                         'flex h-7 items-center border-b px-2.5 text-[11px] font-semibold',
-                        result?.isError ? 'text-red-500' : 'text-muted-foreground',
+                        result?.isError ? 'text-destructive-ink' : 'text-muted-foreground',
                       )}
                     >
                       {err
@@ -1010,7 +1012,7 @@ export function MCPPanel({ active }) {
                           : t('mcp.panel.result')}
                     </div>
                     {err ? (
-                      <div className="p-3 text-sm text-red-500">{err}</div>
+                      <div className="p-3 text-sm text-destructive-ink">{err}</div>
                     ) : (
                       <CodeMirror
                         value={result.text}
@@ -1054,7 +1056,7 @@ export function MCPPanel({ active }) {
       <ResizeBar onMouseDown={startSidebarResize} />
       <div style={{ width: sidebarWidth }} className="flex shrink-0 flex-col bg-card">
         <div className="flex h-12 shrink-0 items-center gap-1.5 border-b px-3">
-          <Server className="size-3.5 text-primary" />
+          <Server className="size-3.5 text-primary-ink" />
           <span className="eyebrow flex-1 truncate">{t('mcp.panel.servers')}</span>
           <button
             type="button"
@@ -1094,7 +1096,7 @@ export function MCPPanel({ active }) {
                     type="button"
                     onClick={(e) => deleteServer(name, e)}
                     title={t('mcp.panel.delete_server_title')}
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-red-500 group-hover:opacity-100 [&_svg]:size-[13px]"
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-destructive-ink group-hover:opacity-100 [&_svg]:size-[13px]"
                   >
                     <Trash2 />
                   </button>

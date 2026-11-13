@@ -94,7 +94,7 @@ export function RemoteProjectModal({ open, onClose, onAdded }) {
       >
         <h2 className="text-lg font-semibold">{t('remote.title')}</h2>
         <button
-          className="mb-4 text-xs text-primary underline"
+          className="mb-4 text-xs text-primary-ink underline"
           onClick={importConfig}
           disabled={busy}
         >
@@ -207,7 +207,7 @@ export function RemoteProjectModal({ open, onClose, onAdded }) {
         />
 
         {test && (
-          <p className={`mt-3 text-sm ${test.ok ? 'text-green-600' : 'text-red-500'}`}>
+          <p className={`mt-3 text-sm ${test.ok ? 'text-success-ink' : 'text-destructive-ink'}`}>
             {test.ok ? '✓ ' : '✗ '}
             {test.message}
           </p>

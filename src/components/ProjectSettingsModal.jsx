@@ -171,7 +171,7 @@ export function ProjectSettingsModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b px-4 py-3">
-          <Settings2 className="size-4 text-primary" />
+          <Settings2 className="size-4 text-primary-ink" />
           <span className="font-medium">{t('rail.settings_title')}</span>
           <button
             type="button"
@@ -411,7 +411,7 @@ export function ProjectSettingsModal({
                 </div>
                 {sshMsg && (
                   <p
-                    className={`mt-1.5 text-[12px] ${sshMsg.ok ? 'text-green-600' : 'text-red-500'}`}
+                    className={`mt-1.5 text-[12px] ${sshMsg.ok ? 'text-success-ink' : 'text-destructive-ink'}`}
                   >
                     {sshMsg.text}
                   </p>

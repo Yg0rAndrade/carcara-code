@@ -6,7 +6,11 @@ import { useT } from '@/lib/i18n';
 import { formatCompact, shortModel, contextLevel, cacheLevel } from '@/lib/todosFormat';
 
 const CTX_COLORS = { ok: 'bg-emerald-500', warn: 'bg-amber-500', danger: 'bg-red-500' };
-const CACHE_BADGE = { good: 'text-emerald-500', mid: 'text-amber-500', low: 'text-red-500' };
+const CACHE_BADGE = {
+  good: 'text-success-ink',
+  mid: 'text-warning-ink',
+  low: 'text-destructive-ink',
+};
 
 export function UsageTable({ usage }) {
   const t = useT();

@@ -51,9 +51,9 @@ function langForType(ct = '') {
 }
 
 function statusColor(status) {
-  if (status >= 200 && status < 300) return 'text-green-600 dark:text-green-400';
-  if (status >= 300 && status < 400) return 'text-blue-600 dark:text-blue-400';
-  if (status >= 400) return 'text-red-600 dark:text-red-400';
+  if (status >= 200 && status < 300) return 'text-success-ink';
+  if (status >= 300 && status < 400) return 'text-info-ink';
+  if (status >= 400) return 'text-destructive-ink';
   return 'text-muted-foreground';
 }
 
@@ -67,14 +67,14 @@ function fmtSize(bytes) {
 function methodColor(m) {
   switch (m) {
     case 'GET':
-      return 'text-green-600 dark:text-green-400';
+      return 'text-success-ink';
     case 'POST':
-      return 'text-blue-600 dark:text-blue-400';
+      return 'text-info-ink';
     case 'PUT':
     case 'PATCH':
-      return 'text-amber-600 dark:text-amber-400';
+      return 'text-warning-ink';
     case 'DELETE':
-      return 'text-red-600 dark:text-red-400';
+      return 'text-destructive-ink';
     default:
       return 'text-muted-foreground';
   }
@@ -535,7 +535,7 @@ export function ApiPanel({ active }) {
               disabled={!url.trim()}
               title={t('api.copy_tip')}
             >
-              {copied ? <Check className="mr-1 text-green-500" /> : <Code2 className="mr-1" />}
+              {copied ? <Check className="mr-1 text-success-ink" /> : <Code2 className="mr-1" />}
               {copied ? t('api.copy_button_done') : t('api.copy_button')}
             </Button>
             {snippetOpen && (
@@ -599,7 +599,7 @@ export function ApiPanel({ active }) {
                 {t('api.import_bar_cancel')}
               </Button>
             </div>
-            {importError && <span className="text-[11px] text-red-500">{importError}</span>}
+            {importError && <span className="text-[11px] text-destructive-ink">{importError}</span>}
           </div>
         )}
 
@@ -677,7 +677,7 @@ export function ApiPanel({ active }) {
             </div>
             <div className="relative min-h-0 flex-1 overflow-hidden">
               {err ? (
-                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-red-500">
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-destructive-ink">
                   {err}
                 </div>
               ) : res ? (
@@ -703,7 +703,7 @@ export function ApiPanel({ active }) {
       <ResizeBar onMouseDown={startSidebarResize} />
       <div style={{ width: sidebarWidth }} className="flex shrink-0 flex-col bg-card">
         <div className="flex h-12 shrink-0 items-center gap-1.5 border-b px-3">
-          <History className="size-3.5 text-primary" />
+          <History className="size-3.5 text-primary-ink" />
           <span className="eyebrow flex-1 truncate">{t('api.history_label')}</span>
           <button
             type="button"
@@ -718,7 +718,7 @@ export function ApiPanel({ active }) {
               type="button"
               onClick={clearAllHistory}
               title={t('api.history_clear_all')}
-              className="grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-red-500 [&_svg]:size-[14px]"
+              className="grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-destructive-ink [&_svg]:size-[14px]"
             >
               <Trash2 />
             </button>
@@ -756,7 +756,7 @@ export function ApiPanel({ active }) {
                     type="button"
                     onClick={(e) => removeEntry(h.id, e)}
                     title={t('api.history_delete')}
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-red-500 group-hover:opacity-100 [&_svg]:size-[13px]"
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 hover:bg-background hover:text-destructive-ink group-hover:opacity-100 [&_svg]:size-[13px]"
                   >
                     <Trash2 />
                   </button>
@@ -765,7 +765,9 @@ export function ApiPanel({ active }) {
                   {h.ok ? (
                     <span className={cn('font-semibold', statusColor(h.status))}>{h.status}</span>
                   ) : (
-                    <span className="font-semibold text-red-500">{t('api.history_error')}</span>
+                    <span className="font-semibold text-destructive-ink">
+                      {t('api.history_error')}
+                    </span>
                   )}
                   <span>{fmtWhen(h.sentAt, t)}</span>
                 </div>
