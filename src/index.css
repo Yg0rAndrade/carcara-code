@@ -43,6 +43,13 @@
     --accent-foreground: 22.7273 82.5% 31.3725%;
     --destructive: 0 84.2365% 60.1961%;
     --destructive-foreground: 0 0% 100%;
+    /* *-ink = a mesma cor usada como TEXTO/ÍCONE (text-primary-ink, text-destructive-ink).
+       A primary/destructive é cor de PREENCHIMENTO; como letra sobre fundo claro ela fica
+       clara demais. O ink é o mesmo matiz com a luminosidade mais próxima que dá >= 4.5:1
+       contra card, background, secondary e muted (WCAG AA). Cada tema declara o seu
+       --primary-ink; o teste src/lib/themeContrast.test.js garante a conta. */
+    --primary-ink: 37.6923 92.126% 31%;
+    --destructive-ink: 0 84.2365% 43%;
     /* Âmbar de alerta — "Parar". Mais amarelo que a primary (hue ~45) pra
        separar do laranja da ação principal, sem virar erro (--destructive). */
     --warning: 45 93% 47%;
@@ -77,6 +84,8 @@
     --accent-foreground: 48 96.6387% 76.6667%;
     --destructive: 0 84.2365% 60.1961%;
     --destructive-foreground: 0 0% 100%;
+    --primary-ink: 25.4082 88.2883% 56.4706%;
+    --destructive-ink: 0 84.2365% 66.5%;
     /* Âmbar de alerta — "Parar". Mais amarelo que a primary (hue ~43) pra
        separar do laranja da ação principal, sem virar erro (--destructive). */
     --warning: 43 96% 56%;
@@ -105,6 +114,7 @@
     --popover: 14 22% 10.5%;
     --popover-foreground: 24 18% 90%;
     --primary: 20 100% 57%;
+    --primary-ink: 20 100% 57%;
     --primary-foreground: 0 0% 0%;
     --secondary: 14 16% 13%;
     --secondary-foreground: 24 16% 88%;
@@ -143,6 +153,8 @@
     --card-foreground: 28 16% 18%;
     --popover: 42 46% 97%;
     --popover-foreground: 28 16% 18%;
+    /* A primary âmbar vem da base; o ink é próprio por causa do fundo creme. */
+    --primary-ink: 37.6923 92.126% 28.5%;
     --secondary: 40 30% 89%;
     --secondary-foreground: 28 16% 26%;
     --muted: 40 34% 91.5%;
@@ -163,6 +175,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 218 32% 17%;
     --primary: 212 90% 50%;
+    --primary-ink: 212 90% 42.5%;
     --primary-foreground: 0 0% 100%;
     --secondary: 212 40% 93%;
     --secondary-foreground: 216 28% 30%;
@@ -184,6 +197,7 @@
     --popover: 215 34% 11.5%;
     --popover-foreground: 210 30% 91%;
     --primary: 199 92% 56%;
+    --primary-ink: 199 92% 56%;
     --primary-foreground: 0 0% 0%;
     --secondary: 215 26% 15%;
     --secondary-foreground: 210 26% 88%;
@@ -205,6 +219,7 @@
     --popover: 150 25% 10.5%;
     --popover-foreground: 140 16% 90%;
     --primary: 145 63% 47%;
+    --primary-ink: 145 63% 47%;
     --primary-foreground: 0 0% 0%;
     --secondary: 150 19% 14%;
     --secondary-foreground: 140 14% 87%;
@@ -226,6 +241,7 @@
     --popover: 282 24% 11.5%;
     --popover-foreground: 290 22% 92%;
     --primary: 322 85% 63%;
+    --primary-ink: 322 85% 63%;
     --primary-foreground: 0 0% 0%;
     --secondary: 284 19% 15%;
     --secondary-foreground: 290 18% 88%;
@@ -250,6 +266,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 165 30% 15%;
     --primary: 160 72% 34%;
+    --primary-ink: 160 72% 27.5%;
     --primary-foreground: 0 0% 100%;
     --secondary: 152 30% 92%;
     --secondary-foreground: 162 24% 26%;
@@ -271,6 +288,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 262 28% 17%;
     --primary: 262 70% 56%;
+    --primary-ink: 262 70% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 262 35% 93%;
     --secondary-foreground: 262 22% 30%;
@@ -292,6 +310,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 10 25% 17%;
     --primary: 4 76% 56%;
+    --primary-ink: 4 76% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 12 45% 93%;
     --secondary-foreground: 8 22% 30%;
@@ -313,6 +332,7 @@
     --popover: 355 25% 11%;
     --popover-foreground: 350 20% 91%;
     --primary: 354 85% 60%;
+    --primary-ink: 354 85% 63%;
     --primary-foreground: 0 0% 0%;
     --secondary: 355 20% 14.5%;
     --secondary-foreground: 350 16% 87%;
@@ -334,6 +354,7 @@
     --popover: 33 23% 11%;
     --popover-foreground: 40 22% 90%;
     --primary: 42 88% 55%;
+    --primary-ink: 42 88% 55%;
     --primary-foreground: 0 0% 0%;
     --secondary: 34 18% 14.5%;
     --secondary-foreground: 40 18% 86%;
@@ -355,6 +376,7 @@
     --popover: 236 27% 12.5%;
     --popover-foreground: 230 30% 91%;
     --primary: 234 85% 70%;
+    --primary-ink: 234 85% 70.5%;
     --primary-foreground: 0 0% 0%;
     --secondary: 236 22% 16%;
     --secondary-foreground: 230 24% 88%;

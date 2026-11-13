@@ -581,7 +581,7 @@ export function Rail({
         <span
           onMouseDown={(e) => onRailGrab?.(e)}
           title={t('rail.move_tooltip')}
-          className="mb-1.5 grid h-5 w-7 cursor-grab place-items-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing [&_svg]:size-3.5"
+          className="mb-1.5 grid h-5 w-7 cursor-grab place-items-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing [&_svg]:size-3.5"
         >
           <GripHorizontal />
         </span>
@@ -797,7 +797,7 @@ export function Rail({
             <button
               onClick={onOpenAbout}
               title={t('rail.version_tooltip')}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {hasPendingUpdate(update) && <span className="size-1.5 rounded-full bg-primary" />}v
               {version}

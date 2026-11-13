@@ -855,7 +855,7 @@ export default function App() {
                   onMouseEnter={() => restartIcon.current?.startAnimation?.()}
                   onMouseLeave={() => restartIcon.current?.stopAnimation?.()}
                   title={t('app.restart_server_tooltip')}
-                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
+                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-primary-ink transition-colors hover:bg-primary hover:text-primary-foreground [&_svg]:size-[15px]"
                 >
                   <RefreshCCWIcon ref={restartIcon} />
                   {t('app.restart_server_btn')}
@@ -867,7 +867,7 @@ export default function App() {
                   onMouseLeave={() => stopIcon.current?.stopAnimation?.()}
                   disabled={serverMode === 'empty'}
                   title={t('app.stop_server_tooltip')}
-                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
+                  className="flex h-8 items-center gap-1.5 rounded-md bg-secondary px-2.5 text-[13px] font-medium text-destructive-ink transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[15px]"
                 >
                   <XIcon ref={stopIcon} />
                   {t('app.stop_server_btn')}
