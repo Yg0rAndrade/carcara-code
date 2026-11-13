@@ -104,7 +104,8 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
           borderTopWidth: g.bezel.top + 1,
           borderBottomWidth: g.bezel.bottom + 1,
           borderRadius: outerRadius,
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.09), 0 24px 60px rgba(0,0,0,0.45)',
+          // Aro do aparelho (a "bordinha" de metal): prata no iPhone, grafite no Android.
+          boxShadow: `0 0 0 ${Math.max(1, 2 * s)}px ${apple ? '#b9bcc2' : '#3a3b40'}, 0 24px 60px rgba(0,0,0,0.45)`,
         }}
       />
       {/* Barra de status: cor do topo do site (theme-color ou o header), ícones claros ou

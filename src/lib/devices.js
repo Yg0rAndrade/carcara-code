@@ -92,7 +92,7 @@ export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
 // iPhone: embaixo fica a barra do Safari — grande no topo da página (endereço +
 // ferramentas, `expanded`) e compacta depois de rolar. Ela EMPURRA o site (a área do
 // site encolhe), nunca cobre: senão menus fixos no rodapé ficavam sem clique.
-export const SAFARI_BAR = { expanded: 128, compact: 58 };
+export const SAFARI_BAR = { expanded: 106, compact: 52 };
 export function chromeOf(dev, { expanded = true } = {}) {
   if (dev.group === 'custom') return { top: 0, bottom: 0 };
   if (dev.group === 'apple') {
@@ -181,6 +181,7 @@ export function fitDevice(dev, box, opts) {
       h: (dev.h - c.top - c.bottom) * scale,
     },
     chrome: { top: c.top * scale, bottom: c.bottom * scale },
+    chromeRaw: c,
     viewport: { w: dev.w, h: dev.h - c.top - c.bottom },
   };
 }

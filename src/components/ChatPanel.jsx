@@ -1367,7 +1367,7 @@ ${sid}`;
         }
       >
         <div
-          className="flex h-11 shrink-0 items-center border-b bg-card px-1.5"
+          className="flex h-11 shrink-0 items-center border-b bg-card px-2.5"
           onDragOver={
             dragSid
               ? (e) => {
@@ -1397,8 +1397,8 @@ ${sid}`;
                   className={
                     'group flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2.5 text-[13px] transition-colors ' +
                     (isActive
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground hover:bg-muted/60')
+                      ? 'bg-foreground/[0.08] text-foreground'
+                      : 'text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground')
                   }
                 >
                   {renamingSid === sid ? (

@@ -18,9 +18,14 @@
      (ver `terminalSurface` em src/lib/xtermShared.js) — o terminal tem tema próprio, e
      sem isto o texto do app dentro dela continuaria resolvendo pelo tema do root e
      sumia no fundo quando os dois divergiam (terminal escuro + app claro). É lista de
-     seletores, não bloco duplicado: os valores continuam declarados uma vez só. */
+     seletores, não bloco duplicado: os valores continuam declarados uma vez só.
+
+     A subárvore só RESETA a família quando ela é DIFERENTE da do root (`:where` mantém a
+     especificidade em 0,1,0). Se o terminal tem a mesma família do app, a subárvore
+     herda o tema nomeado ([data-theme]) em vez de cair na paleta base — antes, com o app
+     em "Carvão", as abas do chat saíam com o cinza do `.dark` base e destoavam do resto. */
   :root,
-  .light {
+  .light:where(.dark *) {
     /* Tema claro — neutro frio + acento âmbar. */
     --background: 0 0% 100%;
     --foreground: 0 0% 14.902%;
@@ -53,7 +58,8 @@
     --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', Consolas, monospace;
   }
 
-  .dark {
+  .dark:where(:root),
+  .dark:where(:root:not(.dark) *) {
     /* Tema escuro — near-black neutro + acento laranja (--primary/--ring). */
     --background: 0 0% 9.0196%;
     --foreground: 0 0% 89.8039%;

@@ -80,6 +80,34 @@ app.whenReady().then(async () => {
     return fail(`.dark dentro de .light deveria dar o valor escuro (${read.a}), deu "${read.d}"`);
   }
 
+  // Mesma família = sem reset: com o root em "Carvão" (escuro) e o terminal escuro, a
+  // subárvore `.dark` tem de herdar o --card do tema nomeado, não o do `.dark` base.
+  // Era isso que deixava a faixa de abas do chat com outro cinza (2026-11-13).
+  const named = await win.webContents.executeJavaScript(`
+    (() => {
+      const root = document.documentElement;
+      const card = (el) => getComputedStyle(el).getPropertyValue('--card').trim();
+      root.classList.add('dark');
+      root.dataset.theme = 'carvao';
+      const sub = document.createElement('div');
+      sub.className = 'dark';
+      document.body.appendChild(sub);
+      const light = document.createElement('div');
+      light.className = 'light';
+      document.body.appendChild(light);
+      return { root: card(root), sub: card(sub), light: card(light) };
+    })()
+  `);
+  console.log('--card com root Carvão:', JSON.stringify(named));
+  if (named.sub !== named.root) {
+    return fail(
+      `.dark dentro de root escuro nomeado deveria herdar (${named.root}), deu "${named.sub}"`,
+    );
+  }
+  if (named.light === named.root) {
+    return fail('.light dentro de root escuro nomeado deveria resetar para a família clara');
+  }
+
   console.log('theme-scope smoke OK — subárvore .light/.dark vence o root nas duas direções');
   app.exit(0);
 });

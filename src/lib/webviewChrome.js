@@ -33,11 +33,13 @@ export function applyViewport(w, value, custom, opts) {
     ? { width: parent.clientWidth, height: parent.clientHeight }
     : { width: dev.w, height: dev.h };
   const g = fitDevice(dev, box, opts);
-  // Com barras do sistema (celular), o site ocupa só o miolo entre elas: retângulo reto,
-  // os cantos arredondados da tela ficam nas barras. Sem barras (Personalizado), recorta
-  // os cantos com clip-path — o border-radius NÃO recorta a página de dentro do webview
-  // (é outro processo) e as quinas vazavam brancas por fora da moldura.
-  const round = g.chrome.top > 0 ? '' : `inset(0 round ${dev.radius}px)`;
+  // A página é um retângulo, mas a tela do aparelho tem cantos arredondados: onde a barra
+  // de cima/baixo é mais baixa que o raio do canto (Android), a quina da página ficava
+  // pra fora da curva da moldura ("garrinhas"). Recorta só o que sobra do raio em cada
+  // ponta. O border-radius não serve: não recorta a página de dentro do webview.
+  const rTop = Math.max(0, dev.radius - g.chromeRaw.top);
+  const rBot = Math.max(0, dev.radius - g.chromeRaw.bottom);
+  const round = rTop || rBot ? `inset(0 round ${rTop}px ${rTop}px ${rBot}px ${rBot}px)` : '';
   Object.assign(st, {
     width: g.viewport.w + 'px',
     height: g.viewport.h + 'px',
@@ -47,7 +49,7 @@ export function applyViewport(w, value, custom, opts) {
     bottom: 'auto',
     transform: `scale(${g.scale})`,
     transformOrigin: '0 0',
-    borderRadius: round ? dev.radius + 'px' : '',
+    borderRadius: '',
     clipPath: round,
   });
 }

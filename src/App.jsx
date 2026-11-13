@@ -831,7 +831,7 @@ export default function App() {
       onExpand={() => setChatCollapsed(false)}
       className={'flex flex-col ' + (claudeLeft ? 'border-r' : 'border-l')}
     >
-      <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
         {active && (
           <span
             onMouseDown={(e) => startLayoutDrag('panel', e)}
