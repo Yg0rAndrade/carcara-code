@@ -3,7 +3,7 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
-## [0.1.18] — a lançar
+## [0.1.18] — 2026-11-13
 
 ### Adicionado
 
@@ -33,6 +33,7 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Quinas brancas e fio branco** em volta da página no modo celular.
 - **Barras na cor do tema** nos temas claros coloridos (Menta, Céu, Lavanda, Coral).
 - **Erro ao abrir o Preview no modo celular** antes de a página terminar de carregar.
+- **Contraste nas barras:** elementos das barras com contraste AA em todos os temas.
 
 ## [0.1.17] — 2026-11-12
 
