@@ -9,7 +9,8 @@ import { resolveDevice, fitDevice } from './devices.js';
 // px CSS) e encolhida com scale() pra caber no painel, centralizada — a moldura
 // (DeviceFrame) é desenhada por cima com a mesma geometria (fitDevice). O tamanho do painel
 // vem do pai do webview; quem redimensiona o painel chama de novo.
-export function applyViewport(w, value, custom) {
+// opts.expanded: barra do Safari grande (topo da página) ou compacta (rolou).
+export function applyViewport(w, value, custom, opts) {
   const dev = resolveDevice(value, custom);
   const st = w.style;
   if (!dev) {
@@ -31,7 +32,7 @@ export function applyViewport(w, value, custom) {
   const box = parent
     ? { width: parent.clientWidth, height: parent.clientHeight }
     : { width: dev.w, height: dev.h };
-  const g = fitDevice(dev, box);
+  const g = fitDevice(dev, box, opts);
   // Com barras do sistema (celular), o site ocupa só o miolo entre elas: retângulo reto,
   // os cantos arredondados da tela ficam nas barras. Sem barras (Personalizado), recorta
   // os cantos com clip-path — o border-radius NÃO recorta a página de dentro do webview

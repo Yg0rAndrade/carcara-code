@@ -3,19 +3,16 @@
 // em cima da página. Tudo pointer-events-none: cliques passam direto pro site. Embaixo,
 // o nome do aparelho e as medidas (largura × altura e a escala, quando encolhido).
 import { fitDevice } from '@/lib/devices';
-import {
-  Signal,
-  Wifi,
-  BatteryFull,
-  Lock,
-  RotateCw,
-  ChevronLeft,
-  ChevronRight,
-  Share,
-  BookOpen,
-  Copy,
-} from 'lucide-react';
+import { Lock, RotateCw, ChevronLeft, ChevronRight, Share, BookOpen, Copy } from 'lucide-react';
 import { toRgb, isLightRgb } from '@/lib/pageChrome';
+import {
+  IosSignal,
+  IosWifi,
+  IosBattery,
+  AndroidWifi,
+  AndroidSignal,
+  AndroidBattery,
+} from './status-icons.jsx';
 import { useT } from '@/lib/i18n';
 
 const BODY = '#0e0e10'; // corpo do aparelho (igual em todos os temas)
@@ -71,7 +68,9 @@ function Cutout({ dev, s }) {
 export function DeviceFrame({ dev, box, showLabel = true, page }) {
   const t = useT();
   if (!dev || !box?.width || !box?.height) return null;
-  const g = fitDevice(dev, box);
+  // Mesma regra do Preview: Safari grande no topo da página, compacto depois de rolar.
+  const expandedBar = (page?.y ?? 0) <= 8;
+  const g = fitDevice(dev, box, { expanded: expandedBar });
   const s = g.scale;
   const phone = dev.group === 'android' || dev.group === 'apple';
   const apple = dev.group === 'apple';
@@ -82,7 +81,7 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
   const host = page?.host || 'localhost';
   // Safari grande no topo da página; compacto depois de rolar (só iPhone).
   const expanded = apple && (page?.y ?? 0) <= 8;
-  const bottomH = apple ? (expanded ? 128 : 58) * s : g.chrome.bottom;
+  const bottomH = g.chrome.bottom; // já é a barra grande ou a compacta (fitDevice)
   const outerRadius = (dev.radius + g.bezel.side / s) * s;
   const label = dev.id === 'custom' ? t('preview.device_custom') : dev.name;
   return (
@@ -122,17 +121,35 @@ export function DeviceFrame({ dev, box, showLabel = true, page }) {
             color: topInk,
             borderTopLeftRadius: dev.radius * s,
             borderTopRightRadius: dev.radius * s,
-            padding: `${(apple ? 6 : 2) * s}px ${(apple ? 32 : 18) * s}px 0`,
+            padding: `${(apple ? 4 : 2) * s}px ${(apple ? 30 : 16) * s}px 0 ${(apple ? 38 : 16) * s}px`,
             fontSize: 15 * s,
             fontWeight: 600,
           }}
         >
-          <span className="tabular-nums">9:41</span>
-          <span className="flex items-center" style={{ gap: 5 * s }}>
-            <Signal style={{ width: 15 * s, height: 15 * s }} strokeWidth={2.5} />
-            <Wifi style={{ width: 15 * s, height: 15 * s }} strokeWidth={2.5} />
-            <BatteryFull style={{ width: 22 * s, height: 22 * s }} strokeWidth={2} />
-          </span>
+          {apple ? (
+            <>
+              {/* iOS: hora centrada na "orelha" esquerda, semibold; ícones na direita. */}
+              <span className="tabular-nums" style={{ fontSize: 17 * s, fontWeight: 600 }}>
+                9:41
+              </span>
+              <span className="flex items-center" style={{ gap: 6 * s }}>
+                <IosSignal h={11 * s} />
+                <IosWifi h={11 * s} />
+                <IosBattery h={12 * s} />
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="tabular-nums" style={{ fontSize: 14 * s, fontWeight: 500 }}>
+                9:41
+              </span>
+              <span className="flex items-center" style={{ gap: 3 * s }}>
+                <AndroidWifi h={15 * s} />
+                <AndroidSignal h={14 * s} />
+                <AndroidBattery h={15 * s} />
+              </span>
+            </>
+          )}
         </div>
       )}
       {/* Embaixo. iPhone: barra do Safari — no topo da página ela é grande (endereço +

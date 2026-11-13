@@ -4,24 +4,38 @@
 // webview) e o DeviceFrame pinta as barras. Também traz o scroll (a barra do Safari encolhe
 // quando a página rola) e o host (escrito na barra de endereço).
 
-// Roda na página. Ordem igual à do Safari: <meta name="theme-color"> vence; sem ela, a cor
-// de fundo do que está no topo da tela (sobe pelos pais até achar uma cor não transparente).
+// Roda na página. Como o Safari 26 e o Chrome: a barra estende a cor do que está no topo
+// da tela (o header, um aviso...). Cor translúcida é misturada com o que está atrás dela,
+// subindo pelos pais até um fundo opaco (ou o branco da página). <meta theme-color> só
+// entra se não der pra ler nada.
 export const PAGE_CHROME_SCRIPT = `(() => {
-  const solid = (c) => c && c !== 'transparent' && !/rgba\\([^)]*,\\s*0\\)$/.test(c);
-  const bgAt = (x, y) => {
+  const parse = (c) => {
+    const m = /rgba?\\(([\\d.]+),\\s*([\\d.]+),\\s*([\\d.]+)(?:,\\s*([\\d.]+))?/.exec(c || '');
+    return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : null;
+  };
+  const colorAt = (x, y) => {
     let el = document.elementFromPoint(x, y);
+    const layers = [];
     while (el) {
-      const c = getComputedStyle(el).backgroundColor;
-      if (solid(c)) return c;
+      const c = parse(getComputedStyle(el).backgroundColor);
+      if (c && c[3] > 0) {
+        layers.push(c);
+        if (c[3] >= 1) break;
+      }
       el = el.parentElement;
     }
-    return null;
+    if (!layers.length) return null;
+    let out = layers[layers.length - 1][3] >= 1 ? layers.pop() : [255, 255, 255, 1];
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const [r, g, b, a] = layers[i];
+      out = [r * a + out[0] * (1 - a), g * a + out[1] * (1 - a), b * a + out[2] * (1 - a), 1];
+    }
+    return 'rgb(' + out.slice(0, 3).map(Math.round).join(',') + ')';
   };
-  const body = getComputedStyle(document.body || document.documentElement).backgroundColor;
   const meta = document.querySelector('meta[name="theme-color"]');
   const x = Math.round(innerWidth / 2);
-  const top = (meta && meta.content) || bgAt(x, 1) || (solid(body) ? body : '#ffffff');
-  const bottom = bgAt(x, innerHeight - 2) || (solid(body) ? body : '#ffffff');
+  const top = colorAt(x, 1) || (meta && meta.content) || '#ffffff';
+  const bottom = colorAt(x, innerHeight - 2) || top;
   return { top, bottom, y: scrollY, host: location.host };
 })()`;
 

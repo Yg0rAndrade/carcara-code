@@ -448,6 +448,10 @@ export function PreviewPanel({
   const device = resolveDevice(viewport, customSize); // null = computador
   // Cor do topo/rodapé do site + scroll, lidos da página (pinta as barras do celular).
   const [pageChrome, setPageChrome] = useState(null);
+  // Barra do Safari grande no topo da página, compacta depois de rolar (empurra o site).
+  const safariExpanded = (pageChrome?.y ?? 0) <= 8;
+  const safariRef = useRef(safariExpanded);
+  safariRef.current = safariExpanded;
   const lan = useLanShare(active?.path, url); // "abrir no celular": botão + card
   const touchModeRef = useRef(touchMode); // leitura síncrona no dom-ready
   touchModeRef.current = touchMode;
@@ -548,7 +552,7 @@ export function PreviewPanel({
       w._retry = 0;
       containerRef.current.appendChild(w);
       // Depois do append: o encaixe do aparelho mede o painel (pai do webview).
-      applyViewport(w, viewportRef.current, customRef.current);
+      applyViewport(w, viewportRef.current, customRef.current, { expanded: safariRef.current });
       const tab = {
         id,
         webview: w,
@@ -1294,8 +1298,9 @@ export function PreviewPanel({
   useEffect(() => {
     localStorage.setItem('previewViewport', viewport);
     localStorage.setItem('previewCustomSize', JSON.stringify(customSize));
-    for (const w of allWebviews()) applyViewport(w, viewport, customSize);
-  }, [viewport, customSize]);
+    for (const w of allWebviews())
+      applyViewport(w, viewport, customSize, { expanded: safariExpanded });
+  }, [viewport, customSize, safariExpanded]);
 
   // Modo celular: lê de tempos em tempos a cor do topo/rodapé da página e o scroll, pra
   // barra de status acompanhar o header do site (como no iOS/Android) e a barra do Safari
@@ -1345,7 +1350,8 @@ export function PreviewPanel({
     if (!el) return undefined;
     const ro = new ResizeObserver(() => {
       setStageBox({ width: el.clientWidth, height: el.clientHeight });
-      for (const w of allWebviews()) applyViewport(w, viewportRef.current, customRef.current);
+      for (const w of allWebviews())
+        applyViewport(w, viewportRef.current, customRef.current, { expanded: safariRef.current });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -2095,7 +2101,7 @@ export function PreviewPanel({
                 custom={customSize}
                 onCustomChange={setCustomSize}
                 device={device}
-                geometry={fitDevice(device, stageBox)}
+                geometry={fitDevice(device, stageBox, { expanded: safariExpanded })}
               />
               <PhoneShareCard share={lan} frameWidth={fitDevice(device, stageBox).frame.w} />
             </>

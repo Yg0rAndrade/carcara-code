@@ -15,8 +15,8 @@ describe('applyViewport', () => {
     const w = { style: {}, parentElement: { clientWidth: 1000, clientHeight: 600 } };
     applyViewport(w, 'iphone-15');
     expect(w.style.width).toBe('393px');
-    // a barra de status (54) e a barra compacta do Safari (58) ficam fora da área do site
-    expect(w.style.height).toBe(852 - 54 - 58 + 'px');
+    // a barra de status (54) e a barra do Safari (128 no topo da página) ficam fora do site
+    expect(w.style.height).toBe(852 - 54 - 128 + 'px');
     const s = Number(/scale\(([\d.]+)\)/.exec(w.style.transform)[1]);
     expect(s).toBeGreaterThan(0);
     expect(s).toBeLessThan(1);

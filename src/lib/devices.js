@@ -89,15 +89,17 @@ export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
 // Barras do sistema que ficam FORA da área do site: em cima a barra de status (hora,
 // sinal, Wi-Fi, bateria) e embaixo o indicador de gestos. O site enxerga só o miolo — é
 // isso que o 100vh e o env(safe-area) de verdade dão num celular. Personalizado não tem.
-export function chromeOf(dev) {
+// iPhone: embaixo fica a barra do Safari — grande no topo da página (endereço +
+// ferramentas, `expanded`) e compacta depois de rolar. Ela EMPURRA o site (a área do
+// site encolhe), nunca cobre: senão menus fixos no rodapé ficavam sem clique.
+export const SAFARI_BAR = { expanded: 128, compact: 58 };
+export function chromeOf(dev, { expanded = true } = {}) {
   if (dev.group === 'custom') return { top: 0, bottom: 0 };
   if (dev.group === 'apple') {
-    // Embaixo: a barra compacta do Safari (endereço + indicador de gestos). A versão
-    // grande, do topo da página, é desenhada POR CIMA do site (como no iOS), sem
-    // mudar a altura do viewport.
-    if (dev.cutout === 'island') return { top: 54, bottom: 58 };
-    if (dev.cutout === 'notch') return { top: 47, bottom: 58 };
-    return { top: 24, bottom: 58 };
+    const bottom = expanded ? SAFARI_BAR.expanded : SAFARI_BAR.compact;
+    if (dev.cutout === 'island') return { top: 54, bottom };
+    if (dev.cutout === 'notch') return { top: 47, bottom };
+    return { top: 24, bottom };
   }
   return { top: 28, bottom: 20 };
 }
@@ -149,9 +151,9 @@ const LABEL = 30; // espaço reservado embaixo pro nome + medidas
 // Encaixa o aparelho no painel (box = { width, height } em px): escala pra caber a altura
 // E a largura (nunca aumenta além de 100%), centralizado. Devolve a geometria da TELA
 // (onde o <webview> fica) e da moldura, já em px do painel.
-export function fitDevice(dev, box) {
+export function fitDevice(dev, box, opts) {
   const b = bezelOf(dev);
-  const c = chromeOf(dev);
+  const c = chromeOf(dev, opts);
   const outerW = dev.w + b.side * 2;
   const outerH = dev.h + b.top + b.bottom;
   const availW = Math.max(1, box.width - PAD * 2);

@@ -83,26 +83,42 @@ export function DevicePicker({ value, onChange, disabled }) {
 // Miniatura do aparelho: contorno na proporção real, com a câmera de cada um. Desenhada
 // (não é imagem), na cor do texto — some com o tema.
 function MiniDevice({ d, on }) {
-  const H = 38;
-  const W = Math.max(14, Math.round((H * d.w) / d.h));
-  const r = Math.max(2, Math.round((d.radius / d.h) * H) + 2);
+  const H = 40;
+  const W = Math.max(16, Math.round((H * d.w) / d.h));
+  const r = Math.max(3, Math.round((d.radius / d.h) * H) + 3);
+  const tone = on ? 'bg-primary' : 'bg-foreground/45 group-hover:bg-foreground/70';
+  const fold = /aberto/.test(d.name);
   return (
-    <span
-      className={cn(
-        'relative block shrink-0 border-[1.5px]',
-        on ? 'border-primary' : 'border-foreground/45 group-hover:border-foreground/70',
-      )}
-      style={{ width: W, height: H, borderRadius: r }}
-    >
-      {d.cutout === 'island' && (
-        <span className="absolute left-1/2 top-[3px] h-[3px] w-[7px] -translate-x-1/2 rounded-full bg-current opacity-60" />
-      )}
-      {d.cutout === 'notch' && (
-        <span className="absolute left-1/2 top-0 h-[3px] w-[9px] -translate-x-1/2 rounded-b-[2px] bg-current opacity-60" />
-      )}
-      {(d.cutout === 'punch' || d.cutout === 'drop') && (
-        <span className="absolute left-1/2 top-[3px] size-[3px] -translate-x-1/2 rounded-full bg-current opacity-60" />
-      )}
+    <span className="relative block shrink-0" style={{ width: W + 4, height: H }}>
+      {/* botões laterais: volume à esquerda, liga/desliga à direita */}
+      <span className={cn('absolute left-0 top-[9px] h-[6px] w-[1.5px] rounded-l', tone)} />
+      <span className={cn('absolute left-0 top-[17px] h-[6px] w-[1.5px] rounded-l', tone)} />
+      <span className={cn('absolute right-0 top-[12px] h-[8px] w-[1.5px] rounded-r', tone)} />
+      <span
+        className={cn(
+          'absolute inset-y-0 left-[2px] border-[1.5px] bg-background',
+          on ? 'border-primary' : 'border-foreground/45 group-hover:border-foreground/70',
+        )}
+        style={{ width: W, borderRadius: r }}
+      >
+        {/* tela */}
+        <span
+          className={cn('absolute inset-[2px]', on ? 'bg-primary/15' : 'bg-foreground/[0.06]')}
+          style={{ borderRadius: Math.max(1, r - 2) }}
+        />
+        {fold && (
+          <span className="absolute inset-y-[3px] left-1/2 w-px -translate-x-1/2 bg-current opacity-30" />
+        )}
+        {d.cutout === 'island' && (
+          <span className="absolute left-1/2 top-[3.5px] h-[2.5px] w-[7px] -translate-x-1/2 rounded-full bg-current opacity-70" />
+        )}
+        {d.cutout === 'notch' && (
+          <span className="absolute left-1/2 top-[1px] h-[3px] w-[9px] -translate-x-1/2 rounded-b-[2px] bg-current opacity-70" />
+        )}
+        {(d.cutout === 'punch' || d.cutout === 'drop') && (
+          <span className="absolute left-1/2 top-[3.5px] size-[2.5px] -translate-x-1/2 rounded-full bg-current opacity-70" />
+        )}
+      </span>
     </span>
   );
 }
