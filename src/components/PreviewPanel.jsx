@@ -35,7 +35,7 @@ import { Input } from './ui/input.jsx';
 import { Button } from './ui/button.jsx';
 import { ToolButton } from './ui/tool-button.jsx';
 import { useLanShare, PhoneShareButton, PhoneShareCard } from './PhoneShare.jsx';
-import { DevicePicker } from './ui/device-picker.jsx';
+import { DevicePicker, DeviceList } from './ui/device-picker.jsx';
 import { ResizeBar } from './ui/resize-bar.jsx';
 import { DragHandle } from './ui/drag-handle.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
@@ -1921,8 +1921,6 @@ export function PreviewPanel({
                   setViewport(v);
                   setViewportPicks((n) => n + 1);
                 }}
-                custom={customSize}
-                onCustomChange={setCustomSize}
                 disabled={mode !== 'web'}
               />
               {/* Barra de URL com o "recarregar" embutido, estilo navegador. */}
@@ -2043,7 +2041,22 @@ export function PreviewPanel({
           {inPreview && mode === 'web' && device && stageBox && (
             <>
               <DeviceFrame dev={device} box={stageBox} />
-              <PhoneShareCard share={lan} frameWidth={fitDevice(device, stageBox).frame.w} />
+              {/* Aparelhos à direita do celular; o QR vai pra esquerda. */}
+              <DeviceList
+                value={viewport}
+                onChange={(v) => {
+                  setViewport(v);
+                  setViewportPicks((n) => n + 1);
+                }}
+                custom={customSize}
+                onCustomChange={setCustomSize}
+                frameWidth={fitDevice(device, stageBox).frame.w}
+              />
+              <PhoneShareCard
+                share={lan}
+                side="left"
+                frameWidth={fitDevice(device, stageBox).frame.w}
+              />
             </>
           )}
           {/* Borda discreta: foco está dentro do preview → Ctrl +/- zooma o site, não o app. */}

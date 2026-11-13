@@ -197,7 +197,9 @@ const DISMISS_KEY = 'phoneShareCardDismissed';
 // esse lugar — gerar só preenche o quadro, sem o card mudar de forma.
 // Some se não couber, ou se o usuário fechou o convite (lembrado por aparelho;
 // reaparece quando já está ligado).
-export function PhoneShareCard({ share, frameWidth }) {
+// side: de que lado da moldura o card fica ('right' padrão; 'left' quando a lista de
+// aparelhos ocupa a direita).
+export function PhoneShareCard({ share, frameWidth, side = 'right' }) {
   const t = useT();
   const ref = useRef(null);
   const [cardW, setCardW] = useState(0); // 0 = não cabe
@@ -246,8 +248,14 @@ export function PhoneShareCard({ share, frameWidth }) {
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute inset-y-0 right-0 z-10 flex flex-col items-center justify-center gap-3"
-      style={{ left: `calc(50% + ${frameWidth / 2}px)`, display: hidden ? 'none' : undefined }}
+      className={
+        'pointer-events-none absolute inset-y-0 z-10 flex flex-col items-center justify-center gap-3 ' +
+        (side === 'left' ? 'left-0' : 'right-0')
+      }
+      style={{
+        [side === 'left' ? 'right' : 'left']: `calc(50% + ${frameWidth / 2}px)`,
+        display: hidden ? 'none' : undefined,
+      }}
     >
       <div
         className="pointer-events-auto relative rounded-2xl border bg-background/95 p-5 shadow-xl backdrop-blur"

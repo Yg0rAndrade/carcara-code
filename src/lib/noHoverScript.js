@@ -1,4 +1,5 @@
-// Mata o `:hover` do SITE no modo celular/tablet — telas de toque não têm hover.
+// Mata o `:hover` do SITE no modo celular/tablet — telas de toque não têm hover. Também
+// esconde a barra de rolagem (celular não tem barra fixa).
 //
 // POR QUE NÃO USAR A EMULAÇÃO DE TOQUE DO CHROMIUM (`Emulation.setEmitTouchEventsForMouse`),
 // QUE É O JEITO "CERTO": porque ela não é do <webview>. No Chromium o `TouchEmulator` mora no
@@ -25,6 +26,15 @@ export const NO_HOVER_INJECT = `(() => {
   // regra inteira se a sintaxe quebrar, e aí perderíamos o estilo original ao restaurar).
   var MORTO = ':not(*)';
   var tocadas = []; // [{ regra, original }] pra desfazer no cleanup
+
+  // Celular não mostra barra de rolagem fixa (ela é sobreposta e some): esconde a do
+  // Chromium enquanto o modo aparelho estiver ligado. Rolar continua funcionando.
+  var semBarra = document.createElement('style');
+  semBarra.id = '__carcara-sem-barra';
+  semBarra.textContent =
+    '::-webkit-scrollbar{width:0!important;height:0!important;background:transparent!important}' +
+    'html{scrollbar-width:none!important}';
+  (document.head || document.documentElement).appendChild(semBarra);
 
   function matarNaLista(regras) {
     if (!regras) return;
@@ -100,6 +110,7 @@ export const NO_HOVER_INJECT = `(() => {
         try { tocadas[i].regra.selectorText = tocadas[i].original; } catch (e) {}
       }
       tocadas = [];
+      try { semBarra.remove(); } catch (e) {}
       window.__carcaraNoHover = null;
     },
   };

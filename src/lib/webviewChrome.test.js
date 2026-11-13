@@ -24,7 +24,7 @@ describe('applyViewport', () => {
   it('modo antigo "mobile" vira um aparelho de verdade', () => {
     const w = fakeWebview();
     applyViewport(w, 'mobile');
-    expect(w.style.width).toBe('393px');
+    expect(w.style.width).toBe('402px');
   });
 
   it('modo desconhecido cai no computador (nunca some com o webview)', () => {

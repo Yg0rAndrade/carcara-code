@@ -23,6 +23,7 @@ export function applyViewport(w, value, custom) {
       transform: 'none',
       transformOrigin: '',
       borderRadius: '',
+      clipPath: '',
     });
     return;
   }
@@ -41,6 +42,9 @@ export function applyViewport(w, value, custom) {
     transform: `scale(${g.scale})`,
     transformOrigin: '0 0',
     borderRadius: dev.radius + 'px',
+    // O border-radius NÃO recorta a página de dentro do webview (é outro processo): sem o
+    // clip-path, as quinas retas da página vazavam por fora dos cantos da moldura.
+    clipPath: `inset(0 round ${dev.radius}px)`,
   });
 }
 

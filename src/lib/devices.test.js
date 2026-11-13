@@ -22,8 +22,8 @@ describe('catálogo', () => {
 
 describe('normalizeViewport', () => {
   it('migra os 3 modos antigos', () => {
-    expect(normalizeViewport('mobile')).toBe('iphone-15');
-    expect(normalizeViewport('tablet')).toBe('ipad-air');
+    expect(normalizeViewport('mobile')).toBe('iphone-17-pro');
+    expect(normalizeViewport('tablet')).toBe('iphone-17-pro');
     expect(normalizeViewport('desktop')).toBe('desktop');
   });
   it('valor desconhecido vira computador', () => {

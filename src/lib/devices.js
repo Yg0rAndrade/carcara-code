@@ -66,16 +66,6 @@ export const DEVICE_GROUPS = [
       P('iphone-12-mini', 'iPhone 12 mini', 360, 780, 'notch', 44),
     ],
   },
-  {
-    id: 'tablet',
-    devices: [
-      P('ipad-mini', 'iPad mini', 768, 1024, 'none', 20),
-      P('ipad-air', 'iPad (A16) / iPad Air', 820, 1180, 'none', 18),
-      P('ipad-pro-11', 'iPad Pro 11"', 834, 1194, 'none', 18),
-      P('ipad-pro-13', 'iPad Pro 12.9"', 1024, 1366, 'none', 18),
-      P('galaxy-tab-s7', 'Galaxy Tab S7', 800, 1280, 'none', 16),
-    ],
-  },
 ];
 
 export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
@@ -83,7 +73,9 @@ export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
 );
 
 // Valores antigos do seletor (só 3 modos) → aparelho equivalente de hoje.
-const LEGACY = { mobile: 'iphone-15', tablet: 'ipad-air' };
+// Aparelho que o "Celular" abre quando ainda não há escolha salva.
+export const DEFAULT_PHONE = 'iphone-17-pro';
+const LEGACY = { mobile: DEFAULT_PHONE, tablet: DEFAULT_PHONE };
 
 export const CUSTOM_MIN = 200;
 export const CUSTOM_MAX = 3000;
@@ -117,7 +109,6 @@ export function resolveDevice(value, custom) {
 
 // Espessura da moldura (px CSS do aparelho, antes da escala).
 export function bezelOf(dev) {
-  if (dev.group === 'tablet') return { side: 18, top: 18, bottom: 18 };
   if (dev.group === 'custom') return { side: 8, top: 8, bottom: 8 };
   return { side: 12, top: 12, bottom: 12 };
 }
@@ -150,4 +141,22 @@ export function fitDevice(dev, box) {
     },
     bezel: { side: b.side * scale, top: b.top * scale, bottom: b.bottom * scale },
   };
+}
+
+// Último aparelho escolhido (o "Celular" do seletor reabre nele). Guardado no aparelho.
+const LAST_KEY = 'previewLastDevice';
+
+export function lastDevice() {
+  try {
+    const v = normalizeViewport(localStorage.getItem(LAST_KEY));
+    return v === 'desktop' ? DEFAULT_PHONE : v;
+  } catch {
+    return DEFAULT_PHONE;
+  }
+}
+export function rememberDevice(v) {
+  if (normalizeViewport(v) === 'desktop') return;
+  try {
+    localStorage.setItem(LAST_KEY, v);
+  } catch {}
 }
