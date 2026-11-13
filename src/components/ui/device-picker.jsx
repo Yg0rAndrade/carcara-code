@@ -109,9 +109,25 @@ function MiniDevice({ d, on }) {
 
 // Botão embaixo do aparelho (nome + medidas da área do site) que abre a grade de
 // aparelhos pra cima. Fica no lugar do rótulo da moldura (DeviceFrame showLabel=false).
+const COACH_KEY = 'coach:deviceSwitcher';
+
 export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geometry, device }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  // Dica da primeira vez (balão em cima do botão), até a pessoa abrir a grade ou fechar.
+  const [coach, setCoach] = useState(() => {
+    try {
+      return !localStorage.getItem(COACH_KEY);
+    } catch {
+      return false;
+    }
+  });
+  const dismissCoach = () => {
+    setCoach(false);
+    try {
+      localStorage.setItem(COACH_KEY, '1');
+    } catch {}
+  };
   const [q, setQ] = useState('');
   const [draft, setDraft] = useState(() => clampCustom(custom));
   const ref = useRef(null);
@@ -160,26 +176,48 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
       className="absolute z-20 -translate-x-1/2"
       style={{ left: g.frame.x + g.frame.w / 2, top: g.frame.y + g.frame.h + 6 }}
     >
+      {coach && !open && (
+        <div
+          role="status"
+          className="absolute bottom-full left-1/2 mb-3 w-[260px] -translate-x-1/2 rounded-xl bg-primary p-3.5 text-[12.5px] leading-snug text-primary-foreground shadow-[0_12px_32px_rgba(0,0,0,0.3)] duration-300 animate-in fade-in slide-in-from-bottom-2"
+        >
+          <div className="mb-1 font-semibold">{t('preview.device_coach_title')}</div>
+          <p className="opacity-90">{t('preview.device_coach_body')}</p>
+          <button
+            type="button"
+            onClick={dismissCoach}
+            className="mt-2.5 rounded-md bg-primary-foreground/15 px-2.5 py-1 text-[12px] font-medium hover:bg-primary-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground"
+          >
+            {t('preview.device_coach_ok')}
+          </button>
+          {/* setinha apontando pro botão */}
+          <span className="absolute left-1/2 top-full size-3 -translate-x-1/2 -translate-y-1.5 rotate-45 bg-primary" />
+        </div>
+      )}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          dismissCoach();
+          setOpen((o) => !o);
+        }}
         aria-haspopup="dialog"
         aria-expanded={open}
         title={t('preview.device_change')}
         className={cn(
-          'flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-          open && 'bg-muted text-foreground',
+          'flex items-center gap-2 whitespace-nowrap rounded-full border bg-card py-1.5 pl-2.5 pr-3 text-[12px] text-muted-foreground shadow-sm transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          (open || coach) && 'border-primary/60 text-foreground',
         )}
       >
-        <span className="font-medium text-foreground/85">{label}</span>
-        <span className="font-mono tabular-nums" title={t('preview.device_viewport')}>
+        <Smartphone className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="font-mono text-[11px] tabular-nums" title={t('preview.device_viewport')}>
           {g.viewport.w} × {g.viewport.h}
         </span>
         {g.scale < 0.995 && (
-          <span className="font-mono tabular-nums">· {Math.round(g.scale * 100)}%</span>
+          <span className="font-mono text-[11px] tabular-nums">· {Math.round(g.scale * 100)}%</span>
         )}
         <ChevronUp
-          className={cn('size-3 transition-transform', !open && 'rotate-180')}
+          className={cn('size-3.5 transition-transform', !open && 'rotate-180')}
           aria-hidden="true"
         />
       </button>

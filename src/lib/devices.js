@@ -92,9 +92,12 @@ export const ALL_DEVICES = DEVICE_GROUPS.flatMap((g) =>
 export function chromeOf(dev) {
   if (dev.group === 'custom') return { top: 0, bottom: 0 };
   if (dev.group === 'apple') {
-    if (dev.cutout === 'island') return { top: 54, bottom: 34 };
-    if (dev.cutout === 'notch') return { top: 47, bottom: 34 };
-    return { top: 24, bottom: 20 };
+    // Embaixo: a barra compacta do Safari (endereço + indicador de gestos). A versão
+    // grande, do topo da página, é desenhada POR CIMA do site (como no iOS), sem
+    // mudar a altura do viewport.
+    if (dev.cutout === 'island') return { top: 54, bottom: 58 };
+    if (dev.cutout === 'notch') return { top: 47, bottom: 58 };
+    return { top: 24, bottom: 58 };
   }
   return { top: 28, bottom: 20 };
 }

@@ -48,6 +48,7 @@ import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
 import { applyViewport } from '@/lib/webviewChrome';
 import { normalizeViewport, resolveDevice, clampCustom, fitDevice } from '@/lib/devices';
 import { DeviceFrame } from './ui/device-frame.jsx';
+import { PAGE_CHROME_SCRIPT } from '@/lib/pageChrome';
 import { applyTabWebviewAttrs } from '@/lib/previewWebview';
 import { decideAutoStart } from '@/lib/previewAutoStart';
 import { rectFromDrag } from '@/lib/screenshot';
@@ -445,6 +446,8 @@ export function PreviewPanel({
   // punha o cursor de toque do Chromium por cima do app. Ver noHoverScript.js.
   const touchMode = viewport !== 'desktop' && inWeb;
   const device = resolveDevice(viewport, customSize); // null = computador
+  // Cor do topo/rodapé do site + scroll, lidos da página (pinta as barras do celular).
+  const [pageChrome, setPageChrome] = useState(null);
   const lan = useLanShare(active?.path, url); // "abrir no celular": botão + card
   const touchModeRef = useRef(touchMode); // leitura síncrona no dom-ready
   touchModeRef.current = touchMode;
@@ -1294,6 +1297,39 @@ export function PreviewPanel({
     for (const w of allWebviews()) applyViewport(w, viewport, customSize);
   }, [viewport, customSize]);
 
+  // Modo celular: lê de tempos em tempos a cor do topo/rodapé da página e o scroll, pra
+  // barra de status acompanhar o header do site (como no iOS/Android) e a barra do Safari
+  // encolher quando a página rola. Só roda com o aparelho na tela.
+  useEffect(() => {
+    if (!device || !inWeb || !active) return undefined;
+    let alive = true;
+    const tick = () => {
+      const w = activeWebviewOf(active.path);
+      if (!w) return;
+      w.executeJavaScript(PAGE_CHROME_SCRIPT)
+        .then((r) => {
+          if (!alive || !r) return;
+          setPageChrome((cur) =>
+            cur &&
+            cur.top === r.top &&
+            cur.bottom === r.bottom &&
+            cur.host === r.host &&
+            cur.y > 8 === r.y > 8
+              ? cur
+              : r,
+          );
+        })
+        .catch(() => {});
+    };
+    tick();
+    const id = setInterval(tick, 600);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!device, inWeb, active?.path, tabBar.activeId]);
+
   // Painel mudou de tamanho (janela, divisória, terminal): re-encaixa o aparelho e
   // atualiza a moldura, que usa a mesma conta (fitDevice).
   useEffect(() => {
@@ -2040,7 +2076,7 @@ export function PreviewPanel({
           {/* Moldura de celular/tablet: convite/QR "abrir no celular" no espaço vazio ao lado. */}
           {inPreview && mode === 'web' && device && stageBox && (
             <>
-              <DeviceFrame dev={device} box={stageBox} showLabel={false} />
+              <DeviceFrame dev={device} box={stageBox} showLabel={false} page={pageChrome} />
               {/* Embaixo do aparelho: nome + medidas, e clicando, a grade pra trocar. */}
               <DeviceSwitcher
                 value={viewport}

@@ -3,7 +3,19 @@
 // em cima da página. Tudo pointer-events-none: cliques passam direto pro site. Embaixo,
 // o nome do aparelho e as medidas (largura × altura e a escala, quando encolhido).
 import { fitDevice } from '@/lib/devices';
-import { Signal, Wifi, BatteryFull } from 'lucide-react';
+import {
+  Signal,
+  Wifi,
+  BatteryFull,
+  Lock,
+  RotateCw,
+  ChevronLeft,
+  ChevronRight,
+  Share,
+  BookOpen,
+  Copy,
+} from 'lucide-react';
+import { toRgb, isLightRgb } from '@/lib/pageChrome';
 import { useT } from '@/lib/i18n';
 
 const BODY = '#0e0e10'; // corpo do aparelho (igual em todos os temas)
@@ -55,12 +67,22 @@ function Cutout({ dev, s }) {
 }
 
 // showLabel=false: quem usa desenha o próprio rótulo (o Preview põe ali o botão de trocar).
-export function DeviceFrame({ dev, box, showLabel = true }) {
+// page: { top, bottom, y, host } lido da página (PAGE_CHROME_SCRIPT) — pinta as barras.
+export function DeviceFrame({ dev, box, showLabel = true, page }) {
   const t = useT();
   if (!dev || !box?.width || !box?.height) return null;
   const g = fitDevice(dev, box);
   const s = g.scale;
   const phone = dev.group === 'android' || dev.group === 'apple';
+  const apple = dev.group === 'apple';
+  const topBg = page?.top || '#000';
+  const bottomBg = page?.bottom || '#000';
+  const topInk = isLightRgb(toRgb(topBg)) ? '#000' : '#fff';
+  const bottomInk = isLightRgb(toRgb(bottomBg)) ? '#000' : '#fff';
+  const host = page?.host || 'localhost';
+  // Safari grande no topo da página; compacto depois de rolar (só iPhone).
+  const expanded = apple && (page?.y ?? 0) <= 8;
+  const bottomH = apple ? (expanded ? 128 : 58) * s : g.chrome.bottom;
   const outerRadius = (dev.radius + g.bezel.side / s) * s;
   const label = dev.id === 'custom' ? t('preview.device_custom') : dev.name;
   return (
@@ -86,21 +108,21 @@ export function DeviceFrame({ dev, box, showLabel = true }) {
           boxShadow: '0 0 0 1px rgba(255,255,255,0.09), 0 24px 60px rgba(0,0,0,0.45)',
         }}
       />
-      {/* Barras do sistema, fora da área do site (chromeOf): status em cima (hora à
-          esquerda, sinal/Wi-Fi/bateria à direita, desviando da câmera) e o indicador de
-          gestos embaixo. Arredondadas no canto da tela, como o vidro do aparelho. */}
+      {/* Barra de status: cor do topo do site (theme-color ou o header), ícones claros ou
+          escuros conforme o fundo — como o iOS/Android fazem. */}
       {g.chrome.top > 0 && (
         <div
-          className="absolute flex items-center justify-between text-white"
+          className="absolute flex items-center justify-between transition-colors duration-300"
           style={{
             left: g.screen.x,
             top: g.screen.y,
             width: g.screen.w,
             height: g.chrome.top,
-            background: '#000',
+            background: topBg,
+            color: topInk,
             borderTopLeftRadius: dev.radius * s,
             borderTopRightRadius: dev.radius * s,
-            padding: `${(dev.group === 'apple' ? 6 : 2) * s}px ${(dev.group === 'apple' ? 32 : 18) * s}px 0`,
+            padding: `${(apple ? 6 : 2) * s}px ${(apple ? 32 : 18) * s}px 0`,
             fontSize: 15 * s,
             fontWeight: 600,
           }}
@@ -113,23 +135,69 @@ export function DeviceFrame({ dev, box, showLabel = true }) {
           </span>
         </div>
       )}
+      {/* Embaixo. iPhone: barra do Safari — no topo da página ela é grande (endereço +
+          ferramentas) e fica POR CIMA do site; depois de rolar, encolhe pra só o
+          endereço. Android: só o indicador de gestos. Cor do rodapé visível do site. */}
       {g.chrome.bottom > 0 && (
         <div
-          className="absolute flex items-end justify-center"
+          className="absolute flex flex-col items-center justify-end transition-[height,background-color] duration-300 ease-out"
           style={{
             left: g.screen.x,
-            top: g.page.y + g.page.h,
+            top: g.page.y + g.page.h + g.chrome.bottom - bottomH,
             width: g.screen.w,
-            height: g.chrome.bottom,
-            background: '#000',
+            height: bottomH,
+            background: bottomBg,
+            color: bottomInk,
             borderBottomLeftRadius: dev.radius * s,
             borderBottomRightRadius: dev.radius * s,
             paddingBottom: 8 * s,
+            fontSize: 13 * s,
           }}
         >
+          {apple && expanded && (
+            <>
+              <div
+                className="flex items-center justify-between"
+                style={{
+                  width: g.screen.w - 28 * s,
+                  height: 40 * s,
+                  marginBottom: 8 * s,
+                  padding: `0 ${12 * s}px`,
+                  borderRadius: 12 * s,
+                  background: 'color-mix(in srgb, currentColor 12%, transparent)',
+                }}
+              >
+                <span style={{ fontSize: 14 * s, fontWeight: 500 }}>AA</span>
+                <span className="flex min-w-0 items-center" style={{ gap: 4 * s }}>
+                  <Lock style={{ width: 11 * s, height: 11 * s }} strokeWidth={2.5} />
+                  <span className="truncate">{host}</span>
+                </span>
+                <RotateCw style={{ width: 14 * s, height: 14 * s }} strokeWidth={2} />
+              </div>
+              <div
+                className="flex items-center justify-between opacity-90"
+                style={{ width: g.screen.w - 56 * s, marginBottom: 10 * s }}
+              >
+                {[ChevronLeft, ChevronRight, Share, BookOpen, Copy].map((I, i) => (
+                  <I key={i} style={{ width: 19 * s, height: 19 * s }} strokeWidth={1.75} />
+                ))}
+              </div>
+            </>
+          )}
+          {apple && !expanded && (
+            <span className="flex items-center" style={{ gap: 4 * s, marginBottom: 9 * s }}>
+              <Lock style={{ width: 10 * s, height: 10 * s }} strokeWidth={2.5} />
+              <span className="truncate">{host}</span>
+            </span>
+          )}
           <span
-            className="rounded-full bg-white/90"
-            style={{ width: (dev.group === 'apple' ? 134 : 110) * s, height: 5 * s }}
+            className="rounded-full"
+            style={{
+              width: (apple ? 134 : 110) * s,
+              height: 5 * s,
+              background: 'currentColor',
+              opacity: 0.9,
+            }}
           />
         </div>
       )}
