@@ -1306,7 +1306,15 @@ export function PreviewPanel({
     const tick = () => {
       const w = activeWebviewOf(active.path);
       if (!w) return;
-      w.executeJavaScript(PAGE_CHROME_SCRIPT)
+      // Antes do dom-ready (aba nascendo, recarregando) o executeJavaScript LANÇA na hora,
+      // em vez de rejeitar a promise — o .catch não pega. Só tenta de novo no próximo tick.
+      let run;
+      try {
+        run = w.executeJavaScript(PAGE_CHROME_SCRIPT);
+      } catch {
+        return;
+      }
+      run
         .then((r) => {
           if (!alive || !r) return;
           setPageChrome((cur) =>
