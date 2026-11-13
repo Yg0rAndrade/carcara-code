@@ -158,7 +158,7 @@
   [data-theme='ceu'] {
     --background: 210 50% 97.5%;
     --foreground: 218 32% 17%;
-    --card: 0 0% 100%;
+    --card: 210 42% 94.5%;
     --card-foreground: 218 32% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 218 32% 17%;
@@ -238,11 +238,14 @@
     --ring: 322 85% 63%;
   }
 
-  /* Menta — tema claro colorido. Família: light. */
+  /* Menta — tema claro colorido. Família: light.
+     Nos claros coloridos o --card (barras, rail, abas) é um tom ABAIXO do fundo, com a
+     cor do tema — o espelho dos escuros, onde ele fica um tom acima. Branco puro aqui
+     deixava as barras neutras e só o conteúdo colorido. O popover segue branco (lift). */
   [data-theme='menta'] {
     --background: 150 35% 97%;
     --foreground: 165 30% 15%;
-    --card: 0 0% 100%;
+    --card: 150 30% 94%;
     --card-foreground: 165 30% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 165 30% 15%;
@@ -263,7 +266,7 @@
   [data-theme='lavanda'] {
     --background: 262 45% 97.5%;
     --foreground: 262 28% 17%;
-    --card: 0 0% 100%;
+    --card: 262 38% 94.5%;
     --card-foreground: 262 28% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 262 28% 17%;
@@ -284,7 +287,7 @@
   [data-theme='coral'] {
     --background: 15 60% 97.5%;
     --foreground: 10 25% 17%;
-    --card: 0 0% 100%;
+    --card: 14 50% 94.5%;
     --card-foreground: 10 25% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 10 25% 17%;
