@@ -159,6 +159,28 @@
     "picker_open": "Abrir administrador",
     "picker_help": "↑↓ navegar · Enter insertar · Esc cerrar"
   },
+  "lan": {
+    "button": "Abrir en el móvil",
+    "button_active": "Abierto en la red local — haz clic para ver el código QR",
+    "title": "Abrir en el móvil",
+    "starting": "Abriendo a la red local…",
+    "same_wifi": "Escanéalo con la cámara del móvil. Debe estar en la misma red Wi-Fi que este ordenador.",
+    "notice": "Mientras esté activo, cualquiera en esta red puede abrir el sitio. Si el firewall pregunta, permite Carcará.",
+    "copy": "Copiar dirección",
+    "stop": "Dejar de compartir",
+    "status_on": "Abierto en la red local",
+    "close": "Cerrar",
+    "error_not_local": "Solo se puede abrir en el móvil un sitio que se ejecute en este ordenador.",
+    "error_no_network": "Este ordenador no está conectado a una red local (Wi-Fi o cable).",
+    "error_listen": "No se pudo abrir el puerto en la red local.",
+    "card_title": "¿Verlo en un móvil de verdad?",
+    "card_body": "Abre este sitio en la red local y escanea el código QR con la cámara del móvil.",
+    "card_action": "Generar código QR",
+    "logs_title": "Registros",
+    "logs_empty": "Nada aún. Abre la dirección en el móvil y las solicitudes aparecerán aquí.",
+    "logs_clear": "Limpiar",
+    "logs_ws": "Recarga en vivo conectada"
+  },
   "session": {
     "activity_working": "Claude está trabajando…",
     "activity_asking": "Claude está pidiendo confirmación",
@@ -173,6 +195,8 @@
     "close_confirm_title": "¿Cerrar {count} sesiones?",
     "close_confirm_body": "Lo que se esté ejecutando en ellas se detendrá.",
     "close_confirm_action": "Cerrar sesiones",
+    "close_keep_label": "Sigue abierta",
+    "close_list_label": "Se cerrarán",
     "menu": "Opciones de sesiones"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Brasa",
     "themeCarvao": "Carbón puro (AMOLED)",
     "themePapel": "Papel / Sepia",
+    "themeCeu": "Cielo",
+    "themeOceano": "Océano",
+    "themeMata": "Selva",
+    "themeIpe": "Ipê",
+    "themeMenta": "Menta",
+    "themeLavanda": "Lavanda",
+    "themeCoral": "Coral",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Noche",
     "zoomTitle": "Zoom de la interfaz",
     "zoomHelp": "Aumenta o disminuye el tamaño de todo en la app (rail, chat, pestañas…). También puedes usar",
     "zoomFocusHint": "con el foco fuera de la vista previa.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Mostrar u ocultar la barra de proyectos",
+    "theme": "Tema",
     "projects": "Proyectos"
   }
 }

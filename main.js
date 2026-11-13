@@ -38,6 +38,7 @@ const { initUpdater } = require('./electron/updater.cjs');
 const phpRuntime = require('./electron/php-runtime.cjs');
 const runCommand = require('./electron/run-command.cjs');
 const { reconcile: reconcileRail } = require('./electron/rail-core.cjs');
+const lanShare = require('./electron/lan-share.cjs');
 const { LocalPty } = require('./electron/remote/localPty.cjs');
 const platform = require('./electron/platform.cjs');
 const { decideWindowOpen } = require('./electron/window-open.cjs');
@@ -244,6 +245,7 @@ function safeSend(channel, payload) {
 
 // Encerra todos os processos (terminais + servidores de preview).
 function cleanup() {
+  for (const p of [...lanShares.keys()]) stopLanShare(p, { notify: false });
   for (const s of runningServers.values()) {
     if (s.probe) clearInterval(s.probe);
     killProc(s.proc);
@@ -4826,6 +4828,7 @@ async function startPhpPreview(projectPath, decision) {
       }
     }
     runningServers.delete(projectPath);
+    stopLanShare(projectPath);
     safeSend('preview:exit', { projectPath });
   });
   proc.on('error', (e) => sendLog(projectPath, '\n[erro ao iniciar php] ' + e.message + '\n'));
@@ -5002,6 +5005,7 @@ function superviseServer({ projectPath, entry, proc, port }) {
       sendLog(projectPath, `\n[servidor encerrou sem subir — código ${code}]\n`);
     }
     runningServers.delete(projectPath);
+    stopLanShare(projectPath);
     safeSend('preview:exit', { projectPath });
   });
   proc.on('error', (e) => sendLog(projectPath, '\n[erro ao iniciar] ' + e.message + '\n'));
@@ -5014,6 +5018,7 @@ ipcMain.handle('preview:log:get', (evt, { projectPath }) => {
 });
 
 ipcMain.handle('preview:stop', async (evt, { projectPath }) => {
+  stopLanShare(projectPath);
   const e = runningServers.get(projectPath);
   if (e) {
     if (e.probe) clearInterval(e.probe);
@@ -5023,6 +5028,69 @@ ipcMain.handle('preview:stop', async (evt, { projectPath }) => {
     await killProc(e.proc);
   }
   return { stopped: true };
+});
+
+// ---- "Abrir no celular": repasse do preview pra rede local (electron/lan-share.cjs) ----
+// Um repasse por projeto. Desliga sozinho quando o servidor do projeto para/cai e ao
+// fechar o app: a rede só fica aberta enquanto o usuário está olhando pra isso.
+const lanShares = new Map(); // projectPath -> { share, targetPort }
+// Últimos eventos do repasse por projeto (painel de logs do card). Sobrevive a parar e
+// religar o compartilhamento; some ao fechar o app.
+const lanLogs = new Map(); // projectPath -> entry[]
+const LAN_LOG_MAX = 300;
+function pushLanLog(projectPath, entry) {
+  const list = lanLogs.get(projectPath) || [];
+  list.push(entry);
+  if (list.length > LAN_LOG_MAX) list.splice(0, list.length - LAN_LOG_MAX);
+  lanLogs.set(projectPath, list);
+  safeSend('lan:log', { projectPath, entry });
+}
+
+function stopLanShare(projectPath, { notify = true } = {}) {
+  const cur = lanShares.get(projectPath);
+  if (!cur) return;
+  lanShares.delete(projectPath);
+  cur.share.close().catch(() => {});
+  if (notify) safeSend('lan:stopped', { projectPath });
+}
+
+ipcMain.handle('lan:start', async (evt, { projectPath, url }) => {
+  const target = lanShare.localTarget(url);
+  if (!target) return { error: 'not_local' };
+  const ip = lanShare.pickLanAddress();
+  if (!ip) return { error: 'no_network' };
+  let cur = lanShares.get(projectPath);
+  if (cur && cur.targetPort !== target.port) {
+    stopLanShare(projectPath, { notify: false });
+    cur = null;
+  }
+  if (!cur) {
+    try {
+      cur = {
+        share: await lanShare.startLanShare({
+          targetPort: target.port,
+          onLog: (entry) => pushLanLog(projectPath, entry),
+        }),
+        targetPort: target.port,
+      };
+    } catch (e) {
+      return { error: 'listen', message: e.message };
+    }
+    lanShares.set(projectPath, cur);
+  }
+  return { url: `http://${ip}:${cur.share.port}${target.path}` };
+});
+
+ipcMain.handle('lan:stop', (evt, { projectPath }) => {
+  stopLanShare(projectPath, { notify: false });
+  return { ok: true };
+});
+
+ipcMain.handle('lan:status', (evt, { projectPath }) => ({ active: lanShares.has(projectPath) }));
+ipcMain.handle('lan:logs', (evt, { projectPath }) => lanLogs.get(projectPath) || []);
+ipcMain.handle('lan:logs:clear', (evt, { projectPath }) => {
+  lanLogs.delete(projectPath);
+  return { ok: true };
 });
 
 ipcMain.handle('preview:status', (evt, { projectPath }) => {

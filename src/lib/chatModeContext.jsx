@@ -13,11 +13,14 @@ const LKEY = 'chatMode:v1';
 // pronto, basta ligar este flag de volta e devolver o card na aba "Projetos".
 const CHAT_MODE_ENABLED = false;
 
-// 'plugin:<id>' = visual de chat de um plugin local (electron/plugins/). Fica fora do
-// flag acima: só existe se o plugin estiver instalado, e o main (fonte da verdade) devolve
-// 'cli' quando ele some.
+// 'plugin:<id>' = visual de chat de um plugin local (electron/plugins/). Desligado por
+// enquanto (12/11/2026): a aba nova abria em branco com o plugin claude-vscode, e o recurso
+// saiu do produto até segunda ordem. Mesmo esquema do CHAT_MODE_ENABLED: quem estava em
+// 'plugin:*' cai no terminal; a fiação (plugin-host, PluginChatView) fica intacta, e ligar
+// de volta = virar este flag (o card nas Configurações volta junto).
+export const PLUGIN_CHAT_ENABLED = false;
 const modeOf = (v) => {
-  if (typeof v === 'string' && v.startsWith('plugin:')) return v;
+  if (typeof v === 'string' && v.startsWith('plugin:')) return PLUGIN_CHAT_ENABLED ? v : 'cli';
   return CHAT_MODE_ENABLED && v === 'chat' ? 'chat' : 'cli';
 };
 

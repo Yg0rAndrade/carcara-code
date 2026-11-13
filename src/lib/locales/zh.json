@@ -159,6 +159,28 @@
     "picker_open": "打开管理器",
     "picker_help": "↑↓ 导航 · Enter 插入 · Esc 关闭"
   },
+  "lan": {
+    "button": "在手机上打开",
+    "button_active": "已在局域网开放 — 点击查看二维码",
+    "title": "在手机上打开",
+    "starting": "正在向局域网开放…",
+    "same_wifi": "用手机相机扫描。手机必须与这台电脑连接同一个 Wi-Fi 网络。",
+    "notice": "开启期间,该网络中的任何人都能打开此网站。如果防火墙询问,请允许 Carcará。",
+    "copy": "复制地址",
+    "stop": "停止共享",
+    "status_on": "已在局域网开放",
+    "close": "关闭",
+    "error_not_local": "只有在这台电脑上运行的网站才能在手机上打开。",
+    "error_no_network": "这台电脑没有连接到局域网(Wi-Fi 或有线)。",
+    "error_listen": "无法在局域网中打开端口。",
+    "card_title": "在真实手机上查看?",
+    "card_body": "在局域网中打开此网站,用手机相机扫描二维码。",
+    "card_action": "生成二维码",
+    "logs_title": "日志",
+    "logs_empty": "暂无内容。在手机上打开该地址,请求会显示在这里。",
+    "logs_clear": "清空",
+    "logs_ws": "实时刷新已连接"
+  },
   "session": {
     "activity_working": "Claude 正在工作…",
     "activity_asking": "Claude 正在请求确认",
@@ -173,6 +195,8 @@
     "close_confirm_title": "关闭 {count} 个会话?",
     "close_confirm_body": "其中正在运行的内容都会被停止。",
     "close_confirm_action": "关闭会话",
+    "close_keep_label": "保持打开",
+    "close_list_label": "将被关闭",
     "menu": "会话选项"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "余烬",
     "themeCarvao": "纯炭黑 (AMOLED)",
     "themePapel": "纸张 / 棕褐",
+    "themeCeu": "天空",
+    "themeOceano": "海洋",
+    "themeMata": "森林",
+    "themeIpe": "伊佩",
+    "themeMenta": "薄荷",
+    "themeLavanda": "薰衣草",
+    "themeCoral": "珊瑚",
+    "themePitanga": "巴西樱桃",
+    "themeCerrado": "塞拉多",
+    "themeNoite": "夜晚",
     "zoomTitle": "界面缩放",
     "zoomHelp": "放大或缩小应用中所有内容的尺寸（侧栏、聊天、标签页…）。你也可以使用",
     "zoomFocusHint": "在预览之外获得焦点时。",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "显示或隐藏项目栏",
+    "theme": "主题",
     "projects": "项目"
   }
 }

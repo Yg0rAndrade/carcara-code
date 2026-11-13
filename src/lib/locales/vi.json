@@ -159,6 +159,28 @@
     "picker_open": "Mở trình quản lý",
     "picker_help": "↑↓ điều hướng · Enter chèn · Esc đóng"
   },
+  "lan": {
+    "button": "Mở trên điện thoại",
+    "button_active": "Đang mở trong mạng cục bộ — bấm để xem mã QR",
+    "title": "Mở trên điện thoại",
+    "starting": "Đang mở ra mạng cục bộ…",
+    "same_wifi": "Quét bằng camera điện thoại. Điện thoại phải dùng cùng mạng Wi-Fi với máy tính này.",
+    "notice": "Khi đang bật, bất kỳ ai trong mạng này đều mở được trang. Nếu tường lửa hỏi, hãy cho phép Carcará.",
+    "copy": "Sao chép địa chỉ",
+    "stop": "Dừng chia sẻ",
+    "status_on": "Đang mở trong mạng cục bộ",
+    "close": "Đóng",
+    "error_not_local": "Chỉ có thể mở trên điện thoại một trang đang chạy trên máy tính này.",
+    "error_no_network": "Máy tính này chưa kết nối mạng cục bộ (Wi-Fi hoặc cáp).",
+    "error_listen": "Không thể mở cổng trong mạng cục bộ.",
+    "card_title": "Xem trên điện thoại thật?",
+    "card_body": "Mở trang này trong mạng cục bộ và quét mã QR bằng camera điện thoại.",
+    "card_action": "Tạo mã QR",
+    "logs_title": "Nhật ký",
+    "logs_empty": "Chưa có gì. Mở địa chỉ trên điện thoại và các yêu cầu sẽ hiện ở đây.",
+    "logs_clear": "Xóa",
+    "logs_ws": "Đã kết nối tải lại trực tiếp"
+  },
   "session": {
     "activity_working": "Claude đang làm việc…",
     "activity_asking": "Claude đang yêu cầu xác nhận",
@@ -173,6 +195,8 @@
     "close_confirm_title": "Đóng {count} phiên?",
     "close_confirm_body": "Mọi thứ đang chạy trong đó sẽ bị dừng.",
     "close_confirm_action": "Đóng phiên",
+    "close_keep_label": "Vẫn mở",
+    "close_list_label": "Sẽ bị đóng",
     "menu": "Tùy chọn phiên"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Than hồng",
     "themeCarvao": "Than tuyền (AMOLED)",
     "themePapel": "Giấy / Nâu đỏ",
+    "themeCeu": "Bầu trời",
+    "themeOceano": "Đại dương",
+    "themeMata": "Rừng",
+    "themeIpe": "Ipê",
+    "themeMenta": "Bạc hà",
+    "themeLavanda": "Oải hương",
+    "themeCoral": "San hô",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Đêm",
     "zoomTitle": "Thu phóng giao diện",
     "zoomHelp": "Tăng hoặc giảm kích thước mọi thứ trong ứng dụng (thanh bên, trò chuyện, thẻ…). Bạn cũng có thể dùng",
     "zoomFocusHint": "khi tiêu điểm ở ngoài bản xem trước.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Hiện hoặc ẩn thanh dự án",
+    "theme": "Giao diện",
     "projects": "Dự án"
   }
 }

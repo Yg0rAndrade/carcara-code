@@ -159,6 +159,28 @@
     "picker_open": "Verwaltung öffnen",
     "picker_help": "↑↓ navigieren · Enter einfügen · Esc schließen"
   },
+  "lan": {
+    "button": "Auf dem Handy öffnen",
+    "button_active": "Im lokalen Netzwerk geöffnet — klicken für den QR-Code",
+    "title": "Auf dem Handy öffnen",
+    "starting": "Wird im lokalen Netzwerk geöffnet…",
+    "same_wifi": "Mit der Handykamera scannen. Das Handy muss im selben WLAN wie dieser Computer sein.",
+    "notice": "Solange dies aktiv ist, kann jeder in diesem Netzwerk die Seite öffnen. Wenn die Firewall fragt, Carcará erlauben.",
+    "copy": "Adresse kopieren",
+    "stop": "Freigabe beenden",
+    "status_on": "Im lokalen Netzwerk geöffnet",
+    "close": "Schließen",
+    "error_not_local": "Nur eine Seite, die auf diesem Computer läuft, kann auf dem Handy geöffnet werden.",
+    "error_no_network": "Dieser Computer ist mit keinem lokalen Netzwerk verbunden (WLAN oder Kabel).",
+    "error_listen": "Der Port im lokalen Netzwerk konnte nicht geöffnet werden.",
+    "card_title": "Auf einem echten Handy ansehen?",
+    "card_body": "Öffne diese Seite im lokalen Netzwerk und scanne den QR-Code mit der Handykamera.",
+    "card_action": "QR-Code erzeugen",
+    "logs_title": "Protokoll",
+    "logs_empty": "Noch nichts. Öffne die Adresse auf dem Handy, dann erscheinen die Anfragen hier.",
+    "logs_clear": "Leeren",
+    "logs_ws": "Live-Reload verbunden"
+  },
   "session": {
     "activity_working": "Claude arbeitet…",
     "activity_asking": "Claude bittet um Bestätigung",
@@ -173,6 +195,8 @@
     "close_confirm_title": "{count} Sitzungen schließen?",
     "close_confirm_body": "Alles, was darin läuft, wird beendet.",
     "close_confirm_action": "Sitzungen schließen",
+    "close_keep_label": "Bleibt geöffnet",
+    "close_list_label": "Werden geschlossen",
     "menu": "Sitzungsoptionen"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Glut",
     "themeCarvao": "Reine Kohle (AMOLED)",
     "themePapel": "Papier / Sepia",
+    "themeCeu": "Himmel",
+    "themeOceano": "Ozean",
+    "themeMata": "Wald",
+    "themeIpe": "Ipê",
+    "themeMenta": "Minze",
+    "themeLavanda": "Lavendel",
+    "themeCoral": "Koralle",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Nacht",
     "zoomTitle": "Zoom der Oberfläche",
     "zoomHelp": "Vergrößert oder verkleinert alles in der App (Rail, Chat, Tabs…). Du kannst auch",
     "zoomFocusHint": "mit Fokus außerhalb der Vorschau verwenden.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Projektleiste ein- oder ausblenden",
+    "theme": "Design",
     "projects": "Projekte"
   }
 }

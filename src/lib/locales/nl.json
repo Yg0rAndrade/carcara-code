@@ -159,6 +159,28 @@
     "picker_open": "Beheer openen",
     "picker_help": "↑↓ navigeren · Enter invoegen · Esc sluiten"
   },
+  "lan": {
+    "button": "Openen op telefoon",
+    "button_active": "Open op het lokale netwerk — klik voor de QR-code",
+    "title": "Openen op telefoon",
+    "starting": "Openen op het lokale netwerk…",
+    "same_wifi": "Scan met de camera van je telefoon. Die moet op hetzelfde wifi-netwerk zitten als deze computer.",
+    "notice": "Zolang dit aan staat, kan iedereen op dit netwerk de site openen. Als de firewall het vraagt, sta Carcará toe.",
+    "copy": "Adres kopiëren",
+    "stop": "Delen stoppen",
+    "status_on": "Open op het lokale netwerk",
+    "close": "Sluiten",
+    "error_not_local": "Alleen een site die op deze computer draait kan op de telefoon worden geopend.",
+    "error_no_network": "Deze computer is niet verbonden met een lokaal netwerk (wifi of kabel).",
+    "error_listen": "Kon de poort op het lokale netwerk niet openen.",
+    "card_title": "Bekijken op een echte telefoon?",
+    "card_body": "Open deze site op het lokale netwerk en scan de QR-code met de camera van je telefoon.",
+    "card_action": "QR-code maken",
+    "logs_title": "Logboek",
+    "logs_empty": "Nog niets. Open het adres op je telefoon en de verzoeken verschijnen hier.",
+    "logs_clear": "Wissen",
+    "logs_ws": "Live herladen verbonden"
+  },
   "session": {
     "activity_working": "Claude is bezig…",
     "activity_asking": "Claude vraagt om bevestiging",
@@ -173,6 +195,8 @@
     "close_confirm_title": "{count} sessies sluiten?",
     "close_confirm_body": "Alles wat erin draait wordt gestopt.",
     "close_confirm_action": "Sessies sluiten",
+    "close_keep_label": "Blijft open",
+    "close_list_label": "Worden gesloten",
     "menu": "Sessie-opties"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Gloed",
     "themeCarvao": "Puur houtskool (AMOLED)",
     "themePapel": "Papier / Sepia",
+    "themeCeu": "Lucht",
+    "themeOceano": "Oceaan",
+    "themeMata": "Bos",
+    "themeIpe": "Ipê",
+    "themeMenta": "Munt",
+    "themeLavanda": "Lavendel",
+    "themeCoral": "Koraal",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Nacht",
     "zoomTitle": "Interfacezoom",
     "zoomHelp": "Vergroot of verkleint alles in de app (rail, chat, tabbladen…). Je kunt ook",
     "zoomFocusHint": "gebruiken met focus buiten het voorbeeld.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Projectbalk tonen of verbergen",
+    "theme": "Thema",
     "projects": "Projecten"
   }
 }

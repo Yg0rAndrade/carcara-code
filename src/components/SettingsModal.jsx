@@ -37,8 +37,9 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { readTextScale, stepTextScale, TEXT_SCALE_STEPS } from '@/lib/textScale';
-import { useTheme, THEME_ORDER } from '@/lib/theme.jsx';
-import { useChatMode } from '@/lib/chatModeContext.jsx';
+import { useTheme, THEME_ORDER, THEME_SWATCH } from '@/lib/theme.jsx';
+import { ThemePreview } from './ui/theme-preview.jsx';
+import { useChatMode, PLUGIN_CHAT_ENABLED } from '@/lib/chatModeContext.jsx';
 import { Input } from './ui/input.jsx';
 import { Switch } from './ui/switch.jsx';
 import { Button } from './ui/button.jsx';
@@ -68,58 +69,6 @@ const AiManager = lazy(() => import('./AiManager.jsx'));
 // Amostras de cor do seletor de tema (Aparência). Espelham os valores do index.css
 // só para o mini-preview — a fonte da verdade das paletas continua sendo o CSS.
 // `label` reaproveita as chaves i18n existentes onde dá (light/dark).
-const THEME_SWATCH = {
-  light: {
-    label: 'settings.themeLight',
-    family: 'light',
-    bg: 'hsl(220 16% 93%)',
-    card: '#ffffff',
-    line: 'hsl(220 13% 82%)',
-    primary: 'hsl(37.7 92% 50%)',
-    border: 'hsl(220 13% 88%)',
-  },
-  dark: {
-    label: 'settings.themeDark',
-    family: 'dark',
-    bg: 'hsl(0 0% 9%)',
-    card: 'hsl(0 0% 15%)',
-    line: 'hsl(0 0% 34%)',
-    primary: 'hsl(25 88% 56%)',
-    border: 'hsl(0 0% 26%)',
-  },
-  brasa: {
-    label: 'settings.themeBrasa',
-    // Fundo bem mais quente/avermelhado e a brasa "acesa" (glow) pra se distinguir
-    // do escuro neutro. É o tema que deve gritar "calor".
-    family: 'dark',
-    bg: 'hsl(12 40% 8%)',
-    card: 'hsl(14 30% 12%)',
-    line: 'hsl(16 20% 34%)',
-    primary: 'hsl(20 100% 57%)',
-    border: 'hsl(16 34% 22%)',
-    glow: true,
-  },
-  carvao: {
-    label: 'settings.themeCarvao',
-    // Preto absoluto na moldura + card quase preto: lê como "o mais fundo/OLED".
-    family: 'dark',
-    bg: '#000000',
-    card: 'hsl(0 0% 7%)',
-    line: 'hsl(0 0% 26%)',
-    primary: 'hsl(25 90% 56%)',
-    border: 'hsl(0 0% 14%)',
-  },
-  papel: {
-    label: 'settings.themePapel',
-    // Creme quente e saturado + linhas sépia: destaca do branco frio do "Claro".
-    family: 'light',
-    bg: 'hsl(38 44% 88%)',
-    card: 'hsl(42 52% 96%)',
-    line: 'hsl(34 26% 74%)',
-    primary: 'hsl(30 92% 48%)',
-    border: 'hsl(36 30% 80%)',
-  },
-};
 
 // Ícones de marca em SVG inline — o lucide removeu os logos de marca (questão de trademark),
 // então desenhamos aqui. Herdam currentColor e tamanho via className do <span> que os envolve.
@@ -751,7 +700,7 @@ export function SettingsModal({
 
                   {/* Visual das abas do Claude. Só aparece com plugin local instalado
                       (electron/plugins/); sem plugin, o Carcará é só terminal, como sempre. */}
-                  {chatPlugins.length > 0 && (
+                  {PLUGIN_CHAT_ENABLED && chatPlugins.length > 0 && (
                     <div className="mt-4 rounded-lg border p-4">
                       <div className="text-[13px] font-medium">{t('settings.chatViewTitle')}</div>
                       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -1208,36 +1157,7 @@ export function SettingsModal({
                           theme === key && 'border-primary ring-1 ring-primary',
                         )}
                       >
-                        {/* Mini-janela da IDE: a MOLDURA é o fundo do tema (mostra o
-                            matiz — neutro/avermelhado/preto/creme), o painel é o card,
-                            as barrinhas são "texto" e a pílula/bolinha é a brasa (com
-                            glow no tema Brasa). Dá superfície pra cada tema se distinguir. */}
-                        <div
-                          className="h-14 overflow-hidden rounded-[5px] border p-1.5"
-                          style={{ background: p.bg, borderColor: p.border }}
-                        >
-                          <div
-                            className="flex h-full flex-col justify-center gap-1.5 rounded-[4px] border px-2"
-                            style={{ background: p.card, borderColor: p.border }}
-                          >
-                            <span
-                              className="h-1 w-4/5 rounded-full"
-                              style={{ background: p.line }}
-                            />
-                            <span
-                              className="h-1 w-3/5 rounded-full"
-                              style={{ background: p.line }}
-                            />
-                            <span
-                              className="mt-0.5 h-1.5 rounded-full"
-                              style={{
-                                width: p.glow ? '2.25rem' : '1.5rem',
-                                background: p.primary,
-                                boxShadow: p.glow ? `0 0 7px 0 ${p.primary}` : 'none',
-                              }}
-                            />
-                          </div>
-                        </div>
+                        <ThemePreview theme={key} className="h-14" />
                         <span className="flex items-center gap-1.5 px-0.5 text-[13px]">
                           {p.family === 'dark' ? (
                             <Moon className="h-3.5 w-3.5 shrink-0" />

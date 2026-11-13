@@ -10,7 +10,7 @@ import {
   Undo2,
   FolderPlus,
   Folder as FolderIcon,
-  FolderOpen,
+  ChevronUp,
   Settings2,
   Server,
 } from 'lucide-react';
@@ -20,7 +20,7 @@ import { RailFolderIcon } from './RailFolder.jsx';
 import { ProjectSettingsModal } from './ProjectSettingsModal.jsx';
 import { colorFor, initials } from '@/lib/projectColor';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
-import { buildRows, FOLDER_COLORS } from '@/lib/railTree';
+import { buildRows, FOLDER_COLORS, folderTint, folderBorder } from '@/lib/railTree';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { hasPendingUpdate } from '@/lib/updateView';
@@ -488,11 +488,18 @@ export function Rail({
         onMouseLeave={() => setTip(null)}
         className={cn(
           'relative flex h-[42px] w-[42px] cursor-grab items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 active:cursor-grabbing',
-          open && 'border-transparent hover:bg-muted',
+          open && 'border-transparent',
+          open && !f.color && 'bg-muted/60 hover:bg-muted',
           drag?.folderId === f.id && 'opacity-40',
           isMergeTarget && 'scale-105 ring-2 ring-primary',
         )}
-        style={!open && f.color ? { borderColor: f.color } : undefined}
+        style={
+          f.color
+            ? open
+              ? { background: `color-mix(in srgb, ${f.color} 22%, transparent)` }
+              : { borderColor: folderBorder(f.color) }
+            : undefined
+        }
       >
         <span
           className={cn(
@@ -503,13 +510,16 @@ export function Rail({
           <RailFolderIcon
             previews={row.previews}
             count={row.count}
+            color={f.color}
             moreLabel={t('rail.folder_more', { n: row.count - 3 })}
           />
         </span>
-        <FolderOpen
+        {/* Aberta: "recolher" (seta pra cima) na cor da pasta — o clique fecha o grupo. */}
+        <ChevronUp
+          strokeWidth={2.5}
           className={cn(
-            'size-6 transition-all duration-200',
-            open ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
+            'size-5 transition-all duration-200',
+            open ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
             !f.color && 'text-primary',
           )}
           style={f.color ? { color: f.color } : undefined}
@@ -633,12 +643,12 @@ export function Rail({
                   style={{
                     borderColor: open
                       ? c
-                        ? `color-mix(in srgb, ${c} 55%, transparent)`
+                        ? folderBorder(c)
                         : 'hsl(var(--border))'
                       : 'transparent',
                     background: open
                       ? c
-                        ? `color-mix(in srgb, ${c} 12%, transparent)`
+                        ? folderTint(c)
                         : 'hsl(var(--muted) / 0.4)'
                       : 'transparent',
                   }}
@@ -897,7 +907,9 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
         onClick={() => onOpenSettings(p)}
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
       >
-        <Settings2 className="h-3.5 w-3.5 shrink-0" />
+        {/* Cores do menu: azul = configurar, verde = (re)iniciar, âmbar = parar
+            (--warning, o mesmo do "Parar" do app), vermelho = remover. */}
+        <Settings2 className="h-3.5 w-3.5 shrink-0 text-sky-500" />
         <span className="truncate">{t('rail.menu_settings')}</span>
       </button>
 
@@ -908,7 +920,7 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
         onClick={() => onRestart(p)}
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
       >
-        <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+        <RotateCcw className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--success))]" />
         <span className="truncate">
           {p.running ? t('rail.menu_restart_running') : t('rail.menu_start_running')}
         </span>
@@ -919,7 +931,7 @@ function RailMenu({ menu, onClose, onOpenSettings, onRestart, onStop, onRemove }
           onClick={() => onStop(p)}
           className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-muted"
         >
-          <Square className="h-3.5 w-3.5 shrink-0" />
+          <Square className="h-3.5 w-3.5 shrink-0 fill-current text-[hsl(var(--warning))]" />
           <span className="truncate">{t('rail.menu_stop_server')}</span>
         </button>
       )}

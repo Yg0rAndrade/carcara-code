@@ -159,6 +159,28 @@
     "picker_open": "管理画面を開く",
     "picker_help": "↑↓ 移動 · Enter 挿入 · Esc 閉じる"
   },
+  "lan": {
+    "button": "スマホで開く",
+    "button_active": "ローカルネットワークで公開中 — クリックで QR コードを表示",
+    "title": "スマホで開く",
+    "starting": "ローカルネットワークに公開しています…",
+    "same_wifi": "スマホのカメラでスキャンしてください。このコンピューターと同じ Wi-Fi に接続している必要があります。",
+    "notice": "オンの間は、このネットワーク上の誰でもサイトを開けます。ファイアウォールに聞かれたら Carcará を許可してください。",
+    "copy": "アドレスをコピー",
+    "stop": "共有を停止",
+    "status_on": "ローカルネットワークで公開中",
+    "close": "閉じる",
+    "error_not_local": "スマホで開けるのは、このコンピューターで動いているサイトだけです。",
+    "error_no_network": "このコンピューターはローカルネットワーク(Wi-Fi または有線)に接続されていません。",
+    "error_listen": "ローカルネットワークでポートを開けませんでした。",
+    "card_title": "実機のスマホで確認しますか?",
+    "card_body": "このサイトをローカルネットワークに公開し、スマホのカメラで QR コードをスキャンします。",
+    "card_action": "QR コードを作成",
+    "logs_title": "ログ",
+    "logs_empty": "まだありません。スマホでアドレスを開くと、リクエストがここに表示されます。",
+    "logs_clear": "クリア",
+    "logs_ws": "ライブリロード接続済み"
+  },
   "session": {
     "activity_working": "Claude が作業中…",
     "activity_asking": "Claude が確認を求めています",
@@ -173,6 +195,8 @@
     "close_confirm_title": "{count} 件のセッションを閉じますか?",
     "close_confirm_body": "実行中の処理はすべて停止します。",
     "close_confirm_action": "セッションを閉じる",
+    "close_keep_label": "開いたまま",
+    "close_list_label": "閉じるセッション",
     "menu": "セッションのオプション"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "残り火",
     "themeCarvao": "純黒炭（AMOLED）",
     "themePapel": "紙 / セピア",
+    "themeCeu": "空",
+    "themeOceano": "海",
+    "themeMata": "森",
+    "themeIpe": "イペー",
+    "themeMenta": "ミント",
+    "themeLavanda": "ラベンダー",
+    "themeCoral": "コーラル",
+    "themePitanga": "ピタンガ",
+    "themeCerrado": "セラード",
+    "themeNoite": "夜",
     "zoomTitle": "インターフェースのズーム",
     "zoomHelp": "アプリ内のすべて（レール、チャット、タブなど）のサイズを拡大・縮小します。次も使えます",
     "zoomFocusHint": "フォーカスがプレビューの外にあるとき。",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "プロジェクトバーの表示/非表示",
+    "theme": "テーマ",
     "projects": "プロジェクト"
   }
 }

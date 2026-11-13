@@ -159,6 +159,28 @@
     "picker_open": "관리자 열기",
     "picker_help": "↑↓ 이동 · Enter 삽입 · Esc 닫기"
   },
+  "lan": {
+    "button": "휴대폰에서 열기",
+    "button_active": "로컬 네트워크에 열림 — 클릭해 QR 코드 보기",
+    "title": "휴대폰에서 열기",
+    "starting": "로컬 네트워크에 여는 중…",
+    "same_wifi": "휴대폰 카메라로 스캔하세요. 이 컴퓨터와 같은 Wi-Fi 네트워크에 있어야 합니다.",
+    "notice": "켜져 있는 동안 이 네트워크의 누구나 사이트를 열 수 있습니다. 방화벽이 묻으면 Carcará를 허용하세요.",
+    "copy": "주소 복사",
+    "stop": "공유 중지",
+    "status_on": "로컬 네트워크에 열림",
+    "close": "닫기",
+    "error_not_local": "휴대폰에서는 이 컴퓨터에서 실행 중인 사이트만 열 수 있습니다.",
+    "error_no_network": "이 컴퓨터가 로컬 네트워크(Wi-Fi 또는 유선)에 연결되어 있지 않습니다.",
+    "error_listen": "로컬 네트워크에서 포트를 열 수 없습니다.",
+    "card_title": "실제 휴대폰에서 볼까요?",
+    "card_body": "이 사이트를 로컬 네트워크에 열고 휴대폰 카메라로 QR 코드를 스캔하세요.",
+    "card_action": "QR 코드 만들기",
+    "logs_title": "로그",
+    "logs_empty": "아직 없습니다. 휴대폰에서 주소를 열면 요청이 여기에 표시됩니다.",
+    "logs_clear": "지우기",
+    "logs_ws": "실시간 새로고침 연결됨"
+  },
   "session": {
     "activity_working": "Claude가 작업 중…",
     "activity_asking": "Claude가 확인을 요청합니다",
@@ -173,6 +195,8 @@
     "close_confirm_title": "세션 {count}개를 닫을까요?",
     "close_confirm_body": "실행 중인 작업은 모두 중지됩니다.",
     "close_confirm_action": "세션 닫기",
+    "close_keep_label": "계속 열림",
+    "close_list_label": "닫힐 세션",
     "menu": "세션 옵션"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "잉걸불",
     "themeCarvao": "순수 숯 (AMOLED)",
     "themePapel": "종이 / 세피아",
+    "themeCeu": "하늘",
+    "themeOceano": "바다",
+    "themeMata": "숲",
+    "themeIpe": "이페",
+    "themeMenta": "민트",
+    "themeLavanda": "라벤더",
+    "themeCoral": "코랄",
+    "themePitanga": "피탕가",
+    "themeCerrado": "세하두",
+    "themeNoite": "밤",
     "zoomTitle": "인터페이스 확대/축소",
     "zoomHelp": "앱의 모든 요소 크기를 키우거나 줄입니다 (레일, 채팅, 탭…). 다음도 사용할 수 있습니다",
     "zoomFocusHint": "포커스가 미리보기 바깥에 있을 때.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "프로젝트 바 표시/숨기기",
+    "theme": "테마",
     "projects": "프로젝트"
   }
 }

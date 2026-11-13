@@ -144,6 +144,217 @@
     --border: 38 28% 83%;
     --input: 38 28% 83%;
   }
+
+  /* Céu — o claro com azul: fundo levemente azulado e destaque azul vivo (texto
+     branco no botão, porque o azul é escuro demais pra texto preto). Família: light. */
+  [data-theme='ceu'] {
+    --background: 210 50% 97.5%;
+    --foreground: 218 32% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 218 32% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 32% 17%;
+    --primary: 212 90% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 212 40% 93%;
+    --secondary-foreground: 216 28% 30%;
+    --muted: 210 45% 95.5%;
+    --muted-foreground: 215 16% 44%;
+    --accent: 210 90% 94%;
+    --accent-foreground: 215 75% 33%;
+    --border: 212 32% 88%;
+    --input: 212 32% 88%;
+    --ring: 212 90% 50%;
+  }
+
+  /* Oceano — escuro azul-marinho com o azul da água acesa. Família: dark. */
+  [data-theme='oceano'] {
+    --background: 215 42% 7.5%;
+    --foreground: 210 30% 91%;
+    --card: 215 34% 11.5%;
+    --card-foreground: 210 30% 91%;
+    --popover: 215 34% 11.5%;
+    --popover-foreground: 210 30% 91%;
+    --primary: 199 92% 56%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 215 26% 15%;
+    --secondary-foreground: 210 26% 88%;
+    --muted: 215 32% 10%;
+    --muted-foreground: 212 16% 64%;
+    --accent: 205 62% 22%;
+    --accent-foreground: 195 95% 80%;
+    --border: 214 26% 19%;
+    --input: 214 26% 19%;
+    --ring: 199 92% 56%;
+  }
+
+  /* Mata — escuro verde-floresta com a folha viva. Família: dark. */
+  [data-theme='mata'] {
+    --background: 152 32% 6.5%;
+    --foreground: 140 16% 90%;
+    --card: 150 25% 10.5%;
+    --card-foreground: 140 16% 90%;
+    --popover: 150 25% 10.5%;
+    --popover-foreground: 140 16% 90%;
+    --primary: 145 63% 47%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 150 19% 14%;
+    --secondary-foreground: 140 14% 87%;
+    --muted: 150 26% 9%;
+    --muted-foreground: 145 10% 62%;
+    --accent: 150 48% 19%;
+    --accent-foreground: 140 70% 78%;
+    --border: 150 20% 18%;
+    --input: 150 20% 18%;
+    --ring: 145 63% 47%;
+  }
+
+  /* Ipê — noite arroxeada com o rosa-magenta da flor do ipê. Família: dark. */
+  [data-theme='ipe'] {
+    --background: 280 28% 7.5%;
+    --foreground: 290 22% 92%;
+    --card: 282 24% 11.5%;
+    --card-foreground: 290 22% 92%;
+    --popover: 282 24% 11.5%;
+    --popover-foreground: 290 22% 92%;
+    --primary: 322 85% 63%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 284 19% 15%;
+    --secondary-foreground: 290 18% 88%;
+    --muted: 282 26% 9.5%;
+    --muted-foreground: 290 10% 64%;
+    --accent: 305 44% 23%;
+    --accent-foreground: 320 90% 82%;
+    --border: 285 20% 20%;
+    --input: 285 20% 20%;
+    --ring: 322 85% 63%;
+  }
+
+  /* Menta — tema claro colorido. Família: light. */
+  [data-theme='menta'] {
+    --background: 150 35% 97%;
+    --foreground: 165 30% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 165 30% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 165 30% 15%;
+    --primary: 160 72% 34%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 152 30% 92%;
+    --secondary-foreground: 162 24% 26%;
+    --muted: 150 32% 95%;
+    --muted-foreground: 160 12% 40%;
+    --accent: 152 55% 92%;
+    --accent-foreground: 162 70% 24%;
+    --border: 152 24% 86%;
+    --input: 152 24% 86%;
+    --ring: 160 72% 34%;
+  }
+
+  /* Lavanda — tema claro colorido. Família: light. */
+  [data-theme='lavanda'] {
+    --background: 262 45% 97.5%;
+    --foreground: 262 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 262 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 262 28% 17%;
+    --primary: 262 70% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 262 35% 93%;
+    --secondary-foreground: 262 22% 30%;
+    --muted: 262 40% 96%;
+    --muted-foreground: 262 12% 45%;
+    --accent: 262 80% 95%;
+    --accent-foreground: 262 60% 38%;
+    --border: 262 28% 88%;
+    --input: 262 28% 88%;
+    --ring: 262 70% 56%;
+  }
+
+  /* Coral — tema claro colorido. Família: light. */
+  [data-theme='coral'] {
+    --background: 15 60% 97.5%;
+    --foreground: 10 25% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 10 25% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 10 25% 17%;
+    --primary: 4 76% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 12 45% 93%;
+    --secondary-foreground: 8 22% 30%;
+    --muted: 14 50% 96%;
+    --muted-foreground: 10 12% 44%;
+    --accent: 8 90% 95%;
+    --accent-foreground: 4 65% 38%;
+    --border: 12 35% 88%;
+    --input: 12 35% 88%;
+    --ring: 4 76% 56%;
+  }
+
+  /* Pitanga — tema escuro colorido. Família: dark. */
+  [data-theme='pitanga'] {
+    --background: 355 30% 7%;
+    --foreground: 350 20% 91%;
+    --card: 355 25% 11%;
+    --card-foreground: 350 20% 91%;
+    --popover: 355 25% 11%;
+    --popover-foreground: 350 20% 91%;
+    --primary: 354 85% 60%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 355 20% 14.5%;
+    --secondary-foreground: 350 16% 87%;
+    --muted: 355 26% 9.5%;
+    --muted-foreground: 352 10% 63%;
+    --accent: 354 50% 22%;
+    --accent-foreground: 354 95% 82%;
+    --border: 355 22% 19%;
+    --input: 355 22% 19%;
+    --ring: 354 85% 60%;
+  }
+
+  /* Cerrado — tema escuro colorido. Família: dark. */
+  [data-theme='cerrado'] {
+    --background: 35 28% 7%;
+    --foreground: 40 22% 90%;
+    --card: 33 23% 11%;
+    --card-foreground: 40 22% 90%;
+    --popover: 33 23% 11%;
+    --popover-foreground: 40 22% 90%;
+    --primary: 42 88% 55%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 34 18% 14.5%;
+    --secondary-foreground: 40 18% 86%;
+    --muted: 34 24% 9.5%;
+    --muted-foreground: 38 11% 62%;
+    --accent: 30 50% 21%;
+    --accent-foreground: 42 95% 76%;
+    --border: 34 20% 19%;
+    --input: 34 20% 19%;
+    --ring: 42 88% 55%;
+  }
+
+  /* Noite — tema escuro colorido. Família: dark. */
+  [data-theme='noite'] {
+    --background: 236 34% 8%;
+    --foreground: 230 30% 91%;
+    --card: 236 27% 12.5%;
+    --card-foreground: 230 30% 91%;
+    --popover: 236 27% 12.5%;
+    --popover-foreground: 230 30% 91%;
+    --primary: 234 85% 70%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 236 22% 16%;
+    --secondary-foreground: 230 24% 88%;
+    --muted: 236 28% 10.5%;
+    --muted-foreground: 232 14% 65%;
+    --accent: 236 45% 25%;
+    --accent-foreground: 232 95% 84%;
+    --border: 236 22% 21%;
+    --input: 236 22% 21%;
+    --ring: 234 85% 70%;
+  }
 }
 
 @layer base {

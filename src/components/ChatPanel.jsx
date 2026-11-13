@@ -1630,6 +1630,9 @@ ${sid}`;
       )}
       <CloseSessionsModal
         names={confirmOthers ? sessions.filter((s) => s.id !== confirmOthers).map(nameOf) : null}
+        keep={
+          confirmOthers ? nameOf(sessions.find((s) => s.id === confirmOthers) || {}) : undefined
+        }
         onConfirm={() => {
           const sid = confirmOthers;
           setConfirmOthers(null);

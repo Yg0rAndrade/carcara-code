@@ -159,6 +159,28 @@
     "picker_open": "Otwórz menedżera",
     "picker_help": "↑↓ nawigacja · Enter wstaw · Esc zamknij"
   },
+  "lan": {
+    "button": "Otwórz na telefonie",
+    "button_active": "Otwarte w sieci lokalnej — kliknij, aby zobaczyć kod QR",
+    "title": "Otwórz na telefonie",
+    "starting": "Otwieranie w sieci lokalnej…",
+    "same_wifi": "Zeskanuj aparatem telefonu. Telefon musi być w tej samej sieci Wi-Fi co ten komputer.",
+    "notice": "Gdy to jest włączone, każdy w tej sieci może otworzyć stronę. Jeśli zapora zapyta, zezwól na Carcará.",
+    "copy": "Kopiuj adres",
+    "stop": "Zatrzymaj udostępnianie",
+    "status_on": "Otwarte w sieci lokalnej",
+    "close": "Zamknij",
+    "error_not_local": "Na telefonie można otworzyć tylko stronę działającą na tym komputerze.",
+    "error_no_network": "Ten komputer nie jest połączony z siecią lokalną (Wi-Fi lub kabel).",
+    "error_listen": "Nie udało się otworzyć portu w sieci lokalnej.",
+    "card_title": "Zobaczyć na prawdziwym telefonie?",
+    "card_body": "Otwórz tę stronę w sieci lokalnej i zeskanuj kod QR aparatem telefonu.",
+    "card_action": "Generuj kod QR",
+    "logs_title": "Logi",
+    "logs_empty": "Jeszcze nic. Otwórz adres na telefonie, a żądania pojawią się tutaj.",
+    "logs_clear": "Wyczyść",
+    "logs_ws": "Odświeżanie na żywo połączone"
+  },
   "session": {
     "activity_working": "Claude pracuje…",
     "activity_asking": "Claude prosi o potwierdzenie",
@@ -173,6 +195,8 @@
     "close_confirm_title": "Zamknąć sesje ({count})?",
     "close_confirm_body": "Wszystko, co w nich działa, zostanie zatrzymane.",
     "close_confirm_action": "Zamknij sesje",
+    "close_keep_label": "Pozostaje otwarta",
+    "close_list_label": "Zostaną zamknięte",
     "menu": "Opcje sesji"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Żar",
     "themeCarvao": "Czysty węgiel (AMOLED)",
     "themePapel": "Papier / Sepia",
+    "themeCeu": "Niebo",
+    "themeOceano": "Ocean",
+    "themeMata": "Las",
+    "themeIpe": "Ipê",
+    "themeMenta": "Mięta",
+    "themeLavanda": "Lawenda",
+    "themeCoral": "Koral",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Noc",
     "zoomTitle": "Powiększenie interfejsu",
     "zoomHelp": "Zwiększa lub zmniejsza rozmiar wszystkiego w aplikacji (pasek, czat, karty…). Możesz też użyć",
     "zoomFocusHint": "z fokusem poza podglądem.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Pokaż lub ukryj pasek projektów",
+    "theme": "Motyw",
     "projects": "Projekty"
   }
 }

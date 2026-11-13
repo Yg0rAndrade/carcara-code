@@ -159,6 +159,28 @@
     "picker_open": "Ouvrir le gestionnaire",
     "picker_help": "↑↓ naviguer · Entrée insérer · Esc fermer"
   },
+  "lan": {
+    "button": "Ouvrir sur le téléphone",
+    "button_active": "Ouvert sur le réseau local — cliquez pour voir le QR code",
+    "title": "Ouvrir sur le téléphone",
+    "starting": "Ouverture au réseau local…",
+    "same_wifi": "Scannez avec l'appareil photo du téléphone. Il doit être sur le même réseau Wi-Fi que cet ordinateur.",
+    "notice": "Tant que c'est actif, toute personne sur ce réseau peut ouvrir le site. Si le pare-feu le demande, autorisez Carcará.",
+    "copy": "Copier l'adresse",
+    "stop": "Arrêter le partage",
+    "status_on": "Ouvert sur le réseau local",
+    "close": "Fermer",
+    "error_not_local": "Seul un site exécuté sur cet ordinateur peut être ouvert sur le téléphone.",
+    "error_no_network": "Cet ordinateur n'est pas connecté à un réseau local (Wi-Fi ou câble).",
+    "error_listen": "Impossible d'ouvrir le port sur le réseau local.",
+    "card_title": "Le voir sur un vrai téléphone ?",
+    "card_body": "Ouvrez ce site sur le réseau local et scannez le QR code avec l'appareil photo du téléphone.",
+    "card_action": "Générer le QR code",
+    "logs_title": "Journaux",
+    "logs_empty": "Rien pour l'instant. Ouvrez l'adresse sur le téléphone et les requêtes apparaîtront ici.",
+    "logs_clear": "Effacer",
+    "logs_ws": "Rechargement en direct connecté"
+  },
   "session": {
     "activity_working": "Claude travaille…",
     "activity_asking": "Claude demande une confirmation",
@@ -173,6 +195,8 @@
     "close_confirm_title": "Fermer {count} sessions ?",
     "close_confirm_body": "Tout ce qui y tourne sera arrêté.",
     "close_confirm_action": "Fermer les sessions",
+    "close_keep_label": "Reste ouverte",
+    "close_list_label": "Seront fermées",
     "menu": "Options des sessions"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Braise",
     "themeCarvao": "Charbon pur (AMOLED)",
     "themePapel": "Papier / Sépia",
+    "themeCeu": "Ciel",
+    "themeOceano": "Océan",
+    "themeMata": "Forêt",
+    "themeIpe": "Ipê",
+    "themeMenta": "Menthe",
+    "themeLavanda": "Lavande",
+    "themeCoral": "Corail",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Nuit",
     "zoomTitle": "Zoom de l'interface",
     "zoomHelp": "Augmente ou diminue la taille de tout dans l'app (rail, chat, onglets…). Vous pouvez aussi utiliser",
     "zoomFocusHint": "avec le focus hors de l'aperçu.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Afficher ou masquer la barre des projets",
+    "theme": "Thème",
     "projects": "Projets"
   }
 }

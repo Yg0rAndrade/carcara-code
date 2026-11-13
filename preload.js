@@ -263,6 +263,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('preview:start', { projectPath, decision }),
   stopPreview: (projectPath) => ipcRenderer.invoke('preview:stop', { projectPath }),
   previewStatus: (projectPath) => ipcRenderer.invoke('preview:status', { projectPath }),
+  lanStart: (projectPath, url) => ipcRenderer.invoke('lan:start', { projectPath, url }),
+  lanStop: (projectPath) => ipcRenderer.invoke('lan:stop', { projectPath }),
+  lanStatus: (projectPath) => ipcRenderer.invoke('lan:status', { projectPath }),
+  lanLogs: (projectPath) => ipcRenderer.invoke('lan:logs', { projectPath }),
+  lanLogsClear: (projectPath) => ipcRenderer.invoke('lan:logs:clear', { projectPath }),
   previewGetLog: (projectPath) => ipcRenderer.invoke('preview:log:get', { projectPath }),
 
   // Onboarding (scaffold de projeto novo)

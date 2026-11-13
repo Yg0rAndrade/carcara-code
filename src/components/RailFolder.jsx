@@ -1,4 +1,5 @@
 import { colorFor, initials } from '@/lib/projectColor';
+import { folderTint } from '@/lib/railTree';
 
 // Célula do mini-grid: usa o ícone do projeto se houver, senão cor + inicial.
 function Mini({ p }) {
@@ -18,12 +19,16 @@ function Mini({ p }) {
 }
 
 // Ícone da pasta FECHADA: quadrado com mini-grid 2×2 dos 4
-// primeiros filhos. Se houver mais de 4, o 4º slot mostra "+N".
-export function RailFolderIcon({ previews, count, moreLabel }) {
+// primeiros filhos. Se houver mais de 4, o 4º slot mostra "+N". Com cor escolhida
+// (menu da pasta), o fundo é o mesmo tom clarinho do grupo aberto.
+export function RailFolderIcon({ previews, count, moreLabel, color }) {
   const cells = count > 4 ? previews.slice(0, 3) : previews.slice(0, 4);
   const fillers = count <= 4 ? Math.max(0, 4 - cells.length) : 0;
   return (
-    <span className="flex h-full w-full rounded-[inherit] bg-secondary p-1">
+    <span
+      className="flex h-full w-full rounded-[inherit] bg-secondary p-1"
+      style={color ? { background: folderTint(color) } : undefined}
+    >
       <span className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
         {cells.map((p, i) => (
           <Mini key={p?.path || i} p={p} />

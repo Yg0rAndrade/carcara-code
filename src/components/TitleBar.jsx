@@ -7,16 +7,17 @@ import {
   Check,
   Folder as FolderIcon,
   FolderPlus,
-  Moon,
   PanelLeft,
   Server,
   SquareTerminal,
-  Sun,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme.jsx';
 import { cn } from '@/lib/utils';
 import { toOpaqueHex } from '@/lib/titleBarColors.js';
+import { ThemeMenu } from './ThemeMenu.jsx';
+// SVG cru (fill="currentColor"): o carcará pega a cor do texto, então segue o tema.
+import logoSvg from '@/assets/logo.svg?raw';
 
 const DRAG = '[-webkit-app-region:drag]';
 const NO_DRAG = '[-webkit-app-region:no-drag]';
@@ -64,7 +65,7 @@ export function TitleBar({
   onOpenSettingsTab,
 }) {
   const t = useT();
-  const { theme, isDark, toggle: toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const barRef = useRef(null);
   const [info, setInfo] = useState({ insetLeft: 0, height: DEFAULT_HEIGHT });
   const [openMenu, setOpenMenu] = useState(null); // 'projects' | 'settings' | null
@@ -165,6 +166,14 @@ export function TitleBar({
         className="flex h-full items-center gap-1 px-2"
         style={{ width: 'env(titlebar-area-width, 100%)' }}
       >
+        {/* Marca do app no canto (área de arrastar: não é botão). */}
+        <span
+          aria-hidden="true"
+          className="ml-0.5 mr-1 grid size-5 shrink-0 place-items-center [&_svg]:h-full [&_svg]:w-full"
+          // Cor da marca (a mesma do ícone do app e do favicon do site), não a primary.
+          style={{ color: '#D99748' }}
+          dangerouslySetInnerHTML={{ __html: logoSvg }}
+        />
         <button
           type="button"
           onClick={onToggleRail}
@@ -218,15 +227,7 @@ export function TitleBar({
 
         <div className="flex-1" />
 
-        <button
-          type="button"
-          onClick={toggleTheme}
-          title={t('app.cmd_toggle_theme')}
-          aria-label={t('app.cmd_toggle_theme')}
-          className={cn(NO_DRAG, iconButton)}
-        >
-          {isDark ? <Sun /> : <Moon />}
-        </button>
+        <ThemeMenu buttonClassName={iconButton} noDragClassName={NO_DRAG} />
       </div>
     </header>
   );

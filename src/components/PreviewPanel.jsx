@@ -34,6 +34,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs.jsx';
 import { Input } from './ui/input.jsx';
 import { Button } from './ui/button.jsx';
 import { ToolButton } from './ui/tool-button.jsx';
+import { useLanShare, PhoneShareButton, PhoneShareCard } from './PhoneShare.jsx';
 import { DevicePicker } from './ui/device-picker.jsx';
 import { ResizeBar } from './ui/resize-bar.jsx';
 import { DragHandle } from './ui/drag-handle.jsx';
@@ -44,7 +45,7 @@ import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
-import { applyViewport } from '@/lib/webviewChrome';
+import { applyViewport, VIEWPORTS } from '@/lib/webviewChrome';
 import { applyTabWebviewAttrs } from '@/lib/previewWebview';
 import { decideAutoStart } from '@/lib/previewAutoStart';
 import { rectFromDrag } from '@/lib/screenshot';
@@ -429,6 +430,7 @@ export function PreviewPanel({
   // <webview>, é da árvore inteira de WebContents — ligava o modo toque na JANELA TODA e
   // punha o cursor de toque do Chromium por cima do app. Ver noHoverScript.js.
   const touchMode = viewport !== 'desktop' && inWeb;
+  const lan = useLanShare(active?.path, url); // "abrir no celular": botão + card
   const touchModeRef = useRef(touchMode); // leitura síncrona no dom-ready
   touchModeRef.current = touchMode;
   // "Olhando um site": o Ctrl+F só abre a busca aqui (na aba Código, o CodeMirror
@@ -1942,6 +1944,8 @@ export function PreviewPanel({
                 >
                   <Bug />
                 </ToolButton>
+                {/* Abrir no celular: rede local + QR Code. */}
+                <PhoneShareButton share={lan} disabled={mode !== 'web'} />
               </div>
               <div className="h-5 w-px bg-border" />
             </>
@@ -2003,6 +2007,10 @@ export function PreviewPanel({
               inPreview && mode === 'web' && viewport !== 'desktop' && 'bg-muted/40',
             )}
           />
+          {/* Moldura de celular/tablet: convite/QR "abrir no celular" no espaço vazio ao lado. */}
+          {inPreview && mode === 'web' && VIEWPORTS[viewport] && (
+            <PhoneShareCard share={lan} frameWidth={VIEWPORTS[viewport]} />
+          )}
           {/* Borda discreta: foco está dentro do preview → Ctrl +/- zooma o site, não o app. */}
           {inPreview && mode === 'web' && webFocused && (
             <div className="pointer-events-none absolute inset-0 z-10 ring-2 ring-inset ring-primary/40" />

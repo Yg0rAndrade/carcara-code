@@ -74,6 +74,11 @@ export const FOLDER_COLORS = [
   '#ec4899',
 ];
 
+// Tons derivados da cor da pasta, os MESMOS aberta e fechada (fundo clarinho + borda),
+// pra pasta se reconhecer igual nos dois estados.
+export const folderTint = (c) => `color-mix(in srgb, ${c} 12%, transparent)`;
+export const folderBorder = (c) => `color-mix(in srgb, ${c} 55%, transparent)`;
+
 // color null/undefined = sem cor (remove o campo).
 export function setFolderColor(rail, folderId, color) {
   return rail.map((it) => {

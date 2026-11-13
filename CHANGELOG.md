@@ -3,6 +3,51 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.17] — 2026-11-12
+
+### Adicionado
+
+- **Abrir no celular:** botão de QR Code na barra do Preview abre o site do projeto na rede local e
+  mostra um QR Code para escanear (o celular precisa estar no mesmo Wi-Fi). Funciona com qualquer
+  servidor (Vite, Next, PHP...) sem reiniciá-lo, e a recarga ao vivo continua funcionando no
+  celular. Desliga sozinho quando o servidor para ou o app fecha. Na primeira vez, o firewall do
+  Windows pode pedir para liberar o Carcará.
+- **Card do celular ao lado da moldura:** no modo celular/tablet do Preview, o espaço vazio ao lado
+  mostra o convite para gerar o QR ou, se já estiver aberto, o próprio QR com o endereço.
+- **Logs do celular:** card recolhido embaixo do QR com cada requisição (status, método, caminho,
+  tempo), as conexões de recarga ao vivo e os erros, com contador de erros no cabeçalho.
+- **Barra de título própria:** logo do Carcará, menus **Projetos** e **Configurações**, botão de
+  mostrar/esconder a barra de projetos e seletor de tema. Os botões da janela ficam por cima, com
+  fundo transparente.
+- **Seletor de tema na barra de título:** ícone de paleta abre todos os temas numa lista rolável,
+  com miniatura de cada um.
+- **10 temas novos:** Céu, Menta, Lavanda e Coral (claros); Oceano, Mata, Ipê, Pitanga, Cerrado e
+  Noite (escuros). São 15 no total.
+- **Cor nas pastas da barra de projetos:** botão direito na pasta › Cor. A cor pinta a pasta
+  fechada e o grupo aberto.
+- **Fechar todas as outras sessões:** botão direito na aba.
+- **Recarregar ao trocar de dispositivo no Preview:** a página não fica presa no layout anterior.
+
+### Alterado
+
+- **Pasta aberta vira um grupo com borda:** os projetos aparecem dentro de um bloco com borda e
+  fundo, com uma seta para recolher, em vez do anel em volta dos ícones. Abrir e fechar ficou com
+  animação suave.
+- **Confirmar fechamento de sessões numa janela:** "Fechar todas as sessões" e "Fechar todas as
+  outras" mostram os nomes das abas que vão fechar (e qual continua aberta), em vez do segundo
+  clique no menu.
+- **Cores no menu do projeto:** Configurações em azul, Reiniciar em verde, Parar em âmbar e Remover
+  em vermelho.
+- **Visual de chat via plugin desligado:** as abas do Claude voltam sempre ao terminal. A opção saiu
+  das Configurações.
+
+### Corrigido
+
+- **Aba nova herdava o nome de outra sessão:** a aba nova do Claude agora nasce com o id da
+  conversa fixado (`claude --session-id`), em vez de adivinhar pelo primeiro arquivo novo no disco.
+  Isso também evita retomar a conversa errada ao reabrir o app.
+- **Aba nova sem terminal:** com o visual de plugin ligado, a aba nova abria em branco.
+
 ## [0.1.16] — 2026-11-08
 
 ### Adicionado

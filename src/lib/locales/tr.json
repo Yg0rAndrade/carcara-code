@@ -159,6 +159,28 @@
     "picker_open": "Yöneticiyi aç",
     "picker_help": "↑↓ gezin · Enter ekle · Esc kapat"
   },
+  "lan": {
+    "button": "Telefonda aç",
+    "button_active": "Yerel ağda açık — QR kodu görmek için tıklayın",
+    "title": "Telefonda aç",
+    "starting": "Yerel ağa açılıyor…",
+    "same_wifi": "Telefon kamerasıyla tarayın. Telefon bu bilgisayarla aynı Wi-Fi ağında olmalı.",
+    "notice": "Açık olduğu sürece bu ağdaki herkes siteyi açabilir. Güvenlik duvarı sorarsa Carcará'ya izin verin.",
+    "copy": "Adresi kopyala",
+    "stop": "Paylaşımı durdur",
+    "status_on": "Yerel ağda açık",
+    "close": "Kapat",
+    "error_not_local": "Telefonda yalnızca bu bilgisayarda çalışan bir site açılabilir.",
+    "error_no_network": "Bu bilgisayar yerel bir ağa bağlı değil (Wi-Fi veya kablo).",
+    "error_listen": "Yerel ağda bağlantı noktası açılamadı.",
+    "card_title": "Gerçek bir telefonda görmek ister misiniz?",
+    "card_body": "Bu siteyi yerel ağda açın ve QR kodu telefon kamerasıyla tarayın.",
+    "card_action": "QR kod oluştur",
+    "logs_title": "Kayıtlar",
+    "logs_empty": "Henüz bir şey yok. Adresi telefonda açın, istekler burada görünür.",
+    "logs_clear": "Temizle",
+    "logs_ws": "Canlı yenileme bağlandı"
+  },
   "session": {
     "activity_working": "Claude çalışıyor…",
     "activity_asking": "Claude onay istiyor",
@@ -173,6 +195,8 @@
     "close_confirm_title": "{count} oturum kapatılsın mı?",
     "close_confirm_body": "İçlerinde çalışan her şey durdurulacak.",
     "close_confirm_action": "Oturumları kapat",
+    "close_keep_label": "Açık kalır",
+    "close_list_label": "Kapatılacak",
     "menu": "Oturum seçenekleri"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Kor",
     "themeCarvao": "Saf kömür (AMOLED)",
     "themePapel": "Kâğıt / Sepya",
+    "themeCeu": "Gökyüzü",
+    "themeOceano": "Okyanus",
+    "themeMata": "Orman",
+    "themeIpe": "Ipê",
+    "themeMenta": "Nane",
+    "themeLavanda": "Lavanta",
+    "themeCoral": "Mercan",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Gece",
     "zoomTitle": "Arayüz yakınlaştırması",
     "zoomHelp": "Uygulamadaki her şeyin boyutunu artırır veya azaltır (ray, sohbet, sekmeler…). Ayrıca şunu da kullanabilirsin:",
     "zoomFocusHint": "önizleme dışında bir yere odaklanmışken.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Proje çubuğunu göster veya gizle",
+    "theme": "Tema",
     "projects": "Projeler"
   }
 }

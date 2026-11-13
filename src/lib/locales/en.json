@@ -159,6 +159,28 @@
     "picker_open": "Open manager",
     "picker_help": "↑↓ navigate · Enter insert · Esc close"
   },
+  "lan": {
+    "button": "Open on phone",
+    "button_active": "Open on the local network — click to see the QR code",
+    "title": "Open on phone",
+    "starting": "Opening to the local network…",
+    "same_wifi": "Scan with your phone camera. It must be on the same Wi-Fi network as this computer.",
+    "notice": "While this is on, anyone on this network can open the site. If the firewall asks, allow Carcará.",
+    "copy": "Copy address",
+    "stop": "Stop sharing",
+    "status_on": "Open on the local network",
+    "close": "Close",
+    "error_not_local": "Only a site running on this computer can be opened on the phone.",
+    "error_no_network": "This computer is not connected to a local network (Wi-Fi or cable).",
+    "error_listen": "Could not open the port on the local network.",
+    "card_title": "See it on a real phone?",
+    "card_body": "Open this site on the local network and scan the QR code with your phone camera.",
+    "card_action": "Generate QR code",
+    "logs_title": "Logs",
+    "logs_empty": "Nothing yet. Open the address on your phone and requests show up here.",
+    "logs_clear": "Clear",
+    "logs_ws": "Live reload connected"
+  },
   "session": {
     "activity_working": "Claude is working…",
     "activity_asking": "Claude is requesting confirmation",
@@ -173,6 +195,8 @@
     "close_confirm_title": "Close {count} sessions?",
     "close_confirm_body": "Anything running in them will be stopped.",
     "close_confirm_action": "Close sessions",
+    "close_keep_label": "Stays open",
+    "close_list_label": "Will be closed",
     "menu": "Session options"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Ember",
     "themeCarvao": "Pure charcoal (AMOLED)",
     "themePapel": "Paper / Sepia",
+    "themeCeu": "Sky",
+    "themeOceano": "Ocean",
+    "themeMata": "Forest",
+    "themeIpe": "Ipê",
+    "themeMenta": "Mint",
+    "themeLavanda": "Lavender",
+    "themeCoral": "Coral",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Night",
     "zoomTitle": "Interface zoom",
     "zoomHelp": "Increases or decreases the size of everything in the app (rail, chat, tabs…). You can also use",
     "zoomFocusHint": "with focus outside the preview.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Show or hide the project bar",
+    "theme": "Theme",
     "projects": "Projects"
   }
 }

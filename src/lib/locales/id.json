@@ -159,6 +159,28 @@
     "picker_open": "Buka pengelola",
     "picker_help": "↑↓ navigasi · Enter sisipkan · Esc tutup"
   },
+  "lan": {
+    "button": "Buka di ponsel",
+    "button_active": "Terbuka di jaringan lokal — klik untuk melihat kode QR",
+    "title": "Buka di ponsel",
+    "starting": "Membuka ke jaringan lokal…",
+    "same_wifi": "Pindai dengan kamera ponsel. Ponsel harus berada di jaringan Wi-Fi yang sama dengan komputer ini.",
+    "notice": "Selama aktif, siapa pun di jaringan ini dapat membuka situs. Jika firewall bertanya, izinkan Carcará.",
+    "copy": "Salin alamat",
+    "stop": "Hentikan berbagi",
+    "status_on": "Terbuka di jaringan lokal",
+    "close": "Tutup",
+    "error_not_local": "Hanya situs yang berjalan di komputer ini yang dapat dibuka di ponsel.",
+    "error_no_network": "Komputer ini tidak terhubung ke jaringan lokal (Wi-Fi atau kabel).",
+    "error_listen": "Tidak dapat membuka port di jaringan lokal.",
+    "card_title": "Lihat di ponsel sungguhan?",
+    "card_body": "Buka situs ini di jaringan lokal dan pindai kode QR dengan kamera ponsel.",
+    "card_action": "Buat kode QR",
+    "logs_title": "Log",
+    "logs_empty": "Belum ada. Buka alamat di ponsel dan permintaan akan muncul di sini.",
+    "logs_clear": "Bersihkan",
+    "logs_ws": "Muat ulang langsung tersambung"
+  },
   "session": {
     "activity_working": "Claude sedang bekerja…",
     "activity_asking": "Claude meminta konfirmasi",
@@ -173,6 +195,8 @@
     "close_confirm_title": "Tutup {count} sesi?",
     "close_confirm_body": "Semua yang berjalan di dalamnya akan dihentikan.",
     "close_confirm_action": "Tutup sesi",
+    "close_keep_label": "Tetap terbuka",
+    "close_list_label": "Akan ditutup",
     "menu": "Opsi sesi"
   },
   "chat": {
@@ -749,6 +773,16 @@
     "themeBrasa": "Bara",
     "themeCarvao": "Arang murni (AMOLED)",
     "themePapel": "Kertas / Sepia",
+    "themeCeu": "Langit",
+    "themeOceano": "Samudra",
+    "themeMata": "Hutan",
+    "themeIpe": "Ipê",
+    "themeMenta": "Mint",
+    "themeLavanda": "Lavender",
+    "themeCoral": "Koral",
+    "themePitanga": "Pitanga",
+    "themeCerrado": "Cerrado",
+    "themeNoite": "Malam",
     "zoomTitle": "Zoom antarmuka",
     "zoomHelp": "Memperbesar atau memperkecil ukuran segala hal di aplikasi (rail, obrolan, tab…). Anda juga bisa memakai",
     "zoomFocusHint": "dengan fokus di luar pratinjau.",
@@ -938,6 +972,7 @@
   },
   "titlebar": {
     "toggle_rail": "Tampilkan atau sembunyikan bilah proyek",
+    "theme": "Tema",
     "projects": "Proyek"
   }
 }
