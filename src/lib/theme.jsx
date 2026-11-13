@@ -9,7 +9,8 @@ export const THEMES = {
   light: { family: 'light' },
   dark: { family: 'dark' },
   brasa: { family: 'dark' },
-  carvao: { family: 'dark' },
+  // amoled: o terminal escuro também vai pro preto puro (paleta 'amoled' do xterm).
+  carvao: { family: 'dark', amoled: true },
   papel: { family: 'light' },
   ceu: { family: 'light' },
   oceano: { family: 'dark' },
@@ -215,6 +216,10 @@ const ThemeCtx = createContext({
   // Tema EFETIVO do terminal já resolvido (sempre 'light' ou 'dark', nunca 'auto'
   // nem um tema nomeado como 'brasa' — o terminal só entende as duas famílias).
   terminalTheme: 'light',
+  // Paleta do xterm (chave de TERM_THEMES): a família do terminal, ou 'amoled' quando
+  // o terminal é escuro e o tema do app pede preto puro. Fundo/cores vêm daqui; a
+  // FAMÍLIA (classe .light/.dark, tema da CLI) continua vindo de terminalTheme.
+  terminalPalette: 'light',
 });
 
 export function ThemeProvider({ children }) {
@@ -243,6 +248,8 @@ export function ThemeProvider({ children }) {
   const toggle = () => setTheme((t) => (themeFamily(t) === 'dark' ? 'light' : 'dark'));
   const isDark = themeFamily(theme) === 'dark';
   const terminalTheme = terminalAppearance === 'auto' ? themeFamily(theme) : terminalAppearance;
+  const terminalPalette =
+    terminalTheme === 'dark' && THEMES[theme]?.amoled ? 'amoled' : terminalTheme;
 
   return (
     <ThemeCtx.Provider
@@ -254,6 +261,7 @@ export function ThemeProvider({ children }) {
         terminalAppearance,
         setTerminalAppearance,
         terminalTheme,
+        terminalPalette,
       }}
     >
       {children}

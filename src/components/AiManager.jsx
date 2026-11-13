@@ -121,12 +121,12 @@ export default function AiManager({ initialInstallKey = null }) {
   const fitRef = useRef(null);
   // O terminal é criado uma vez (ref-callback) e captura o tema do momento; o ref
   // mantém o valor atual pra criação, e o efeito abaixo repinta os já abertos.
-  const { terminalTheme } = useTheme();
-  const themeRef = useRef(terminalTheme);
+  const { terminalPalette } = useTheme();
+  const themeRef = useRef(terminalPalette);
   useEffect(() => {
-    themeRef.current = terminalTheme;
-    if (termRef.current) termRef.current.options.theme = TERM_THEMES[terminalTheme];
-  }, [terminalTheme]);
+    themeRef.current = terminalPalette;
+    if (termRef.current) termRef.current.options.theme = TERM_THEMES[terminalPalette];
+  }, [terminalPalette]);
 
   const refresh = useCallback(async (force = false) => {
     // Fase 1 (rápida, só detecção local): renderiza a lista NA HORA. Cada linha entra
@@ -476,7 +476,7 @@ export default function AiManager({ initialInstallKey = null }) {
             colar com Ctrl+V e rodar qualquer comando — não só o da receita. */}
         <div
           className="min-h-[160px] flex-1 overflow-hidden rounded-lg border"
-          style={{ background: TERM_THEMES[terminalTheme].background }}
+          style={{ background: TERM_THEMES[terminalPalette].background }}
         >
           {/* Clicar em qualquer lugar (inclusive no padding) foca o terminal pra digitar. */}
           <div

@@ -61,8 +61,8 @@ function syncSize(t) {
 // scrollback vivos ao trocar (esconder/mostrar, nunca destruir o xterm).
 export function ShellView({ activeProject, visible, onOpenUrl }) {
   const t = useT();
-  const { terminalTheme } = useTheme();
-  const themeRef = useRef(terminalTheme);
+  const { terminalPalette } = useTheme();
+  const themeRef = useRef(terminalPalette);
   const hostRef = useRef(null);
   const termsRef = useRef(new Map()); // termId -> { term, fit, el, lastCols, lastRows, termId, projectPath, awaitingReconnect }
   const paneRefs = useRef(new Map()); // paneId -> container de conteúdo do pane
@@ -133,9 +133,9 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
 
   // Troca o tema de todos os terminais abertos quando muda claro/escuro.
   useEffect(() => {
-    themeRef.current = terminalTheme;
-    for (const [, te] of termsRef.current) te.term.options.theme = TERM_THEMES[terminalTheme];
-  }, [terminalTheme]);
+    themeRef.current = terminalPalette;
+    for (const [, te] of termsRef.current) te.term.options.theme = TERM_THEMES[terminalPalette];
+  }, [terminalPalette]);
 
   // Tamanho do texto (Configurações > Aparência): letra nova em todos os terminais.
   useEffect(
@@ -480,7 +480,7 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
 
   // Fundo do terminal + família de cores juntos (ver terminalSurface): a área tem UI
   // do app (abas, estado vazio) por cima do fundo do terminal, que tem tema próprio.
-  const surface = terminalSurface(terminalTheme);
+  const surface = terminalSurface(terminalPalette);
 
   return (
     <div

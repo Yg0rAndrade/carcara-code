@@ -120,8 +120,10 @@
   /* Carvão puro (AMOLED) — o escuro com fundo preto real (#000). Ótimo pra OLED
      e bateria; a brasa laranja da base .dark fica ainda mais viva. Família: dark. */
   [data-theme='carvao'] {
+    /* AMOLED = preto puro em TODA superfície fixa (fundo, barras, rail, abas). Quem
+       separa as áreas são as linhas (--border); o leve "lift" fica só nos popovers. */
     --background: 0 0% 0%;
-    --card: 0 0% 5.5%;
+    --card: 0 0% 0%;
     --card-foreground: 0 0% 92%;
     --popover: 0 0% 5.5%;
     --popover-foreground: 0 0% 92%;

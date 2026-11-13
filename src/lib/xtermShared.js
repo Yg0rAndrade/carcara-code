@@ -49,6 +49,8 @@ export const TERM_THEMES = {
     brightWhite: '#ffffff',
   },
 };
+// Escuro em preto puro, para temas AMOLED (ver `amoled` em src/lib/theme.jsx).
+TERM_THEMES.amoled = { ...TERM_THEMES.dark, background: '#000000', black: '#000000' };
 
 // Superfície que usa o fundo do TERMINAL (que tem tema próprio, independente do app).
 //
@@ -60,9 +62,11 @@ export const TERM_THEMES = {
 //
 // Use sempre os dois — `className` e `style` — em qualquer área pintada com o fundo do
 // terminal que também contenha UI do app (aba, estado vazio, seletor de IA).
-export function terminalSurface(terminalTheme) {
-  const key = terminalTheme === 'dark' ? 'dark' : 'light';
-  return { className: key, style: { background: TERM_THEMES[key].background } };
+// Recebe a PALETA (terminalPalette do useTheme: 'light' | 'dark' | 'amoled').
+export function terminalSurface(palette) {
+  const theme = TERM_THEMES[palette] || TERM_THEMES.light;
+  const family = palette === 'light' || !TERM_THEMES[palette] ? 'light' : 'dark';
+  return { className: family, style: { background: theme.background } };
 }
 
 // Tamanho do texto mudou nas Configurações: aplica a nova letra nos terminais e deixa

@@ -722,8 +722,9 @@ function SessionActivityDot({ state }) {
 export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, onOpenAiInstall }) {
   const t = useT();
   const { chatMode } = useChatMode();
-  const { terminalTheme } = useTheme();
+  const { terminalTheme, terminalPalette } = useTheme();
   const themeRef = useRef(terminalTheme);
+  const paletteRef = useRef(terminalPalette);
   const hostRef = useRef(null);
   const termsRef = useRef(new Map()); // sessionId -> { term, fit, el, lastCols, lastRows }
   const paneRefs = useRef(new Map()); // paneId -> elemento de conteúdo do pane
@@ -811,9 +812,10 @@ ${sid}`;
   // Troca o tema de todos os terminais já abertos quando muda claro/escuro.
   useEffect(() => {
     themeRef.current = terminalTheme;
-    for (const [, t] of termsRef.current) t.term.options.theme = TERM_THEMES[terminalTheme];
+    paletteRef.current = terminalPalette;
+    for (const [, t] of termsRef.current) t.term.options.theme = TERM_THEMES[terminalPalette];
     window.api.applyClaudeTheme(terminalTheme);
-  }, [terminalTheme]);
+  }, [terminalTheme, terminalPalette]);
 
   // Tamanho do texto (Configurações > Aparência) vale também pro terminal do chat.
   useEffect(
@@ -936,7 +938,7 @@ ${sid}`;
     const term = new Terminal({
       fontSize: scaledPx(13),
       fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
-      theme: TERM_THEMES[themeRef.current],
+      theme: TERM_THEMES[paletteRef.current],
       cursorBlink: true,
       scrollback: 5000,
       // Texto "esmaecido" (faint/dim) que a CLI usa some no fundo branco — o xterm
@@ -1546,7 +1548,7 @@ ${sid}`;
   // Fundo do terminal + família de cores da subárvore andam JUNTOS (terminalSurface):
   // esta coluna inteira tem UI do app por cima do fundo do terminal — abas, estado
   // vazio, seletor de IA, menus.
-  const termSurface = terminalSurface(terminalTheme);
+  const termSurface = terminalSurface(terminalPalette);
 
   return (
     <div

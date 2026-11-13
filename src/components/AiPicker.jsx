@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 // cinza; clicar nelas abre Configurações › Instaladas já instalando (onOpenAiInstall).
 export function AiPicker({ ais, onPick, onOpenAiInstall }) {
   const t = useT();
-  const { terminalTheme } = useTheme();
+  const { terminalPalette } = useTheme();
   const opts = (ais || []).map((k) => OPT[k]).filter(Boolean);
   // Status de instalação: null enquanto carrega (não pinta cinza pra evitar flicker).
   const [installed, setInstalled] = useState(null);
@@ -30,7 +30,7 @@ export function AiPicker({ ais, onPick, onOpenAiInstall }) {
   // A família de cores vem junto com o fundo (terminalSurface): os cards e os textos
   // daqui são UI do app sobre o fundo do TERMINAL — sem escopar, o texto resolvia pelo
   // tema do root e sumia quando os dois divergiam (terminal escuro + app claro).
-  const surface = terminalSurface(terminalTheme);
+  const surface = terminalSurface(terminalPalette);
 
   return (
     <div
