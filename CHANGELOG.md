@@ -3,6 +3,16 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [Não lançado]
+
+### Corrigido
+
+- **Animações congelando no preview (Windows):** depois de minimizar ou encobrir a janela, o
+  preview voltava sem nenhum quadro de animação (`requestAnimationFrame` parado), e sites
+  com GSAP travavam no meio da entrada, com textos invisíveis. No Chrome a mesma página
+  funcionava. O app agora desliga o rastreio nativo de oclusão de janela do Chromium no
+  Windows (`CalculateNativeWinOcclusion`).
+
 ## [0.1.18] — 2026-11-13
 
 ### Adicionado

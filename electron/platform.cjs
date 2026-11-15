@@ -198,10 +198,19 @@ function macMenuTemplate(appName) {
   ];
 }
 
+// Recursos do Chromium desligados por SO (switch `disable-features`, antes do app ficar pronto).
+// Windows: o rastreio nativo de oclusão marcava a janela como encoberta mesmo na frente e,
+// depois de minimizar e restaurar, o <webview> do preview voltava "visible" mas sem nenhum
+// requestAnimationFrame: sites com GSAP/rAF congelavam no meio da animação (no Chrome, ok).
+function chromiumDisabledFeaturesFor(platform = process.platform) {
+  return platform === 'win32' ? ['CalculateNativeWinOcclusion'] : [];
+}
+
 module.exports = {
   TABLE,
   tableFor,
   shellFor,
+  chromiumDisabledFeaturesFor,
   loginArgsFor,
   shellChoicesFor,
   whichCmdFor,

@@ -216,6 +216,15 @@ const mac = titleBarFor('darwin');
 assert(mac.overlay === false && !mac.window.titleBarOverlay, 'titleBar darwin: sem overlay');
 assert(mac.insetLeft > 0 && mac.window.trafficLightPosition, 'titleBar darwin: semáforo');
 
+// Recursos do Chromium desligados: só o Windows desliga o rastreio de oclusão.
+const { chromiumDisabledFeaturesFor } = require('../electron/platform.cjs');
+assert(
+  chromiumDisabledFeaturesFor('win32').includes('CalculateNativeWinOcclusion'),
+  'win desliga CalculateNativeWinOcclusion',
+);
+assert(chromiumDisabledFeaturesFor('darwin').length === 0, 'mac não desliga nada');
+assert(chromiumDisabledFeaturesFor('linux').length === 0, 'linux não desliga nada');
+
 // fixLoginPath é no-op seguro fora de darwin/linux (não lança, retorna false)
 const { fixLoginPath } = require('../electron/platform.cjs');
 (async () => {
