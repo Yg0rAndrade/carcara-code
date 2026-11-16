@@ -19,6 +19,8 @@ const TABLE = {
     openCmd: 'start',
     opencodeBin: 'opencode.cmd',
     whichCmd: 'where',
+    // Ver chromiumDisabledFeaturesFor: o rastreio de oclusão congelava o rAF do preview.
+    chromiumDisabledFeatures: ['CalculateNativeWinOcclusion'],
     shells: [
       { id: 'powershell', label: 'Windows PowerShell', cmd: 'powershell.exe', loginArgs: [] },
       { id: 'pwsh', label: 'PowerShell 7', cmd: 'pwsh.exe', loginArgs: [] },
@@ -53,6 +55,7 @@ const TABLE = {
     openCmd: 'open',
     opencodeBin: 'opencode',
     whichCmd: 'which',
+    chromiumDisabledFeatures: [],
     shells: [
       { id: 'zsh', label: 'zsh', cmd: 'zsh', loginArgs: ['-l'] },
       { id: 'bash', label: 'bash', cmd: 'bash', loginArgs: ['-l'] },
@@ -76,6 +79,7 @@ const TABLE = {
     openCmd: 'xdg-open',
     opencodeBin: 'opencode',
     whichCmd: 'which',
+    chromiumDisabledFeatures: [],
     shells: [
       { id: 'bash', label: 'bash', cmd: 'bash', loginArgs: [] },
       { id: 'zsh', label: 'zsh', cmd: 'zsh', loginArgs: [] },
@@ -198,12 +202,22 @@ function macMenuTemplate(appName) {
   ];
 }
 
-// Recursos do Chromium desligados por SO (switch `disable-features`, antes do app ficar pronto).
-// Windows: o rastreio nativo de oclusão marcava a janela como encoberta mesmo na frente e,
-// depois de minimizar e restaurar, o <webview> do preview voltava "visible" mas sem nenhum
-// requestAnimationFrame: sites com GSAP/rAF congelavam no meio da animação (no Chrome, ok).
+// Recursos do Chromium desligados por SO (coluna `chromiumDisabledFeatures` da TABLE; vão no
+// switch `disable-features` antes do app ficar pronto). Windows: o rastreio nativo de oclusão
+// marcava a janela como encoberta mesmo na frente e, depois de minimizar e restaurar, o
+// <webview> do preview voltava "visible" mas sem nenhum requestAnimationFrame: sites com
+// GSAP/rAF congelavam no meio da animação (no Chrome, ok). Custo aceito: com a janela toda
+// coberta por outro app (sem minimizar), o preview segue desenhando.
 function chromiumDisabledFeaturesFor(platform = process.platform) {
-  return platform === 'win32' ? ['CalculateNativeWinOcclusion'] : [];
+  return tableFor(platform).chromiumDisabledFeatures || [];
+}
+
+// Valor final do `disable-features`: soma o que já veio na linha de comando (ex.: alguém abriu
+// com --disable-features=Foo pra depurar) com a lista do SO, sem repetir. O appendSwitch do
+// Chromium SUBSTITUI o valor anterior da chave, então juntar aqui evita apagar o de fora.
+function mergeFeatureList(existing, extra) {
+  const all = [...String(existing || '').split(','), ...extra].map((s) => s.trim()).filter(Boolean);
+  return [...new Set(all)].join(',');
 }
 
 module.exports = {
@@ -211,6 +225,7 @@ module.exports = {
   tableFor,
   shellFor,
   chromiumDisabledFeaturesFor,
+  mergeFeatureList,
   loginArgsFor,
   shellChoicesFor,
   whichCmdFor,
