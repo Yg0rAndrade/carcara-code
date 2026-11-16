@@ -224,6 +224,14 @@ assert(
 );
 assert(chromiumDisabledFeaturesFor('darwin').length === 0, 'mac não desliga nada');
 assert(chromiumDisabledFeaturesFor('linux').length === 0, 'linux não desliga nada');
+assert(
+  chromiumDisabledFeaturesFor('sunos') === TABLE.linux.chromiumDisabledFeatures,
+  'SO desconhecido cai no linux',
+);
+const { mergeFeatureList } = require('../electron/platform.cjs');
+assert(mergeFeatureList('', ['A']) === 'A', 'merge: sem valor anterior');
+assert(mergeFeatureList('Foo', ['A']) === 'Foo,A', 'merge: mantém o que veio de fora');
+assert(mergeFeatureList('A, Foo', ['A']) === 'A,Foo', 'merge: sem repetir');
 
 // fixLoginPath é no-op seguro fora de darwin/linux (não lança, retorna false)
 const { fixLoginPath } = require('../electron/platform.cjs');

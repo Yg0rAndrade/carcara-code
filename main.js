@@ -92,8 +92,12 @@ app.commandLine.appendSwitch(
 );
 // Ver electron/platform.cjs › chromiumDisabledFeaturesFor (animações do preview congelando).
 const disabledFeatures = platform.chromiumDisabledFeaturesFor();
-if (disabledFeatures.length)
-  app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
+if (disabledFeatures.length) {
+  app.commandLine.appendSwitch(
+    'disable-features',
+    platform.mergeFeatureList(app.commandLine.getSwitchValue('disable-features'), disabledFeatures),
+  );
+}
 
 // Remove os tokens próprios do User-Agent ("Carcará Code/x" e "Electron/x") pra o
 // WebView se apresentar como Chrome puro. O nome com acento gerava um byte inválido
