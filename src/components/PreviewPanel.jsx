@@ -1668,16 +1668,53 @@ export function PreviewPanel({
     });
   }, [createTab, refreshTabBar]);
 
-  // Recarregar normal; com Ctrl/Cmd (atalho ou clique) vira hard reload, ignorando cache.
-  const reload = (e) => {
-    if (active) {
+  // Recria a aba ativa: destrói o <webview> e monta outro na mesma URL e na mesma posição da
+  // tira. É o remendo do "preview congela as animações depois de minimizar" (DESAFIOS.md): o
+  // defeito mora no próprio <webview>, que volta "visível" mas sem requestAnimationFrame, então
+  // recarregar a página DENTRO dele não garante nada. Um webview novo anima igual à carga do
+  // zero (o mesmo que o Reiniciar/Parar já faziam via removeAllTabs). Custo: a aba perde o
+  // histórico de voltar/avançar. `hard`: depois de nascer, recarrega ignorando o cache.
+  const recreateActiveTab = useCallback(
+    (projectPath, { hard = false } = {}) => {
+      const proj = projTabsRef.current.get(projectPath);
+      const old = activeTabOf(projectPath);
+      if (!proj || !old) return;
+      const target = old.url || old.src;
+      if (!target) return;
+      const idx = proj.tabs.indexOf(old);
+      proj.tabs.splice(idx, 1);
       try {
-        const wv = activeWebviewOf(active.path);
-        const hard = e && (e.ctrlKey || e.metaKey);
-        if (hard) wv?.reloadIgnoringCache();
-        else wv?.reload();
+        old.webview.remove();
       } catch {}
-    }
+      setGrabbing(false); // o script do seletor morreu junto com o webview antigo
+      const tab = createTab(projectPath, target, { activate: true });
+      // createTab põe a aba no fim; devolve pra posição original na tira.
+      proj.tabs.splice(proj.tabs.indexOf(tab), 1);
+      proj.tabs.splice(idx, 0, tab);
+      if (hard) {
+        tab.webview.addEventListener(
+          'dom-ready',
+          () => {
+            try {
+              tab.webview.reloadIgnoringCache();
+            } catch {}
+          },
+          { once: true },
+        );
+      }
+      refreshTabBar();
+    },
+    [createTab, refreshTabBar],
+  );
+  const recreateRef = useRef(recreateActiveTab);
+  recreateRef.current = recreateActiveTab;
+
+  // Recarregar = recriar a aba (ver recreateActiveTab); com Ctrl/Cmd vira hard reload.
+  const reload = (e) => {
+    if (!active) return;
+    try {
+      recreateActiveTab(active.path, { hard: !!(e && (e.ctrlKey || e.metaKey)) });
+    } catch {}
   };
   // Escolher um dispositivo recarrega a página, pra ela não ficar presa no layout anterior.
   // Vem depois dos efeitos que aplicam o tamanho e o toque: o reload já nasce no modo novo.
@@ -1690,7 +1727,7 @@ export function PreviewPanel({
   }, [viewportPicks]);
   // Atalhos de hard reload (Ctrl+F5 / Ctrl+Shift+R / Cmd+Shift+R), só valem "olhando um
   // site" (mesmo gate do Ctrl+F acima). Lê tudo por ref pra não precisar de deps e não
-  // correr risco de webview/path desatualizados. F5 puro continua sendo reload normal.
+  // correr risco de webview/path desatualizados. F5 puro recria a aba (recreateActiveTab).
   useEffect(() => {
     const onKey = (e) => {
       if (!inWebRef.current) return;
@@ -1699,16 +1736,12 @@ export function PreviewPanel({
       const hard =
         (e.ctrlKey && key === 'F5') ||
         ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'R' || key === 'r'));
-      const w = activePathRef.current && activeWebviewOf(activePathRef.current);
-      if (hard) {
+      const p = activePathRef.current;
+      if (!p) return;
+      if (hard || (key === 'F5' && !e.ctrlKey)) {
         e.preventDefault();
         try {
-          w?.reloadIgnoringCache();
-        } catch {}
-      } else if (key === 'F5' && !e.ctrlKey) {
-        e.preventDefault();
-        try {
-          w?.reload();
+          recreateRef.current(p, { hard });
         } catch {}
       }
     };
