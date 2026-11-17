@@ -3,6 +3,17 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
+## [0.1.19] — 2026-11-17
+
+### Corrigido
+
+- **Preview com animações congeladas depois de minimizar ou encobrir a janela (Windows):** o
+  botão de recarregar (e o F5) agora recria o preview do zero, em vez de recarregar a página
+  dentro dele. Sites com GSAP/requestAnimationFrame que travavam voltam a animar com um
+  clique. Reiniciar e Parar o servidor já faziam isso. Contrapartida: a aba recarregada perde
+  o histórico de voltar/avançar. A correção definitiva (trocar o motor do preview) vem numa
+  próxima versão.
+
 ## [0.1.18] — 2026-11-13
 
 ### Adicionado
