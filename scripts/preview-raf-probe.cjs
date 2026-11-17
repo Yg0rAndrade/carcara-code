@@ -190,7 +190,12 @@ async function main() {
   const rows = [];
   if (process.argv.includes('--diag')) {
     await sleep(5000);
-    console.log(JSON.stringify(await site.ev(DIAG), null, 1));
+    for (const t of [0, 3000]) {
+      await sleep(t);
+      const d = await site.ev(DIAG);
+      const r = await site.ev(RAF);
+      console.log(JSON.stringify({ ...r, win: win('state'), balao: d.balao, info: d.info }));
+    }
     console.log('console:', site.logs.slice(0, 20));
     return;
   }

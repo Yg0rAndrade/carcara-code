@@ -469,6 +469,30 @@ dois setters (`'scaleX'` e `'scaleY'`) ou `gsap.set(e, { scale })`.
 Consequência para as medições: a coluna `mexendo` (moving.js) não serve de critério enquanto o
 site lançar essa exceção. O critério confiável é **rAF/s + `visibilityState`**.
 
+### 17/11/2026 (tarde): Digo corrigido, matriz interrompida a pedido
+
+O Digo foi corrigido no repo dele (`motion.ts`: `quickSetter` em `scaleX` e `scaleY`, não
+commitado). `--diag` confirmou: sem exceção, e o hero completa a entrada com a view visível.
+Numa execução de diagnóstico a view **nasceu `hidden`, com 0 rAF, já na carga** (sem minimizar),
+com a oclusão nativa ligada e a janela `iconic=False` — defeito do motor, não do site.
+
+Matriz de 5 execuções por célula **interrompida pelo Ygor** ("vamos fazer isso depois com mais
+calma"). O parcial abaixo, depois da correção, saiu de `node scripts/preview-probe/summarize.cjs <pasta>`.
+Cada fração é medidas congeladas / medidas feitas:
+
+| Motor   | Flag (sem oclusão nativa) | Execuções com congelamento | Carga | Depois de min/restore | Depois de encobrir | Medidas inválidas |
+| ------- | ------------------------- | -------------------------- | ----- | --------------------- | ------------------ | ----------------- |
+| view    | não                       | 1/2                        | 1/4   | 1/6                   | 2/4                | 0                 |
+| view    | sim                       | 0/1                        | 0/2   | 0/3                   | 0/2                | 0                 |
+| webview | não                       | 0/1                        | 0/2   | 0/3                   | 0/2                | 0                 |
+| webview | sim                       | 0/1                        | 0/2   | 0/3                   | 0/1                | 1                 |
+
+Para retomar: rodar a mesma matriz (laço de 5 × 4 células com `--min-rounds=3 --cover-rounds=2
+--json=<pasta>/<célula>-<n>.json`) e resumir com o `summarize.cjs`. A questão em aberto é se a view
+**sem** o flag congela com frequência relevante e se o webview reproduz o congelamento. Se a view
+congelar tanto quanto o webview, a migração deixa de ser a cura e vira só melhoria de base: o
+remendo `disable-features` da branch reserva resolve com menos trabalho.
+
 ### Próximo passo (decisão do Ygor)
 
 Ver o bloco PENDENTE da sessão de 17/11: corrigir o Digo primeiro e repetir a matriz com
