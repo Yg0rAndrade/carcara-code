@@ -1638,6 +1638,22 @@ export function PreviewPanel({
     refreshTabBar();
   }, [createTab, refreshTabBar]);
 
+  // Abre `url` numa ABA NOVA do projeto (o "botão do meio" do preview). Caminho único do
+  // popup do site (preview:new-tab) e do link clicado no terminal do Claude.
+  const openNewTab = useCallback(
+    (projectPath, url, { foreground = true } = {}) => {
+      if (!projectPath || !url) return;
+      createTab(projectPath, url, { activate: foreground });
+      if (foreground && activePathRef.current === projectPath) {
+        setUrl(url);
+        setMode('web');
+        setView('preview');
+      }
+      refreshTabBar();
+    },
+    [createTab, refreshTabBar],
+  );
+
   // Link que abriria "nova janela" (interceptado no main) → vira aba interna. O main
   // manda o webContentsId de origem; aqui achamos o projeto dono e criamos a aba nele.
   useEffect(() => {
@@ -1657,16 +1673,9 @@ export function PreviewPanel({
         }
       }
       if (!ownerPath) return;
-      const foreground = disposition !== 'background-tab';
-      createTab(ownerPath, url, { activate: foreground });
-      if (foreground && activePathRef.current === ownerPath) {
-        setUrl(url);
-        setMode('web');
-        setView('preview');
-      }
-      refreshTabBar();
+      openNewTab(ownerPath, url, { foreground: disposition !== 'background-tab' });
     });
-  }, [createTab, refreshTabBar]);
+  }, [openNewTab]);
 
   // Recarregar normal; com Ctrl/Cmd (atalho ou clique) vira hard reload, ignorando cache.
   const reload = (e) => {
@@ -1818,6 +1827,8 @@ export function PreviewPanel({
       restart,
       setView,
       openFile,
+      // Link do terminal do Claude: aba nova no preview do projeto ativo.
+      openTab: (url) => openNewTab(activePathRef.current, url),
       toggleTerminal: () => setTermOpen((o) => !o),
     };
   // Avisa o App (botão do terminal na barra de título) quando o terminal abre ou fecha.

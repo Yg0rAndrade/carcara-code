@@ -484,6 +484,12 @@ export default function App() {
 
   // Abre um arquivo na aba "Código" do projeto ativo (vindo da paleta de comandos).
   const openFileFromPalette = (file) => previewControls.current?.openFile?.(file);
+  // Link clicado no terminal do Claude → aba nova no preview (reabre o painel se recolhido).
+  const openLinkInPreview = (url) => {
+    const panel = previewPanelRef.current;
+    if (panel?.isCollapsed()) panel.expand();
+    previewControls.current?.openTab?.(url);
+  };
   // Plugin de chat pediu pra abrir um arquivo (ex.: link de arquivo numa resposta):
   // mesmo caminho da paleta, na aba "Código".
   useEffect(
@@ -883,6 +889,7 @@ export default function App() {
           controlsRef={chatControls}
           onActiveSessionChange={setChatSession}
           onOpenAiInstall={openAiInstall}
+          onOpenLink={openLinkInPreview}
         />
       </ErrorBoundary>
     </ResizablePanel>
