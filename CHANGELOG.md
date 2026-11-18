@@ -15,7 +15,8 @@ Notas de versão do Carcará Code. As versões seguem versionamento semântico
 - **Busca na página (Ctrl+F)** abre dentro da barra de URL, não mais por cima do site.
 - **"Foco no site"** (Ctrl +/− zooma o site, não o app) agora acende a barra de URL, em
   vez de uma borda por cima do site.
-- **Avisos de "Elemento copiado" e "Print copiado"** viram notificações, e as notificações
+- **Avisos de "Elemento copiado" e "Print copiado"** viram um selo rápido no meio do header
+  do Preview, que some sozinho, em vez de uma faixa por cima do site. As demais notificações
   aparecem do lado do chat, longe do Preview.
 - **Recorte do print** acontece dentro da página: a rodinha rola o site de verdade
   (inclusive caixas roláveis internas) enquanto você enquadra.
