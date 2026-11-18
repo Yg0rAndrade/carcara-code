@@ -17,6 +17,7 @@ import '@xterm/xterm/css/xterm.css';
 // Paleta compartilhada com o terminal livre (ShellView) e o do Gerenciar IAs.
 import { TERM_THEMES, terminalSurface, followTextScale } from '@/lib/xtermShared';
 import { scaledPx } from '@/lib/textScale';
+import { routeTerminalLink } from '@/lib/terminalLink.js';
 import { useTheme } from '@/lib/theme.jsx';
 import { useT } from '@/lib/i18n';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable.jsx';
@@ -719,7 +720,16 @@ function SessionActivityDot({ state }) {
   );
 }
 
-export function ChatPanel({ activeProject, controlsRef, onActiveSessionChange, onOpenAiInstall }) {
+export function ChatPanel({
+  activeProject,
+  controlsRef,
+  onActiveSessionChange,
+  onOpenAiInstall,
+  onOpenLink,
+}) {
+  // O xterm captura o linkHandler na criação; o ref garante a versão atual no clique.
+  const onOpenLinkRef = useRef(onOpenLink);
+  onOpenLinkRef.current = onOpenLink;
   const t = useT();
   const { chatMode } = useChatMode();
   const { terminalTheme, terminalPalette } = useTheme();
@@ -944,6 +954,15 @@ ${sid}`;
       // Texto "esmaecido" (faint/dim) que a CLI usa some no fundo branco — o xterm
       // mistura a cor com o fundo. Isto força um contraste mínimo legível sempre.
       minimumContrastRatio: 4.5,
+      // Hiperlinks OSC 8 da CLI. Sem isto o xterm faz confirm() + window.open e nasce uma
+      // janela nativa solta por cima do app. Aqui vira aba nova no preview do projeto.
+      linkHandler: {
+        activate: (_e, uri) => {
+          const route = routeTerminalLink(uri);
+          if (route === 'tab') onOpenLinkRef.current?.(uri.trim());
+          else if (route === 'external') window.api.openExternal(uri.trim());
+        },
+      },
     });
     const fit = new FitAddon();
     term.loadAddon(fit);

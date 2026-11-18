@@ -42,3 +42,6 @@ reverse/
 # Plugins locais: cada um é um repositório próprio (ver electron/plugins/README.md)
 electron/plugins/*
 !electron/plugins/README.md
+
+# Arquivos de marca compactados (ficam só locais)
+brand.rar
