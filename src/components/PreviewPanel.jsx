@@ -45,13 +45,19 @@ import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { FindBar } from './FindBar.jsx';
 import { INJECT, CLEANUP, GRAB_SENTINEL, GRAB_CANCEL } from '@/lib/grabScript';
 import { NO_HOVER_INJECT, NO_HOVER_CLEANUP } from '@/lib/noHoverScript';
-import { applyViewport } from '@/lib/webviewChrome';
 import { normalizeViewport, resolveDevice, clampCustom, fitDevice } from '@/lib/devices';
 import { DeviceFrame } from './ui/device-frame.jsx';
 import { PAGE_CHROME_SCRIPT } from '@/lib/pageChrome';
-import { applyTabWebviewAttrs } from '@/lib/previewWebview';
+import { createSurface, createViewSurface, normalizeEngine } from '@/lib/previewSurface';
+import { watchOcclusion } from '@/lib/previewOcclusion';
 import { decideAutoStart } from '@/lib/previewAutoStart';
-import { rectFromDrag } from '@/lib/screenshot';
+import {
+  cropInject,
+  cropToCapture,
+  CROP_CLEANUP,
+  CROP_SENTINEL,
+  CROP_CANCEL,
+} from '@/lib/cropScript';
 import { hasExternalFiles } from '@/lib/dragPaths.js';
 import { useT } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
@@ -402,20 +408,36 @@ export function PreviewPanel({
   const [dtDragging, setDtDragging] = useState(false);
   const [termDragging, setTermDragging] = useState(false);
   const [grabbing, setGrabbing] = useState(false); // modo "selecionar elemento" ativo
-  const [grabbed, setGrabbed] = useState(false); // toast "Elemento copiado!"
   const [findOpen, setFindOpen] = useState(false); // barra "buscar na página" (Ctrl+F)
   const [findNonce, setFindNonce] = useState(0); // bump a cada Ctrl+F: re-foca o input da busca
   const [shooting, setShooting] = useState(false); // modo "print do preview" ativo
   const [shot, setShot] = useState(null); // dataURL da captura crua → abre o anotador
   const shotRef = useRef(shot); // leitura síncrona dentro do listener de F5/hard-reload (deps [])
   shotRef.current = shot;
-  const [shotDone, setShotDone] = useState(false); // toast "Print copiado!"
-  const [shotRect, setShotRect] = useState(null); // rubber-band do arraste (coords do overlay), null quando não arrastando
-  const shootStartRef = useRef(null); // { cx, cy } início do arraste (coords de tela)
-  const overlayRef = useRef(null); // camada do print (pra medir e desenhar o retângulo)
+  // Motor das abas: 'view' (WebContentsView, padrão) ou 'webview' (reserva, via
+  // `"previewEngine": "webview"` no config.json). Lido uma vez; abas já abertas não mudam.
+  const engineRef = useRef('view');
+  useEffect(() => {
+    let alive = true;
+    window.api
+      .getConfig?.()
+      .then((cfg) => {
+        if (alive) engineRef.current = normalizeEngine(cfg && cfg.previewEngine);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  // Motor 'view': quando algo do app cobre o preview (menu, modal, arraste), a view some e
+  // fica esta foto no lugar (ver src/lib/previewOcclusion.js). { src, rect } | null.
+  const [freeze, setFreeze] = useState(null);
+  const [occluded, setOccluded] = useState(false);
+  const tRef = useRef(t);
+  tRef.current = t;
   const [canBack, setCanBack] = useState(false); // navegação do preview (voltar/avançar)
   const [canFwd, setCanFwd] = useState(false);
-  const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do webview do projeto ativo
+  const [webFocused, setWebFocused] = useState(false); // foco está DENTRO do site do projeto ativo
   const [viewport, setViewport] = useState(() =>
     normalizeViewport(localStorage.getItem('previewViewport')),
   ); // 'desktop' | id de aparelho (src/lib/devices.js) | 'custom'
@@ -498,6 +520,15 @@ export function PreviewPanel({
     return p.tabs.find((t) => t.id === p.activeId) || null;
   };
   const activeWebviewOf = (path) => activeTabOf(path)?.webview || null;
+  // executeJavaScript sem estourar: o <webview> lança SÍNCRONO antes do dom-ready e a view
+  // rejeita a promise; aqui as duas viram "ignorado".
+  const safeExec = (w, code) => {
+    if (!w) return;
+    try {
+      const r = w.executeJavaScript(code);
+      if (r && r.catch) r.catch(() => {});
+    } catch {}
+  };
   const allWebviews = () => {
     const out = [];
     for (const p of projTabsRef.current.values()) for (const t of p.tabs) out.push(t.webview);
@@ -521,8 +552,18 @@ export function PreviewPanel({
       })),
     });
   }, []);
-  const devtoolsHostRef = useRef(null); // div que segura o webview do DevTools
-  const devtoolsRef = useRef(null); // o <webview> que hospeda o DevTools
+  const devtoolsHostRef = useRef(null); // slot do DevTools (div; no motor 'view' só é medido)
+  const devtoolsRef = useRef(null); // superfície que hospeda o DevTools (<webview> ou view)
+  // Retângulo do painel do site em px CSS do app (o motor 'view' posiciona a view nele).
+  const panelBox = () => {
+    const el = containerRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: r.left, y: r.top, width: r.width, height: r.height };
+  };
+  // Recorte do print terminou dentro da página (cropScript) → captura. Ref porque o
+  // listener mora no createTab (deps estáveis).
+  const cropDoneRef = useRef(() => {});
   const toggleDevtoolsRef = useRef(() => {});
 
   const appendLog = useCallback((projectPath, text) => {
@@ -541,23 +582,22 @@ export function PreviewPanel({
     (projectPath, url, { activate = true } = {}) => {
       const proj = getProjTabs(projectPath);
       const id = ++tabIdRef.current;
-      const w = document.createElement('webview');
-      // Isola a sessão deste projeto e libera os popups pro handler do main (que os
-      // transforma em aba interna). Precisa vir ANTES de anexar/navegar.
-      applyTabWebviewAttrs(w, partitionFor(projectPath));
-      w.style.position = 'absolute';
-      w.style.inset = '0';
-      w.style.width = '100%';
-      w.style.height = '100%';
-      w.style.background = '#fff';
-      w.style.display = 'none';
-      w._retry = 0;
-      containerRef.current.appendChild(w);
-      // Depois do append: o encaixe do aparelho mede o painel (pai do webview).
-      applyViewport(w, viewportRef.current, customRef.current, { expanded: safariRef.current });
+      // Superfície do site: WebContentsView (padrão) ou <webview> (reserva). Mesma forma nos
+      // dois — ver src/lib/previewSurface.js. Nasce escondida e já navegando pra `url`.
+      const w = createSurface(engineRef.current, {
+        api: window.api,
+        container: containerRef.current,
+        partition: partitionFor(projectPath),
+        projectPath,
+        url,
+      });
+      w.layout(panelBox(), viewportRef.current, customRef.current, {
+        expanded: safariRef.current,
+      });
       const tab = {
         id,
-        webview: w,
+        webview: w, // a superfície (o nome ficou do tempo em que era sempre <webview>)
+        _retry: 0,
         src: url || '',
         url: url || '',
         title: '',
@@ -613,8 +653,8 @@ export function PreviewPanel({
         // Uma aba nova/de fundo que AINDA não carregou precisa re-tentar mesmo escondida
         // (senão fica em branco pra sempre). Já uma aba que carregou e agora está offscreen
         // não fica martelando reload.
-        if (w.style.display === 'none' && tab._loaded) return;
-        if (w._retry++ < 8)
+        if (!w.isShown() && tab._loaded) return;
+        if (tab._retry++ < 8)
           setTimeout(() => {
             try {
               w.reload();
@@ -622,7 +662,7 @@ export function PreviewPanel({
           }, 1000);
       });
       w.addEventListener('did-finish-load', () => {
-        w._retry = 0;
+        tab._retry = 0;
         tab._loaded = true;
         syncNav();
         // Uma página recém-carregada (aba de fundo, nova navegação) pode dar autoplay:
@@ -648,26 +688,28 @@ export function PreviewPanel({
           } catch {}
         }
       });
-      // Ponte do "selecionar elemento": o script injetado emite o pacote via console.
+      // Pontes dos scripts injetados ("selecionar elemento" e recorte do print): o script
+      // emite o pacote pelo console. No motor 'view' o main só repassa estas mensagens.
       w.addEventListener('console-message', (e) => {
         const msg = e.message || '';
         if (msg.startsWith(GRAB_SENTINEL)) {
           try {
             const { md } = JSON.parse(msg.slice(GRAB_SENTINEL.length));
             window.api.copyText(md);
-            setGrabbed(true);
-            setTimeout(() => setGrabbed(false), 2200);
+            toast.success(tRef.current('preview.grab_done').replace(/^✓\s*/, ''));
           } catch {}
           setGrabbing(false);
         } else if (msg.startsWith(GRAB_CANCEL)) {
           setGrabbing(false);
+        } else if (msg.startsWith(CROP_SENTINEL)) {
+          setShooting(false);
+          try {
+            cropDoneRef.current(w, JSON.parse(msg.slice(CROP_SENTINEL.length)));
+          } catch {}
+        } else if (msg.startsWith(CROP_CANCEL)) {
+          setShooting(false);
         }
       });
-      if (url) {
-        try {
-          if (w.getAttribute('src') !== url) w.src = url;
-        } catch {}
-      }
       refreshTabBar();
       return tab;
     },
@@ -681,7 +723,7 @@ export function PreviewPanel({
       if (proj) {
         for (const t of proj.tabs) {
           try {
-            t.webview.remove();
+            t.webview.destroy();
           } catch {}
         }
       }
@@ -691,7 +733,7 @@ export function PreviewPanel({
     [refreshTabBar],
   );
 
-  // Foco do webview (vem do main): liga a borda só quando o id é o do projeto ativo.
+  // Foco do site (vem do main): acende a barra de URL só quando o id é o do projeto ativo.
   useEffect(() => {
     return window.api.on('webview:focus', ({ id, focused }) => {
       const w = activePathRef.current && activeWebviewOf(activePathRef.current);
@@ -737,9 +779,9 @@ export function PreviewPanel({
 
   // Um modo por vez: "selecionar elemento" e "print" são mutuamente exclusivos.
   const stopShoot = useCallback(() => {
+    const w = activePathRef.current && activeWebviewOf(activePathRef.current);
+    safeExec(w, CROP_CLEANUP);
     setShooting(false);
-    setShotRect(null);
-    shootStartRef.current = null;
   }, []);
   const stopGrab = useCallback(() => {
     const w = active && activeWebviewOf(active.path);
@@ -881,11 +923,20 @@ export function PreviewPanel({
     [active, t],
   );
 
-  // Enquanto o anotador está aberto, esconde a camada dos <webview>: o webview nativo do
-  // Electron compõe ACIMA do DOM normal onde se sobrepõem, então mesmo o modal cobrindo
-  // tudo seria pintado por baixo dele e o webview comeria os cliques (o mesmo motivo do
-  // "grab" injetar na página em vez de sobrepor). O modal mostra a captura estática, então
-  // ocultar o webview vivo é imperceptível. `visibility:hidden` mantém o layout/PTY.
+  // Recorte terminou dentro da página: converte o retângulo (px CSS do site) pra DIP da
+  // superfície e captura. A razão largura-em-DIP / innerWidth cobre o zoom do site, o zoom
+  // do app e a escala do aparelho de uma vez (cropToCapture).
+  cropDoneRef.current = (w, r) => {
+    const box = w.cssRect && w.cssRect();
+    const z = (window.api.getZoom && window.api.getZoom()) || 1;
+    const dipWidth = w.kind === 'view' ? box && box.width * z : w.offsetWidth * z;
+    const rect = cropToCapture(r, dipWidth);
+    if (rect) doCapture(rect);
+  };
+
+  // Enquanto o anotador está aberto, esconde a camada dos <webview> (motor 'webview'): o
+  // webview compõe ACIMA do DOM onde se sobrepõem e comeria os cliques do modal. No motor
+  // 'view' quem cuida disso é a oclusão (a view vira foto enquanto o modal cobre).
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -899,15 +950,19 @@ export function PreviewPanel({
   // Qualquer um desliga o seletor de elemento (um modo por vez).
   const startCrop = useCallback(() => {
     if (!active) return;
+    const w = activeWebviewOf(active.path);
+    if (!w) return;
     stopGrab();
-    setShooting(true);
-  }, [active, stopGrab]);
+    w.executeJavaScript(cropInject(t('preview.shot_active')))
+      .then(() => setShooting(true))
+      .catch(() => {});
+  }, [active, stopGrab, t]);
   const captureFull = useCallback(() => {
     if (!active) return;
     stopGrab();
-    setShooting(false);
+    stopShoot();
     doCapture(null);
-  }, [active, stopGrab, doCapture]);
+  }, [active, stopGrab, stopShoot, doCapture]);
 
   // Atalhos de print (mesmo esquema do Ctrl+F): Ctrl/Cmd+P = "Selecionar área" (recorte);
   // Ctrl/Cmd+Shift+P = "Tela toda" (abre o anotador na hora). Só valem olhando um site.
@@ -941,124 +996,28 @@ export function PreviewPanel({
     });
   }, [startCrop, captureFull]);
 
-  // Borda externa laranja no webview enquanto o modo print (recorte) está ativo, pra
-  // sinalizar "vou tirar foto" (não é a borda interna do foco; é a borda do elemento).
-  useEffect(() => {
-    const w = active && activeWebviewOf(active.path);
-    if (!w) return;
-    try {
-      w.style.boxShadow = shooting ? '0 0 0 3px hsl(var(--primary))' : '';
-    } catch {}
-    return () => {
-      try {
-        w.style.boxShadow = '';
-      } catch {}
-    };
-  }, [shooting, active, mode]);
-
-  // Início do arraste no overlay: registra o ponto e escuta mover/soltar na janela
-  // (robusto se o mouse sair da área do preview no meio do gesto).
-  const onShootDown = (e) => {
-    e.preventDefault();
-    const start = { cx: e.clientX, cy: e.clientY };
-    shootStartRef.current = start;
-    const o0 = overlayRef.current?.getBoundingClientRect();
-    if (o0) setShotRect({ x: e.clientX - o0.left, y: e.clientY - o0.top, w: 0, h: 0 });
-    const onMove = (ev) => {
-      const o = overlayRef.current?.getBoundingClientRect();
-      if (!o) return;
-      const x1 = start.cx - o.left,
-        y1 = start.cy - o.top;
-      const x2 = ev.clientX - o.left,
-        y2 = ev.clientY - o.top;
-      setShotRect({
-        x: Math.min(x1, x2),
-        y: Math.min(y1, y2),
-        w: Math.abs(x2 - x1),
-        h: Math.abs(y2 - y1),
-      });
-    };
-    const onUp = (ev) => {
-      window.removeEventListener('mousemove', onMove, true);
-      window.removeEventListener('mouseup', onUp, true);
-      shootStartRef.current = null;
-      setShotRect(null);
-      setShooting(false);
-      const w = active && activeWebviewOf(active.path);
-      if (!w) return;
-      // Coords relativas ao WEBVIEW (não ao overlay): nos modos tablet/celular o
-      // webview é centralizado, então o topo-esquerda dele difere do container.
-      const wr = w.getBoundingClientRect();
-      const rect = rectFromDrag(
-        start.cx - wr.left,
-        start.cy - wr.top,
-        ev.clientX - wr.left,
-        ev.clientY - wr.top,
-        { width: wr.width, height: wr.height },
-      );
-      doCapture(rect);
-    };
-    window.addEventListener('mousemove', onMove, true);
-    window.addEventListener('mouseup', onUp, true);
-  };
-
-  // Rolar a página enquanto enquadra o print. O overlay cobre o webview pra capturar o
-  // arraste, e com isso engolia a rodinha: o evento cai no overlay, o app não tem nada
-  // rolável ali e o webview (outro processo) nunca via o wheel. Valia pros DOIS modos —
-  // não era regressão do celular. Como o overlay PRECISA do mouse (é ele que faz o
-  // recorte), não dá pra liberar pointer-events: repassamos o wheel na mão pro webview.
-  const onShootWheel = (e) => {
-    const w = active && activeWebviewOf(active.path);
-    if (!w) return;
-    // Coords LOCAIS do webview: nos modos tablet/celular ele é centralizado, então o
-    // topo-esquerda dele não coincide com o do overlay.
-    const wr = w.getBoundingClientRect();
-    const x = e.clientX - wr.left;
-    const y = e.clientY - wr.top;
-    if (x < 0 || y < 0 || x > wr.width || y > wr.height) return; // rodinha sobre a calha cinza
-    try {
-      // sendInputEvent (e não scrollBy via executeJavaScript) pra rolar o que estiver SOB
-      // o ponteiro — inclusive contêineres roláveis internos do site, não só a raiz.
-      // Sinal invertido: no DOM deltaY>0 é "pra baixo"; no sendInputEvent é o contrário.
-      w.sendInputEvent({
-        type: 'mouseWheel',
-        x: Math.round(x),
-        y: Math.round(y),
-        deltaX: Math.round(-e.deltaX),
-        deltaY: Math.round(-e.deltaY),
-        canScroll: true,
-      });
-    } catch {
-      /* webview ainda não anexado/destruído — sem scroll, mas sem quebrar o print */
-    }
-  };
-
   // Sai do modo print ao deixar o preview/site, ou ao trocar de projeto.
-  useEffect(() => {
-    if (shooting && !(view === 'preview' && mode === 'web')) {
-      setShooting(false);
-      setShotRect(null);
-    }
-  }, [view, mode, shooting]);
-  useEffect(() => {
+  // A camada de recorte mora DENTRO da página: sair limpa em todas as abas.
+  const clearCropAll = useCallback(() => {
+    for (const w of allWebviews()) safeExec(w, CROP_CLEANUP);
     setShooting(false);
-    setShotRect(null);
-    shootStartRef.current = null;
-  }, [active?.path]);
+  }, []);
+  useEffect(() => {
+    if (shooting && !(view === 'preview' && mode === 'web')) clearCropAll();
+  }, [view, mode, shooting, clearCropAll]);
+  useEffect(() => {
+    clearCropAll();
+  }, [active?.path, tabBar.activeId, clearCropAll]);
 
-  // Esc cancela o modo print mesmo com o foco fora do webview.
+  // Esc cancela o modo print mesmo com o foco fora do site (com o foco nele, o script trata).
   useEffect(() => {
     if (!shooting) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') {
-        setShooting(false);
-        setShotRect(null);
-        shootStartRef.current = null;
-      }
+      if (e.key === 'Escape') clearCropAll();
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [shooting]);
+  }, [shooting, clearCropAll]);
 
   const showWebFor = useCallback(
     (projectPath, u) => {
@@ -1093,13 +1052,40 @@ export function PreviewPanel({
   );
 
   // DevTools encaixado (definido antes dos effects que o usam, pra não dar TDZ).
+  // Motor 'view': o host do DevTools é uma WebContentsView NOVA a cada encaixe (a doc do
+  // setDevToolsWebContents pede um host que nunca navegou). Motor 'webview': o <webview>
+  // about:blank fixo de sempre (criado no efeito mais abaixo).
+  const closeDevtoolsHost = () => {
+    const h = devtoolsRef.current;
+    if (h && h.kind === 'view') {
+      h.destroy();
+      devtoolsRef.current = null;
+    }
+  };
   const dockDevtools = useCallback(() => {
     const pv = active && activeWebviewOf(active.path);
-    if (pv && devtoolsRef.current) {
+    if (!pv) return;
+    if (pv.kind === 'view') {
+      closeDevtoolsHost();
+      try {
+        const host = createViewSurface({ api: window.api, kind: 'devtools' });
+        const slot = devtoolsHostRef.current;
+        if (slot) {
+          const r = slot.getBoundingClientRect();
+          host.layout({ x: r.left, y: r.top, width: r.width, height: r.height }, 'desktop');
+        }
+        host.show(true);
+        devtoolsRef.current = host;
+      } catch {
+        return;
+      }
+    }
+    if (devtoolsRef.current) {
       try {
         window.api.dockDevTools(pv.getWebContentsId(), devtoolsRef.current.getWebContentsId());
       } catch {}
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   const toggleDevtools = useCallback(() => {
@@ -1111,6 +1097,7 @@ export function PreviewPanel({
           window.api.undockDevTools(pv.getWebContentsId());
         } catch {}
       }
+      closeDevtoolsHost();
       setDevtoolsOpen(false);
     } else {
       setDevtoolsOpen(true);
@@ -1190,8 +1177,12 @@ export function PreviewPanel({
     };
   }, []);
 
-  // Cria o webview que vai HOSPEDAR o DevTools (à direita). Existe sempre (escondido quando fechado).
+  // Motor 'webview': cria o <webview> que HOSPEDA o DevTools (à direita). Existe sempre
+  // (escondido quando fechado). No motor 'view' o host nasce no dockDevtools.
   useEffect(() => {
+    if (engineRef.current !== 'webview') {
+      return () => closeDevtoolsHost();
+    }
     const w = document.createElement('webview');
     w.setAttribute('src', 'about:blank');
     w.style.width = '100%';
@@ -1274,13 +1265,19 @@ export function PreviewPanel({
     for (const [p, proj] of projTabsRef.current) {
       for (const tab of proj.tabs) {
         const show = p === ap && proj.activeId === tab.id && view === 'preview' && mode === 'web';
-        tab.webview.style.display = show ? 'flex' : 'none';
+        // Motor 'view': encaixa ANTES de mostrar (senão pisca nos bounds antigos) e deixa
+        // escondida enquanto algo do app cobre o preview (a foto fica no lugar).
+        if (show)
+          tab.webview.layout(panelBox(), viewportRef.current, customRef.current, {
+            expanded: safariRef.current,
+          });
+        tab.webview.show(show && !(freeze && tab.webview.kind === 'view'));
         // Recuperação: SÓ re-aponta se o webview está em branco (a navegação inicial
         // falhou no build empacotado). Nunca recarrega uma página já carregada. E as
         // deps são [tabBar.activeId] (troca de aba), NÃO o tabBar inteiro: senão o
         // efeito rodava a cada evento de navegação e o re-aponte abortava o load em
         // curso (-3) e disparava outro → loop infinito de reload (a "piscada").
-        if (show && tab.src) {
+        if (show && tab.src && tab.webview.kind === 'webview') {
           let cur = '';
           try {
             cur = tab.webview.getURL();
@@ -1293,7 +1290,103 @@ export function PreviewPanel({
         }
       }
     }
-  }, [view, mode, active, tabBar.activeId]);
+  }, [view, mode, active, tabBar.activeId, freeze]);
+
+  // ---- Motor 'view' (WebContentsView) ----
+  // A view não acompanha o layout do DOM sozinha. A cada quadro re-encaixa a aba à mostra (e
+  // o host do DevTools) no retângulo do painel; o handle só manda IPC quando algo mudou. Um
+  // laço só cobre tudo que mexe no painel: divisória, recolher, terminal, tira de abas
+  // animando, rail, zoom do app, janela.
+  const showingSite = inPreview && mode === 'web' && !!active;
+  useEffect(() => {
+    if (!showingSite) return undefined;
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const w = activeWebviewOf(active.path);
+      if (w && w.kind === 'view')
+        w.layout(panelBox(), viewportRef.current, customRef.current, {
+          expanded: safariRef.current,
+        });
+      const dt = devtoolsRef.current;
+      const slot = devtoolsHostRef.current;
+      if (dt && dt.kind === 'view' && slot) {
+        const r = slot.getBoundingClientRect();
+        dt.layout({ x: r.left, y: r.top, width: r.width, height: r.height }, 'desktop');
+      }
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showingSite, active?.path, tabBar.activeId]);
+
+  // Oclusão: algo do app (menu, modal, toast, arraste) cobre a view → ela vira foto. Ver
+  // src/lib/previewOcclusion.js.
+  useEffect(() => {
+    const w0 = showingSite && activeWebviewOf(active.path);
+    if (!w0 || w0.kind !== 'view') {
+      setOccluded(false);
+      return undefined;
+    }
+    const stop = watchOcclusion({
+      getRects: () => {
+        const out = [];
+        const w = activeWebviewOf(active.path);
+        const r = w && w.cssRect && w.cssRect();
+        if (r) out.push(r);
+        const dt = devtoolsRef.current;
+        const slot = devtoolsHostRef.current;
+        if (dt && dt.kind === 'view' && slot) {
+          const b = slot.getBoundingClientRect();
+          if (b.width > 0) out.push({ x: b.left, y: b.top, width: b.width, height: b.height });
+        }
+        return out;
+      },
+      ownRoots: () => [containerRef.current, devtoolsHostRef.current],
+      onChange: setOccluded,
+    });
+    return () => {
+      stop();
+      setOccluded(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showingSite, active?.path, tabBar.activeId]);
+
+  // Coberto → fotografa a view e SÓ DEPOIS a esconde (view escondida não fotografa).
+  // Descoberto → solta a foto e a view volta (efeito de mostrar/esconder acima).
+  useEffect(() => {
+    if (!occluded) {
+      setFreeze(null);
+      return undefined;
+    }
+    const w = active && activeWebviewOf(active.path);
+    if (!w || w.kind !== 'view') return undefined;
+    let alive = true;
+    const rect = w.cssRect();
+    const box = panelBox();
+    const place =
+      rect && box
+        ? { x: rect.x - box.x, y: rect.y - box.y, width: rect.width, height: rect.height }
+        : { x: 0, y: 0, width: 0, height: 0 };
+    window.api
+      .capturePreview(w.getWebContentsId(), null, { toClipboard: false })
+      .then((res) => {
+        if (alive) setFreeze({ src: (res && res.dataURL) || '', rect: place });
+      })
+      .catch(() => {
+        if (alive) setFreeze({ src: '', rect: place });
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [occluded]);
+
+  // Host do DevTools (motor 'view'): visível com o painel aberto e nada por cima.
+  useEffect(() => {
+    const dt = devtoolsRef.current;
+    if (dt && dt.kind === 'view') dt.show(devtoolsOpen && showingSite && !occluded);
+  }, [devtoolsOpen, showingSite, occluded, tabBar.activeId]);
 
   // Troca o modo de visualização (desktop/tablet/celular): re-aplica o viewport em
   // todos os webviews (os escondidos não atrapalham) e guarda a preferência.
@@ -1301,7 +1394,7 @@ export function PreviewPanel({
     localStorage.setItem('previewViewport', viewport);
     localStorage.setItem('previewCustomSize', JSON.stringify(customSize));
     for (const w of allWebviews())
-      applyViewport(w, viewport, customSize, { expanded: safariExpanded });
+      w.layout(panelBox(), viewport, customSize, { expanded: safariExpanded });
   }, [viewport, customSize, safariExpanded]);
 
   // Modo celular: lê de tempos em tempos a cor do topo/rodapé da página e o scroll, pra
@@ -1353,7 +1446,9 @@ export function PreviewPanel({
     const ro = new ResizeObserver(() => {
       setStageBox({ width: el.clientWidth, height: el.clientHeight });
       for (const w of allWebviews())
-        applyViewport(w, viewportRef.current, customRef.current, { expanded: safariRef.current });
+        w.layout(panelBox(), viewportRef.current, customRef.current, {
+          expanded: safariRef.current,
+        });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -1610,7 +1705,7 @@ export function PreviewPanel({
       if (idx === -1 || proj.tabs.length <= 1) return; // nunca fecha a última (a tira some antes disso)
       const [removed] = proj.tabs.splice(idx, 1);
       try {
-        removed.webview.remove();
+        removed.webview.destroy();
       } catch {}
       if (proj.activeId === id) {
         // ativa a vizinha
@@ -1693,9 +1788,10 @@ export function PreviewPanel({
       const idx = proj.tabs.indexOf(old);
       proj.tabs.splice(idx, 1);
       try {
-        old.webview.remove();
+        old.webview.destroy();
       } catch {}
       setGrabbing(false); // o script do seletor morreu junto com o webview antigo
+      setShooting(false); // idem o recorte do print
       const tab = createTab(projectPath, target, { activate: true });
       // createTab põe a aba no fim; devolve pra posição original na tira.
       proj.tabs.splice(proj.tabs.indexOf(tab), 1);
@@ -2028,8 +2124,25 @@ export function PreviewPanel({
                   onKeyDown={onUrlKey}
                   spellCheck={false}
                   placeholder={t('preview.url_placeholder')}
-                  className="h-8 pl-8 pr-8 font-mono text-xs"
+                  className={cn(
+                    'h-8 pl-8 pr-8 font-mono text-xs',
+                    // Foco DENTRO do site → Ctrl +/- zooma o site, não o app. Antes era um anel
+                    // por cima do site; a WebContentsView desenha por cima do DOM, então o
+                    // aviso mora aqui na barra.
+                    inPreview && mode === 'web' && webFocused && 'ring-2 ring-primary/40',
+                  )}
                 />
+                {/* Ctrl+F: a busca ocupa a barra de URL (por cima do site ela ficaria escondida
+                    atrás da view). Fechar devolve a URL. */}
+                {inPreview && mode === 'web' && findOpen && (
+                  <FindBar
+                    webview={active ? activeWebviewOf(active.path) : null}
+                    nonce={findNonce}
+                    onClose={() => setFindOpen(false)}
+                    t={t}
+                    className="absolute inset-0 z-10"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={openInBrowser}
@@ -2132,7 +2245,23 @@ export function PreviewPanel({
               !inPreview && 'pointer-events-none',
               inPreview && mode === 'web' && viewport !== 'desktop' && 'bg-muted/40',
             )}
-          />
+          >
+            {/* Foto do site enquanto algo do app cobre a view (motor 'view'). */}
+            {freeze && inPreview && mode === 'web' && (
+              <img
+                src={freeze.src}
+                alt=""
+                draggable={false}
+                className="pointer-events-none absolute select-none"
+                style={{
+                  left: freeze.rect.x,
+                  top: freeze.rect.y,
+                  width: freeze.rect.width,
+                  height: freeze.rect.height,
+                }}
+              />
+            )}
+          </div>
           {/* Moldura de celular/tablet: convite/QR "abrir no celular" no espaço vazio ao lado. */}
           {inPreview && mode === 'web' && device && stageBox && (
             <>
@@ -2152,68 +2281,6 @@ export function PreviewPanel({
               <PhoneShareCard share={lan} frameWidth={fitDevice(device, stageBox).frame.w} />
             </>
           )}
-          {/* Borda discreta: foco está dentro do preview → Ctrl +/- zooma o site, não o app. */}
-          {inPreview && mode === 'web' && webFocused && (
-            <div className="pointer-events-none absolute inset-0 z-10 ring-2 ring-inset ring-primary/40" />
-          )}
-          {inPreview && (grabbing || grabbed) && (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center">
-              <div
-                className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-medium shadow-md',
-                  grabbed
-                    ? 'border-primary/40 bg-primary text-primary-foreground'
-                    : 'bg-popover text-popover-foreground',
-                )}
-              >
-                {grabbed ? t('preview.grab_done') : t('preview.grab_active')}
-              </div>
-            </div>
-          )}
-          {inPreview && mode === 'web' && findOpen && (
-            <FindBar
-              webview={active ? activeWebviewOf(active.path) : null}
-              nonce={findNonce}
-              onClose={() => setFindOpen(false)}
-              t={t}
-            />
-          )}
-          {/* Print do preview: camada por cima do webview que captura o gesto de recorte.
-              É camada do APP (não entra no capturePage), então o retângulo não aparece na foto. */}
-          {inPreview && mode === 'web' && shooting && (
-            <div
-              ref={overlayRef}
-              onMouseDown={onShootDown}
-              onWheel={onShootWheel}
-              className="absolute inset-0 z-30 cursor-crosshair"
-            >
-              {shotRect && (
-                <div
-                  className="absolute border-2 border-primary bg-primary/20"
-                  style={{
-                    left: shotRect.x,
-                    top: shotRect.y,
-                    width: shotRect.w,
-                    height: shotRect.h,
-                  }}
-                />
-              )}
-            </div>
-          )}
-          {inPreview && (shooting || shotDone) && (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-40 flex justify-center">
-              <div
-                className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-medium shadow-md',
-                  shotDone
-                    ? 'border-primary/40 bg-primary text-primary-foreground'
-                    : 'bg-popover text-popover-foreground',
-                )}
-              >
-                {shotDone ? t('preview.shot_done') : t('preview.shot_active')}
-              </div>
-            </div>
-          )}
           {shot && (
             <Suspense fallback={null}>
               <AnnotatorModal
@@ -2223,8 +2290,7 @@ export function PreviewPanel({
                   const res = await window.api.copyImage(png);
                   setShot(null);
                   if (res && res.ok) {
-                    setShotDone(true);
-                    setTimeout(() => setShotDone(false), 2200);
+                    toast.success(t('preview.shot_done').replace(/^✓\s*/, ''));
                   } else {
                     toast.error(t('preview.copy_image_failed'));
                   }
@@ -2360,6 +2426,7 @@ export function PreviewPanel({
           style={devtoolsOpen && inPreview ? { width: devtoolsWidth } : undefined}
         >
           <div ref={devtoolsHostRef} className="absolute inset-0 bg-card" />
+          {/* Motor 'view': o DevTools é outra view; enquanto algo cobre, fica só o fundo. */}
         </div>
 
         {/* Camada que captura o mouse durante o arraste (senão o webview "engole" o evento). */}

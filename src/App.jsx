@@ -46,6 +46,7 @@ import { UpdatePill } from './components/UpdatePill.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Toaster } from './components/ui/toaster.jsx';
 import { toast } from './lib/toast';
+import { cn } from './lib/utils';
 import { useTheme } from './lib/theme.jsx';
 import { colorFor, initials } from './lib/projectColor';
 import { useT } from './lib/i18n';
@@ -895,8 +896,14 @@ export default function App() {
     </ResizablePanel>
   );
 
+  // Bolinhas e alça da divisória ficam INTEIRAS do lado do chat, rentes à linha (antes eram
+  // centradas nela, metade sobre o Preview). O site do Preview é uma WebContentsView, que
+  // desenha por cima de todo o DOM: a metade sobre ele sumiria, e a oclusão (que esconde a
+  // view quando algo do app a cobre) acharia o Preview coberto o tempo todo.
+  const towardChat = claudeLeft ? '-translate-x-full' : 'translate-x-0';
+  const dividerBtn = `absolute left-1/2 z-20 flex h-7 w-7 ${towardChat} -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground`;
   const handleEl = (
-    <ResizableHandle key="handle" withHandle>
+    <ResizableHandle key="handle" withHandle gripClassName={towardChat}>
       {!chatCollapsed && !previewCollapsed && (
         <>
           <button
@@ -904,7 +911,7 @@ export default function App() {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={toggleChat}
             title={t('app.collapse_chat_tooltip')}
-            className="absolute left-1/2 top-1/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(dividerBtn, 'top-1/3')}
           >
             {claudeLeft ? (
               <ChevronLeft className="h-4 w-4" />
@@ -917,7 +924,7 @@ export default function App() {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={togglePreview}
             title={t('app.collapse_preview_tooltip')}
-            className="absolute left-1/2 top-2/3 z-20 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(dividerBtn, 'top-2/3')}
           >
             {claudeLeft ? (
               <ChevronRight className="h-4 w-4" />
@@ -1126,7 +1133,7 @@ export default function App() {
           </div>
         )}
         {railResizing && <div className="fixed inset-0 z-50 cursor-col-resize" />}
-        <Toaster />
+        <Toaster side={claudeLeft ? 'left' : 'right'} />
       </div>
     </div>
   );

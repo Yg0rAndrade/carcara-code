@@ -321,6 +321,21 @@ contextBridge.exposeInMainWorld('api', {
   startDrag: (filePath) => ipcRenderer.send('drag:start', filePath),
   // Traz a janela pra frente (arrasto de arquivo externo pro app/ícone).
   focusWindow: () => ipcRenderer.send('window:focus'),
+  // Abas do Preview como WebContentsView (motor 'view'): o main é dono das views e o
+  // renderer fala com elas por id. O embrulho com cara de <webview> é
+  // src/lib/previewHandle.js; o registro, electron/preview-views.cjs.
+  previewView: {
+    create: (opts) => ipcRenderer.sendSync('preview-view:create', opts),
+    destroy: (id) => ipcRenderer.send('preview-view:destroy', { id }),
+    setBounds: (id, rect) => ipcRenderer.send('preview-view:bounds', { id, rect }),
+    setVisible: (id, visible) => ipcRenderer.send('preview-view:visible', { id, visible }),
+    setRadius: (id, radius) => ipcRenderer.send('preview-view:radius', { id, radius }),
+    call: (id, method, args) => ipcRenderer.invoke('preview-view:call', { id, method, args }),
+    exec: (id, code) => ipcRenderer.invoke('preview-view:exec', { id, code }),
+    count: () => ipcRenderer.invoke('preview-view:count'),
+    // Fator de zoom da janela do app: px CSS do renderer → DIP da janela (bounds da view).
+    zoomFactor: () => webFrame.getZoomFactor(),
+  },
   dockDevTools: (previewId, devtoolsId) =>
     ipcRenderer.send('devtools:dock', { previewId, devtoolsId }),
   undockDevTools: (previewId) => ipcRenderer.send('devtools:undock', { previewId }),

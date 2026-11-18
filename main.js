@@ -8,6 +8,7 @@ const {
   nativeImage,
   Menu,
   webContents,
+  WebContentsView,
   Notification,
   protocol,
   safeStorage,
@@ -35,6 +36,7 @@ const chatCli = require('./electron/chat-cli.cjs');
 const carcara = require('./electron/carcara/manager.cjs');
 const todosCore = require('./electron/claude-todos-core.cjs');
 const { initUpdater } = require('./electron/updater.cjs');
+const { makePreviewViews, registerPreviewViewIpc } = require('./electron/preview-views.cjs');
 const phpRuntime = require('./electron/php-runtime.cjs');
 const runCommand = require('./electron/run-command.cjs');
 const { reconcile: reconcileRail } = require('./electron/rail-core.cjs');
@@ -385,8 +387,18 @@ function createWindow() {
     else if (cmd === 'browser-forward') safeSend('nav:forward');
   });
 
+  // As views do Preview vivem no main, presas à janela e não à página: se o renderer
+  // recarregar (HMR do Vite em dev, crash, reload pela ErrorBoundary) elas ficariam
+  // ÓRFÃS, desenhando por cima da página nova. Fecha todas quando a página do app troca.
+  mainWindow.webContents.on('did-start-navigation', (details) => {
+    const d = details || {};
+    if (d.isMainFrame !== false && !d.isSameDocument) previewViews.destroyAll();
+  });
+  mainWindow.webContents.on('render-process-gone', () => previewViews.destroyAll());
+
   // Ao fechar a janela: mata os processos na hora e zera a referência.
   mainWindow.on('closed', () => {
+    previewViews.destroyAll();
     cleanup();
     mainWindow = null;
   });
@@ -473,10 +485,18 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-// Dá ao preview (webview) cara de navegador: DevTools no F12 e menu de botão direito.
+// Dá cara de navegador (menu de botão direito, F12, Ctrl+F/P, zoom, foco, toque, popups →
+// aba interna) a uma webContents de site. Vale pros dois motores do preview: os
+// `<webview>` (visualizador de HTML, plugins e o motor antigo do Preview) recebem pelo
+// `web-contents-created` abaixo; as `WebContentsView` das abas do Preview recebem
+// explicitamente na criação (electron/preview-views.cjs) — o tipo delas é 'window', não
+// 'webview', então o filtro abaixo não as pega.
 app.on('web-contents-created', (_event, contents) => {
   if (contents.getType() !== 'webview') return;
+  attachBrowserChrome(contents);
+});
 
+function attachBrowserChrome(contents) {
   // Menu de contexto (botão direito) com as opções de um navegador.
   contents.on('context-menu', (_e, params) => {
     const can = params.editFlags;
@@ -595,10 +615,22 @@ app.on('web-contents-created', (_event, contents) => {
     }
     return { action: 'deny' };
   });
-});
+}
 
-// Encaixa o DevTools do preview DENTRO de um segundo webview (à direita), estilo Chrome.
-// Webviews não aceitam DevTools "docked" na própria janela; setDevToolsWebContents resolve.
+// Abas do Preview como WebContentsView (motor 'view'). O registro mora no main; o
+// renderer só guarda o id. Ver electron/preview-views.cjs e src/lib/previewHandle.js.
+const previewViews = makePreviewViews({
+  WebContentsView,
+  getWindow: () => mainWindow,
+  send: (channel, payload) => safeSend(channel, payload),
+  attachChrome: (wc) => attachBrowserChrome(wc),
+});
+registerPreviewViewIpc(ipcMain, previewViews);
+
+// Encaixa o DevTools do preview DENTRO de uma segunda view (à direita), estilo Chrome.
+// A página não aceita DevTools "docked" na própria janela; setDevToolsWebContents resolve.
+// O host é uma WebContentsView NOVA a cada abertura (motor 'view') ou um <webview>
+// about:blank (motor 'webview'): nos dois casos chega aqui como webContentsId.
 let lastInspect = null;
 ipcMain.on('devtools:dock', (_e, { previewId, devtoolsId }) => {
   try {

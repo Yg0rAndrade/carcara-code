@@ -498,3 +498,34 @@ remendo `disable-features` da branch reserva resolve com menos trabalho.
 Ver o bloco PENDENTE da sessão de 17/11: corrigir o Digo primeiro e repetir a matriz com
 ≥ 5 execuções por célula antes de decidir entre seguir com a view (com o flag), voltar ao remendo da
 branch reserva ou investigar a oclusão nativa a fundo.
+
+## 9. Implementação (18/11/2026) — em andamento
+
+Decisão do Ygor (18/11): **implementar a migração inteira na 0.1.19, sem esperar a matriz.**
+Base: worktree `../carcara-code-wcv` na branch `feat/webcontentsview`, com `hotfix/recriar-preview`
+(0.1.19 ainda não publicada: flag `CalculateNativeWinOcclusion` + recriar no F5) e a `main`
+(link do terminal → aba) mergeadas. Opção A (§3): só o Preview; HtmlViewer e plugins seguem no `<webview>`.
+A medição de 17/11 mostrou a view só sem congelar **com** o flag → o flag fica (§7).
+
+Sonda de 18/11 (`enableDeviceEmulation` numa view 195×400 com `scale: 0.5`, Electron 33):
+`innerWidth` 390 / `screen.width` 390 no site; `capturePage(rect)` usa coords **DIP da view**;
+`setVisible(false)` → `visibilityState: hidden`; `setBorderRadius` existe; `getType()` = `'window'`.
+
+Peças (todas com teste vitest):
+
+- `electron/preview-views.cjs` — registro no main, IPC `preview-view:*`, eventos num canal só,
+  console só com prefixo `__CARCARA_`, lista fechada de métodos. Criação **síncrona** (`sendSync`),
+  pro id existir na hora como no `getWebContentsId()`.
+- `main.js` — `attachBrowserChrome(wc)` extraído do `web-contents-created` (vale pros dois motores);
+  views destruídas quando a página do app navega/cai/fecha (M14).
+- `src/lib/previewSurface.js` — superfície com a forma do `<webview>` + `show/layout/destroy`; motores
+  `view` (padrão) e `webview` (reserva via `"previewEngine": "webview"` no config.json).
+- `src/lib/webviewChrome.js#viewGeometry` — bounds + emulação + raio (mesma conta do applyViewport).
+- `src/lib/previewOcclusion.js` — detecção por `elementFromPoint` em grade; coberto → foto + view escondida.
+- `src/lib/cropScript.js` — recorte do print DENTRO da página (os dois motores).
+
+Mudanças de UI que a view força (R1): FindBar vai pra dentro da barra de URL; anel de foco vira
+borda na barra de URL; chips "elemento/print copiado" viram toast; toasts vão pro lado oposto ao preview.
+
+Pendente (ordem): PreviewPanel → App (toaster) → popup-smoke na view → build/test/lint →
+smoke com o app isolado (CDP) → DESAFIOS/CHANGELOG.

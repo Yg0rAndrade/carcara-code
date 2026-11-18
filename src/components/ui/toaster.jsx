@@ -106,13 +106,21 @@ function ToastItem({ t, onDone }) {
   );
 }
 
-/** Pilha de toasts. Montar uma única vez (no App). */
-export function Toaster() {
+/** Pilha de toasts. Montar uma única vez (no App).
+ *  `side`: canto de baixo onde a pilha mora. O App põe do lado do CHAT, longe do Preview:
+ *  o site do preview é uma WebContentsView, que desenha por cima do DOM — um toast em cima
+ *  dele faria o preview virar foto (oclusão) enquanto o toast estivesse na tela. */
+export function Toaster({ side = 'right' }) {
   const [items, setItems] = useState([]);
   useEffect(() => subscribe((t) => setItems((cur) => [...cur, t].slice(-4))), []);
   const remove = (id) => setItems((cur) => cur.filter((t) => t.id !== id));
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[120] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col gap-2">
+    <div
+      className={
+        'pointer-events-none fixed bottom-4 z-[120] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col gap-2 ' +
+        (side === 'left' ? 'left-20' : 'right-4')
+      }
+    >
       {items.map((t) => (
         <ToastItem key={t.id} t={t} onDone={remove} />
       ))}

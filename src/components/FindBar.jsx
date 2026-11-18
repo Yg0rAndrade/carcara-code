@@ -12,7 +12,9 @@ import { cn } from '@/lib/utils';
 // `nonce`    = muda toda vez que o Ctrl+F é apertado; re-foca e seleciona o input
 //              (reabrir com texto = pronto pra digitar por cima, igual ao navegador).
 // `onClose`  = fecha a barra (o pai também limpa a busca ao desmontar este componente).
-export function FindBar({ webview, nonce, onClose, t }) {
+// `className` = posição (o Preview a põe POR CIMA da barra de URL: sobre o site ela ficaria
+//              escondida atrás da WebContentsView, que desenha acima do DOM).
+export function FindBar({ webview, nonce, onClose, t, className }) {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState({ active: 0, total: 0 });
   const inputRef = useRef(null);
@@ -85,7 +87,12 @@ export function FindBar({ webview, nonce, onClose, t }) {
   const hasQuery = query.length > 0;
 
   return (
-    <div className="absolute right-3 top-3 z-30 flex items-center gap-1 rounded-lg border bg-popover/95 p-1 pl-2.5 shadow-md backdrop-blur">
+    <div
+      className={cn(
+        'flex items-center gap-1 rounded-lg border bg-popover/95 p-1 pl-2.5 shadow-md backdrop-blur',
+        className || 'absolute right-3 top-3 z-30',
+      )}
+    >
       <input
         ref={inputRef}
         value={query}
@@ -93,7 +100,7 @@ export function FindBar({ webview, nonce, onClose, t }) {
         onKeyDown={onKeyDown}
         spellCheck={false}
         placeholder={t('preview.find_placeholder')}
-        className="h-6 w-40 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+        className="h-6 min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
       />
       <span
         className={cn(

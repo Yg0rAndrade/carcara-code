@@ -54,6 +54,45 @@ export function applyViewport(w, value, custom, opts) {
   });
 }
 
+// Mesmo encaixe do applyViewport, mas pro motor 'view' (WebContentsView): não existe CSS
+// numa view, então a conta vira DADOS que o main aplica.
+//  - bounds: retângulo da view em DIP da janela (px CSS do app × zoom do app).
+//  - emulation: parâmetros do `webContents.enableDeviceEmulation` (null = computador).
+//    É o mecanismo do device mode do Chrome: o site é montado no tamanho real do
+//    aparelho (viewSize) e encolhido por `scale` pra caber nos bounds. Medido no Electron
+//    33: 195×400 DIP com scale 0,5 → `innerWidth` 390 no site.
+//  - radius: canto arredondado da view (o que o clip-path fazia no <webview>). A view só
+//    aceita UM raio; usa o maior dos dois, já que a quina reta fica sob a barra do sistema.
+// box = { x, y, width, height } do painel em px CSS do app (getBoundingClientRect).
+export function viewGeometry(box, value, custom, opts = {}) {
+  const zoom = Number.isFinite(opts.zoom) && opts.zoom > 0 ? opts.zoom : 1;
+  const z = (r) => ({
+    x: r.x * zoom,
+    y: r.y * zoom,
+    width: r.width * zoom,
+    height: r.height * zoom,
+  });
+  const dev = resolveDevice(value, custom);
+  if (!dev || !box) {
+    return { bounds: box ? z(box) : null, emulation: null, radius: 0 };
+  }
+  const g = fitDevice(dev, { width: box.width, height: box.height }, opts);
+  const rTop = Math.max(0, dev.radius - g.chromeRaw.top);
+  const rBot = Math.max(0, dev.radius - g.chromeRaw.bottom);
+  return {
+    bounds: z({ x: box.x + g.page.x, y: box.y + g.page.y, width: g.page.w, height: g.page.h }),
+    emulation: {
+      screenPosition: 'mobile',
+      screenSize: { width: dev.w, height: dev.h },
+      viewPosition: { x: 0, y: 0 },
+      deviceScaleFactor: 0,
+      viewSize: { width: g.viewport.w, height: g.viewport.h },
+      scale: g.scale * zoom,
+    },
+    radius: Math.max(rTop, rBot) * g.scale * zoom,
+  };
+}
+
 // Zoom da PÁGINA (não da janela do app). Mesmos passos e limites do atalho
 // Ctrl +/-/0 tratado no main pra qualquer webview (ver main.js), pra que botão e
 // teclado nunca discordem. No Chromium, fator = 1.2 ^ nível.
