@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Terminal,
+  Check,
   X,
   Copy,
   Bug,
@@ -410,6 +411,17 @@ export function PreviewPanel({
   const [grabbing, setGrabbing] = useState(false); // modo "selecionar elemento" ativo
   const [findOpen, setFindOpen] = useState(false); // barra "buscar na página" (Ctrl+F)
   const [findNonce, setFindNonce] = useState(0); // bump a cada Ctrl+F: re-foca o input da busca
+  // Aviso rápido no MEIO do header do Preview ("Elemento copiado", "Print copiado"). Não usa o
+  // toast global: ele caía em cima do campo do chat, justo onde a pessoa vai colar. { id, text }
+  const [flash, setFlash] = useState(null);
+  const flashTimerRef = useRef(0);
+  const showFlash = useCallback((text) => {
+    clearTimeout(flashTimerRef.current);
+    setFlash({ id: Date.now(), text: String(text || '').replace(/^✓\s*/, '') });
+    flashTimerRef.current = setTimeout(() => setFlash(null), 1600);
+  }, []);
+  const showFlashRef = useRef(showFlash);
+  showFlashRef.current = showFlash;
   const [shooting, setShooting] = useState(false); // modo "print do preview" ativo
   const [shot, setShot] = useState(null); // dataURL da captura crua → abre o anotador
   const shotRef = useRef(shot); // leitura síncrona dentro do listener de F5/hard-reload (deps [])
@@ -696,7 +708,7 @@ export function PreviewPanel({
           try {
             const { md } = JSON.parse(msg.slice(GRAB_SENTINEL.length));
             window.api.copyText(md);
-            toast.success(tRef.current('preview.grab_done').replace(/^✓\s*/, ''));
+            showFlashRef.current(tRef.current('preview.grab_done'));
           } catch {}
           setGrabbing(false);
         } else if (msg.startsWith(GRAB_CANCEL)) {
@@ -2064,6 +2076,17 @@ export function PreviewPanel({
     <>
       {active && (
         <div className="relative z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-card px-2.5">
+          {/* Aviso rápido ("copiado"), no meio do header: some sozinho e não cobre o site. */}
+          {flash && (
+            <div
+              key={flash.id}
+              role="status"
+              className="pointer-events-none absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border border-primary/40 bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-md duration-200 animate-in fade-in zoom-in-95"
+            >
+              <Check className="size-3.5" aria-hidden="true" />
+              {flash.text}
+            </div>
+          )}
           <Tabs value={effView} onValueChange={setView}>
             <TabsList className="h-8 gap-0.5 p-0.5">
               <TabsTrigger
@@ -2306,7 +2329,7 @@ export function PreviewPanel({
                   const res = await window.api.copyImage(png);
                   setShot(null);
                   if (res && res.ok) {
-                    toast.success(t('preview.shot_done').replace(/^✓\s*/, ''));
+                    showFlash(t('preview.shot_done'));
                   } else {
                     toast.error(t('preview.copy_image_failed'));
                   }
