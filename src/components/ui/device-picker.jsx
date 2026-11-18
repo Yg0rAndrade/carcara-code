@@ -195,7 +195,11 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
       {coach && !open && (
         <div
           role="status"
-          className="absolute bottom-full left-1/2 mb-3 w-[260px] -translate-x-1/2 rounded-xl bg-primary p-3.5 text-[12.5px] leading-snug text-primary-foreground shadow-[0_12px_32px_rgba(0,0,0,0.3)] duration-300 animate-in fade-in slide-in-from-bottom-2"
+          // Ao LADO do aparelho (na calha), rente ao pé da moldura — nunca por cima da tela:
+          // o site do Preview é uma WebContentsView, que desenha acima do DOM; um balão em cima
+          // dele ficaria escondido e faria o preview virar foto (oclusão) até ser dispensado.
+          className="absolute w-[260px] rounded-xl bg-primary p-3.5 text-[12.5px] leading-snug text-primary-foreground shadow-[0_12px_32px_rgba(0,0,0,0.3)] duration-300 animate-in fade-in slide-in-from-left-2"
+          style={{ left: `calc(50% + ${g.frame.w / 2 + 14}px)`, bottom: 'calc(100% + 6px)' }}
         >
           <div className="mb-1 font-semibold">{t('preview.device_coach_title')}</div>
           <p className="opacity-90">{t('preview.device_coach_body')}</p>
@@ -207,7 +211,7 @@ export function DeviceSwitcher({ value, onChange, custom, onCustomChange, geomet
             {t('preview.device_coach_ok')}
           </button>
           {/* setinha apontando pro botão */}
-          <span className="absolute left-1/2 top-full size-3 -translate-x-1/2 -translate-y-1.5 rotate-45 bg-primary" />
+          <span className="absolute bottom-4 right-full size-3 translate-x-1.5 rotate-45 bg-primary" />
         </div>
       )}
       <button

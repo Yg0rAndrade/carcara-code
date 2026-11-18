@@ -235,6 +235,19 @@ function makePreviewViews({ WebContentsView, getWindow, send, attachChrome }) {
     return reg.size;
   }
 
+  // Estado real de cada view (smoke/diagnóstico): visível? onde? de que tipo?
+  function inspect() {
+    return [...reg.entries()].map(([id, e]) => {
+      let visible = null;
+      let bounds = null;
+      try {
+        visible = typeof e.view.getVisible === 'function' ? e.view.getVisible() : null;
+        bounds = e.view.getBounds();
+      } catch {}
+      return { id, kind: e.kind, visible, bounds };
+    });
+  }
+
   return {
     create,
     destroy,
@@ -246,6 +259,7 @@ function makePreviewViews({ WebContentsView, getWindow, send, attachChrome }) {
     call,
     exec,
     count,
+    inspect,
   };
 }
 
@@ -264,6 +278,7 @@ function registerPreviewViewIpc(ipcMain, views) {
   ipcMain.handle('preview-view:call', (_e, { id, method, args }) => views.call(id, method, args));
   ipcMain.handle('preview-view:exec', (_e, { id, code }) => views.exec(id, code));
   ipcMain.handle('preview-view:count', () => views.count());
+  ipcMain.handle('preview-view:inspect', () => views.inspect());
 }
 
 module.exports = {

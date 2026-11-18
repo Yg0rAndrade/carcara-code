@@ -26,6 +26,7 @@
     "test:grab": "node scripts/grab-source.smoke.cjs",
     "test:release": "node scripts/publicar-release.smoke.cjs",
     "test:popup": "electron scripts/popup-smoke.cjs",
+    "test:previewview": "node scripts/preview-view-smoke.cjs",
     "test:skills": "node scripts/skill-catalog-smoke.cjs",
     "test:localpty": "node scripts/localpty-smoke.cjs",
     "test:aicatalog": "node scripts/ai-catalog-smoke.cjs",

@@ -7,12 +7,14 @@
 // matava o popup dentro do guest. Só um webview REAL prova que o handler dispara.
 //
 // O smoke monta o webview com o MESMO código do app (src/lib/previewWebview.js) e
-// decide com a MESMA política do main (electron/window-open.cjs).
-const { app, BrowserWindow, session } = require('electron');
+// decide com a MESMA política do main (electron/window-open.cjs). Roda nos DOIS motores:
+// <webview> (reserva) e WebContentsView (padrão desde a 0.1.19, mesma fábrica do app).
+const { app, BrowserWindow, WebContentsView, session } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { decideWindowOpen } = require('../electron/window-open.cjs');
+const { makePreviewViews } = require('../electron/preview-views.cjs');
 
 const PARTITION = 'persist:popup-smoke';
 let fail = 0;
@@ -87,8 +89,8 @@ const server = http.createServer((req, res) => {
   res.end(u === '/host.html' ? HOST : PAGE);
 });
 
-app.on('web-contents-created', (_e, contents) => {
-  if (contents.getType() !== 'webview') return;
+// O que o main faz com o popup (aqui só registra) + a ponte do blob pelo console.
+function espiar(contents) {
   contents.setWindowOpenHandler(({ url }) => {
     if (decideWindowOpen(url).action === 'tab') firedUrls.push(url);
     return { action: 'deny' };
@@ -97,7 +99,48 @@ app.on('web-contents-created', (_e, contents) => {
     const msg = typeof a[2] === 'string' ? a[2] : a[0] && a[0].message;
     if (msg && String(msg).startsWith('SMOKE_BLOB ')) blobUrl = String(msg).slice(11);
   });
+}
+app.on('web-contents-created', (_e, contents) => {
+  if (contents.getType() !== 'webview') return;
+  espiar(contents);
 });
+
+// Mesmo roteiro com WebContentsView: não existe `allowpopups` na view; o handler tem que
+// disparar sozinho. A aba interna do blob nasce como outra view na mesma partition.
+async function rodarView(porta) {
+  console.log('--- motor view (WebContentsView) ---');
+  firedUrls.length = 0;
+  blobUrl = null;
+  baixou = false;
+  const win = new BrowserWindow({ show: false, width: 800, height: 600 });
+  const views = makePreviewViews({
+    WebContentsView,
+    getWindow: () => win,
+    send: () => {},
+    attachChrome: espiar,
+  });
+  views.create({ partition: PARTITION, url: `http://127.0.0.1:${porta}/page.html` });
+  await new Promise((r) => setTimeout(r, 4000));
+  const temHttp = firedUrls.filter((u) => /^http:/.test(u)).length;
+  assert(temHttp >= 2, `view: window.open(http) e <a target=_blank> no handler (${temHttp}/2)`);
+  assert(
+    firedUrls.some((u) => u.startsWith('blob:')),
+    'view: window.open(blob:) chega no handler',
+  );
+  if (blobUrl) {
+    const id = views.create({ partition: PARTITION, url: blobUrl });
+    const wc = views.get(id).view.webContents;
+    const r = await new Promise((resolve) => {
+      wc.once('did-finish-load', () => resolve('carregou'));
+      wc.once('did-fail-load', (_e, code, desc) => resolve('falhou:' + code + ' ' + desc));
+      setTimeout(() => resolve('timeout'), 8000);
+    });
+    assert(r === 'carregou', `view nova na mesma partition carrega o blob (${r})`);
+    assert(!baixou, 'view: o PDF é renderizado, não baixado');
+  } else assert(false, 'view: a página conseguiu criar o blob');
+  views.destroyAll();
+  assert(views.count() === 0, 'view: destroyAll fecha tudo');
+}
 
 app.whenReady().then(() => {
   // Um PDF que o Chromium não sabe renderizar vira DOWNLOAD — o usuário veria "não fez
@@ -137,6 +180,8 @@ app.whenReady().then(() => {
         assert(!baixou, 'o PDF é renderizado no preview, não baixado');
       }
 
+      await rodarView(porta);
+
       if (fail) {
         console.error(`\n${fail} falha(s).`);
         app.exit(1);
@@ -151,4 +196,4 @@ app.whenReady().then(() => {
 setTimeout(() => {
   console.error('popup smoke: TIMEOUT global');
   app.exit(1);
-}, 40000);
+}, 60000);

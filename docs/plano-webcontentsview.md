@@ -527,5 +527,17 @@ Peças (todas com teste vitest):
 Mudanças de UI que a view força (R1): FindBar vai pra dentro da barra de URL; anel de foco vira
 borda na barra de URL; chips "elemento/print copiado" viram toast; toasts vão pro lado oposto ao preview.
 
-Pendente (ordem): PreviewPanel → App (toaster) → popup-smoke na view → build/test/lint →
-smoke com o app isolado (CDP) → DESAFIOS/CHANGELOG.
+**Estado em 18/11, fim do dia: implementado e provado no app real.**
+
+- `npm run test:previewview` (scripts/preview-view-smoke.cjs) — 38 checagens, todas ok no motor
+  `view`: carga anima (241 rAF/s); zoom do app 125%; F5 recarrega a mesma view; camada do app e
+  menu por cima → foto, e volta animando; Ctrl+F na barra (site segue visível); recorte do print
+  na página → anotador; `target=_blank` vira aba sem janela nativa; fechar aba fecha a
+  webContents; DevTools em host novo, destruído ao fechar; **minimizar/restaurar 3/3 animando**;
+  recarregar o app não deixa view órfã; modo celular 393 px + `(hover: none)` animando.
+  Motor `webview` (reserva) também passa o roteiro dele.
+- `npm run test:popup` cobre os dois motores (http, `target=_blank`, `blob:` PDF renderizado).
+- O flag `CalculateNativeWinOcclusion` (branch reserva) foi trazido por cherry-pick: sem ele a
+  view nascia `hidden` com 0 rAF no app (§7 confirmado).
+- Fica pra 0.1.20: remover o motor `webview` do Preview; medir `setEmitTouchEventsForMouse`
+  na view (toque de verdade, §0); testar Mac/Linux (R5).

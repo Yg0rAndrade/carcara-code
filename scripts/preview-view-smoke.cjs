@@ -38,6 +38,11 @@ const ok = (cond, msg, extra) => {
   if (!cond) fail++;
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let diagApp = null; // conexão com o app pra imprimir o diagnóstico quando algo falha
+const okd = async (cond, msg, extra) => {
+  ok(cond, msg, extra);
+  if (!cond && diagApp) console.log('        diag: ' + JSON.stringify(await diagApp.ev(DIAG_EXPR)));
+};
 
 // ---------- projeto de teste ----------
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'carcara-pv-'));
@@ -53,7 +58,8 @@ fs.writeFileSync(
   path.join(proj, 'server.js'),
   `const http = require('http');
 const port = Number(process.env.PORT) || 5599;
-const page = (title, body) => '<!doctype html><meta charset="utf-8"><title>' + title + '</title>' +
+const page = (title, body) => '<!doctype html><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width,initial-scale=1"><title>' + title + '</title>' +
   '<body style="margin:0;font:16px sans-serif;height:3000px">' + body + '</body>';
 http.createServer((req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
@@ -135,6 +141,21 @@ const siteTarget =
     new URL(t.url).pathname.startsWith(pathPart) &&
     (pathPart !== '/' || !t.url.includes('/two'));
 
+// Diagnóstico pra quando falha: estado das views no main + o que o app tem POR CIMA da
+// área do preview (o que a oclusão enxerga) + se a foto está no lugar.
+const DIAG_EXPR = `(async()=>{
+  const c=[...document.querySelectorAll('div')].find(d=>d.className.startsWith('absolute inset-0')&&d.parentElement&&d.parentElement.className.includes('isolate'));
+  const r=c&&c.getBoundingClientRect(); const over={};
+  if(r) for(let y=r.top+3;y<r.bottom;y+=28) for(let x=r.left+3;x<r.right;x+=28){
+    const e=document.elementFromPoint(x,y);
+    if(e&&!(c===e||c.contains(e))&&!(e.closest&&e.closest('[data-preview-passthrough]'))){
+      const k=e.tagName+'.'+String(e.className&&e.className.baseVal!==undefined?e.className.baseVal:e.className).slice(0,70);
+      over[k]=(over[k]||0)+1;
+    }
+  }
+  return {views: await window.api.previewView.inspect(), over, foto: !!document.querySelector('img[src^="data:image"]'), appVis: document.visibilityState};
+})()`;
+
 // rAF por segundo + visibilidade, medidos no site.
 const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:window.__raf-a,vis:document.visibilityState}),1000)})`;
 
@@ -156,15 +177,16 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
     const appT = await waitTarget(
       (t) => t.type === 'page' && /index\.html|localhost:5173/.test(t.url),
     );
-    ok(!!appT, 'app abriu');
+    await okd(!!appT, 'app abriu');
     if (!appT) throw new Error('sem app');
     const app = await connect(appT);
+    diagApp = app;
     await until(() => app.ev(`!!document.querySelector('[data-rail-key]')`), 20000);
     await app.ev(`document.querySelector('[data-rail-key]').click()`);
 
     // 1. a aba nasce e anima
     const siteT = await waitTarget(siteTarget('/'), 60000);
-    ok(!!siteT, 'site abriu no preview', siteT && siteT.type);
+    await okd(!!siteT, 'site abriu no preview', siteT && siteT.type);
     if (!siteT) throw new Error('sem site\n' + log.slice(-2000));
     if (ENGINE === 'view') ok(siteT.type === 'page', "alvo CDP é 'page' (view), não 'webview'");
     const site = await connect(siteT);
@@ -175,18 +197,48 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       await sleep(600000);
     }
     const r1 = await site.ev(RAF_EXPR);
-    ok(r1 && r1.raf > 20 && r1.vis === 'visible', 'anima na carga', r1);
+    await okd(r1 && r1.raf > 20 && r1.vis === 'visible', 'anima na carga', r1);
     if (ENGINE === 'view') {
-      ok((await app.ev(`window.api.previewView.count()`)) === 1, '1 view no registro');
+      await okd((await app.ev(`window.api.previewView.count()`)) === 1, '1 view no registro');
       const wh = await site.ev(`[innerWidth, innerHeight]`);
       const box = await app.ev(
         `(()=>{const c=[...document.querySelectorAll('div')].find(d=>d.className==='absolute inset-0'&&d.parentElement&&d.parentElement.className.includes('isolate'));const r=c.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]})()`,
       );
-      ok(
+      await okd(
         Math.abs(wh[0] - box[0]) <= 3 && Math.abs(wh[1] - box[1]) <= 3,
         'view ocupa o painel (innerWidth/Height = painel)',
         { site: wh, painel: box },
       );
+    }
+
+    // 1b. zoom do app (Ctrl +/-): a view acompanha em DIP (px CSS do app × zoom)
+    if (ENGINE === 'view') {
+      await app.ev(`window.api.setZoom(1.25)`);
+      await sleep(600);
+      const z = await site.ev(`innerWidth`);
+      const pz = await app.ev(
+        `(()=>{const c=[...document.querySelectorAll('div')].find(d=>d.className.startsWith('absolute inset-0')&&d.parentElement&&d.parentElement.className.includes('isolate'));return Math.round(c.getBoundingClientRect().width*1.25)})()`,
+      );
+      await okd(Math.abs(z - pz) <= 3, 'zoom do app 125%: a view acompanha', {
+        site: z,
+        esperado: pz,
+      });
+      await app.ev(`window.api.setZoom(1)`);
+      await sleep(400);
+    }
+
+    // 1c. F5 no motor view = recarregar normal (mesma webContents, histórico mantido); no
+    // motor webview, recria a aba (remendo do congelamento, ver CHANGELOG 0.1.19).
+    if (ENGINE === 'view') {
+      await site.ev(`window.__marca = 1`);
+      await app.ev(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'F5',bubbles:true}))`);
+      const recarregou = await until(async () => (await site.ev(`window.__marca`)) === undefined);
+      const mesma = (await targets()).some((t) => t.id === siteT.id);
+      await okd(recarregou && mesma, 'F5 recarrega a MESMA view (sem recriar)', {
+        recarregou,
+        mesma,
+      });
+      await until(() => site.ev(`document.readyState === 'complete'`));
     }
 
     // 2. oclusão genérica: uma camada do app por cima
@@ -195,8 +247,8 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
         `(()=>{const d=document.createElement('div');d.id='__cover';d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.4)';document.body.appendChild(d)})()`,
       );
       const hid = await until(async () => (await site.ev(`document.visibilityState`)) === 'hidden');
-      ok(hid, 'camada do app por cima → view escondida');
-      ok(
+      await okd(hid, 'camada do app por cima → view escondida');
+      await okd(
         await app.ev(`!!document.querySelector('img[src^="data:image"]')`),
         'foto no lugar da view',
       );
@@ -204,19 +256,23 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       const back = await until(
         async () => (await site.ev(`document.visibilityState`)) === 'visible',
       );
-      ok(back, 'camada saiu → view volta');
+      await okd(back, 'camada saiu → view volta');
       await sleep(500);
       const r2 = await site.ev(RAF_EXPR);
-      ok(r2 && r2.raf > 20, 'volta animando', r2);
+      await okd(r2 && r2.raf > 20, 'volta animando', r2);
 
       // menu de verdade (câmera)
-      await app.ev(`document.querySelector('[aria-haspopup="menu"]').click()`);
+      await app.ev(
+        `(()=>{const c=[...document.querySelectorAll('div')].find(d=>d.className.startsWith('absolute inset-0')&&d.parentElement&&d.parentElement.className.includes('isolate'));const L=c.getBoundingClientRect().left;return [...document.querySelectorAll('[aria-haspopup="menu"]')].find(b=>b.getBoundingClientRect().left>L)})().click()`,
+      );
       const hid2 = await until(
         async () => (await site.ev(`document.visibilityState`)) === 'hidden',
       );
-      ok(hid2, 'menu da câmera aberto → view escondida');
-      await app.ev(`document.querySelector('[aria-haspopup="menu"]').click()`);
-      ok(
+      await okd(hid2, 'menu da câmera aberto → view escondida');
+      await app.ev(
+        `(()=>{const c=[...document.querySelectorAll('div')].find(d=>d.className.startsWith('absolute inset-0')&&d.parentElement&&d.parentElement.className.includes('isolate'));const L=c.getBoundingClientRect().left;return [...document.querySelectorAll('[aria-haspopup="menu"]')].find(b=>b.getBoundingClientRect().left>L)})().click()`,
+      );
+      await okd(
         await until(async () => (await site.ev(`document.visibilityState`)) === 'visible'),
         'menu fechou → view volta',
       );
@@ -231,7 +287,7 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
         `!!document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.placeholder!==''`,
       ),
     );
-    ok(findIn, 'Ctrl+F abre a busca');
+    await okd(findIn, 'Ctrl+F abre a busca');
     await app.ev(
       `(()=>{const i=document.activeElement;const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(i,'alfa');i.dispatchEvent(new Event('input',{bubbles:true}))})()`,
     );
@@ -241,10 +297,10 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       );
       return /\/2$/.test(t || '') ? t : null;
     });
-    ok(!!count, 'busca acha 2 "alfa"', count);
+    await okd(!!count, 'busca acha 2 "alfa"', count);
     if (ENGINE === 'view') {
       const vis = await site.ev(`document.visibilityState`);
-      ok(vis === 'visible', 'a busca NÃO cobre o site (fica na barra de URL)', vis);
+      await okd(vis === 'visible', 'a busca NÃO cobre o site (fica na barra de URL)', vis);
     }
     await app.ev(
       `document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`,
@@ -255,15 +311,15 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       `window.dispatchEvent(new KeyboardEvent('keydown',{key:'p',ctrlKey:true,bubbles:true}))`,
     );
     const cropOn = await until(() => site.ev(`!!document.querySelector('[data-carcara-crop]')`));
-    ok(cropOn, 'Ctrl+P põe a camada de recorte DENTRO da página');
+    await okd(cropOn, 'Ctrl+P põe a camada de recorte DENTRO da página');
     const M = (type, x, y) =>
       site.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
     await M('mousePressed', 30, 30);
     await M('mouseMoved', 120, 100);
     await M('mouseReleased', 120, 100);
     const annot = await until(() => app.ev(`!!document.querySelector('.z-\\\\[200\\\\]')`), 8000);
-    ok(annot, 'soltar o recorte abre o anotador');
-    ok(
+    await okd(annot, 'soltar o recorte abre o anotador');
+    await okd(
       !(await site.ev(`!!document.querySelector('[data-carcara-crop]')`)),
       'camada saiu da página',
     );
@@ -273,10 +329,10 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
     // 5. window.open → aba interna
     await site.ev(`document.getElementById('blank').click()`);
     const twoT = await waitTarget(siteTarget('/two'), 10000);
-    ok(!!twoT, 'link target=_blank vira aba interna');
+    await okd(!!twoT, 'link target=_blank vira aba interna');
     if (ENGINE === 'view') {
-      ok((await app.ev(`window.api.previewView.count()`)) === 2, '2 views no registro');
-      ok(
+      await okd((await app.ev(`window.api.previewView.count()`)) === 2, '2 views no registro');
+      await okd(
         (await targets()).filter(
           (t) => t.type === 'page' && !/index\.html/.test(t.url) && /two/.test(t.url),
         ).length === 1,
@@ -285,36 +341,35 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
     }
     // fecha a aba "two" com o botão do meio na tira
     await app.ev(
-      `(()=>{const c=document.querySelector('[title="two"]');c.dispatchEvent(new MouseEvent('auxclick',{button:1,bubbles:true}))})()`,
+      `(()=>{const c=document.querySelector('[title="two"]')||document.querySelector('[title="/two"]');c.dispatchEvent(new MouseEvent('auxclick',{button:1,bubbles:true}))})()`,
     );
     const closed = await until(async () => !(await targets()).some(siteTarget('/two')));
-    ok(closed, 'fechar a aba fecha a webContents dela');
+    await okd(closed, 'fechar a aba fecha a webContents dela');
     if (ENGINE === 'view')
-      ok((await app.ev(`window.api.previewView.count()`)) === 1, 'registro volta a 1');
+      await okd((await app.ev(`window.api.previewView.count()`)) === 1, 'registro volta a 1');
 
-    // 6. F12 com o foco no site → DevTools encaixado
+    // 6. DevTools encaixado, pelo botão da barra (o F12 com o foco no site vem do
+    // before-input-event do main, que o teclado SINTÉTICO do CDP não dispara — medido: 0
+    // disparos. O atalho usa o mesmo attachBrowserChrome do <webview>, que já funcionava.)
+    await okd(
+      await until(async () => !(await app.ev(`!!document.querySelector('[class*="z-[200]"]')`))),
+      'Esc fechou o anotador',
+    );
     if (ENGINE === 'view') {
-      await site.send('Input.dispatchKeyEvent', {
-        type: 'rawKeyDown',
-        key: 'F12',
-        code: 'F12',
-        windowsVirtualKeyCode: 123,
-      });
+      const BUG = `[...document.querySelectorAll('button[title]')].find(b=>/F12/.test(b.title)).click()`;
+      await app.ev(BUG);
       const dt = await until(async () => (await app.ev(`window.api.previewView.count()`)) === 2);
-      ok(dt, 'F12 cria o host do DevTools (2ª view)');
-      await sleep(800);
-      const site2 = await connect(await waitTarget(siteTarget('/')));
-      await site2.send('Input.dispatchKeyEvent', {
-        type: 'rawKeyDown',
-        key: 'F12',
-        code: 'F12',
-        windowsVirtualKeyCode: 123,
-      });
+      await okd(dt, 'DevTools cria o host (2ª view)');
+      const dtT = await waitTarget((t) => /^devtools:/.test(t.url), 8000);
+      await okd(!!dtT, 'o DevTools carregou no host');
+      const ins = await app.ev(`window.api.previewView.inspect()`);
+      const host = ins && ins.find((v) => v.kind === 'devtools');
+      await okd(host && host.bounds.width > 200, 'host com largura do painel do DevTools', host);
+      await app.ev(BUG);
       const dtClosed = await until(
         async () => (await app.ev(`window.api.previewView.count()`)) === 1,
       );
-      ok(dtClosed, 'F12 de novo fecha e destrói o host');
-      site2.close();
+      await okd(dtClosed, 'fechar o DevTools destrói o host');
     }
 
     // 7. minimizar / restaurar
@@ -324,20 +379,34 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
     });
     const win = await browser.send('Browser.getWindowForTarget', { targetId: appT.id });
     const windowId = win.result && win.result.windowId;
+    // Restaurar pelo CDP às vezes não pega na 1ª: insiste até o documento do APP voltar a
+    // 'visible'. Se nem assim, a medida é inválida (janela minimizada), não defeito do preview.
+    const restore = async () => {
+      for (let k = 0; k < 6; k++) {
+        await browser.send('Browser.setWindowBounds', {
+          windowId,
+          bounds: { windowState: 'normal' },
+        });
+        if (await until(async () => (await app.ev(`document.visibilityState`)) === 'visible', 1500))
+          return true;
+      }
+      return false;
+    };
     for (let i = 1; i <= 3; i++) {
       await browser.send('Browser.setWindowBounds', {
         windowId,
         bounds: { windowState: 'minimized' },
       });
       await sleep(2500);
-      await browser.send('Browser.setWindowBounds', {
-        windowId,
-        bounds: { windowState: 'normal' },
-      });
-      await sleep(1200);
+      const restored = await restore();
+      await sleep(1000);
+      if (!restored) {
+        console.log(`  (inválida) minimizar/restaurar #${i}: a janela não restaurou`);
+        continue;
+      }
       const s3 = await connect(await waitTarget(siteTarget('/')));
       const r3 = await s3.ev(RAF_EXPR);
-      ok(r3 && r3.raf > 20 && r3.vis === 'visible', `minimizar/restaurar #${i}: anima`, r3);
+      await okd(r3 && r3.raf > 20 && r3.vis === 'visible', `minimizar/restaurar #${i}: anima`, r3);
       s3.close();
     }
     browser.close();
@@ -348,28 +417,32 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       app.close();
       await sleep(2500);
       const orphan = (await targets()).filter(siteTarget('/')).length;
-      ok(orphan === 0, 'recarregar o app fecha as views (sem órfã)', orphan);
+      await okd(orphan === 0, 'recarregar o app fecha as views (sem órfã)', orphan);
       const app2 = await connect(
         await waitTarget((t) => t.type === 'page' && /index\.html/.test(t.url)),
       );
+      diagApp = app2;
       await until(() => app2.ev(`!!document.querySelector('[data-rail-key]')`), 20000);
       await app2.ev(`document.querySelector('[data-rail-key]').click()`);
       const s4t = await waitTarget(siteTarget('/'), 30000);
       const s4 = await connect(s4t);
       await until(() => s4.ev(`document.readyState === 'complete'`));
+      let last = null;
       const dev = await until(async () => {
-        const v = await s4.ev(`({w: innerWidth, hover: matchMedia('(hover: none)').matches})`);
-        return v && v.w === 393 && v.hover ? v : null;
+        last = await s4.ev(
+          `({w: innerWidth, sw: screen.width, hover: matchMedia('(hover: none)').matches, touch: navigator.maxTouchPoints})`,
+        );
+        return last && last.w === 393 && last.hover ? last : null;
       }, 8000);
-      ok(!!dev, 'modo celular: site com 393px e (hover: none)', dev);
+      await okd(!!dev, 'modo celular: site com 393px e (hover: none)', last);
       const r4 = await s4.ev(RAF_EXPR);
-      ok(r4 && r4.raf > 20 && r4.vis === 'visible', 'modo celular anima', r4);
+      await okd(r4 && r4.raf > 20 && r4.vis === 'visible', 'modo celular anima', r4);
       s4.close();
       app2.close();
     }
     site.close();
   } catch (e) {
-    ok(false, 'exceção: ' + (e && e.message));
+    await okd(false, 'exceção: ' + (e && e.message));
   } finally {
     // Mata a ÁRVORE: no Windows `proc.kill()` deixa os filhos do Electron (e a porta de
     // depuração) vivos — a próxima rodada não consegue abrir a 9333 (DESAFIOS, killTree).

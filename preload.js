@@ -333,6 +333,7 @@ contextBridge.exposeInMainWorld('api', {
     call: (id, method, args) => ipcRenderer.invoke('preview-view:call', { id, method, args }),
     exec: (id, code) => ipcRenderer.invoke('preview-view:exec', { id, code }),
     count: () => ipcRenderer.invoke('preview-view:count'),
+    inspect: () => ipcRenderer.invoke('preview-view:inspect'),
     // Fator de zoom da janela do app: px CSS do renderer → DIP da janela (bounds da view).
     zoomFactor: () => webFrame.getZoomFactor(),
   },

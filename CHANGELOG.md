@@ -3,16 +3,38 @@
 Notas de versão do Carcará Code. As versões seguem versionamento semântico
 (`MAJOR.MINOR.PATCH`), da mais nova para a mais antiga.
 
-## [0.1.19] — 2026-11-17
+## [0.1.19] — 2026-11-18
+
+### Mudado
+
+- **Novo motor do Preview:** cada aba do Preview agora é uma `WebContentsView` (a API que o
+  próprio Electron recomenda), no lugar do `<webview>`. O site roda como uma aba de primeiro
+  nível, igual no Chrome, e não depende mais da página do app pra saber se está visível.
+  O motor antigo fica de reserva por uma versão: `"previewEngine": "webview"` no
+  `config.json` volta pra ele sem precisar de outra versão.
+- **Busca na página (Ctrl+F)** abre dentro da barra de URL, não mais por cima do site.
+- **"Foco no site"** (Ctrl +/− zooma o site, não o app) agora acende a barra de URL, em
+  vez de uma borda por cima do site.
+- **Avisos de "Elemento copiado" e "Print copiado"** viram notificações, e as notificações
+  aparecem do lado do chat, longe do Preview.
+- **Recorte do print** acontece dentro da página: a rodinha rola o site de verdade
+  (inclusive caixas roláveis internas) enquanto você enquadra.
+- **Botões de recolher e alça da divisória** chat | Preview ficam inteiros do lado do chat.
+- **Balão de dica do modo celular** aparece ao lado do aparelho, não mais por cima da tela.
+- **Modo celular mais fiel:** o aparelho é emulado como no device mode do Chrome. Página
+  sem `<meta name="viewport">` abre com 980 px de largura, como num celular de verdade.
+- **Recarregar (F5)** volta a ser um recarregar normal, que mantém o voltar/avançar.
 
 ### Corrigido
 
-- **Preview com animações congeladas depois de minimizar ou encobrir a janela (Windows):** o
-  botão de recarregar (e o F5) agora recria o preview do zero, em vez de recarregar a página
-  dentro dele. Sites com GSAP/requestAnimationFrame que travavam voltam a animar com um
-  clique. Reiniciar e Parar o servidor já faziam isso. Contrapartida: a aba recarregada perde
-  o histórico de voltar/avançar. A correção definitiva (trocar o motor do preview) vem numa
-  próxima versão.
+- **Animações congeladas no Preview depois de minimizar ou encobrir a janela (Windows):**
+  sites com GSAP/`requestAnimationFrame` voltavam sem nenhum quadro de animação e com
+  textos invisíveis. Com o novo motor e o rastreio nativo de oclusão de janela do Chromium
+  desligado no Windows (`CalculateNativeWinOcclusion`), o site volta animando: medido em
+  3 de 3 ciclos de minimizar/restaurar.
+- **Link clicado no terminal do Claude** abria uma janela solta por cima do app, depois de
+  um aviso em inglês ("This link could potentially be dangerous"). Agora abre numa aba nova
+  do Preview do projeto, como o botão do meio num link do site.
 
 ## [0.1.18] — 2026-11-13
 

@@ -1811,14 +1811,30 @@ export function PreviewPanel({
     },
     [createTab, refreshTabBar],
   );
-  const recreateRef = useRef(recreateActiveTab);
-  recreateRef.current = recreateActiveTab;
+  // Recarregar a aba ativa. Motor 'view': recarregar normal (mantém voltar/avançar) — a view
+  // não tem o defeito do <webview> que o recriar contornava. Motor 'webview': recria.
+  const reloadActiveTab = useCallback(
+    (projectPath, { hard = false } = {}) => {
+      const w = activeWebviewOf(projectPath);
+      if (!w) return;
+      if (w.kind === 'view') {
+        if (hard) w.reloadIgnoringCache();
+        else w.reload();
+        return;
+      }
+      recreateActiveTab(projectPath, { hard });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recreateActiveTab],
+  );
+  const recreateRef = useRef(reloadActiveTab);
+  recreateRef.current = reloadActiveTab;
 
   // Recarregar = recriar a aba (ver recreateActiveTab); com Ctrl/Cmd vira hard reload.
   const reload = (e) => {
     if (!active) return;
     try {
-      recreateActiveTab(active.path, { hard: !!(e && (e.ctrlKey || e.metaKey)) });
+      reloadActiveTab(active.path, { hard: !!(e && (e.ctrlKey || e.metaKey)) });
     } catch {}
   };
   // Escolher um dispositivo recarrega a página, pra ela não ficar presa no layout anterior.
