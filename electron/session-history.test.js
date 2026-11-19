@@ -142,3 +142,43 @@ describe('leitura do histórico em disco', () => {
     expect(await readerFor('codex').resolveId(null, PROJ)).toBeNull();
   });
 });
+
+describe('historyOwnedByOther (duas abas nunca retomam a mesma conversa)', () => {
+  const { historyOwnedByOther } = require('./session-history.cjs');
+  const claude = readerFor('claude');
+  const tabs = [
+    { id: 'A', claudeId: CLAUDE_ID },
+    { id: 'B', claudeId: CLAUDE_ID },
+    { id: 'C', claudeId: 'outro' },
+  ];
+
+  it('no config com id repetido, só a aba de cima é dona', () => {
+    expect(historyOwnedByOther(claude, { sessionId: 'A', histId: CLAUDE_ID, tabs })).toBe(false);
+    expect(historyOwnedByOther(claude, { sessionId: 'B', histId: CLAUDE_ID, tabs })).toBe(true);
+    expect(historyOwnedByOther(claude, { sessionId: 'C', histId: 'outro', tabs })).toBe(false);
+  });
+
+  it('aba viva com o mesmo id vence, mesmo estando abaixo na lista', () => {
+    const live = [{ sessionId: 'B', histId: CLAUDE_ID }];
+    expect(historyOwnedByOther(claude, { sessionId: 'A', histId: CLAUDE_ID, tabs, live })).toBe(
+      true,
+    );
+  });
+
+  it('a própria aba viva não conta contra ela mesma', () => {
+    const live = [{ sessionId: 'C', histId: 'outro' }];
+    expect(historyOwnedByOther(claude, { sessionId: 'C', histId: 'outro', tabs, live })).toBe(
+      false,
+    );
+  });
+
+  it('sem id não há dono', () => {
+    expect(historyOwnedByOther(claude, { sessionId: 'A', histId: null, tabs })).toBe(false);
+  });
+
+  it('forkSession do claude retoma o histórico com id novo', () => {
+    const f = claude.forkSession(CLAUDE_ID);
+    expect(f.id).not.toBe(CLAUDE_ID);
+    expect(f.cmd).toBe(`claude --resume ${CLAUDE_ID} --fork-session --session-id ${f.id}`);
+  });
+});

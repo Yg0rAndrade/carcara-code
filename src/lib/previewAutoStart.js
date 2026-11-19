@@ -20,6 +20,7 @@
 //   handled     — este projeto já passou por este efeito nesta sessão
 //   sameProject — é re-run no mesmo projeto (não troca de projeto)
 //   autoStart   — o projeto quer o Preview subindo sozinho (Configurações › Projetos)
+//   isElectron  — o projeto é um app Electron (o Preview web não serve pra ele)
 //
 // Saída:
 //   action: 'show'   — tem URL: mostra o site
@@ -36,6 +37,7 @@ export function decideAutoStart({
   handled = false,
   sameProject = false,
   autoStart = true,
+  isElectron = false,
 } = {}) {
   if (hasUrl) return { action: 'show', markHandled: true };
   if (running && statusUrl) return { action: 'show', markHandled: true };
@@ -47,6 +49,10 @@ export function decideAutoStart({
   // botão Iniciar continuar sendo o único caminho, mesmo se o efeito re-rodar. Vale só
   // pra este ramo: quem já está no ar continua sendo mostrado normalmente acima.
   if (!autoStart) return { action: 'empty', markHandled: true };
+  // App Electron: `npm run dev` sobe só o renderer, que no Preview fica eternamente
+  // carregando (sem preload/IPC). Nunca sobe sozinho; a tela vazia oferece os scripts.
+  // Quem já está no ar (a pessoa pediu o Preview web mesmo assim) continua acima.
+  if (isElectron) return { action: 'empty', markHandled: true };
   // Fora do ar e já tratado: o usuário parou, ou o servidor caiu. NÃO relança.
   // Num re-run do mesmo projeto nem mexe no modo, senão o log com o erro de quem
   // caiu some da tela justo quando o usuário precisa lê-lo.

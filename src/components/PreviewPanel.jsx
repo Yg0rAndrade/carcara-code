@@ -40,6 +40,7 @@ import { DevicePicker, DeviceSwitcher } from './ui/device-picker.jsx';
 import { ResizeBar } from './ui/resize-bar.jsx';
 import { DragHandle } from './ui/drag-handle.jsx';
 import { EmptyState } from './ui/empty-state.jsx';
+import { ElectronAppStart } from './ElectronAppStart.jsx';
 import { ScaffoldWizard } from './ScaffoldWizard.jsx';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
@@ -400,6 +401,8 @@ export function PreviewPanel({
   const [scaffoldProbe, setScaffoldProbe] = useState(null); // { scaffoldable, junk } | null
   const [url, setUrl] = useState('');
   const [termOpen, setTermOpen] = useState(false);
+  // Pedido pro terminal rodar um script (botões da tela de app Electron).
+  const [runRequest, setRunRequest] = useState(null); // { seq, projectPath, command, label }
   const [termHeight, setTermHeight] = useState(300);
   const [copied, setCopied] = useState(false);
   const [devtoolsOpen, setDevtoolsOpen] = useState(false);
@@ -1355,7 +1358,11 @@ export function PreviewPanel({
         return out;
       },
       ownRoots: () => [containerRef.current, devtoolsHostRef.current],
-      onChange: setOccluded,
+      onChange: (covered, info) => {
+        // Vai pro log do main (console-message ≥ warn): diagnóstico de "o Preview sumiu".
+        if (covered) console.warn('[preview] coberto — view vira foto:', info);
+        setOccluded(covered);
+      },
     });
     return () => {
       stop();
@@ -1595,6 +1602,7 @@ export function PreviewPanel({
         // Ausente no objeto antigo (projeto remoto, config nunca gravada) = ligado, que
         // e o comportamento que o app sempre teve.
         autoStart: active.autoStart !== false,
+        isElectron: !!active.electron,
       });
       if (markHandled) autoStartedRef.current.add(active.path);
       if (action === 'keep') return; // log do erro de quem caiu continua à mostra
@@ -1830,6 +1838,11 @@ export function PreviewPanel({
       const w = activeWebviewOf(projectPath);
       if (!w) return;
       if (w.kind === 'view') {
+        // Atualizar também re-crava a geometria (bounds + modo celular) no tamanho atual do
+        // painel: segunda via pra quem vir o site fora do lugar por qualquer motivo.
+        w.relayout(panelBox(), viewportRef.current, customRef.current, {
+          expanded: safariRef.current,
+        });
         if (hard) w.reloadIgnoringCache();
         else w.reload();
         return;
@@ -1940,6 +1953,18 @@ export function PreviewPanel({
     },
     [askPortDecision],
   );
+
+  // Botão de script na tela de app Electron: roda no terminal do painel, numa aba nova.
+  const runScript = (name) => {
+    if (!active?.electron) return;
+    setRunRequest({
+      seq: Date.now(),
+      projectPath: active.path,
+      command: `${active.electron.manager} run ${name}`,
+      label: name,
+    });
+    setTermOpen(true);
+  };
 
   const restart = async () => {
     if (!active || serverBusyRef.current) return;
@@ -2292,12 +2317,17 @@ export function PreviewPanel({
                 alt=""
                 draggable={false}
                 className="pointer-events-none absolute select-none"
-                style={{
-                  left: freeze.rect.x,
-                  top: freeze.rect.y,
-                  width: freeze.rect.width,
-                  height: freeze.rect.height,
-                }}
+                style={(() => {
+                  // Modo celular: a foto segue a TELA da moldura (mesma conta da view), senão
+                  // ao arrastar a divisória a moldura recentra e a foto fica parada ao lado.
+                  const r =
+                    device && stageBox
+                      ? (({ page }) => ({ x: page.x, y: page.y, width: page.w, height: page.h }))(
+                          fitDevice(device, stageBox, { expanded: safariExpanded }),
+                        )
+                      : freeze.rect;
+                  return { left: r.x, top: r.y, width: r.width, height: r.height };
+                })()}
               />
             )}
           </div>
@@ -2383,6 +2413,16 @@ export function PreviewPanel({
                   junk={scaffoldProbe.junk}
                   onNewSession={onNewChatSession}
                 />
+              ) : active.electron ? (
+                // App Electron (ex.: o próprio Carcará): o Preview web mostraria só o
+                // renderer sem o main. Em vez disso, os scripts como ações.
+                <div className="absolute inset-0">
+                  <ElectronAppStart
+                    electron={active.electron}
+                    onRun={runScript}
+                    onWebAnyway={restart}
+                  />
+                </div>
               ) : (
                 <div className="absolute inset-0">
                   <EmptyState>
@@ -2499,6 +2539,7 @@ export function PreviewPanel({
                 activeProject={active?.path || null}
                 visible={termOpen}
                 onOpenUrl={navigateTo}
+                runRequest={runRequest}
               />
             </LazyPanel>
           </div>

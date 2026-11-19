@@ -14,6 +14,10 @@
 //  - quem tiver `data-preview-passthrough` (ou estiver dentro de um).
 // Conta sempre: arraste de divisória do react-resizable-panels (`data-resize-handle-active`),
 // que não põe camada nenhuma por cima mas precisa do mouse passando sobre a view.
+// SÓ o valor "pointer" (arraste de verdade). A biblioteca também põe "keyboard" quando a
+// divisória só está com FOCO — e clicar nas bolinhas de recolher (que moram dentro dela)
+// dá esse foco. Contar "keyboard" deixava o Preview em foto pra sempre (DESAFIOS, 18/11).
+const DRAGGING = '[data-resize-handle-active="pointer"]';
 
 // Grade de pontos dentro de `rect` (px CSS), recuada `inset` das bordas, com passo `step`.
 // Sempre inclui as quatro bordas (um menu que encosta só na beirada é pego).
@@ -39,16 +43,32 @@ export function samplePoints(rect, step = 28, inset = 3) {
 // true se algum ponto cai num elemento que não é "nosso".
 //  hitTest(x, y) → elemento do topo (ou null); isOwn(el) → é o painel/foto do preview.
 export function isCovered(points, hitTest, isOwn) {
+  return !!findCover(points, hitTest, isOwn);
+}
+
+// O primeiro ponto coberto e quem cobre ({ x, y, el }), ou null. Serve pro diagnóstico:
+// "o Preview sumiu" quase sempre é um elemento do app encostando na view (DESAFIOS).
+export function findCover(points, hitTest, isOwn) {
   for (const [x, y] of points) {
     const el = hitTest(x, y);
-    if (el && !isOwn(el)) return true;
+    if (el && !isOwn(el)) return { x, y, el };
   }
-  return false;
+  return null;
+}
+
+// Rótulo curto de um elemento pra log: TAG.classes (cortado) + title, se houver.
+export function describeEl(el) {
+  if (!el) return '';
+  const cls =
+    el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
+  const title = el.getAttribute && el.getAttribute('title');
+  return `${el.tagName}.${String(cls || '').slice(0, 80)}${title ? ` [title=${title}]` : ''}`;
 }
 
 // Observa o documento e chama onChange(covered) quando muda. Reavalia em qualquer mutação
 // do DOM (coalescido por quadro), no resize da janela e num relógio de segurança (animação
 // CSS que não muta o DOM). Devolve a função de parar.
+//  onChange(covered, info): info diz quem cobre (pra log), null ao descobrir
 //  getRects(): retângulos (px CSS) das views à mostra
 //  ownRoots(): elementos cujo conteúdo é "do preview" (painel, slot do DevTools)
 export function watchOcclusion({ getRects, ownRoots, onChange, doc = document, win = window }) {
@@ -61,18 +81,20 @@ export function watchOcclusion({ getRects, ownRoots, onChange, doc = document, w
   };
   const check = () => {
     raf = 0;
-    let covered = !!doc.querySelector('[data-resize-handle-active]');
-    if (!covered) {
+    let info = doc.querySelector(DRAGGING) ? 'arrastando divisória' : null;
+    if (!info) {
       for (const r of getRects()) {
-        if (isCovered(samplePoints(r), (x, y) => doc.elementFromPoint(x, y), isOwn)) {
-          covered = true;
+        const hit = findCover(samplePoints(r), (x, y) => doc.elementFromPoint(x, y), isOwn);
+        if (hit) {
+          info = `${describeEl(hit.el)} em (${Math.round(hit.x)},${Math.round(hit.y)})`;
           break;
         }
       }
     }
+    const covered = !!info;
     if (covered !== last) {
       last = covered;
-      onChange(covered);
+      onChange(covered, info);
     }
   };
   const schedule = () => {

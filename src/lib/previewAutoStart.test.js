@@ -99,4 +99,12 @@ describe('decideAutoStart com auto-start desligado', () => {
     expect(decideAutoStart({ ...NEXT, running: false, handled: false }).action).toBe('start');
     expect(decideAutoStart({ ...NEXT, running: false, autoStart: true }).action).toBe('start');
   });
+
+  it('app Electron: não sobe sozinho, mas mostra se já estiver no ar', () => {
+    const d = decideAutoStart({ ...NEXT, isElectron: true, running: false });
+    expect(d).toEqual({ action: 'empty', markHandled: true });
+    expect(
+      decideAutoStart({ ...NEXT, isElectron: true, running: true, statusUrl: 'http://x' }).action,
+    ).toBe('show');
+  });
 });

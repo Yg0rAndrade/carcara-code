@@ -27,7 +27,7 @@ const detectPort = require('detect-port');
 const mcpCore = require('./electron/mcp-core.cjs');
 const mcpOauth = require('./electron/mcp-oauth.cjs');
 const mediaCore = require('./electron/media-core.cjs');
-const { readerFor } = require('./electron/session-history.cjs');
+const { readerFor, historyOwnedByOther } = require('./electron/session-history.cjs');
 const codexAppServer = require('./electron/codex-app-server.cjs');
 const aiCli = require('./electron/ai-cli.cjs');
 const aiCatalog = require('./electron/ai-catalog.cjs');
@@ -124,13 +124,15 @@ protocol.registerSchemesAsPrivileged([
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
+// Gravação atômica + config.json.bak (ver electron/json-store.cjs: incidente do disco cheio
+// em 19/11/2026 que zerou projetos e sessões).
+const jsonStore = require('./electron/json-store.cjs');
+
 function loadConfig() {
-  let c;
-  try {
-    c = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
-  } catch {
-    c = {};
-  }
+  let { value: c, source } = jsonStore.readJson(configPath(), {});
+  if (!c || typeof c !== 'object' || Array.isArray(c)) c = {};
+  // Recuperado do .bak: regrava logo, pra o arquivo principal voltar a ser o bom.
+  if (source === 'backup') saveConfig(c);
   if (!Array.isArray(c.projects)) c.projects = [];
   // Migração única: tinha um 'root' antigo? Importa as subpastas pra lista e descarta o root.
   if (c.root && c.projects.length === 0) {
@@ -146,8 +148,11 @@ function loadConfig() {
 }
 function saveConfig(cfg) {
   try {
-    fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2));
-  } catch {}
+    jsonStore.writeJson(configPath(), cfg);
+  } catch (e) {
+    // Não salvou (ex.: disco cheio), mas o config.json anterior continua intacto.
+    console.error('[config] falha ao salvar config.json:', e && e.message);
+  }
 }
 
 // Perfil de um projeto remoto, guardado em cfg.remotes[hostKey] (não-secreto).
@@ -835,7 +840,24 @@ async function buildLaunchCommand(sessionId, projectPath) {
     // codex, em que o id salvo era o do arquivo de rollout e não o da thread.
     let cid = reader.getId(s) || (await reader.legacyId(sessionId));
     if (cid && reader.resolveId) cid = await reader.resolveId(cid, projectPath);
-    if (cid && (await reader.historyExists(cid, projectPath))) {
+    const exists = cid && (await reader.historyExists(cid, projectPath));
+    // Outra aba já é dona desta conversa (config antigo com id repetido): retomar aqui
+    // poria dois CLIs no MESMO transcript e as abas se misturariam. Abre uma cópia com
+    // id próprio; o watcher troca o id no config quando a cópia ganhar título. Sem
+    // suporte a cópia na CLI, cai no fluxo de aba nova lá embaixo.
+    const owned =
+      exists &&
+      historyOwnedByOther(reader, {
+        sessionId,
+        histId: cid,
+        tabs: c.sessions?.[projectPath] || [],
+        live: liveTabs(projectPath),
+      });
+    if (owned && reader.forkSession) {
+      const fork = reader.forkSession(cid);
+      return { cmd: fork.cmd, capture: false, histId: fork.id, cli };
+    }
+    if (exists && !owned) {
       // tem conversa salva → retoma
       if (s && reader.getId(s) !== cid) {
         reader.setId(s, cid);
@@ -908,11 +930,14 @@ function historyIdClaimed(projectPath, sessionId, cli, histId) {
   const reader = readerFor(cli);
   const list = loadConfig().sessions?.[projectPath] || [];
   if (list.some((s) => s.id !== sessionId && reader?.getId(s) === histId)) return true;
-  for (const t of terminals.values()) {
-    if (t.sessionId !== sessionId && t.projectPath === projectPath && t.histId === histId)
-      return true;
-  }
-  return false;
+  return liveTabs(projectPath).some((t) => t.sessionId !== sessionId && t.histId === histId);
+}
+
+// Ptys vivos do projeto, na forma que o historyOwnedByOther espera.
+function liveTabs(projectPath) {
+  return [...terminals.values()]
+    .filter((t) => t.projectPath === projectPath)
+    .map((t) => ({ sessionId: t.sessionId, histId: t.histId }));
 }
 
 // Vigia o histórico em disco de uma sessão (claude/codex): (1) se ainda não sabemos o
@@ -1621,6 +1646,9 @@ ipcMain.handle('projects:list', () => {
       // e servivel quando ela mesma disse o que roda ali.
       previewType: runCommand.isCustom(run) ? 'custom' : phpRuntime.detectProjectType(p),
       autoStart: run.autoStart, // abrir o Preview sozinho ao entrar no projeto
+      // App Electron (ex.: o próprio Carcará): o Preview não sobe sozinho e mostra os
+      // scripts em botões. null em site comum ou com comando personalizado.
+      electron: hasPkg ? electronInfoFor(p, run) : null,
       icon: m.icon || findFavicon(p), // imagem escolhida à mão vence o favicon
       color: m.color || null, // null → o rail usa colorFor(name)
       remote: false,
@@ -4570,6 +4598,18 @@ function detectDevCommand(projectPath) {
 function runConfigFor(projectPath, cfg) {
   const c = cfg || loadConfig();
   return runCommand.normalizeRun(c.projectRun?.[projectPath]);
+}
+
+// Projeto é um app Electron? Parte pura em run-command.cjs; aqui só o disco.
+function electronInfoFor(projectPath, run) {
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+  if (!runCommand.isElectronPackage(pkg)) return null;
+  return runCommand.electronInfo(pkg, run, pickPackageManager(projectPath));
 }
 
 // A linha que o modo Automatico resolveria AGORA, pra tela mostrar em vez de esconder.

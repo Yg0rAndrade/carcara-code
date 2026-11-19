@@ -5,6 +5,9 @@ import {
   isCustom,
   applyPort,
   customCommandFor,
+  isElectronPackage,
+  electronScripts,
+  electronInfo,
 } from './run-command.cjs';
 
 describe('normalizeRun', () => {
@@ -78,5 +81,60 @@ describe('customCommandFor', () => {
   it('null quando o automático está valendo', () => {
     expect(customCommandFor({ mode: 'auto', command: 'serve' }, 9000)).toBe(null);
     expect(customCommandFor(undefined, 9000)).toBe(null);
+  });
+});
+
+// package.json do próprio Carcará, resumido: o caso que motivou a detecção.
+const CARCARA = {
+  scripts: {
+    dev: 'vite',
+    build: 'vite build',
+    start: 'electron .',
+    test: 'vitest run',
+    lint: 'eslint .',
+    prepare: 'husky',
+    'pack:exe': 'vite build && electron-builder --win',
+  },
+  devDependencies: { electron: '^33.0.0', vite: '^6.0.0' },
+};
+
+describe('isElectronPackage', () => {
+  it('electron em devDependencies ou dependencies', () => {
+    expect(isElectronPackage(CARCARA)).toBe(true);
+    expect(isElectronPackage({ dependencies: { electron: '1' } })).toBe(true);
+  });
+  it('site comum não é Electron', () => {
+    expect(isElectronPackage({ dependencies: { next: '15' } })).toBe(false);
+    expect(isElectronPackage({ devDependencies: { 'electron-builder': '1' } })).toBe(false);
+    expect(isElectronPackage(null)).toBe(false);
+  });
+});
+
+describe('electronScripts', () => {
+  it('ordena abrir → dev → build → empacotar e deixa teste/lint de fora', () => {
+    expect(electronScripts(CARCARA).map((s) => s.name)).toEqual([
+      'start',
+      'dev',
+      'build',
+      'pack:exe',
+    ]);
+  });
+  it('limita a 6 botões', () => {
+    const scripts = Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`pack:${i}`, 'x']));
+    expect(electronScripts({ scripts })).toHaveLength(6);
+  });
+});
+
+describe('electronInfo', () => {
+  it('Electron sem comando personalizado: devolve os scripts', () => {
+    const info = electronInfo(CARCARA, { mode: 'auto' }, 'npm');
+    expect(info.manager).toBe('npm');
+    expect(info.scripts[0]).toEqual({ name: 'start', command: 'electron .' });
+  });
+  it('comando personalizado vence a detecção', () => {
+    expect(electronInfo(CARCARA, { mode: 'custom', command: 'npm run dev' })).toBeNull();
+  });
+  it('não-Electron: null', () => {
+    expect(electronInfo({ scripts: { dev: 'next' } }, {})).toBeNull();
   });
 });

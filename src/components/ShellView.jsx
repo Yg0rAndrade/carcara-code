@@ -41,6 +41,10 @@ const shellMeta = new Map(); // termId -> { name }
 const shellSeq = new Map(); // projectPath -> próximo número de "Terminal N"
 
 const newTermId = () => crypto.randomUUID();
+// Comandos pedidos de fora (botões do Preview, ex.: "npm run start" num app Electron).
+// Módulo, não ref: o painel remonta a cada abrir, e o pedido não pode rodar duas vezes.
+const pendingRuns = new Map(); // termId -> linha a digitar quando o PTY subir
+let lastRunSeq = 0;
 
 // Refaz o fit e só avisa o PTY quando a grade de caracteres realmente mudou.
 // Resizes redundantes fazem o conpty reemitir a tela e duplicar conteúdo.
@@ -59,7 +63,7 @@ function syncSize(t) {
 // splits — mesmo modelo de árvore (paneLayout.js) das sessões do Claude Code, mas
 // enxuto: sem CLI/atividade/chat, só shell limpo. Cada aba mantém seu PTY e
 // scrollback vivos ao trocar (esconder/mostrar, nunca destruir o xterm).
-export function ShellView({ activeProject, visible, onOpenUrl }) {
+export function ShellView({ activeProject, visible, onOpenUrl, runRequest }) {
   const t = useT();
   const { terminalPalette } = useTheme();
   const themeRef = useRef(terminalPalette);
@@ -241,6 +245,11 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
       window.api.shellEnsure(termId, projectPath, term.cols, term.rows).then((res) => {
         if (res && res.error) term.write('\r\n\x1b[31m[' + res.error + ']\x1b[0m\r\n');
         else if (res && res.buffer) term.write(res.buffer);
+        const cmd = pendingRuns.get(termId);
+        if (cmd && !(res && res.error)) {
+          pendingRuns.delete(termId);
+          window.api.shellInput(termId, cmd + '\r');
+        }
       });
       term.focus();
     });
@@ -297,6 +306,23 @@ export function ShellView({ activeProject, visible, onOpenUrl }) {
     setFocusedPane(paneId);
     focusTerm(id);
   };
+
+  // Pedido de rodar um comando: abre um terminal novo, com o nome do script, e digita a
+  // linha assim que o PTY subir (createTerm). `seq` evita repetir ao remontar o painel.
+  useEffect(() => {
+    const r = runRequest;
+    if (!r || r.seq <= lastRunSeq || r.projectPath !== activeProject || !layoutRef.current) return;
+    const paneId = focusedPaneRef.current ?? firstPane(layoutRef.current)?.id;
+    if (paneId == null) return;
+    lastRunSeq = r.seq;
+    const id = newTermId();
+    shellMeta.set(id, { name: r.label || nextName(activeProject) });
+    pendingRuns.set(id, r.command);
+    commitLayout(addSessionToPane(layoutRef.current, paneId, id));
+    setFocusedPane(paneId);
+    focusTerm(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runRequest, activeProject]);
 
   const onTabClick = (paneId, id) => {
     commitLayout(setActiveInPane(layoutRef.current, paneId, id));

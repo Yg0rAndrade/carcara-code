@@ -372,6 +372,55 @@ const RAF_EXPR = `new Promise(r=>{const a=window.__raf;setTimeout(()=>r({raf:win
       await okd(dtClosed, 'fechar o DevTools destrói o host');
     }
 
+    // 6b. Nada do app encostado na view a esconde pra sempre. Regressão real (18/11): com o
+    // chat recolhido, a bolinha de reabrir e a alça do rail caíam ~6px sobre o site; com o
+    // F12 aberto, a área de pegar da barra do DevTools idem. A oclusão via "coberto" pra
+    // sempre: foto presa (largura antiga, faixa branca), F12 sem inspecionar, tela branca.
+    if (ENGINE === 'view') {
+      // Clique de MOUSE de verdade (CDP), não .click(): a bolinha de recolher mora DENTRO da
+      // divisória e o mouse dá foco a ela, o que liga data-resize-handle-active="keyboard".
+      // Contar isso como arraste deixava o Preview em foto pra sempre (regressão real, 18/11).
+      const click = async (re) => {
+        await app.send('Page.bringToFront');
+        const p = await app.ev(
+          `(()=>{const b=[...document.querySelectorAll('button[title]')].find(b=>${re}.test(b.title));if(!b)return null;const r=b.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`,
+        );
+        if (!p) return false;
+        for (const type of ['mousePressed', 'mouseReleased'])
+          await app.send('Input.dispatchMouseEvent', {
+            type,
+            x: p.x,
+            y: p.y,
+            button: 'left',
+            clickCount: 1,
+          });
+        return true;
+      };
+      const viewOk = async (label) => {
+        await sleep(1200);
+        const tab = (await app.ev(`window.api.previewView.inspect()`)).find(
+          (v) => v.kind === 'tab',
+        );
+        const s = await site.ev(`({iw: innerWidth, vis: document.visibilityState})`);
+        const foto = await app.ev(`!!document.querySelector('img[src^="data:image"]')`);
+        await okd(!foto && s.vis === 'visible' && Math.abs(s.iw - tab.bounds.width) <= 3, label, {
+          site: s,
+          view: tab.bounds.width,
+          foto,
+        });
+      };
+      await click('/Recolher chat|Collapse chat/i');
+      await viewOk('chat recolhido: site visível e na largura nova');
+      await click('/F12/');
+      await viewOk('chat recolhido + F12: site continua visível');
+      await click('/F12/');
+      await click('/Abrir terminal|Open terminal/i');
+      await viewOk('terminal aberto: site continua visível');
+      await click('/Fechar terminal|Close terminal/i');
+      await click('/Expandir chat|Expand chat/i');
+      await viewOk('chat de volta: site na largura do painel');
+    }
+
     // 7. minimizar / restaurar
     const browser = await connect({
       webSocketDebuggerUrl: (await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json())

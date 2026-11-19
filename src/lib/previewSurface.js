@@ -150,6 +150,14 @@ export function createViewSurface({ api, partition, projectPath, url, kind = 'ta
         pv.setRadius(id, g.radius);
       }
     },
+    // Igual ao layout, mas reenvia tudo (bounds, modo celular, cantos) mesmo que pareça
+    // igual. Usado pelo Atualizar: crava a geometria atual caso a view tenha ficado fora.
+    relayout(box, viewport, custom, opts) {
+      state.bounds = null;
+      state.emulation = undefined;
+      state.radius = -1;
+      h.layout(box, viewport, custom, opts);
+    },
     // Retângulo atual da view em px CSS do app (pra conta do recorte do print / oclusão).
     cssRect() {
       const b = state.bounds;
@@ -194,6 +202,7 @@ export function createWebviewSurface({ container, partition, url }) {
   };
   // O <webview> mede o próprio pai (applyViewport); o box é ignorado.
   w.layout = (_box, viewport, custom, opts) => applyViewport(w, viewport, custom, opts);
+  w.relayout = w.layout;
   w.cssRect = () => {
     const r = w.getBoundingClientRect();
     return { x: r.left, y: r.top, width: r.width, height: r.height };

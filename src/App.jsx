@@ -903,7 +903,13 @@ export default function App() {
   const towardChat = claudeLeft ? '-translate-x-full' : 'translate-x-0';
   const dividerBtn = `absolute left-1/2 z-20 flex h-7 w-7 ${towardChat} -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground`;
   const handleEl = (
-    <ResizableHandle key="handle" withHandle gripClassName={towardChat}>
+    // Alça ⠿ só com os dois painéis abertos: com um recolhido ela cai sobre o site e a
+    // oclusão escondia o Preview pra sempre (foto presa, F12 morto, tela branca).
+    <ResizableHandle
+      key="handle"
+      withHandle={!chatCollapsed && !previewCollapsed}
+      gripClassName={towardChat}
+    >
       {!chatCollapsed && !previewCollapsed && (
         <>
           <button
@@ -1040,6 +1046,10 @@ export default function App() {
             type="button"
             onClick={() => chatPanelRef.current?.expand()}
             style={expandStyle}
+            // Metade dela fica sobre o site: sem isto a oclusão achava o Preview coberto
+            // o tempo todo (view escondida, foto presa). A metade sobre o site fica por
+            // baixo da view; a do lado do rail continua visível e clicável.
+            data-preview-passthrough
             title={t('app.expand_chat_tooltip')}
             className="absolute top-1/3 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
           >

@@ -9,7 +9,12 @@ import { cn } from '@/lib/utils';
 export function DragHandle({ orientation = 'horizontal', className, ...props }) {
   const vertical = orientation === 'vertical';
   return (
+    // Passthrough pra oclusão do Preview: o pegador e a área de pegar (::after) passam
+    // ~6px da linha. Ao lado do site (WebContentsView) caíam sobre a área da view e a
+    // oclusão escondia o Preview pra sempre (foto presa, F12 morto). A parte sobre o site
+    // nunca recebe o mouse mesmo (a view fica por cima), então para a oclusão é decoração.
     <div
+      data-preview-passthrough
       className={cn(
         'relative flex shrink-0 items-center justify-center bg-border transition-colors hover:bg-primary',
         vertical

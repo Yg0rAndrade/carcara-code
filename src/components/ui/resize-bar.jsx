@@ -7,7 +7,12 @@ import { cn } from '@/lib/utils';
 export function ResizeBar({ onMouseDown, className, orientation = 'vertical' }) {
   const horizontal = orientation === 'horizontal';
   return (
+    // Passthrough pra oclusão do Preview: o pegador e a área de pegar (::after) passam
+    // ~6px da linha. Ao lado do site (WebContentsView) caíam sobre a área da view e a
+    // oclusão escondia o Preview pra sempre (foto presa, F12 morto). A parte sobre o site
+    // nunca recebe o mouse mesmo (a view fica por cima), então para a oclusão é decoração.
     <div
+      data-preview-passthrough
       onMouseDown={onMouseDown}
       title="Arraste para redimensionar"
       className={cn(

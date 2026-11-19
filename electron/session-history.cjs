@@ -46,6 +46,12 @@ const READERS = {
       const id = crypto.randomUUID();
       return { id, cmd: `claude --session-id ${id}` };
     },
+    // Retoma o histórico de `id` numa conversa NOVA, com id próprio. Usado quando outra
+    // aba já é dona de `id`: duas abas nunca escrevem no mesmo transcript.
+    forkSession: (id) => {
+      const fresh = crypto.randomUUID();
+      return { id: fresh, cmd: `claude --resume ${id} --fork-session --session-id ${fresh}` };
+    },
     historyExists: (id) => claudeSessions.historyExists(id),
     snapshot: (projectPath) => claudeSessions.snapshot(projectPath),
     findNew: (projectPath, snap) => claudeSessions.newTranscript(projectPath, snap),
@@ -79,4 +85,19 @@ function readerFor(cli) {
   return (cli && READERS[cli]) || null;
 }
 
-module.exports = { READERS, readerFor };
+// A conversa `histId` já tem dono que não é a aba `sessionId`? Dono = uma aba VIVA (pty
+// rodando com esse id) ou, entre as abas salvas, a que aparece PRIMEIRO na lista. A ordem
+// torna o desempate determinístico: com duas abas salvas no mesmo id (config antigo, de
+// antes do --session-id), só a de cima retoma; a outra abre uma cópia.
+// `tabs`: lista do config do projeto; `live`: [{ sessionId, histId }] dos ptys vivos.
+function historyOwnedByOther(reader, { sessionId, histId, tabs = [], live = [] }) {
+  if (!reader || !histId) return false;
+  if (live.some((t) => t.sessionId !== sessionId && t.histId === histId)) return true;
+  for (const s of tabs) {
+    if (s.id === sessionId) return false; // chegou na própria aba antes de achar outra
+    if (reader.getId(s) === histId) return true;
+  }
+  return false;
+}
+
+module.exports = { READERS, readerFor, historyOwnedByOther };
